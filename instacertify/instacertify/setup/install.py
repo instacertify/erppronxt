@@ -163,6 +163,7 @@ def after_migrate():
 	ensure_friendly_labels()
 	setup_workspace()
 	setup_default_dashboard()
+	setup_team_calendar()
 	setup_gst()
 	setup_disable_pos()
 	setup_gst_returns()
@@ -174,6 +175,33 @@ def setup_default_dashboard():
 	from instacertify.setup.dashboard_default import ensure_default_dashboard
 
 	ensure_default_dashboard()
+
+
+def setup_team_calendar():
+	"""Event custom fields + repair participant emails for shared calendar."""
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+	from instacertify.calendar.events import repair_participant_emails
+	from instacertify.setup.custom_fields import EVENT_FIELDS
+
+	try:
+		frappe.flags.ignore_version = True
+		create_custom_fields({"Event": EVENT_FIELDS}, update=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Event custom fields")
+		for f in EVENT_FIELDS:
+			name = f"Event-{f['fieldname']}"
+			if frappe.db.exists("Custom Field", name):
+				continue
+			try:
+				frappe.get_doc({"doctype": "Custom Field", "dt": "Event", "module": "Instacertify", **f}).insert(
+					ignore_permissions=True
+				)
+			except Exception:
+				pass
+	try:
+		repair_participant_emails()
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "repair_participant_emails")
 
 
 def setup_consulting_billing():

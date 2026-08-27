@@ -58,6 +58,11 @@ doc_events = {
 	"Payment Entry": {
 		"on_submit": "instacertify.accounting.payments.on_submit_payment_entry",
 	},
+	"Event": {
+		"validate": "instacertify.calendar.events.validate_event",
+		"on_update": "instacertify.calendar.events.on_update_event",
+		"after_insert": "instacertify.calendar.events.after_insert_event",
+	},
 }
 
 # Scheduled Tasks
@@ -65,6 +70,12 @@ scheduler_events = {
 	"daily": [
 		"instacertify.notifications.tasks.deadline_reminders",
 	],
+	"cron": {
+		# Every 15 minutes — 30-min prior calendar session alerts
+		"*/15 * * * *": [
+			"instacertify.notifications.tasks.event_start_reminders",
+		],
+	},
 }
 
 # Fixtures

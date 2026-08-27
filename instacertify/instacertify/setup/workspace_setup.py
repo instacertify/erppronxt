@@ -40,10 +40,13 @@ def _ensure_home_html_block():
     <section class="ic-workdesk-panel">
       <div class="ic-workdesk-head">
         <div>
-          <div class="ic-workdesk-title">Calendar</div>
-          <div class="ic-workdesk-sub">Upcoming 14 days</div>
+          <div class="ic-workdesk-title">Team calendar</div>
+          <div class="ic-workdesk-sub">Sessions · book for teammates · 30‑min alerts</div>
         </div>
-        <a class="ic-view-all" href="/app/event">Open calendar</a>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <a class="ic-view-all ic-schedule-session" href="/app/event/new">Schedule session</a>
+          <a class="ic-view-all" href="/app/event/view/calendar">Open calendar</a>
+        </div>
       </div>
       <div id="ic-my-calendar"></div>
     </section>
@@ -636,6 +639,7 @@ def _ensure_home_workspace():
 		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 3}},
 		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 3}},
 		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 3}},
+		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 3}},
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 3}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
@@ -657,6 +661,7 @@ def _ensure_home_workspace():
 		{"label": "Projects", "link_to": "Project", "type": "DocType", "doc_view": "List"},
 		{"label": "Project Board", "link_to": "project-board", "type": "Page"},
 		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
+		{"label": "Team Calendar", "link_to": "Event", "type": "DocType", "doc_view": "Calendar"},
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},

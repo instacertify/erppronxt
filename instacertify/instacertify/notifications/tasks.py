@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 from frappe.utils import add_days, today
 
 
@@ -144,3 +145,72 @@ def lead_contact_reminders():
 				).insert(ignore_permissions=True)
 			except Exception:
 				pass
+
+
+def event_start_reminders():
+	"""Notify Event participants ~30 minutes before the session starts.
+
+	Runs every 15 minutes. Marks ic_prestart_notified so each Event only
+	fires once per start time.
+	"""
+	from frappe.utils import add_to_date
+
+	from instacertify.calendar.events import _participant_users
+
+	now = frappe.utils.now_datetime()
+	window_end = add_to_date(now, minutes=30)
+
+	filters = {
+		"status": ["!=", "Cancelled"],
+		"starts_on": ["between", [now, window_end]],
+	}
+	if frappe.get_meta("Event").has_field("ic_prestart_notified"):
+		filters["ic_prestart_notified"] = 0
+
+	events = frappe.get_all(
+		"Event",
+		filters=filters,
+		fields=["name", "subject", "starts_on", "ends_on", "owner", "location"],
+		limit_page_length=100,
+	)
+	for row in events:
+		try:
+			doc = frappe.get_doc("Event", row.name)
+			minutes = 30
+			if doc.meta.has_field("ic_notify_minutes") and doc.get("ic_notify_minutes"):
+				minutes = int(doc.ic_notify_minutes)
+			starts = frappe.utils.get_datetime(doc.starts_on)
+			delta_min = (starts - now).total_seconds() / 60.0
+			if delta_min < 0 or delta_min > minutes:
+				continue
+
+			users = _participant_users(doc)
+			when = frappe.format(doc.starts_on, {"fieldtype": "Datetime"})
+			where = f" · {doc.location}" if doc.location else ""
+			for user in users:
+				try:
+					frappe.get_doc(
+						{
+							"doctype": "Notification Log",
+							"subject": _("Starting in ~{0} min: {1}").format(
+								max(1, int(round(delta_min))), doc.subject
+							),
+							"email_content": _(
+								"Your calendar session “{0}” starts at {1}{2}. Open Event {3}."
+							).format(doc.subject, when, where, doc.name),
+							"document_type": "Event",
+							"document_name": doc.name,
+							"for_user": user,
+							"type": "Alert",
+							"from_user": "Administrator",
+						}
+					).insert(ignore_permissions=True)
+				except Exception:
+					frappe.log_error(frappe.get_traceback(), f"Event 30m notify {doc.name}→{user}")
+
+			if doc.meta.has_field("ic_prestart_notified"):
+				frappe.db.set_value(
+					"Event", doc.name, "ic_prestart_notified", 1, update_modified=False
+				)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Event start reminder {row.name}")

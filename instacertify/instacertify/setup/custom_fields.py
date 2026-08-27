@@ -1128,6 +1128,45 @@ ASSET_FIELDS = [
 	},
 ]
 
+EVENT_FIELDS = [
+	{
+		"fieldname": "ic_section_team",
+		"fieldtype": "Section Break",
+		"label": "Team Session",
+		"insert_after": "description",
+	},
+	{
+		"fieldname": "ic_booked_by",
+		"fieldtype": "Link",
+		"label": "Booked By",
+		"options": "User",
+		"read_only": 1,
+		"insert_after": "ic_section_team",
+		"description": "Who scheduled this session for the team",
+	},
+	{
+		"fieldname": "ic_column_team",
+		"fieldtype": "Column Break",
+		"insert_after": "ic_booked_by",
+	},
+	{
+		"fieldname": "ic_notify_minutes",
+		"fieldtype": "Int",
+		"label": "Notify Minutes Before",
+		"default": "30",
+		"insert_after": "ic_column_team",
+		"description": "Desk alert to all participants this many minutes before start (default 30)",
+	},
+	{
+		"fieldname": "ic_prestart_notified",
+		"fieldtype": "Check",
+		"label": "Pre-start Notified",
+		"default": "0",
+		"read_only": 1,
+		"insert_after": "ic_notify_minutes",
+	},
+]
+
 CUSTOM_FIELDS = {
 	"Lead": LEAD_FIELDS,
 	"Customer": CUSTOMER_FIELDS,
@@ -1136,4 +1175,5 @@ CUSTOM_FIELDS = {
 	"Sales Invoice": SALES_INVOICE_FIELDS,
 	"Purchase Invoice": PURCHASE_INVOICE_FIELDS,
 	"Asset": ASSET_FIELDS,
+	"Event": EVENT_FIELDS,
 }

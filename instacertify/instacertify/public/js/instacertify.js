@@ -2575,3 +2575,144 @@ instacertify.open_project_chat = function (frm) {
 	});
 	refresh();
 };
+
+// --- Team calendar / Event sessions ---
+frappe.ui.form.on("Event", {
+	refresh(frm) {
+		if (frm.is_new()) {
+			if (!frm.doc.event_category) frm.set_value("event_category", "Meeting");
+			if (frm.doc.send_reminder == null) frm.set_value("send_reminder", 1);
+			if (frm.fields_dict.ic_notify_minutes && !frm.doc.ic_notify_minutes) {
+				frm.set_value("ic_notify_minutes", 30);
+			}
+		}
+		frm.add_custom_button(__("Add Team Members"), () => {
+			instacertify.pick_team_participants(frm);
+		}, __("Participants"));
+		frm.add_custom_button(__("Open Calendar View"), () => {
+			frappe.set_route("List", "Event", "Calendar");
+		}, __("View"));
+	},
+});
+
+instacertify.pick_team_participants = function (frm) {
+	frappe.call({
+		method: "instacertify.calendar.events.get_team_users",
+		callback(r) {
+			const users = r.message || [];
+			const d = new frappe.ui.Dialog({
+				title: __("Add teammates to this session"),
+				fields: [
+					{
+						fieldname: "users",
+						fieldtype: "MultiCheck",
+						label: __("Team members"),
+						options: users.map((u) => ({
+							label: `${u.full_name || u.name} (${u.name})`,
+							value: u.name,
+							checked: false,
+						})),
+						columns: 1,
+					},
+				],
+				primary_action_label: __("Add"),
+				primary_action(values) {
+					const selected = values.users || [];
+					const existing = new Set(
+						(frm.doc.event_participants || [])
+							.filter((p) => p.reference_doctype === "User")
+							.map((p) => p.reference_docname)
+					);
+					selected.forEach((user) => {
+						if (existing.has(user)) return;
+						frm.add_child("event_participants", {
+							reference_doctype: "User",
+							reference_docname: user,
+							email: user,
+						});
+					});
+					frm.refresh_field("event_participants");
+					d.hide();
+					frappe.show_alert({ message: __("Participants added — save to notify them"), indicator: "green" });
+				},
+			});
+			d.show();
+		},
+	});
+};
+
+instacertify.schedule_team_session = function () {
+	frappe.call({
+		method: "instacertify.calendar.events.get_team_users",
+		callback(r) {
+			const users = r.message || [];
+			const start = moment().add(1, "hour").startOf("hour");
+			const d = new frappe.ui.Dialog({
+				title: __("Schedule team session"),
+				fields: [
+					{ fieldname: "subject", fieldtype: "Data", label: __("Subject"), reqd: 1 },
+					{ fieldname: "starts_on", fieldtype: "Datetime", label: __("Starts on"), reqd: 1, default: start.format("YYYY-MM-DD HH:mm:ss") },
+					{ fieldname: "ends_on", fieldtype: "Datetime", label: __("Ends on"), default: start.clone().add(1, "hour").format("YYYY-MM-DD HH:mm:ss") },
+					{ fieldname: "location", fieldtype: "Data", label: __("Location / Meet link") },
+					{
+						fieldname: "event_type",
+						fieldtype: "Select",
+						label: __("Visibility"),
+						options: "Public\nPrivate",
+						default: "Public",
+						description: __("Public = visible on team calendar. Private = participants only."),
+					},
+					{
+						fieldname: "participants",
+						fieldtype: "MultiCheck",
+						label: __("Book for teammates"),
+						options: users.map((u) => ({
+							label: `${u.full_name || u.name}`,
+							value: u.name,
+							checked: false,
+						})),
+						columns: 1,
+					},
+					{ fieldname: "description", fieldtype: "Small Text", label: __("Notes") },
+				],
+				primary_action_label: __("Book session"),
+				primary_action(values) {
+					frappe.call({
+						method: "instacertify.calendar.events.create_team_session",
+						args: {
+							subject: values.subject,
+							starts_on: values.starts_on,
+							ends_on: values.ends_on,
+							location: values.location,
+							event_type: values.event_type,
+							description: values.description,
+							participants: values.participants || [],
+						},
+						freeze: true,
+						freeze_message: __("Booking session…"),
+						callback(res) {
+							d.hide();
+							const name = res.message && res.message.name;
+							frappe.show_alert({
+								message: __("Session booked. Participants get a 30‑minute reminder before start."),
+								indicator: "green",
+							});
+							if (name) frappe.set_route("Form", "Event", name);
+						},
+					});
+				},
+			});
+			d.show();
+		},
+	});
+};
+
+// Home dashboard: Schedule session link
+$(document).on("click", "a.ic-schedule-session", function (e) {
+	e.preventDefault();
+	if (instacertify.schedule_team_session) {
+		instacertify.schedule_team_session();
+	} else {
+		frappe.new_doc("Event");
+	}
+});
