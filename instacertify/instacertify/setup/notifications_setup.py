@@ -11,7 +11,7 @@ def ensure_notifications():
 	# Also create a few Email Alert style Notification docs where useful.
 	defs = [
 		{
-			"name": "IC Quotation Accepted",
+			"name": "Quotation Accepted",
 			"subject": "Quotation {{ doc.name }} Accepted",
 			"document_type": "Quotation",
 			"event": "Value Change",
@@ -22,7 +22,7 @@ def ensure_notifications():
 			"recipients": [{"receiver_by_document_field": "owner"}],
 		},
 		{
-			"name": "IC Quotation Changes Requested",
+			"name": "Quotation Changes Requested",
 			"subject": "Changes requested on {{ doc.name }}",
 			"document_type": "Quotation",
 			"event": "Value Change",
@@ -34,6 +34,12 @@ def ensure_notifications():
 		},
 	]
 	for d in defs:
+		legacy = f"IC {d['name']}"
+		if frappe.db.exists("Notification", legacy) and not frappe.db.exists("Notification", d["name"]):
+			try:
+				frappe.rename_doc("Notification", legacy, d["name"], force=True)
+			except Exception:
+				pass
 		if frappe.db.exists("Notification", d["name"]):
 			continue
 		try:

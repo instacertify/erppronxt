@@ -25,3 +25,14 @@ def boot_session(bootinfo):
 		bootinfo["desk_theme"] = "light"
 	except Exception:
 		pass
+
+	# Ensure friendly labels (no "IC" abbreviation) are in the boot translation map
+	try:
+		from instacertify.setup.friendly_labels import FRIENDLY_LABELS
+
+		messages = bootinfo.get("__messages") or {}
+		for source, target in FRIENDLY_LABELS.items():
+			messages[source] = target
+		bootinfo["__messages"] = messages
+	except Exception:
+		pass

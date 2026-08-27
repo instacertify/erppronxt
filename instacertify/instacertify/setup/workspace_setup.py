@@ -17,7 +17,7 @@ def ensure_workspaces():
 
 
 def _ensure_home_html_block():
-	name = "IC Home Dashboard"
+	name = "Home Dashboard"
 	html = """
 <div id="ic-home-root">
   <div class="ic-greeting">
@@ -385,6 +385,13 @@ def _ensure_home_html_block():
 
 
 def _upsert_html_block(name, html, script):
+	legacy = f"IC {name}" if not name.startswith("IC ") else None
+	if legacy and frappe.db.exists("Custom HTML Block", legacy) and not frappe.db.exists("Custom HTML Block", name):
+		try:
+			frappe.rename_doc("Custom HTML Block", legacy, name, force=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Rename HTML block {legacy}")
+
 	if frappe.db.exists("Custom HTML Block", name):
 		doc = frappe.get_doc("Custom HTML Block", name)
 		doc.html = html
@@ -404,7 +411,7 @@ def _upsert_html_block(name, html, script):
 
 
 def _ensure_crm_lead_tracker_block():
-	name = "IC CRM Lead Tracker"
+	name = "CRM Lead Tracker"
 	html = """
 <div id="ic-crm-tracker" class="ic-crm-tracker">
   <div class="ic-crm-tracker-title">CRM Lead Tracker</div>
@@ -521,39 +528,39 @@ def _ensure_crm_lead_tracker_block():
 def _ensure_home_workspace():
 	name = "Instacertify Home"
 	content = [
-		{"id": "ic_home_block", "type": "custom_block", "data": {"custom_block_name": "IC Home Dashboard", "col": 12}},
+		{"id": "ic_home_block", "type": "custom_block", "data": {"custom_block_name": "Home Dashboard", "col": 12}},
 		{"id": "ic_header", "type": "header", "data": {"text": "<span class=\"h4\"><b>Instacertify Home</b></span>", "col": 12}},
 		{"id": "ic_spacer1", "type": "spacer", "data": {"col": 12}},
 		{"id": "ic_crm_header", "type": "header", "data": {"text": "<span class=\"h5\">CRM Lead Tracker</span>", "col": 12}},
-		{"id": "ic_crm_block", "type": "custom_block", "data": {"custom_block_name": "IC CRM Lead Tracker", "col": 12}},
-		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "IC Leads This Week", "col": 3}},
-		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "IC Leads This Month", "col": 3}},
-		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "IC New Leads", "col": 3}},
-		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "IC Active Leads", "col": 3}},
+		{"id": "ic_crm_block", "type": "custom_block", "data": {"custom_block_name": "CRM Lead Tracker", "col": 12}},
+		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "Leads This Week", "col": 3}},
+		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "Leads This Month", "col": 3}},
+		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "New Leads", "col": 3}},
+		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "Active Leads", "col": 3}},
 		{"id": "ic_cards_header", "type": "header", "data": {"text": "<span class=\"h5\">Operations Snapshot</span>", "col": 12}},
-		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "IC Quotations Sent", "col": 3}},
-		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "IC Quotations Accepted", "col": 3}},
-		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "IC Active Projects", "col": 3}},
-		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "IC Pending Tasks", "col": 3}},
-		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "IC Testing Requests", "col": 3}},
-		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "IC Upcoming Deadlines", "col": 3}},
+		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "Quotations Sent", "col": 3}},
+		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "Quotations Accepted", "col": 3}},
+		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "Active Projects", "col": 3}},
+		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "Pending Tasks", "col": 3}},
+		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "Testing Requests", "col": 3}},
+		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "Upcoming Deadlines", "col": 3}},
 		{"id": "ic_samples_header", "type": "header", "data": {"text": "<span class=\"h5\">Sample Custody</span>", "col": 12}},
-		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "IC Samples Transit to Office", "col": 2}},
-		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "IC Samples At Office", "col": 2}},
-		{"id": "nc_smp_transit_lab", "type": "number_card", "data": {"number_card_name": "IC Samples Transit to Lab", "col": 2}},
-		{"id": "nc_smp_lab", "type": "number_card", "data": {"number_card_name": "IC Samples At Laboratory", "col": 2}},
-		{"id": "nc_smp_storage", "type": "number_card", "data": {"number_card_name": "IC Samples In Storage", "col": 2}},
-		{"id": "nc_smp_discarded", "type": "number_card", "data": {"number_card_name": "IC Samples Discarded", "col": 2}},
+		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "Samples Transit to Office", "col": 2}},
+		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "Samples At Office", "col": 2}},
+		{"id": "nc_smp_transit_lab", "type": "number_card", "data": {"number_card_name": "Samples Transit to Lab", "col": 2}},
+		{"id": "nc_smp_lab", "type": "number_card", "data": {"number_card_name": "Samples At Laboratory", "col": 2}},
+		{"id": "nc_smp_storage", "type": "number_card", "data": {"number_card_name": "Samples In Storage", "col": 2}},
+		{"id": "nc_smp_discarded", "type": "number_card", "data": {"number_card_name": "Samples Discarded", "col": 2}},
 		{"id": "ic_charts_header", "type": "header", "data": {"text": "<span class=\"h5\">Insights</span>", "col": 12}},
-		{"id": "chart_leads_7d_source", "type": "chart", "data": {"chart_name": "IC Leads Last 7 Days by Source", "col": 6}},
-		{"id": "chart_leads_30d_ptype", "type": "chart", "data": {"chart_name": "IC Leads Last 30 Days by Project Type", "col": 6}},
-		{"id": "chart_leads_30d_source", "type": "chart", "data": {"chart_name": "IC Leads Last 30 Days by Source", "col": 6}},
-		{"id": "chart_leads_status", "type": "chart", "data": {"chart_name": "IC Leads by Status", "col": 6}},
-		{"id": "chart_lead_trend", "type": "chart", "data": {"chart_name": "IC Lead Trend Weekly", "col": 12}},
-		{"id": "chart_quotes_status", "type": "chart", "data": {"chart_name": "IC Quotations by Status", "col": 6}},
-		{"id": "chart_projects_status", "type": "chart", "data": {"chart_name": "IC Projects by Status", "col": 6}},
-		{"id": "chart_projects_priority", "type": "chart", "data": {"chart_name": "IC Projects by Priority", "col": 6}},
-		{"id": "chart_samples_location", "type": "chart", "data": {"chart_name": "IC Samples by Location", "col": 6}},
+		{"id": "chart_leads_7d_source", "type": "chart", "data": {"chart_name": "Leads Last 7 Days by Source", "col": 6}},
+		{"id": "chart_leads_30d_ptype", "type": "chart", "data": {"chart_name": "Leads Last 30 Days by Project Type", "col": 6}},
+		{"id": "chart_leads_30d_source", "type": "chart", "data": {"chart_name": "Leads Last 30 Days by Source", "col": 6}},
+		{"id": "chart_leads_status", "type": "chart", "data": {"chart_name": "Leads by Status", "col": 6}},
+		{"id": "chart_lead_trend", "type": "chart", "data": {"chart_name": "Lead Trend Weekly", "col": 12}},
+		{"id": "chart_quotes_status", "type": "chart", "data": {"chart_name": "Quotations by Status", "col": 6}},
+		{"id": "chart_projects_status", "type": "chart", "data": {"chart_name": "Projects by Status", "col": 6}},
+		{"id": "chart_projects_priority", "type": "chart", "data": {"chart_name": "Projects by Priority", "col": 6}},
+		{"id": "chart_samples_location", "type": "chart", "data": {"chart_name": "Samples by Location", "col": 6}},
 		{"id": "ic_shortcuts_header", "type": "header", "data": {"text": "<span class=\"h5\">Quick Links</span>", "col": 12}},
 		{"id": "sc_leads", "type": "shortcut", "data": {"shortcut_name": "Leads", "col": 3}},
 		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 3}},
@@ -629,18 +636,18 @@ def _ensure_home_workspace():
 		{"label": "Team Collaboration", "link_type": "Page", "link_to": "team-collaboration", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
 		{"label": "Team Chat Messages", "link_type": "DocType", "link_to": "Project Chat Message", "type": "Link"},
-		{"label": "IC Project Update", "link_type": "DocType", "link_to": "IC Project Update", "type": "Link"},
+		{"label": "Project Updates", "link_type": "DocType", "link_to": "IC Project Update", "type": "Link"},
 		{"label": "Timesheet", "link_type": "DocType", "link_to": "Timesheet", "type": "Link"},
 		{"label": "Testing", "type": "Card Break"},
-		{"label": "IC Testing Request", "link_type": "DocType", "link_to": "IC Testing Request", "type": "Link"},
-		{"label": "IC Sample Tracking", "link_type": "DocType", "link_to": "IC Sample Tracking", "type": "Link"},
+		{"label": "Testing Requests", "link_type": "DocType", "link_to": "IC Testing Request", "type": "Link"},
+		{"label": "Sample Tracking", "link_type": "DocType", "link_to": "IC Sample Tracking", "type": "Link"},
 		{"label": "Laboratory Library", "type": "Card Break"},
 		{"label": "Register / Manage Labs", "link_type": "DocType", "link_to": "IC Laboratory", "type": "Link"},
-		{"label": "IC Testing Request", "link_type": "DocType", "link_to": "IC Testing Request", "type": "Link"},
+		{"label": "Testing Requests", "link_type": "DocType", "link_to": "IC Testing Request", "type": "Link"},
 		{"label": "Documents", "type": "Card Break"},
 		{"label": "Document Requests (customer uploads)", "link_type": "DocType", "link_to": "IC Document Request", "type": "Link"},
-		{"label": "IC Document Checklist Template", "link_type": "DocType", "link_to": "IC Document Checklist Template", "type": "Link"},
-		{"label": "IC Project Record", "link_type": "DocType", "link_to": "IC Project Record", "type": "Link"},
+		{"label": "Document Checklist Templates", "link_type": "DocType", "link_to": "IC Document Checklist Template", "type": "Link"},
+		{"label": "Project Records", "link_type": "DocType", "link_to": "IC Project Record", "type": "Link"},
 		{"label": "Calendar & Planner", "type": "Card Break"},
 		{"label": "Event", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
@@ -657,7 +664,7 @@ def _ensure_home_workspace():
 		{"label": "Administration", "type": "Card Break"},
 		{"label": "User", "link_type": "DocType", "link_to": "User", "type": "Link"},
 		{"label": "Role", "link_type": "DocType", "link_to": "Role", "type": "Link"},
-		{"label": "IC Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
+		{"label": "Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
 	]
 
 	# Filter missing DocTypes / Reports / Pages
@@ -713,10 +720,10 @@ def _ensure_home_workspace():
 			ws.append("shortcuts", s)
 		for l in safe_links:
 			ws.append("links", l)
-		ws.append("custom_blocks", {"custom_block_name": "IC Home Dashboard", "label": "IC Home Dashboard"})
+		ws.append("custom_blocks", {"custom_block_name": "Home Dashboard", "label": "Home Dashboard"})
 		ws.content = json.dumps(content)
 		ws.save(ignore_permissions=True)
 	else:
 		ws = frappe.get_doc(payload)
-		ws.append("custom_blocks", {"custom_block_name": "IC Home Dashboard", "label": "IC Home Dashboard"})
+		ws.append("custom_blocks", {"custom_block_name": "Home Dashboard", "label": "Home Dashboard"})
 		ws.insert(ignore_permissions=True)

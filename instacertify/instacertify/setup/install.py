@@ -60,6 +60,9 @@ def after_install():
 	setup_workspace()
 	setup_dashboard_charts()
 	setup_number_cards()
+	from instacertify.setup.friendly_labels import ensure_friendly_labels
+
+	ensure_friendly_labels()
 	setup_permissions()
 	setup_gst()
 	setup_disable_pos()
@@ -153,8 +156,11 @@ def after_migrate():
 	setup_settings()
 	setup_branding()
 	setup_quotation_templates()
-	setup_workspace()
 	setup_dashboard_charts()
+	from instacertify.setup.friendly_labels import ensure_friendly_labels
+
+	ensure_friendly_labels()
+	setup_workspace()
 	setup_gst()
 	setup_disable_pos()
 	setup_gst_returns()

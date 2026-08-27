@@ -223,7 +223,7 @@ frappe.ui.form.on("Quotation", {
 						}
 					},
 				});
-			}, __("Instacertify"));
+			}, __("Actions"));
 
 			frm.add_custom_button(__("Save as Template"), () => {
 				frappe.prompt(
@@ -267,13 +267,13 @@ frappe.ui.form.on("Quotation", {
 					__("Save Quotation as Template"),
 					__("Save")
 				);
-			}, __("Instacertify"));
+			}, __("Actions"));
 
 			frm.add_custom_button(__("Manage Templates"), () => {
 				frappe.set_route("List", "IC Quotation Template", {
 					quotation_type: frm.doc.ic_quotation_type || undefined,
 				});
-			}, __("Instacertify"));
+			}, __("Actions"));
 
 			frm.add_custom_button(__("New Template"), () => {
 				frappe.new_doc("IC Quotation Template", {
@@ -284,7 +284,7 @@ frappe.ui.form.on("Quotation", {
 					service_family: frm.doc.ic_service_family,
 					service_name: frm.doc.ic_service_name,
 				});
-			}, __("Instacertify"));
+			}, __("Actions"));
 
 			if (["Changes Requested", "Rejected / Lost"].includes(frm.doc.ic_workflow_status)) {
 				if (frm.doc.ic_customer_remarks) {
@@ -315,7 +315,7 @@ frappe.ui.form.on("Quotation", {
 							});
 						}
 					);
-				}, __("Instacertify"));
+				}, __("Actions"));
 			}
 
 			if (frm.doc.ic_workflow_status === "Accepted") {
@@ -343,7 +343,7 @@ frappe.ui.form.on("Quotation", {
 							});
 						}
 					);
-				}, __("Instacertify"));
+				}, __("Actions"));
 
 				frm.add_custom_button(__("Start Project"), () => {
 					frappe.call({
@@ -363,7 +363,7 @@ frappe.ui.form.on("Quotation", {
 							frappe.set_route("Form", "Project", r.message.project);
 						},
 					});
-				}, __("Instacertify"));
+				}, __("Actions"));
 
 				if ((frm.doc.ic_test_items || []).length) {
 					frm.add_custom_button(__("Create Testing Requests"), () => {
@@ -387,11 +387,11 @@ frappe.ui.form.on("Quotation", {
 								}
 							},
 						});
-					}, __("Instacertify"));
+					}, __("Actions"));
 				}
 
 				// Make Invoice the primary action after acceptance
-				frm.page.set_inner_btn_group_as_primary(__("Instacertify"));
+				frm.page.set_inner_btn_group_as_primary(__("Actions"));
 			}
 
 			// Hide Sales Order — Instacertify bills from Quotation directly
@@ -1020,7 +1020,7 @@ frappe.ui.form.on("Project", {
 
 		frm.add_custom_button(__("Add Project Update"), () => {
 			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
-		}, __("Instacertify"));
+		}, __("Actions"));
 		frm.add_custom_button(__("Request Documents from Customer"), () => {
 			frappe.call({
 				method: "instacertify.documents.api.create_document_request_for_project",
@@ -1044,14 +1044,14 @@ frappe.ui.form.on("Project", {
 					}
 				},
 			});
-		}, __("Instacertify"));
+		}, __("Actions"));
 		frm.add_custom_button(__("Open Team Chat"), () => {
 			instacertify.open_project_chat(frm);
-		}, __("Instacertify"));
+		}, __("Actions"));
 		frm.add_custom_button(__("Collaboration Hub"), () => {
 			frappe.route_options = { project: frm.doc.name };
 			frappe.set_route("team-collaboration");
-		}, __("Instacertify"));
+		}, __("Actions"));
 		instacertify.add_helpdesk_buttons(frm, {
 			project: frm.doc.name,
 			customer: frm.doc.customer,
@@ -1078,7 +1078,7 @@ frappe.ui.form.on("IC Testing Request", {
 						frm.reload_doc();
 					},
 				});
-			}, __("Instacertify"));
+			}, __("Actions"));
 		}
 		if (!frm.is_new() && frm.doc.laboratory) {
 			frm.add_custom_button(__("Buy Lab Service (PI)"), () => {
@@ -1163,7 +1163,7 @@ frappe.ui.form.on("IC Document Request", {
 						frm.reload_doc();
 					},
 				});
-			}, __("Instacertify"));
+			}, __("Actions"));
 
 			(frm.doc.items || []).forEach((row) => {
 				if (!row.name) return;
@@ -1241,7 +1241,7 @@ frappe.ui.form.on("IC Laboratory", {
 				ic_quotation_type: "Testing",
 				quotation_to: "Customer",
 			});
-		}, __("Instacertify"));
+		}, __("Actions"));
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Link / Create Supplier"), () => {
 				frappe.call({

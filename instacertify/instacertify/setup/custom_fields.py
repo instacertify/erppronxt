@@ -75,7 +75,7 @@ LEAD_FIELDS = [
 		"options": "IC Project Type",
 		"insert_after": "ic_section_request",
 		"in_list_view": 1,
-		"description": "BIS, Testing, EPR, LMPC, SABER, GMARK, MSDS Authoring — editable in IC Project Type",
+		"description": "BIS, Testing, EPR, LMPC, SABER, GMARK, MSDS Authoring — editable in Project Type",
 	},
 	{
 		"fieldname": "ic_request_category",
@@ -91,7 +91,7 @@ LEAD_FIELDS = [
 		"options": "IC Lead Source",
 		"insert_after": "ic_request_category",
 		"in_list_view": 1,
-		"description": "Editable master — IC Lead Source (Google Search, Ads, IndiaMART, Reference, Consultant, …)",
+		"description": "Editable master — Lead Source (Google Search, Ads, IndiaMART, Reference, Consultant, …)",
 	},
 	{
 		"fieldname": "ic_consultant_referral",

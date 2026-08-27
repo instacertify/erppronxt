@@ -9,77 +9,92 @@ import frappe
 from frappe.utils import add_days, get_first_day, nowdate
 
 
+def _friendly(name: str) -> str:
+	return name[3:] if name.startswith("IC ") else name
+
+
+def _ensure_renamed(doctype: str, old: str, new: str):
+	if old == new:
+		return new
+	if frappe.db.exists(doctype, old) and not frappe.db.exists(doctype, new):
+		try:
+			frappe.rename_doc(doctype, old, new, force=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Rename {doctype} {old} → {new}")
+	return new if frappe.db.exists(doctype, new) else old
+
+
 def ensure_number_cards():
 	today = nowdate()
 	week_start = str(add_days(today, -6))
 	month_start = str(get_first_day(today))
 
 	cards = [
-		("IC New Leads", "Lead", {"status": "Lead"}, 0, "Daily"),
-		("IC Active Leads", "Lead", {"status": ["in", ["Open", "Replied", "Opportunity"]]}, 0, "Daily"),
-		("IC Leads This Week", "Lead", [["creation", ">=", week_start]], 1, "Weekly"),
-		("IC Leads This Month", "Lead", [["creation", ">=", month_start]], 1, "Monthly"),
+		("New Leads", "Lead", {"status": "Lead"}, 0, "Daily"),
+		("Active Leads", "Lead", {"status": ["in", ["Open", "Replied", "Opportunity"]]}, 0, "Daily"),
+		("Leads This Week", "Lead", [["creation", ">=", week_start]], 1, "Weekly"),
+		("Leads This Month", "Lead", [["creation", ">=", month_start]], 1, "Monthly"),
 		(
-			"IC Quotations Sent",
+			"Quotations Sent",
 			"Quotation",
 			{"ic_workflow_status": ["in", ["Shared with Customer", "Customer Review"]]},
 			0,
 			"Daily",
 		),
-		("IC Quotations Accepted", "Quotation", {"ic_workflow_status": "Accepted"}, 0, "Daily"),
-		("IC Active Projects", "Project", {"status": ["not in", ["Completed", "Cancelled"]]}, 0, "Daily"),
-		("IC Pending Tasks", "Task", {"status": ["in", ["Open", "Working"]]}, 0, "Daily"),
+		("Quotations Accepted", "Quotation", {"ic_workflow_status": "Accepted"}, 0, "Daily"),
+		("Active Projects", "Project", {"status": ["not in", ["Completed", "Cancelled"]]}, 0, "Daily"),
+		("Pending Tasks", "Task", {"status": ["in", ["Open", "Working"]]}, 0, "Daily"),
 		(
-			"IC Testing Requests",
+			"Testing Requests",
 			"IC Testing Request",
 			{"status": ["not in", ["Report Shared with Customer"]]},
 			0,
 			"Daily",
 		),
 		(
-			"IC Upcoming Deadlines",
+			"Upcoming Deadlines",
 			"Project",
 			{"status": ["not in", ["Completed", "Cancelled"]]},
 			0,
 			"Daily",
 		),
 		(
-			"IC Samples Transit to Office",
+			"Samples Transit to Office",
 			"IC Sample Tracking",
 			{"sample_location": "In Transit to Office"},
 			0,
 			"Daily",
 		),
 		(
-			"IC Samples At Office",
+			"Samples At Office",
 			"IC Sample Tracking",
 			{"sample_location": "At Instacertify Office"},
 			0,
 			"Daily",
 		),
 		(
-			"IC Samples Transit to Lab",
+			"Samples Transit to Lab",
 			"IC Sample Tracking",
 			{"sample_location": "In Transit to Lab"},
 			0,
 			"Daily",
 		),
 		(
-			"IC Samples At Laboratory",
+			"Samples At Laboratory",
 			"IC Sample Tracking",
 			{"sample_location": "At Laboratory"},
 			0,
 			"Daily",
 		),
 		(
-			"IC Samples In Storage",
+			"Samples In Storage",
 			"IC Sample Tracking",
 			{"sample_location": "At Instacertify Storage"},
 			0,
 			"Daily",
 		),
 		(
-			"IC Samples Discarded",
+			"Samples Discarded",
 			"IC Sample Tracking",
 			{"sample_location": "Discarded"},
 			0,
@@ -89,40 +104,29 @@ def ensure_number_cards():
 	for name, dt, filters, pct, interval in cards:
 		if not frappe.db.exists("DocType", dt):
 			continue
+		# migrate legacy IC-prefixed card names
+		_ensure_renamed("Number Card", f"IC {name}", name)
 		try:
+			payload = {
+				"label": name,
+				"document_type": dt,
+				"function": "Count",
+				"filters_json": json.dumps(filters),
+				"is_public": 1,
+				"module": "Instacertify",
+				"show_percentage_stats": pct,
+				"stats_time_interval": interval,
+			}
 			if frappe.db.exists("Number Card", name):
-				frappe.db.set_value(
-					"Number Card",
-					name,
-					{
-						"label": name.replace("IC ", ""),
-						"document_type": dt,
-						"function": "Count",
-						"filters_json": json.dumps(filters),
-						"is_public": 1,
-						"module": "Instacertify",
-						"show_percentage_stats": pct,
-						"stats_time_interval": interval,
-					},
-					update_modified=False,
-				)
+				frappe.db.set_value("Number Card", name, payload, update_modified=False)
 			else:
-				doc = frappe.get_doc(
-					{
-						"doctype": "Number Card",
-						"label": name,
-						"document_type": dt,
-						"function": "Count",
-						"filters_json": json.dumps(filters),
-						"is_public": 1,
-						"module": "Instacertify",
-						"show_percentage_stats": pct,
-						"stats_time_interval": interval,
-					}
-				)
-				doc.insert(ignore_permissions=True)
-				if doc.name != name:
+				# Avoid autoname collisions creating New Leads-1, etc.
+				doc = frappe.get_doc({"doctype": "Number Card", "name": name, **payload})
+				doc.insert(ignore_permissions=True, ignore_if_duplicate=True)
+				if doc.name != name and not frappe.db.exists("Number Card", name):
 					frappe.rename_doc("Number Card", doc.name, name, force=True)
+				elif doc.name != name and frappe.db.exists("Number Card", name):
+					frappe.delete_doc("Number Card", doc.name, force=True, ignore_permissions=True)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"Number Card {name}")
 
@@ -134,7 +138,7 @@ def ensure_dashboard_charts():
 
 	charts = [
 		{
-			"chart_name": "IC Leads by Source",
+			"chart_name": "Leads by Source",
 			"document_type": "Lead",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -144,7 +148,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Leads by Status",
+			"chart_name": "Leads by Status",
 			"document_type": "Lead",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -154,7 +158,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Leads Last 7 Days by Source",
+			"chart_name": "Leads Last 7 Days by Source",
 			"document_type": "Lead",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -164,7 +168,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Leads Last 30 Days by Source",
+			"chart_name": "Leads Last 30 Days by Source",
 			"document_type": "Lead",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -174,7 +178,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Leads Last 30 Days by Project Type",
+			"chart_name": "Leads Last 30 Days by Project Type",
 			"document_type": "Lead",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -184,7 +188,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Leads Last 30 Days by Status",
+			"chart_name": "Leads Last 30 Days by Status",
 			"document_type": "Lead",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -194,7 +198,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Lead Trend Weekly",
+			"chart_name": "Lead Trend Weekly",
 			"document_type": "Lead",
 			"chart_type": "Count",
 			"based_on": "creation",
@@ -205,7 +209,7 @@ def ensure_dashboard_charts():
 			"filters_json": "[]",
 		},
 		{
-			"chart_name": "IC Quotations by Status",
+			"chart_name": "Quotations by Status",
 			"document_type": "Quotation",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -215,7 +219,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Projects by Status",
+			"chart_name": "Projects by Status",
 			"document_type": "Project",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -225,7 +229,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Projects by Priority",
+			"chart_name": "Projects by Priority",
 			"document_type": "Project",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -235,7 +239,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Testing Requests by Stage",
+			"chart_name": "Testing Requests by Stage",
 			"document_type": "IC Testing Request",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -245,7 +249,7 @@ def ensure_dashboard_charts():
 			"timeseries": 0,
 		},
 		{
-			"chart_name": "IC Samples by Location",
+			"chart_name": "Samples by Location",
 			"document_type": "IC Sample Tracking",
 			"chart_type": "Group By",
 			"group_by_type": "Count",
@@ -263,6 +267,7 @@ def ensure_dashboard_charts():
 			if not frappe.get_meta("Lead").has_field(gbf):
 				continue
 		name = chart["chart_name"]
+		_ensure_renamed("Dashboard Chart", f"IC {name}", name)
 		try:
 			values = {
 				"document_type": chart["document_type"],
