@@ -6,25 +6,25 @@ html {
   --ic-accent: #EC6820;
   --ic-primary-soft: #e8f3f8;
   --ic-accent-soft: #fff1e8;
-  --ic-surface: #f3f8fb;
-  --ic-surface-2: #eaf3f8;
-  --ic-mist: #dceaf2;
+  --ic-surface: #e6f0f6;
+  --ic-surface-2: #dceaf2;
+  --ic-mist: #cfe0eb;
   --ic-radius: 14px;
 
-  /* Soft cool-teal light hue (overrides flat white desk) */
-  --bg-color: #f3f8fb;
-  --subtle-fg: #f7fafc;
+  /* Soft cool-teal light hue (clearly tinted, not flat white) */
+  --bg-color: #e6f0f6;
+  --subtle-fg: #eef5f9;
   --fg-color: #ffffff;
   --card-bg: #ffffff;
   --control-bg: #ffffff;
-  --surface-gray-1: #f7fafc;
-  --surface-gray-2: #f0f6fa;
-  --surface-gray-3: #e8f1f6;
-  --surface-menu-bar: #eef5f9;
+  --surface-gray-1: #eef5f9;
+  --surface-gray-2: #e4eef5;
+  --surface-gray-3: #d7e6ef;
+  --surface-menu-bar: #e0ecf3;
   --surface-modal: #ffffff;
   --surface-white: #ffffff;
-  --border-color: #d5e4ee;
-  --navbar-bg: rgba(243, 248, 251, 0.92);
+  --border-color: #c5d8e6;
+  --navbar-bg: rgba(230, 240, 246, 0.94);
 }
 
 /* Force light atmosphere on desk chrome */
@@ -49,12 +49,27 @@ body.full-width,
 }
 
 body {
+  background-color: #e6f0f6 !important;
   background-image:
-    radial-gradient(ellipse 120% 80% at 0% 0%, rgba(6, 81, 117, 0.07), transparent 55%),
-    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(236, 104, 32, 0.05), transparent 50%),
-    linear-gradient(180deg, #eaf3f8 0%, #f5f9fb 42%, #f8fafb 100%) !important;
+    radial-gradient(ellipse 120% 80% at 0% 0%, rgba(6, 81, 117, 0.12), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(236, 104, 32, 0.08), transparent 50%),
+    linear-gradient(180deg, #d9e8f1 0%, #e6f0f6 40%, #eef5f9 100%) !important;
   background-attachment: fixed !important;
   min-height: 100vh;
+}
+
+/* Frappe desk home / workspace shells */
+.layout-main,
+.layout-main-section-wrapper,
+.workspace-sidebar,
+.codex-editor,
+.editor-js,
+.page-body,
+#page-Workspaces,
+.desktop-list,
+.workspaces-container,
+[data-page-container="1"] {
+  background-color: transparent !important;
 }
 
 /* Keep cards / forms readable on the tinted canvas */
