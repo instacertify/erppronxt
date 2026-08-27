@@ -34,7 +34,12 @@ QUOTATION_HTML = """
   .ic-qr { position: absolute; right: 0; bottom: 0; text-align: center; }
   .ic-qr img { width: 72px; height: 72px; }
   .ic-sign { margin-top: 28px; }
-  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:22px; font-size:11px; }
+  .ic-footer-bar {
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
 </style>
 <div class="ic-quote">
   <div class="ic-lh">
@@ -174,7 +179,7 @@ QUOTATION_HTML = """
       <div style="font-size:8px;">Scan to verify</div>
     </div>
   </div>
-  <div class="ic-footer-bar">{{ website }}</div>
+  <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
 """
 
@@ -199,7 +204,12 @@ INVOICE_HTML = """
   td { border-bottom:1px solid #e5eef3; padding:6px; }
   .qr { text-align:right; margin-top:20px; }
   .qr img { width:72px; height:72px; }
-  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:22px; font-size:11px; }
+  .ic-footer-bar {
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
 </style>
 <div class="ic-inv">
   <div class="ic-lh">
@@ -234,7 +244,7 @@ INVOICE_HTML = """
   <div class="qr">
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Sales Invoice/' + doc.name) }}" alt="QR"/>
   </div>
-  <div class="ic-footer-bar">{{ website }}</div>
+  <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
 """
 
@@ -255,7 +265,12 @@ SAMPLE_HTML = """
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
   .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
   .qr img { width:90px; height:90px; }
-  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:7px 10px; margin-top:18px; font-size:11px; }
+  .ic-footer-bar {
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
 </style>
 <div class="ic">
   <div class="ic-lh">
@@ -277,7 +292,7 @@ SAMPLE_HTML = """
     {% if doc.qr_code %}<img src="{{ doc.qr_code }}" alt="QR"/>{% else %}
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Sample Tracking/' + doc.name) }}" alt="QR"/>{% endif %}
   </div>
-  <div class="ic-footer-bar">{{ website }}</div>
+  <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
 """
 
@@ -297,7 +312,12 @@ TESTING_HTML = """
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
   .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
-  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:7px 10px; margin-top:18px; font-size:11px; }
+  .ic-footer-bar {
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
 </style>
 <div class="ic">
   <div class="ic-lh">
@@ -317,7 +337,7 @@ TESTING_HTML = """
   <p><b>Laboratory:</b> {{ doc.laboratory or '' }} ({{ doc.laboratory_location or '' }})</p>
   <p><b>Samples:</b> {{ doc.number_of_samples }} | <b>Status:</b> {{ doc.status }}</p>
   <img style="width:72px;height:72px;" src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Testing Request/' + doc.name) }}" alt="QR"/>
-  <div class="ic-footer-bar">{{ website }}</div>
+  <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
 """
 
@@ -339,7 +359,12 @@ JOINING_HTML = """
   .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12px; text-transform:uppercase; }
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
-  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:22px; font-size:11px; font-family: Arial, Helvetica, sans-serif; }
+  .ic-footer-bar {
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
 </style>
 <div class="ic">
   <div class="ic-lh">
@@ -364,7 +389,7 @@ JOINING_HTML = """
     <div>Verification: {{ doc.verification_code or doc.name }}</div>
   </div>
   <p style="margin-top:28px;"><b>For Instacertify Labs Private Limited</b></p>
-  <div class="ic-footer-bar">{{ website }}</div>
+  <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
 """
 
@@ -421,7 +446,12 @@ TESTING_QUOTATION_HTML = """
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
   .tq-sign { margin-top:8px; font-weight:700; }
-  .tq-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:28px; font-size:11px; }
+  .tq-footer-bar {
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
   .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
   .tq-qr img { width:72px; height:72px; }
   .tq-qr .cap { font-size:8px; color:#555; }
@@ -654,7 +684,7 @@ TESTING_QUOTATION_HTML = """
   </div>
 
   <div style="clear:both;"></div>
-  <div class="tq-footer-bar">{{ website }}</div>
+  <div class="tq-footer-bar">www.instacertify.com</div>
 </div>
 """
 
@@ -709,7 +739,12 @@ CONSULTING_QUOTATION_HTML = """
   .cq-close { margin-top:28px; page-break-inside:avoid; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
   .cq-sign { margin-top:8px; font-weight:700; }
-  .cq-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:28px; font-size:11px; }
+  .cq-footer-bar {
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
   .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
   .cq-qr img { width:72px; height:72px; }
   .cq-qr .cap { font-size:8px; color:#555; }
@@ -909,7 +944,7 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sign">For Instacertify Labs Private Limited</div>
   </div>
   <div style="clear:both;"></div>
-  <div class="cq-footer-bar">{{ website }}</div>
+  <div class="cq-footer-bar">www.instacertify.com</div>
 </div>
 """
 
