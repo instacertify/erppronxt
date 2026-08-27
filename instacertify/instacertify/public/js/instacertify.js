@@ -11,6 +11,35 @@ instacertify.brand = {
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
+/** Open a new Helpdesk Ticket with CRM context defaults. */
+instacertify.raise_helpdesk_ticket = function (defaults) {
+	defaults = defaults || {};
+	frappe.new_doc("Helpdesk Ticket", defaults);
+};
+
+/** Add Raise Ticket / Raise Complaint buttons on CRM forms. */
+instacertify.add_helpdesk_buttons = function (frm, defaults) {
+	if (frm.is_new()) return;
+	frm.add_custom_button(__("Raise Complaint"), () => {
+		instacertify.raise_helpdesk_ticket(
+			Object.assign({ ticket_type: "Complaint", priority: "High" }, defaults || {})
+		);
+	}, __("Helpdesk"));
+	frm.add_custom_button(__("Raise Ticket"), () => {
+		instacertify.raise_helpdesk_ticket(
+			Object.assign({ ticket_type: "Query", priority: "Medium" }, defaults || {})
+		);
+	}, __("Helpdesk"));
+	frm.add_custom_button(__("View Tickets"), () => {
+		const filters = {};
+		if (defaults && defaults.customer) filters.customer = defaults.customer;
+		if (defaults && defaults.lead) filters.lead = defaults.lead;
+		if (defaults && defaults.project) filters.project = defaults.project;
+		frappe.set_route("List", "Helpdesk Ticket", filters);
+	}, __("Helpdesk"));
+};
+
+
 // Prefer light theme with Instacertify soft hue (never force dark)
 (function applyInstacertifyLightTheme() {
 	try {
@@ -163,6 +192,13 @@ $(document).on("page-change", function () {
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
 		if (!frm.is_new()) {
+			instacertify.add_helpdesk_buttons(frm, {
+				quotation: frm.doc.name,
+				customer: frm.doc.quotation_to === "Customer" ? frm.doc.party_name : null,
+				lead: frm.doc.quotation_to === "Lead" ? frm.doc.party_name : null,
+				channel: "Internal",
+				subject: `Quotation ${frm.doc.name}`,
+			});
 			frm.add_custom_button(__("Share with Customer"), () => {
 				frappe.call({
 					method: "instacertify.quotation.events.share_with_customer",
@@ -556,6 +592,11 @@ frappe.ui.form.on("Customer", {
 	refresh(frm) {
 		if (!frm.doc.name || frm.is_new()) return;
 		instacertify.load_customer_related(frm);
+		instacertify.add_helpdesk_buttons(frm, {
+			customer: frm.doc.name,
+			contact_person: frm.doc.customer_name,
+			channel: "Internal",
+		});
 	},
 });
 
@@ -744,6 +785,7 @@ function ic_render_customer_related(d) {
 			<div class="ic-summary-card"><div class="label">${__("Payments")}</div><div class="value">${(d.payments || []).length}</div></div>
 			<div class="ic-summary-card accent"><div class="label">${__("Outstanding")}</div><div class="value" style="font-size:1.1rem;">${ic_fmt_money(d.outstanding_amount || 0)}</div></div>
 			<div class="ic-summary-card"><div class="label">${__("Testing")}</div><div class="value">${(d.testing_requests || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Open Tickets")}</div><div class="value">${(d.open_tickets || []).length}</div></div>
 		</div>
 		<p class="ic-related-hint text-muted">${__("All quotations, projects, invoices, payments, and Instacertify records for this customer. Open a row or use Connections for filtered lists.")}</p>
 	`;
@@ -791,6 +833,12 @@ function ic_render_customer_related(d) {
 	const doc_rows = (d.documents || []).map((doc) => [
 		ic_doc_link("IC Document Request", doc.name, doc.title || doc.name),
 		ic_status_pill(doc.status),
+	]);
+	const ticket_rows = (d.tickets || []).map((t) => [
+		ic_doc_link("Helpdesk Ticket", t.name, t.subject || t.name),
+		ic_status_pill(t.status),
+		ic_esc(t.ticket_type || "—"),
+		ic_esc(t.priority || "—"),
 	]);
 	const sample_rows = (d.samples || []).map((s) => [
 		ic_doc_link("IC Sample Tracking", s.name, s.tracking_number || s.name),
@@ -877,6 +925,12 @@ function ic_render_customer_related(d) {
 				__("No document requests")
 			)}
 			${ic_related_section(
+				__("Helpdesk Tickets"),
+				ic_table([__("Ticket"), __("Status"), __("Type"), __("Priority")], ticket_rows),
+				__("No helpdesk tickets"),
+				customer ? ic_list_link("Helpdesk Ticket", customer) : ""
+			)}
+			${ic_related_section(
 				__("Samples"),
 				ic_table([__("Sample"), __("Status"), __("Description")], sample_rows),
 				__("No samples")
@@ -925,6 +979,12 @@ frappe.ui.form.on("Project", {
 		frm.add_custom_button(__("Add Project Update"), () => {
 			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
 		}, __("Instacertify"));
+		instacertify.add_helpdesk_buttons(frm, {
+			project: frm.doc.name,
+			customer: frm.doc.customer,
+			channel: "Internal",
+			subject: frm.doc.project_name ? `Project: ${frm.doc.project_name}` : "",
+		});
 	},
 });
 
@@ -1243,6 +1303,16 @@ frappe.ui.form.on("Sales Invoice", {
 			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required."),
 			"blue"
 		);
+		if (!frm.is_new()) {
+			instacertify.add_helpdesk_buttons(frm, {
+				sales_invoice: frm.doc.name,
+				customer: frm.doc.customer,
+				project: frm.doc.project,
+				channel: "Internal",
+				ticket_type: "Billing",
+				subject: `Invoice ${frm.doc.name}`,
+			});
+		}
 	},
 	customer(frm) {
 		if (!frm.doc.customer) return;
@@ -1397,6 +1467,15 @@ frappe.ui.form.on("Lead", {
 		if (!frm.doc.ic_party_name) {
 			const party = frm.doc.company_name || frm.doc.lead_name || frm.doc.first_name;
 			if (party) frm.set_value("ic_party_name", party);
+		}
+		if (!frm.is_new()) {
+			instacertify.add_helpdesk_buttons(frm, {
+				lead: frm.doc.name,
+				contact_person: frm.doc.lead_name || frm.doc.ic_party_name || frm.doc.company_name,
+				contact_email: frm.doc.email_id,
+				contact_phone: frm.doc.mobile_no || frm.doc.phone,
+				channel: "Internal",
+			});
 		}
 	},
 	ic_party_name(frm) {
@@ -1580,6 +1659,20 @@ frappe.ui.form.on("IC Sample Tracking", {
 					},
 				});
 			}, __("Location"));
+		});
+	},
+});
+
+// Opportunity — raise ticket from deal context
+frappe.ui.form.on("Opportunity", {
+	refresh(frm) {
+		if (frm.is_new()) return;
+		instacertify.add_helpdesk_buttons(frm, {
+			opportunity: frm.doc.name,
+			customer: frm.doc.opportunity_from === "Customer" ? frm.doc.party_name : null,
+			lead: frm.doc.opportunity_from === "Lead" ? frm.doc.party_name : null,
+			channel: "Internal",
+			subject: frm.doc.title || `Opportunity ${frm.doc.name}`,
 		});
 	},
 });

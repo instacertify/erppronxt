@@ -238,6 +238,17 @@ def get_dashboard_counts():
 		"quotations_accepted": count("Quotation", {"ic_workflow_status": "Accepted"}),
 		"active_projects": count("Project", {"status": ["not in", ["Completed", "Cancelled"]]}),
 		"pending_tasks": count("Task", {"status": ["in", ["Open", "Working"]]}),
+		"open_tickets": count(
+			"Helpdesk Ticket",
+			{"status": ["in", ["Open", "In Progress", "Waiting on Customer"]]},
+		),
+		"open_complaints": count(
+			"Helpdesk Ticket",
+			{
+				"status": ["in", ["Open", "In Progress", "Waiting on Customer"]],
+				"ticket_type": "Complaint",
+			},
+		),
 		"pending_documents": count(
 			"IC Document Request", {"status": ["in", ["Sent to Customer", "Partially Uploaded"]]}
 		),

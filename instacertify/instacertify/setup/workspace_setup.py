@@ -70,6 +70,20 @@ def _ensure_home_html_block():
     <div id="ic-lead-prompts" class="ic-lead-prompt-list"></div>
   </div>
 
+  <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel">
+    <div class="ic-lead-prompt-header">
+      <div>
+        <div class="ic-lead-prompt-title">Helpdesk</div>
+        <div class="ic-lead-prompt-sub">Customer complaints · queries · open tickets</div>
+      </div>
+      <div>
+        <a class="ic-view-all" href="/app/helpdesk-ticket/new" style="margin-right:12px;">Raise ticket</a>
+        <a class="ic-view-all" href="/app/helpdesk-ticket">All tickets</a>
+      </div>
+    </div>
+    <div id="ic-helpdesk-tickets" class="ic-lead-prompt-list"></div>
+  </div>
+
   <div class="ic-hr-panel">
     <div class="ic-workdesk-head">
       <div>
@@ -132,6 +146,8 @@ def _ensure_home_html_block():
         ["Active Leads", data.active_leads],
         ["Leads to Contact", data.leads_to_contact, true],
         ["Pending Tasks", data.pending_tasks, true],
+        ["Open Tickets", data.open_tickets, true],
+        ["Open Complaints", data.open_complaints, true],
         ["Quotations Sent", data.quotations_sent],
         ["Quotations Accepted", data.quotations_accepted, true],
         ["Active Projects", data.active_projects],
@@ -216,6 +232,35 @@ def _ensure_home_html_block():
             <span class="ic-lead-prompt-phone">${phone}</span>
           </div>
           <div class="ic-lead-prompt-remarks">${remarks}</div>
+        </a>`;
+      }).join("");
+    }
+  });
+
+  frappe.call({
+    method: "instacertify.helpdesk.api.get_open_ticket_summary",
+    args: { limit: 8 },
+    callback(r) {
+      const el = document.getElementById("ic-helpdesk-tickets");
+      if (!el) return;
+      const d = r.message || {};
+      const rows = d.tickets || [];
+      if (!rows.length) {
+        el.innerHTML = empty("No open tickets. Raise a complaint or query from Customer, Lead, Project, or Helpdesk.");
+        return;
+      }
+      el.innerHTML = rows.map(row => {
+        const urg = (row.priority === "Urgent" || row.priority === "High") ? "overdue" : "upcoming";
+        return `<a class="ic-lead-prompt ${urg}" href="/app/helpdesk-ticket/${encodeURIComponent(row.name)}">
+          <div class="ic-lead-prompt-top">
+            <div class="ic-lead-prompt-name">${esc(row.subject || row.name)}</div>
+            <span class="ic-lead-prompt-when ${urg}">${esc(row.priority || "")}</span>
+          </div>
+          <div class="ic-lead-prompt-meta">
+            <span class="ic-lead-prompt-connected">${esc(row.ticket_type || "")}</span>
+            <span class="ic-lead-prompt-phone">${esc(row.status || "")}</span>
+            <span>${esc(row.party || "")}</span>
+          </div>
         </a>`;
       }).join("");
     }
@@ -472,6 +517,7 @@ def _ensure_home_workspace():
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
 		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
+		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 3}},
 		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
 		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 3}},
 		{"id": "sc_asset", "type": "shortcut", "data": {"shortcut_name": "Asset", "col": 3}},
@@ -490,6 +536,7 @@ def _ensure_home_workspace():
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
 		{"label": "Document Requests", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
+		{"label": "Helpdesk", "link_to": "Helpdesk Ticket", "type": "DocType", "doc_view": "List"},
 		{"label": "Sales Invoice", "link_to": "Sales Invoice", "type": "DocType", "doc_view": "List"},
 		{"label": "Purchase Invoice", "link_to": "Purchase Invoice", "type": "DocType", "doc_view": "List"},
 		{"label": "Asset", "link_to": "Asset", "type": "DocType", "doc_view": "List"},
@@ -505,6 +552,10 @@ def _ensure_home_workspace():
 		{"label": "Consultant Referral", "link_type": "DocType", "link_to": "Consultant Referral", "type": "Link"},
 		{"label": "Lead Sources (edit)", "link_type": "DocType", "link_to": "IC Lead Source", "type": "Link"},
 		{"label": "Project Types (edit)", "link_type": "DocType", "link_to": "IC Project Type", "type": "Link"},
+		{"label": "Helpdesk", "type": "Card Break"},
+		{"label": "Helpdesk Tickets", "link_type": "DocType", "link_to": "Helpdesk Ticket", "type": "Link"},
+		{"label": "Raise Complaint / Ticket", "link_type": "DocType", "link_to": "Helpdesk Ticket", "type": "Link"},
+		{"label": "Classic Issue (ERPNext)", "link_type": "DocType", "link_to": "Issue", "type": "Link"},
 		{"label": "Customers", "type": "Card Break"},
 		{"label": "Customer", "link_type": "DocType", "link_to": "Customer", "type": "Link"},
 		{"label": "Contact", "link_type": "DocType", "link_to": "Contact", "type": "Link"},

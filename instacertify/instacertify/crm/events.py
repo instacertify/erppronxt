@@ -151,6 +151,20 @@ def get_customer_history(customer: str):
 		{"customer": customer},
 		["name", "title", "status", "modified"],
 	)
+	tickets = list_docs(
+		"Helpdesk Ticket",
+		{"customer": customer},
+		[
+			"name",
+			"subject",
+			"ticket_type",
+			"status",
+			"priority",
+			"opened_on",
+			"assigned_to",
+			"modified",
+		],
+	)
 	records = list_docs(
 		"IC Project Record",
 		{"customer": customer},
@@ -285,6 +299,10 @@ def get_customer_history(customer: str):
 		"invoices": invoices,
 		"payments": payments,
 		"documents": documents,
+		"tickets": tickets,
+		"open_tickets": [
+			t for t in tickets if t.get("status") in ("Open", "In Progress", "Waiting on Customer")
+		],
 		"records": records,
 		"project_files": project_files,
 		"customer_files": customer_files,

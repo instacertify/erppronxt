@@ -21,6 +21,7 @@ def get_dashboard_data(data):
 			existing_items.add(item)
 
 	ic_items = [
+		"Helpdesk Ticket",
 		"IC Testing Request",
 		"IC Document Request",
 		"IC Sample Tracking",
@@ -29,6 +30,8 @@ def get_dashboard_data(data):
 	missing_ic = [dt for dt in ic_items if dt not in existing_items]
 	if missing_ic:
 		data["transactions"].append({"label": _("Instacertify"), "items": missing_ic})
+
+	_ensure_group(data, _("Helpdesk"), ["Helpdesk Ticket", "Issue"], existing_items)
 
 	# Guarantee Projects / Invoices / Quotations / Payments appear even if a prior
 	# override stripped them.

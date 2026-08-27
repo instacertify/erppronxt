@@ -25,6 +25,7 @@ def execute():
 	_create_document_requests(customers, projects, users)
 	_create_employees_and_assets(users)
 	_seed_workdesk_and_hr(users, projects)
+	_seed_helpdesk_tickets(customers, projects, users)
 	frappe.db.commit()
 	return {"ok": True, "customers": len(customers), "projects": len(projects)}
 
@@ -963,3 +964,70 @@ def _seed_workdesk_and_hr(users, projects=None):
 			frappe.db.set_value("Lead", lead.name, "lead_owner", owner, update_modified=False)
 	except Exception:
 		pass
+
+
+def _seed_helpdesk_tickets(customers, projects=None, users=None):
+	"""Sample complaints and queries for Helpdesk."""
+	if not frappe.db.exists("DocType", "Helpdesk Ticket"):
+		return
+	customer_name = None
+	if customers:
+		customer_name = customers[0] if isinstance(customers[0], str) else customers[0].get("name")
+	if not customer_name:
+		customer_name = frappe.db.get_value("Customer", {}, "name")
+	project_name = None
+	if projects:
+		project_name = projects[0] if isinstance(projects[0], str) else getattr(projects[0], "name", None) or (
+			projects[0].get("name") if isinstance(projects[0], dict) else None
+		)
+	if not project_name:
+		project_name = frappe.db.get_value("Project", {"customer": customer_name}, "name") if customer_name else None
+
+	defs = [
+		{
+			"subject": "Delay in certificate dispatch",
+			"ticket_type": "Certification Delay",
+			"priority": "High",
+			"status": "Open",
+			"description": "<p>Customer reports certificate not received after project completion.</p>",
+		},
+		{
+			"subject": "Wrong GST on invoice",
+			"ticket_type": "Billing",
+			"priority": "Urgent",
+			"status": "In Progress",
+			"description": "<p>Invoice shows CGST+SGST instead of IGST for interstate supply.</p>",
+		},
+		{
+			"subject": "Sample status unclear",
+			"ticket_type": "Sample / Lab",
+			"priority": "Medium",
+			"status": "Waiting on Customer",
+			"description": "<p>Need POD copy for sample courier dispatched last week.</p>",
+		},
+		{
+			"subject": "General query on BIS timeline",
+			"ticket_type": "Query",
+			"priority": "Low",
+			"status": "Open",
+			"description": "<p>Customer asked for typical BIS certification turnaround.</p>",
+		},
+	]
+	for d in defs:
+		if frappe.db.exists("Helpdesk Ticket", {"subject": d["subject"]}):
+			continue
+		try:
+			doc = frappe.get_doc(
+				{
+					"doctype": "Helpdesk Ticket",
+					**d,
+					"customer": customer_name,
+					"project": project_name if d["ticket_type"] != "Billing" else None,
+					"channel": "Phone",
+					"raised_by": "Administrator",
+					"assigned_to": "Administrator",
+				}
+			)
+			doc.insert(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"helpdesk seed {d['subject']}")
