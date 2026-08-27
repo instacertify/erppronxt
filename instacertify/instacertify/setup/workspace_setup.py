@@ -227,7 +227,8 @@ def _ensure_home_html_block():
       return;
     }
     if (card.action === "new_expense") {
-      frappe.new_doc("IC Expense Claim");
+      // Open expense list so user can file travel / petty / office claims
+      frappe.set_route("List", "IC Expense Claim");
       return;
     }
     const route = card.route || [];
@@ -259,7 +260,7 @@ def _ensure_home_html_block():
           ? `<span class="ic-explore-count">${esc(c.count)}</span>`
           : "";
         const actionHint = c.action
-          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "New" : "Open")}</span>`
+          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
           : "";
         return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
           <div class="ic-explore-card-top">${actionHint}${count}</div>
