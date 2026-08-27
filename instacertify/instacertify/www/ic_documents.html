@@ -39,7 +39,8 @@
         <label>Remarks</label>
         <textarea id="sample_remarks" rows="3" placeholder="Any notes about the sample shipment"></textarea>
         <label>POD / dispatch proof</label>
-        <input id="pod_file" type="file"/>
+        <input id="pod_file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"/>
+        <p style="color:#5b7380;font-size:0.85rem;margin:4px 0 10px;">Allowed: PDF, images, Excel/CSV, Word</p>
         <div id="pod_link" style="margin:6px 0;"></div>
         <button class="ic-btn ic-btn-primary" id="btn-sample">Save sample dispatch</button>
       </div>
@@ -53,10 +54,17 @@
       el.className = 'ic-msg ' + (ok ? 'ok' : 'err');
       el.textContent = t;
     }
+    const ALLOWED_EXT = /\.(pdf|png|jpe?g|webp|gif|xls|xlsx|csv|docx?)$/i;
+    function assertAllowedFile(file) {
+      if (!file || !ALLOWED_EXT.test(file.name || '')) {
+        throw new Error('File type not allowed. Use PDF, image, Excel/CSV, or Word.');
+      }
+    }
     async function uploadFile(file) {
+      assertAllowedFile(file);
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('is_private', 0);
+      fd.append('is_private', 1);
       const up = await fetch('/api/method/upload_file', {
         method: 'POST', body: fd, headers: {'X-Frappe-CSRF-Token': csrf}
       });
@@ -103,7 +111,7 @@
               '<textarea data-remarks="' + item.name + '" rows="2" placeholder="Remarks for this requirement">' + (item.customer_remarks || '') + '</textarea>' +
               '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
               '<button class="ic-btn ic-btn-ghost" data-save-remarks="' + item.name + '">Save remarks</button>' +
-              '<label class="ic-btn ic-btn-accent" style="cursor:pointer;margin:0;">Upload / Replace<input type="file" data-item="' + item.name + '" style="display:none;"/></label>' +
+              '<label class="ic-btn ic-btn-accent" style="cursor:pointer;margin:0;">Upload / Replace<input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*" data-item="' + item.name + '" style="display:none;"/></label>' +
               '</div>';
             list.appendChild(div);
             div.querySelector('[data-save-remarks]').onclick = async () => {

@@ -23,8 +23,9 @@
         <p><b>Status:</b> {{ details.status }}</p>
         <p><b>Last Updated:</b> {{ details.modified }}</p>
       {% else %}
-        <p style="color:#c0392b;">This reference could not be verified.</p>
+        <p style="color:#c0392b;">{{ error or "This reference could not be verified." }}</p>
       {% endif %}
+      <p style="color:#5b7380;font-size:0.9rem;margin-top:18px;">Verification only — this page does not sign you into Instacertify ERP.</p>
     </div>
   </div>
 </body>

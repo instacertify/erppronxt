@@ -10,6 +10,36 @@ from frappe import _
 from frappe.utils import now_datetime, today
 
 
+ALLOWED_UPLOAD_EXTENSIONS = {
+	".pdf",
+	".png",
+	".jpg",
+	".jpeg",
+	".webp",
+	".gif",
+	".xls",
+	".xlsx",
+	".csv",
+	".doc",
+	".docx",
+}
+
+
+def _assert_allowed_upload(file_url: str | None):
+	if not file_url:
+		frappe.throw(_("Upload a file first"))
+	name = str(file_url).split("?")[0].rsplit("/", 1)[-1].lower()
+	ext = ""
+	if "." in name:
+		ext = "." + name.rsplit(".", 1)[-1]
+	if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+		frappe.throw(
+			_(
+				"File type not allowed. Upload PDF, image (PNG/JPG/WEBP), Excel/CSV, or Word documents."
+			)
+		)
+
+
 def _assert_manager():
 	roles = set(frappe.get_roles())
 	if roles.intersection({"System Manager", "IC Admin", "IC Senior Operations", "IC Operations Manager"}):
@@ -135,6 +165,7 @@ def upload_document_item(token: str, item_name: str, file_url: str, remarks: str
 	parent = frappe.db.get_value("IC Document Request", {"share_token": token}, "name")
 	if not parent:
 		frappe.throw(_("Invalid document link"), frappe.PermissionError)
+	_assert_allowed_upload(file_url)
 	doc = frappe.get_doc("IC Document Request", parent)
 	updated_row = None
 	for row in doc.items:
@@ -191,6 +222,7 @@ def save_sample_dispatch(
 		"sample_dispatch_remarks": sample_dispatch_remarks,
 	}
 	if pod_attachment:
+		_assert_allowed_upload(pod_attachment)
 		values["pod_attachment"] = pod_attachment
 	frappe.db.set_value("IC Document Request", parent, values, update_modified=True)
 	doc = frappe.get_doc("IC Document Request", parent)

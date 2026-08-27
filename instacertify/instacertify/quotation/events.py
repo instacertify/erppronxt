@@ -339,12 +339,16 @@ def _set_workflow_state(name: str, state: str):
 
 @frappe.whitelist(allow_guest=True)
 def customer_accept_quotation(token: str, remarks: str | None = None):
+	"""Guest portal: record acceptance + feedback only. No Desk access / doc creation as Guest."""
 	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
 	if not name:
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
 	doc = frappe.get_doc("Quotation", name)
 	if doc.ic_workflow_status in ("Accepted",):
-		return _acceptance_payload(doc)
+		return {
+			"status": "Accepted",
+			"message": _("This quotation was already approved. Thank you."),
+		}
 	if doc.ic_workflow_status in ("Rejected / Lost",):
 		frappe.throw(_("This quotation was rejected and can no longer be accepted"))
 
@@ -357,33 +361,46 @@ def customer_accept_quotation(token: str, remarks: str | None = None):
 	_advance_linked_lead(doc, "Order")
 	_notify_acceptance(doc)
 
-	result = _acceptance_payload(doc)
+	# Invoice / Project creation runs as system job — never as Guest
 	action = _resolve_post_accept_action(doc)
-	result["action"] = action
+	try:
+		frappe.enqueue(
+			"instacertify.quotation.events.process_post_accept_actions",
+			quotation=name,
+			action=action,
+			queue="short",
+			enqueue_after_commit=True,
+		)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Enqueue post-accept actions")
 
+	return {
+		"status": "Accepted",
+		"message": _(
+			"Thank you — your approval was recorded. Our team will follow up. You can download the PDF from this page."
+		),
+	}
+
+
+def process_post_accept_actions(quotation: str, action: str | None = None):
+	"""Background: create invoice/project after customer accepts (staff context)."""
+	doc = frappe.get_doc("Quotation", quotation)
+	action = action or _resolve_post_accept_action(doc)
 	if action in ("Create Invoice", "Create Invoice and Project"):
 		try:
-			inv = create_invoice_from_quotation(name, submit=0)
-			result["invoice"] = inv.get("invoice")
-			result["invoice_created"] = inv.get("created")
+			create_invoice_from_quotation(quotation, submit=0)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Auto invoice on quote accept")
-			result["invoice_error"] = _("Invoice could not be created automatically. Please create it from Desk.")
-
 	if action in ("Create Project", "Create Invoice and Project"):
 		try:
-			proj = start_project_from_quotation(name)
-			result["project"] = proj.get("project")
-			result["testing_requests"] = proj.get("testing_requests") or []
+			start_project_from_quotation(quotation)
 			_advance_linked_lead(doc, "Project / Case")
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Auto project on quote accept")
-			result["project_error"] = _("Project could not be created automatically. Please start it from Desk.")
-
-	return result
 
 
 def _acceptance_payload(doc):
+	"""Internal/staff payload — not returned to guests."""
 	return {
 		"status": "Accepted",
 		"quotation": doc.name,

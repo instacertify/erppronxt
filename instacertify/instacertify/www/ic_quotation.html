@@ -32,6 +32,7 @@
       <div id="content">Loading…</div>
       <div id="msg"></div>
       <div class="ic-portal-actions" id="actions" style="display:none;">
+        <p class="ic-portal-muted">Approve, reject, or request changes — and download the PDF. This page does not provide access to the Instacertify ERP desk.</p>
         <button class="ic-btn ic-btn-primary" id="btn-accept">Approve Quotation</button>
         <button class="ic-btn ic-btn-ghost" id="btn-reject">Reject</button>
         <button class="ic-btn ic-btn-accent" id="btn-changes">Ask for Revision</button>
@@ -169,10 +170,8 @@
         okText = 'Revision request submitted. We will send an updated quote.';
       }
       post(method, body).then((res) => {
-        let extra = '';
-        if (res && res.invoice) extra += ' Invoice: ' + res.invoice + '.';
-        if (res && res.project) extra += ' Project: ' + res.project + '.';
-        showMsg(okText + extra, true);
+        const msg = (res && res.message) ? res.message : okText;
+        showMsg(msg, true);
         pendingAction = null;
         load();
       }).catch((e) => showMsg(e.message || 'Request failed', false));

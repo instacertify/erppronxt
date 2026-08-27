@@ -196,6 +196,8 @@ INVOICE_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding:0 !important; margin:0 !important; }
   .ic-inv { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size: 11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
@@ -261,6 +263,8 @@ SAMPLE_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
@@ -309,6 +313,8 @@ TESTING_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
@@ -354,6 +360,8 @@ JOINING_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Georgia, 'Times New Roman', serif; font-size:12px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #EC6820; margin-bottom:14px; }
   .ic-lh-logo img { max-height:52px; max-width:300px; }

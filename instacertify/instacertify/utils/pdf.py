@@ -192,7 +192,7 @@ def download_quotation_pdf(name: str, print_format: str | None = None):
 	frappe.local.response.type = "pdf"
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 @frappe.concurrent_limit()
 def download_pdf(
 	doctype: str,
@@ -204,7 +204,13 @@ def download_pdf(
 	letterhead: str | None = None,
 	pdf_generator: str | None = None,
 ):
-	"""Override Frappe download_pdf for Instacertify Quotation reliability."""
+	"""Override Frappe download_pdf for Instacertify Quotation reliability.
+
+	Guests must use token-gated download_quotation_pdf — this endpoint requires login.
+	"""
+	if frappe.session.user == "Guest":
+		frappe.throw(_("Login required to download this PDF"), frappe.PermissionError)
+
 	# Non-quotation: keep core behaviour
 	if doctype != "Quotation":
 		from frappe.utils.print_format import download_pdf as core_download_pdf
