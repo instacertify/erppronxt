@@ -449,22 +449,15 @@ def download_quotation_pdf(token: str):
 	if not name:
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
 
-	print_format = "Instacertify Quotation"
-	if not frappe.db.exists("Print Format", print_format):
-		print_format = None
-
 	try:
-		html = frappe.get_print("Quotation", name, print_format=print_format, no_letterhead=0)
-		# Guest PDF: avoid remote asset fetches that break wkhtmltopdf in locked-down envs
-		html = (html or "").replace('src="/assets/', 'data-src="/assets/')
-		from frappe.utils.pdf import get_pdf
+		from instacertify.utils.pdf import get_quotation_pdf_bytes
 
-		pdf = get_pdf(html, options={"disable-javascript": "", "load-error-handling": "ignore"})
+		pdf = get_quotation_pdf_bytes(name, no_letterhead=1)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Quotation portal PDF")
 		frappe.throw(
 			_("PDF could not be generated right now. Please try again or contact Instacertify."),
-			frappe.ValidationError,
+			title=_("PDF generation failed"),
 		)
 
 	frappe.local.response.filename = f"{name}.pdf"

@@ -457,6 +457,15 @@ frappe.ui.form.on("Quotation", {
 				});
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Download PDF"), () => {
+				const fmt = frm.meta.default_print_format || "Instacertify Quotation";
+				const url = frappe.urllib.get_full_url(
+					"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
+						$.param({ name: frm.doc.name, print_format: fmt })
+				);
+				window.open(url, "_blank");
+			}, __("Actions"));
+
 			frm.add_custom_button(__("Save as Template"), () => {
 				frappe.prompt(
 					[

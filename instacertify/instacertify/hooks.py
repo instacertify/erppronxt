@@ -162,3 +162,8 @@ website_context = {
 	"favicon": "/assets/instacertify/images/favicon-32.png",
 	"splash_image": "/assets/instacertify/images/instacertify_logo.png",
 }
+
+# Reliable Quotation PDF (Chrome + inlined-asset fallback; no HostNotFound server error)
+override_whitelisted_methods = {
+	"frappe.utils.print_format.download_pdf": "instacertify.utils.pdf.download_pdf",
+}

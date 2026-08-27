@@ -960,31 +960,55 @@ def ensure_print_formats():
 		("Instacertify Joining Letter", "IC Joining Letter", JOINING_HTML),
 	]
 	for name, dt, html in formats:
-		if frappe.db.exists("Print Format", name):
-			frappe.db.set_value(
-				"Print Format",
-				name,
-				{
-					"html": html,
-					"module": "Instacertify",
-					"standard": "No",
-					"custom_format": 1,
-					"print_format_type": "Jinja",
-				},
-			)
-			continue
+		values = {
+			"html": html,
+			"module": "Instacertify",
+			"standard": "No",
+			"custom_format": 1,
+			"print_format_type": "Jinja",
+			"doc_type": dt,
+			# Chrome avoids wkhtmltopdf HostNotFound on .localhost asset URLs
+			"pdf_generator": "chrome",
+		}
 		try:
-			frappe.get_doc(
-				{
-					"doctype": "Print Format",
-					"name": name,
-					"doc_type": dt,
-					"module": "Instacertify",
-					"standard": "No",
-					"custom_format": 1,
-					"print_format_type": "Jinja",
-					"html": html,
-				}
-			).insert(ignore_permissions=True)
+			if frappe.db.exists("Print Format", name):
+				# pdf_generator field exists on Frappe 16 Print Format
+				frappe.db.set_value("Print Format", name, values, update_modified=False)
+			else:
+				frappe.get_doc({"doctype": "Print Format", "name": name, **values}).insert(
+					ignore_permissions=True
+				)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"Print Format {name}")
+
+	# Prefer Instacertify Quotation as the Quotation default print format
+	try:
+		if frappe.db.exists("Property Setter", "Quotation-main-default_print_format"):
+			frappe.db.set_value(
+				"Property Setter",
+				"Quotation-main-default_print_format",
+				"value",
+				"Instacertify Quotation",
+				update_modified=False,
+			)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Property Setter",
+					"doctype_or_field": "DocType",
+					"doc_type": "Quotation",
+					"property": "default_print_format",
+					"property_type": "Data",
+					"value": "Instacertify Quotation",
+					"name": "Quotation-main-default_print_format",
+				}
+			).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation default print format")
+
+	# Prefer Chrome system-wide when Print Settings supports it
+	try:
+		if frappe.get_meta("Print Settings").has_field("pdf_generator"):
+			frappe.db.set_single_value("Print Settings", "pdf_generator", "chrome")
+	except Exception:
+		pass
