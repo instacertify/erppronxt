@@ -5,7 +5,7 @@
  "module": "Instacertify",
  "track_changes": 1,
  "title_field": "sample_description",
- "search_fields": "tracking_number,customer,project,sample_description",
+ "search_fields": "tracking_number,customer,project,sample_description,sample_location",
  "sort_field": "modified",
  "sort_order": "DESC",
  "fields": [
@@ -25,6 +25,7 @@
    "label": "Sample Tracking Number",
    "read_only": 1,
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "description": "Auto-generated unique tracking number"
   },
   {
@@ -38,8 +39,9 @@
    "fieldtype": "Select",
    "label": "Status",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "default": "Sample Awaited",
-   "options": "Sample Awaited\nSample Received\nIn Transit to Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nSample Dispatched to Laboratory\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer\nDiscarded"
+   "options": "Sample Awaited\nSample Received\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nSample Dispatched to Laboratory\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer\nDiscarded"
   },
   {
    "doctype": "DocField",
@@ -47,8 +49,17 @@
    "fieldtype": "Select",
    "label": "Sample Location",
    "in_list_view": 1,
-   "options": "\nIn Transit to Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nDiscarded\nWith Customer",
-   "description": "Physical custody of the sample"
+   "in_standard_filter": 1,
+   "in_preview": 1,
+   "options": "\nWith Customer\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nDiscarded",
+   "description": "Physical custody: transit to office / lab, at lab, Instacertify storage, or discarded"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "location_updated_on",
+   "fieldtype": "Datetime",
+   "label": "Location Updated On",
+   "read_only": 1
   },
   {
    "doctype": "DocField",
@@ -70,14 +81,16 @@
    "options": "Customer",
    "label": "Customer",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "doctype": "DocField",
    "fieldname": "project",
    "fieldtype": "Link",
    "options": "Project",
-   "label": "Project"
+   "label": "Project",
+   "in_standard_filter": 1
   },
   {
    "doctype": "DocField",
@@ -96,7 +109,8 @@
    "fieldname": "laboratory",
    "fieldtype": "Link",
    "options": "IC Laboratory",
-   "label": "Laboratory"
+   "label": "Laboratory",
+   "in_standard_filter": 1
   },
   {
    "doctype": "DocField",
@@ -149,6 +163,67 @@
    "fieldname": "dispatch_date",
    "fieldtype": "Date",
    "label": "Dispatched to Lab Date"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_transit",
+   "fieldtype": "Section Break",
+   "label": "Transit / Courier",
+   "collapsible": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "courier_name",
+   "fieldtype": "Data",
+   "label": "Courier / Carrier"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "courier_awb",
+   "fieldtype": "Data",
+   "label": "AWB / Tracking No."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_transit",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "expected_arrival",
+   "fieldtype": "Date",
+   "label": "Expected Arrival"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_discard",
+   "fieldtype": "Section Break",
+   "label": "Discard Details",
+   "depends_on": "eval:doc.sample_location=='Discarded' || doc.status=='Discarded'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "discard_date",
+   "fieldtype": "Date",
+   "label": "Discarded On"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "discard_reason",
+   "fieldtype": "Small Text",
+   "label": "Discard Reason"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_discard",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "discarded_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Discarded By"
   },
   {
    "doctype": "DocField",

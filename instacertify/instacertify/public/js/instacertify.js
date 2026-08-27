@@ -1317,11 +1317,48 @@ frappe.ui.form.on("Project", {
 	},
 });
 
-// Sample location sync from status shortcuts
+// Sample custody — location management + list indicators
+frappe.listview_settings["IC Sample Tracking"] = {
+	add_fields: ["sample_location", "status", "tracking_number", "customer"],
+	get_indicator(doc) {
+		const loc = doc.sample_location || doc.status || "";
+		const colors = {
+			"With Customer": "blue",
+			"In Transit to Office": "orange",
+			"At Instacertify Office": "green",
+			"In Transit to Lab": "orange",
+			"At Laboratory": "purple",
+			"At Instacertify Storage": "teal",
+			Discarded: "red",
+			"Sample Awaited": "blue",
+			"Sample Received": "green",
+		};
+		return [__(loc || "Unset"), colors[loc] || "gray", "sample_location,=," + (doc.sample_location || "")];
+	},
+	onload(listview) {
+		const locs = [
+			"In Transit to Office",
+			"At Instacertify Office",
+			"In Transit to Lab",
+			"At Laboratory",
+			"At Instacertify Storage",
+			"Discarded",
+		];
+		locs.forEach((loc) => {
+			listview.page.add_inner_button(__(loc), () => {
+				frappe.set_route("List", "IC Sample Tracking", { sample_location: loc });
+			}, __("Location"));
+		});
+	},
+};
+
 frappe.ui.form.on("IC Sample Tracking", {
 	status(frm) {
 		const map = {
+			"Sample Awaited": "With Customer",
+			"Sample Received": "At Instacertify Office",
 			"In Transit to Office": "In Transit to Office",
+			"At Instacertify Office": "At Instacertify Office",
 			"In Transit to Lab": "In Transit to Lab",
 			"At Laboratory": "At Laboratory",
 			"Sample Dispatched to Laboratory": "In Transit to Lab",
@@ -1332,19 +1369,68 @@ frappe.ui.form.on("IC Sample Tracking", {
 			frm.set_value("sample_location", map[frm.doc.status]);
 		}
 	},
+	sample_location(frm) {
+		const map = {
+			"With Customer": "Sample Awaited",
+			"In Transit to Office": "In Transit to Office",
+			"At Instacertify Office": "Sample Received",
+			"In Transit to Lab": "In Transit to Lab",
+			"At Laboratory": "At Laboratory",
+			"At Instacertify Storage": "At Instacertify Storage",
+			Discarded: "Discarded",
+		};
+		if (map[frm.doc.sample_location] && frm.doc.status !== map[frm.doc.sample_location]) {
+			frm.set_value("status", map[frm.doc.sample_location]);
+		}
+	},
 	refresh(frm) {
 		const locs = [
-			["In Transit to Office", "In Transit to Office"],
-			["In Transit to Lab", "In Transit to Lab"],
-			["At Laboratory", "At Laboratory"],
-			["At Instacertify Storage", "At Instacertify Storage"],
-			["Discarded", "Discarded"],
+			"In Transit to Office",
+			"At Instacertify Office",
+			"In Transit to Lab",
+			"At Laboratory",
+			"At Instacertify Storage",
+			"Discarded",
 		];
-		locs.forEach(([label, status]) => {
+		locs.forEach((label) => {
 			frm.add_custom_button(__(label), () => {
-				frm.set_value("status", status);
-				frm.set_value("sample_location", label);
-				frm.save();
+				if (label === "Discarded") {
+					frappe.prompt(
+						[
+							{
+								fieldname: "discard_reason",
+								fieldtype: "Small Text",
+								label: __("Discard Reason"),
+								reqd: 1,
+							},
+						],
+						(values) => {
+							frappe.call({
+								method: "instacertify.testing.events.set_sample_location",
+								args: {
+									sample: frm.doc.name,
+									location: label,
+									discard_reason: values.discard_reason,
+								},
+								freeze: true,
+								callback() {
+									frm.reload_doc();
+								},
+							});
+						},
+						__("Discard Sample"),
+						__("Discard")
+					);
+					return;
+				}
+				frappe.call({
+					method: "instacertify.testing.events.set_sample_location",
+					args: { sample: frm.doc.name, location: label },
+					freeze: true,
+					callback() {
+						frm.reload_doc();
+					},
+				});
 			}, __("Location"));
 		});
 	},

@@ -17,21 +17,15 @@ def before_insert_sample(doc, method=None):
 
 
 def validate_sample(doc, method=None):
+	"""Hook backup — DocType.validate also syncs custody."""
+	from instacertify.instacertify.doctype.ic_sample_tracking.ic_sample_tracking import (
+		STATUS_TO_LOCATION,
+	)
+
 	if doc.status == "Sample Received" and not doc.sample_received_date:
 		doc.sample_received_date = frappe.utils.today()
-	# Keep location aligned with custody statuses
-	loc_map = {
-		"In Transit to Office": "In Transit to Office",
-		"In Transit to Lab": "In Transit to Lab",
-		"At Laboratory": "At Laboratory",
-		"Sample Dispatched to Laboratory": "In Transit to Lab",
-		"At Instacertify Storage": "At Instacertify Storage",
-		"Discarded": "Discarded",
-	}
-	if doc.status in loc_map and not doc.get("sample_location"):
-		doc.sample_location = loc_map[doc.status]
-	elif doc.status in loc_map:
-		doc.sample_location = loc_map[doc.status]
+	if doc.status in STATUS_TO_LOCATION:
+		doc.sample_location = STATUS_TO_LOCATION[doc.status]
 	if not doc.qr_code and doc.tracking_number:
 		_attach_sample_qr(doc)
 
@@ -62,11 +56,80 @@ def on_update_testing_request(doc, method=None):
 
 
 def _sync_sample_status(doc):
-	samples = frappe.get_all(
-		"IC Sample Tracking", filters={"testing_request": doc.name}, pluck="name"
+	"""Mirror testing-request workflow onto linked samples without wiping custody."""
+	from instacertify.instacertify.doctype.ic_sample_tracking.ic_sample_tracking import (
+		STATUS_TO_LOCATION,
 	)
-	for name in samples:
-		frappe.db.set_value("IC Sample Tracking", name, "status", doc.status)
+
+	workflow_statuses = {
+		"Testing in Progress",
+		"Report Available",
+		"Report Uploaded",
+		"Report Shared with Customer",
+		"Sample Dispatched to Laboratory",
+		"Sample Received",
+		"Sample Awaited",
+	}
+	if doc.status not in workflow_statuses and doc.status not in STATUS_TO_LOCATION:
+		return
+
+	samples = frappe.get_all(
+		"IC Sample Tracking",
+		filters={"testing_request": doc.name},
+		fields=["name", "status", "sample_location"],
+	)
+	for row in samples:
+		if row.status == "Discarded" or row.sample_location == "Discarded":
+			continue
+		values = {"status": doc.status}
+		if doc.status in STATUS_TO_LOCATION:
+			values["sample_location"] = STATUS_TO_LOCATION[doc.status]
+		frappe.db.set_value("IC Sample Tracking", row.name, values)
+
+
+@frappe.whitelist()
+def set_sample_location(sample: str, location: str, discard_reason: str | None = None):
+	"""Set physical custody location on a sample record."""
+	from instacertify.instacertify.doctype.ic_sample_tracking.ic_sample_tracking import (
+		LOCATION_TO_STATUS,
+		SAMPLE_LOCATIONS,
+	)
+
+	if location not in SAMPLE_LOCATIONS:
+		frappe.throw(_("Invalid sample location: {0}").format(location))
+	doc = frappe.get_doc("IC Sample Tracking", sample)
+	doc.sample_location = location
+	doc.status = LOCATION_TO_STATUS.get(location, doc.status)
+	if location == "Discarded" and discard_reason:
+		doc.discard_reason = discard_reason
+	doc.save(ignore_permissions=True)
+	return doc.as_dict()
+
+
+@frappe.whitelist()
+def get_sample_custody_summary():
+	"""Counts of samples by physical location for management views."""
+	from instacertify.instacertify.doctype.ic_sample_tracking.ic_sample_tracking import (
+		SAMPLE_LOCATIONS,
+	)
+
+	rows = frappe.db.sql(
+		"""
+		select ifnull(sample_location, '') as sample_location, count(*) as count
+		from `tabIC Sample Tracking`
+		group by ifnull(sample_location, '')
+		""",
+		as_dict=True,
+	)
+	counts = {loc: 0 for loc in SAMPLE_LOCATIONS}
+	counts["Unset"] = 0
+	for r in rows:
+		loc = r.sample_location or "Unset"
+		if loc in counts:
+			counts[loc] = int(r.count or 0)
+		else:
+			counts["Unset"] = counts.get("Unset", 0) + int(r.count or 0)
+	return counts
 
 
 def _notify_status_change(doc):
@@ -109,6 +172,7 @@ def share_report_with_customer(testing_request: str):
 def mark_sample_received(sample: str, quantity=None, condition=None, description=None):
 	doc = frappe.get_doc("IC Sample Tracking", sample)
 	doc.status = "Sample Received"
+	doc.sample_location = "At Instacertify Office"
 	doc.sample_received_date = frappe.utils.today()
 	doc.received_by = frappe.session.user
 	if quantity:
@@ -120,14 +184,13 @@ def mark_sample_received(sample: str, quantity=None, condition=None, description
 	doc.save(ignore_permissions=True)
 	if not doc.qr_code:
 		_attach_sample_qr(doc)
-	# notify
 	for user in set(filter(None, [doc.owner, "Administrator"])):
 		try:
 			frappe.get_doc(
 				{
 					"doctype": "Notification Log",
 					"subject": f"Sample Received: {doc.tracking_number}",
-					"email_content": f"Sample {doc.tracking_number} received",
+					"email_content": f"Sample {doc.tracking_number} received at Instacertify office",
 					"document_type": "IC Sample Tracking",
 					"document_name": doc.name,
 					"for_user": user,
