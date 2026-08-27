@@ -6,13 +6,23 @@ from __future__ import annotations
 import frappe
 
 QUOTATION_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
-  .ic-quote { font-family: 'Segoe UI', Tahoma, sans-serif; color: #1a1a1a; font-size: 11px; }
-  .ic-header { background: linear-gradient(135deg, #065175 0%, #0a7aa8 100%); color: #fff; padding: 18px 22px; border-radius: 8px 8px 0 0; }
-  .ic-header h1 { margin: 0; font-size: 22px; letter-spacing: 0.5px; }
-  .ic-header .tagline { opacity: 0.9; font-size: 11px; margin-top: 4px; }
+  .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: #1a1a1a; font-size: 11px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh-logo img { max-height:58px; max-width:320px; }
+  .ic-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
   .ic-accent { color: #EC6820; }
-  .ic-meta { display: flex; justify-content: space-between; padding: 14px 8px; border-bottom: 2px solid #065175; margin-bottom: 12px; }
+  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #065175; margin-bottom: 12px; }
   .ic-box { border: 1px solid #d9e6ee; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
   .ic-box h3 { margin: 0 0 8px 0; color: #065175; font-size: 13px; border-bottom: 1px solid #ecf3f7; padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
@@ -24,12 +34,22 @@ QUOTATION_HTML = """
   .ic-qr { position: absolute; right: 0; bottom: 0; text-align: center; }
   .ic-qr img { width: 72px; height: 72px; }
   .ic-sign { margin-top: 28px; }
+  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:22px; font-size:11px; }
 </style>
 <div class="ic-quote">
-  <div class="ic-header">
-    <h1>INSTACERTIFY</h1>
-    <div class="tagline">Global Certification · Compliance · Consulting · Testing</div>
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div class="ic-lh-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }}</div>
+      <div>✉ {{ email }}</div>
+      <div>{{ website }}</div>
+      <div><b>CIN :</b> {{ cin }}</div>
+      <div><b>GSTIN :</b> {{ gstin }}</div>
+    </div>
   </div>
+  <div style="text-align:center;font-size:18px;font-weight:700;margin:8px 0 12px;">Quotation</div>
   <div class="ic-meta">
     <div>
       <div><b>Quotation:</b> {{ doc.name }}</div>
@@ -140,11 +160,11 @@ QUOTATION_HTML = """
 
   <div class="ic-sign">
     <div>Authorized Signatory</div>
-    <div style="margin-top:36px;"><b>Instacertify</b></div>
+    <div style="margin-top:36px;"><b>For Instacertify Labs Private Limited</b></div>
   </div>
 
   <div class="ic-footer">
-    <div style="max-width:70%; color:#667;">This document was generated from ERPNext · Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
+    <div style="max-width:70%; color:#667;">Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
     <div class="ic-qr">
       {% if doc.ic_qr_code %}
         <img src="{{ doc.ic_qr_code }}" alt="QR"/>
@@ -154,23 +174,47 @@ QUOTATION_HTML = """
       <div style="font-size:8px;">Scan to verify</div>
     </div>
   </div>
+  <div class="ic-footer-bar">{{ website }}</div>
 </div>
 """
 
 INVOICE_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
-  .ic-inv { font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 11px; }
-  .ic-header { background: #065175; color:#fff; padding:16px 20px; border-radius:8px; }
-  .ic-header h1 { margin:0; }
-  .accent { color:#EC6820; }
+  .ic-inv { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size: 11px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh-logo img { max-height:58px; max-width:320px; }
+  .ic-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
   table { width:100%; border-collapse: collapse; margin-top:12px; }
   th { background:#065175; color:#fff; padding:6px; text-align:left; }
   td { border-bottom:1px solid #e5eef3; padding:6px; }
   .qr { text-align:right; margin-top:20px; }
   .qr img { width:72px; height:72px; }
+  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:22px; font-size:11px; }
 </style>
 <div class="ic-inv">
-  <div class="ic-header"><h1>INSTACERTIFY</h1><div>Tax Invoice</div></div>
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div class="ic-lh-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }}</div>
+      <div>✉ {{ email }}</div>
+      <div>{{ website }}</div>
+      <div><b>CIN :</b> {{ cin }}</div>
+      <div><b>GSTIN :</b> {{ gstin }}</div>
+    </div>
+  </div>
+  <div style="text-align:center;font-size:18px;font-weight:700;margin:8px 0 12px;">Tax Invoice</div>
   <p><b>Invoice:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Date:</b> {{ frappe.utils.formatdate(doc.posting_date) }}</p>
   <p><b>Customer:</b> {{ doc.customer_name }}</p>
   <table>
@@ -190,17 +234,40 @@ INVOICE_HTML = """
   <div class="qr">
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Sales Invoice/' + doc.name) }}" alt="QR"/>
   </div>
+  <div class="ic-footer-bar">{{ website }}</div>
 </div>
 """
 
 SAMPLE_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
-  .ic { font-family: 'Segoe UI', Tahoma, sans-serif; }
-  .head { background:#065175; color:#fff; padding:12px 16px; border-radius:8px; }
+  .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh-logo img { max-height:48px; max-width:280px; }
+  .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
   .qr img { width:90px; height:90px; }
+  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:7px 10px; margin-top:18px; font-size:11px; }
 </style>
 <div class="ic">
-  <div class="head"><h2 style="margin:0;">Sample Tracking Label</h2></div>
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div class="ic-lh-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }} · ✉ {{ email }}</div>
+      <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
+    </div>
+  </div>
+  <h2 style="margin:0 0 10px; color:#065175;">Sample Tracking Label</h2>
   <p><b>Tracking No:</b> {{ doc.tracking_number }}</p>
   <p><b>Customer:</b> {{ doc.customer }}</p>
   <p><b>Description:</b> {{ doc.sample_description }}</p>
@@ -210,16 +277,39 @@ SAMPLE_HTML = """
     {% if doc.qr_code %}<img src="{{ doc.qr_code }}" alt="QR"/>{% else %}
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Sample Tracking/' + doc.name) }}" alt="QR"/>{% endif %}
   </div>
+  <div class="ic-footer-bar">{{ website }}</div>
 </div>
 """
 
 TESTING_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
-  .ic { font-family: 'Segoe UI', Tahoma, sans-serif; font-size:11px; }
-  .head { background:#065175; color:#fff; padding:12px 16px; border-radius:8px; }
+  .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh-logo img { max-height:48px; max-width:280px; }
+  .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
+  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:7px 10px; margin-top:18px; font-size:11px; }
 </style>
 <div class="ic">
-  <div class="head"><h2 style="margin:0;">Testing Request</h2></div>
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div class="ic-lh-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }} · ✉ {{ email }}</div>
+      <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
+    </div>
+  </div>
+  <h2 style="margin:0 0 10px; color:#065175;">Testing Request</h2>
   <p><b>{{ doc.name }}</b> — {{ doc.title }}</p>
   <p><b>Customer:</b> {{ doc.customer }} | <b>Project:</b> {{ doc.project or '' }}</p>
   <p><b>Product:</b> {{ doc.product }} | <b>Test:</b> {{ doc.test_name }}</p>
@@ -227,18 +317,44 @@ TESTING_HTML = """
   <p><b>Laboratory:</b> {{ doc.laboratory or '' }} ({{ doc.laboratory_location or '' }})</p>
   <p><b>Samples:</b> {{ doc.number_of_samples }} | <b>Status:</b> {{ doc.status }}</p>
   <img style="width:72px;height:72px;" src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Testing Request/' + doc.name) }}" alt="QR"/>
+  <div class="ic-footer-bar">{{ website }}</div>
 </div>
 """
 
 JOINING_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
-  .ic { font-family: Georgia, 'Times New Roman', serif; }
-  .head { color:#065175; border-bottom:3px solid #EC6820; padding-bottom:8px; }
+  .ic { font-family: Georgia, 'Times New Roman', serif; font-size:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #EC6820; margin-bottom:14px; }
+  .ic-lh-logo img { max-height:52px; max-width:300px; }
+  .ic-lh-co { text-align:right; font-family: Arial, Helvetica, sans-serif; color:#222; font-size:10px; line-height:1.4; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12px; text-transform:uppercase; }
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
+  .ic-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:22px; font-size:11px; font-family: Arial, Helvetica, sans-serif; }
 </style>
 <div class="ic">
-  <div class="head"><h1>INSTACERTIFY</h1><h3>Joining Letter</h3></div>
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div class="ic-lh-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }}</div>
+      <div>✉ {{ email }}</div>
+      <div>{{ website }}</div>
+      <div><b>CIN :</b> {{ cin }}</div>
+      <div><b>GSTIN :</b> {{ gstin }}</div>
+    </div>
+  </div>
+  <h3 style="color:#065175;">Joining Letter</h3>
   <p>Date: {{ frappe.utils.formatdate(doc.joining_date) }}</p>
   <p>Dear <b>{{ doc.employee_name }}</b>,</p>
   {{ doc.letter_content or '<p>We are pleased to welcome you to Instacertify.</p>' }}
@@ -247,6 +363,8 @@ JOINING_HTML = """
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Joining Letter/' + doc.name) }}" alt="QR"/>
     <div>Verification: {{ doc.verification_code or doc.name }}</div>
   </div>
+  <p style="margin-top:28px;"><b>For Instacertify Labs Private Limited</b></p>
+  <div class="ic-footer-bar">{{ website }}</div>
 </div>
 """
 
@@ -259,12 +377,13 @@ TESTING_QUOTATION_HTML = """
 {%- endif -%}
 {%- endmacro -%}
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'INSTACERTIFY LABS PVT LTD' -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
 {%- set phone = s.phone or '+91 9999118039' -%}
 {%- set email = s.email or 'contact@instacertify.com' -%}
 {%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'UP74999UP2022PTC170291' -%}
-{%- set address = (s.address_line or 'PK 1 Sector 63 A Noida\\nUttar Pradesh, India - 201301').replace('\\n', '<br>') -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
@@ -273,10 +392,10 @@ TESTING_QUOTATION_HTML = """
   @page { size: A4; margin: 14mm 12mm 16mm 12mm; }
   .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #222; margin-bottom:12px; }
-  .tq-logo img { max-height:58px; max-width:280px; }
+  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .tq-logo img { max-height:58px; max-width:320px; }
   .tq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .tq-co .name { color:#EC6820; font-weight:700; font-size:13px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .tq-co .name { color:#EC6820; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
   .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
   .tq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 16px; color:#111; }
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
@@ -319,7 +438,8 @@ TESTING_QUOTATION_HTML = """
       <div>☎ {{ phone }}</div>
       <div>✉ {{ email }}</div>
       <div>{{ website }}</div>
-      <div><b>CIN : {{ cin }}</b></div>
+      <div><b>CIN :</b> {{ cin }}</div>
+      <div><b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
 
@@ -548,12 +668,13 @@ CONSULTING_QUOTATION_HTML = """
 {%- endif -%}
 {%- endmacro -%}
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'INSTACERTIFY LABS PVT LTD' -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
 {%- set phone = s.phone or '+91 9999118039' -%}
 {%- set email = s.email or 'contact@instacertify.com' -%}
 {%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'UP74999UP2022PTC170291' -%}
-{%- set address = (s.address_line or 'PK 1 Sector 63 A Noida\\nUttar Pradesh, India - 201301').replace('\\n', '<br>') -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
@@ -564,9 +685,9 @@ CONSULTING_QUOTATION_HTML = """
   .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
   .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
-  .cq-logo img { max-height:58px; max-width:280px; }
+  .cq-logo img { max-height:58px; max-width:320px; }
   .cq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .cq-co .name { color:#EC6820; font-weight:700; font-size:13px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .cq-co .name { color:#EC6820; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
   .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
   .cq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 14px; color:#111; }
   .cq-service { text-align:center; font-size:14px; font-weight:700; margin:0 0 14px; }
@@ -603,7 +724,8 @@ CONSULTING_QUOTATION_HTML = """
       <div>☎ {{ phone }}</div>
       <div>✉ {{ email }}</div>
       <div>{{ website }}</div>
-      <div><b>CIN : {{ cin }}</b></div>
+      <div><b>CIN :</b> {{ cin }}</div>
+      <div><b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
 

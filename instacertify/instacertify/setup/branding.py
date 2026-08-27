@@ -63,6 +63,10 @@ def _ic_settings_logos():
 		doc.logo = LOGO_FULL
 		doc.header_image = LETTERHEAD
 		doc.stamp_image = doc.stamp_image or STAMP
+		doc.legal_name = "INSTACERTIFY LABS PRIVATE LIMITED"
+		doc.address_line = "PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301"
+		doc.cin = "U74999UP2022PTC170291"
+		doc.gstin = "09AAGCI8396C1Z7"
 		doc.save(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "IC Settings logos")

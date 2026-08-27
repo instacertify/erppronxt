@@ -21,7 +21,7 @@
    "fieldname": "legal_name",
    "fieldtype": "Data",
    "label": "Legal Name",
-   "default": "INSTACERTIFY LABS PVT LTD"
+   "default": "INSTACERTIFY LABS PRIVATE LIMITED"
   },
   {
    "doctype": "DocField",
@@ -71,7 +71,7 @@
    "fieldname": "address_line",
    "fieldtype": "Small Text",
    "label": "Address",
-   "default": "PK 1 Sector 63 A Noida\nUttar Pradesh, India - 201301"
+   "default": "PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301"
   },
   {
    "doctype": "DocField",
@@ -104,7 +104,7 @@
    "fieldname": "cin",
    "fieldtype": "Data",
    "label": "CIN",
-   "default": "UP74999UP2022PTC170291"
+   "default": "U74999UP2022PTC170291"
   },
   {
    "doctype": "DocField",
