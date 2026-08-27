@@ -1107,9 +1107,10 @@ instacertify.load_customer_related = function (frm) {
 };
 
 instacertify.render_lead_reminder_banner = function (frm) {
-	const $page = $(frm.$wrapper || frm.wrapper);
-	$page.find(".ic-lead-form-reminder").remove();
-	if (!frm.doc || frm.is_new()) return;
+	if (!frm || !frm.doc || frm.is_new()) {
+		if (frm && frm.set_intro) frm.set_intro("");
+		return;
+	}
 
 	const due = frm.doc.ic_next_contact_date;
 	const today = frappe.datetime.get_today();
@@ -1118,7 +1119,7 @@ instacertify.render_lead_reminder_banner = function (frm) {
 	if (due) {
 		if (due < today) {
 			urgency = "overdue";
-			when = __("Overdue · was {0}", [frappe.datetime.str_to_user(due)]);
+			when = __("Overdue — was {0}", [frappe.datetime.str_to_user(due)]);
 		} else if (due === today) {
 			urgency = "today";
 			when = __("Call today");
@@ -1134,7 +1135,7 @@ instacertify.render_lead_reminder_banner = function (frm) {
 	const remarks = (frm.doc.ic_call_remarks || "").trim() || __("No customer remarks yet — capture what they said after the call.");
 	const connected = frm.doc.ic_lead_connected ? __("Connected") : __("Not connected yet");
 
-	const html = `
+	const intro = `
 		<div class="ic-lead-form-reminder ${urgency}">
 			<div class="ic-lead-form-reminder-title">${__("Lead reminder")} · ${frappe.utils.escape_html(when)}</div>
 			<div class="ic-lead-form-reminder-grid">
@@ -1147,19 +1148,14 @@ instacertify.render_lead_reminder_banner = function (frm) {
 		</div>
 	`;
 
-	const $anchor = $page.find(".form-layout").first();
-	if ($anchor.length) {
-		$anchor.prepend(html);
-	} else {
-		$page.find(".layout-main-section, .page-body").first().prepend(html);
+	try {
+		frm.set_intro(intro, urgency === "overdue" ? "red" : urgency === "today" ? "orange" : "blue");
+	} catch (e) {
+		console.warn("ic lead intro", e);
 	}
 
-	if (frm.dashboard && due && (due <= today)) {
-		frm.dashboard.set_headline_alert(
-			__("Call {0} ({1}) · {2}", [person, phone, remarks]),
-			urgency === "overdue" ? "red" : "orange"
-		);
-	}
+	const $page = $(frm.$wrapper || frm.wrapper);
+	$page.find(".ic-lead-form-reminder").not(".form-intro .ic-lead-form-reminder").remove();
 };
 
 instacertify.load_lead_related = function (frm) {
