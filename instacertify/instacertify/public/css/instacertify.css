@@ -1,41 +1,42 @@
-/* Instacertify branding — two-color desk theme (teal + orange) */
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+/* Instacertify — Apple-clean CRM layout + Poppins + teal/orange */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
 :root,
 [data-theme="light"],
 html {
-  /* Brand pair — keep these as the only hero colors */
   --ic-primary: #065175;
   --ic-accent: #EC6820;
-  --ic-primary-soft: #e3f2f8;
-  --ic-accent-soft: #ffefe4;
+  --ic-primary-soft: #e8f4f9;
+  --ic-accent-soft: #fff3eb;
   --ic-primary-deep: #043a52;
   --ic-accent-deep: #c44710;
-  --ic-surface: #e6f0f6;
-  --ic-surface-2: #dceaf2;
-  --ic-mist: #cfe0eb;
-  --ic-radius: 14px;
-  --ic-font: "Poppins", "Segoe UI", sans-serif;
+  --ic-surface: #eef4f8;
+  --ic-surface-2: #e4eef5;
+  --ic-mist: #d5e4ee;
+  --ic-radius: 16px;
+  --ic-radius-sm: 10px;
+  --ic-shadow: 0 1px 2px rgba(6, 81, 117, 0.04), 0 8px 24px rgba(6, 81, 117, 0.06);
+  --ic-shadow-hover: 0 4px 12px rgba(6, 81, 117, 0.1), 0 16px 40px rgba(6, 81, 117, 0.08);
+  --ic-font: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ic-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 
-  /* Soft cool-teal light hue (clearly tinted, not flat white) */
-  --bg-color: #e6f0f6;
-  --subtle-fg: #eef5f9;
+  --bg-color: #eef4f8;
+  --subtle-fg: #f5f9fc;
   --fg-color: #ffffff;
   --card-bg: #ffffff;
   --control-bg: #ffffff;
-  --surface-gray-1: #eef5f9;
-  --surface-gray-2: #e4eef5;
-  --surface-gray-3: #d7e6ef;
-  --surface-menu-bar: #e0ecf3;
+  --surface-gray-1: #f5f9fc;
+  --surface-gray-2: #eaf2f7;
+  --surface-gray-3: #dce8f0;
+  --surface-menu-bar: #e8f0f6;
   --surface-modal: #ffffff;
   --surface-white: #ffffff;
-  --border-color: #c5d8e6;
-  --navbar-bg: rgba(230, 240, 246, 0.96);
-  --text-color: #1a3340;
+  --border-color: #d0e0eb;
+  --navbar-bg: rgba(245, 249, 252, 0.82);
+  --text-color: #1c2f3a;
   --heading-color: #065175;
-  --font-stack: "Poppins", "Segoe UI", sans-serif;
+  --font-stack: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  /* Map ERPNext / Frappe tokens onto the two brand colors */
   --primary: #065175;
   --primary-color: #065175;
   --btn-primary: #065175;
@@ -49,6 +50,9 @@ html {
   --blue-600: #043a52;
   --orange-500: #EC6820;
   --orange-600: #c44710;
+  --border-radius: 12px;
+  --border-radius-md: 14px;
+  --border-radius-lg: 18px;
 }
 
 html,
@@ -65,43 +69,81 @@ select,
 .awesomplete,
 .navbar,
 .sidebar,
-.workspace-sidebar {
+.workspace-sidebar,
+.for-login,
+.web-page,
+.webpage-container,
+.ic-portal-body,
+.page-card,
+.layout-main {
   font-family: var(--ic-font) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
 }
 
-h1, h2, h3, h4, h5, .page-title .title-text, .ic-crm-tracker-title, .ic-greeting h2 {
+h1, h2, h3, h4, h5,
+.page-title .title-text,
+.ic-crm-tracker-title,
+.ic-greeting h2,
+.widget-title,
+.modal-title {
   font-family: var(--ic-font) !important;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.028em;
   font-weight: 600;
   color: var(--ic-primary);
 }
 
-/* Subtle premium selection / focus — teal ring, orange caret accents */
+/* Subtle premium selection / focus */
+::selection {
+  background: rgba(6, 81, 117, 0.18);
+  color: var(--ic-primary-deep);
+}
+
 .form-control:focus,
-input:focus,
+input.form-control:focus,
+textarea.form-control:focus,
+select.form-control:focus,
+.input-with-feedback:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus,
-select:focus,
+select:focus {
+  border-color: rgba(6, 81, 117, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(6, 81, 117, 0.12) !important;
+  outline: none !important;
+  transition: border-color 0.2s var(--ic-ease), box-shadow 0.2s var(--ic-ease);
+}
+
 .awesomplete > ul > li[aria-selected="true"],
 .awesomplete > ul > li:hover,
+.dropdown-item.active,
+.dropdown-item:active,
+.dropdown-menu .dropdown-item:hover {
+  background: linear-gradient(90deg, var(--ic-primary-soft), #fff) !important;
+  color: var(--ic-primary) !important;
+  box-shadow: inset 3px 0 0 var(--ic-accent);
+}
+
 .list-row:hover,
 .list-row.list-row-highlight,
-.grid-row:hover .data-row {
-  border-color: var(--ic-primary) !important;
-  box-shadow: 0 0 0 2px rgba(6, 81, 117, 0.16) !important;
+.list-row-container .list-row:hover {
+  background: rgba(6, 81, 117, 0.04) !important;
+  box-shadow: inset 3px 0 0 rgba(236, 104, 32, 0.55);
 }
 
-.awesomplete > ul > li[aria-selected="true"] {
+.list-row.list-row-highlight {
   background: var(--ic-primary-soft) !important;
-  color: var(--ic-primary) !important;
 }
 
+.grid-row:hover .data-row,
 .grid-row > .data-row.highlight,
 .grid-body .data-row:hover {
-  background: linear-gradient(90deg, var(--ic-primary-soft), #fff) !important;
+  background: linear-gradient(90deg, rgba(6, 81, 117, 0.06), #fff) !important;
 }
 
 .checkbox input:checked,
-input[type="checkbox"]:checked {
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
   accent-color: var(--ic-accent);
 }
 
@@ -109,6 +151,7 @@ a,
 .btn-link,
 .text-primary {
   color: var(--ic-primary) !important;
+  transition: color 0.15s var(--ic-ease);
 }
 a:hover,
 .btn-link:hover {
@@ -137,11 +180,11 @@ body.full-width,
 }
 
 body {
-  background-color: #e6f0f6 !important;
+  background-color: #eef4f8 !important;
   background-image:
-    radial-gradient(ellipse 120% 80% at 0% 0%, rgba(6, 81, 117, 0.16), transparent 55%),
-    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(236, 104, 32, 0.14), transparent 50%),
-    linear-gradient(180deg, #d4e6f1 0%, #e6f0f6 42%, #eef5f9 100%) !important;
+    radial-gradient(ellipse 110% 75% at 0% 0%, rgba(6, 81, 117, 0.1), transparent 55%),
+    radial-gradient(ellipse 85% 65% at 100% 0%, rgba(236, 104, 32, 0.08), transparent 50%),
+    linear-gradient(180deg, #e4eef5 0%, #eef4f8 45%, #f5f9fc 100%) !important;
   background-attachment: fixed !important;
   min-height: 100vh;
 }
@@ -908,4 +951,127 @@ body.for-login,
   color: #5b7382;
   font-size: 0.9rem;
   padding: 8px 2px;
+}
+
+
+/* ——— Apple-inspired premium CRM chrome ——— */
+.navbar {
+  background: rgba(245, 249, 252, 0.78) !important;
+  backdrop-filter: saturate(180%) blur(16px) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(16px) !important;
+  border-bottom: 1px solid rgba(6, 81, 117, 0.1) !important;
+  box-shadow: 0 1px 0 rgba(236, 104, 32, 0.35), 0 8px 24px rgba(6, 81, 117, 0.04) !important;
+}
+
+.frappe-card,
+.widget,
+.widget.number-widget-box,
+.widget.dashboard-widget-box,
+.modal-content,
+.ic-related-section,
+.ic-project-card,
+.ic-summary-card,
+.ic-crm-chart-card,
+.ic-lead-prompt-panel,
+.ic-portal-card {
+  border-radius: var(--ic-radius) !important;
+  border: 1px solid rgba(6, 81, 117, 0.08) !important;
+  box-shadow: var(--ic-shadow) !important;
+  transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease);
+}
+
+.ic-summary-card:hover,
+.ic-project-card:hover,
+.widget.number-widget-box:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ic-shadow-hover) !important;
+}
+
+.btn,
+.btn-primary,
+.btn-default,
+.btn-secondary {
+  border-radius: 980px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em;
+  padding: 0.45rem 1.05rem !important;
+  transition: background 0.18s var(--ic-ease), color 0.18s var(--ic-ease),
+    border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease), transform 0.12s var(--ic-ease);
+}
+.btn-primary:active,
+.btn:active {
+  transform: scale(0.98);
+}
+
+.form-control,
+.input-with-feedback,
+textarea.form-control {
+  border-radius: var(--ic-radius-sm) !important;
+  border-color: rgba(6, 81, 117, 0.14) !important;
+  transition: border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease);
+}
+
+.page-head {
+  backdrop-filter: blur(12px);
+  background: rgba(245, 249, 252, 0.75) !important;
+}
+
+.form-tabs .nav-link {
+  border-radius: 8px 8px 0 0;
+  transition: color 0.15s var(--ic-ease), border-color 0.15s var(--ic-ease);
+}
+.form-tabs .nav-link.active {
+  border-bottom: 2px solid var(--ic-accent) !important;
+  color: var(--ic-primary) !important;
+  font-weight: 600 !important;
+}
+
+.desk-sidebar .standard-sidebar-item.selected,
+.desk-sidebar .standard-sidebar-item.active,
+.workspace-sidebar .item-anchor.active,
+.sidebar-item-container .item-anchor.active {
+  background: rgba(6, 81, 117, 0.08) !important;
+  border-left: 3px solid var(--ic-accent) !important;
+  border-radius: 0 12px 12px 0;
+  font-weight: 600 !important;
+}
+
+/* Portal / website pages — same Poppins premium feel */
+.ic-portal-body {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 100% 70% at 0% 0%, rgba(6, 81, 117, 0.12), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 100% 0%, rgba(236, 104, 32, 0.1), transparent 45%),
+    linear-gradient(180deg, #e4eef5 0%, #f5f9fc 100%);
+  font-family: var(--ic-font) !important;
+  color: var(--text-color);
+}
+.ic-portal-wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 40px 20px 64px;
+}
+.ic-portal-card {
+  background: #fff;
+  padding: 28px 28px 24px;
+}
+.ic-portal-card h2 {
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+.ic-btn {
+  border-radius: 980px !important;
+  font-family: var(--ic-font) !important;
+}
+.ic-brand-logo {
+  max-height: 40px;
+  width: auto;
+}
+
+/* Softer list headers */
+.list-row-head {
+  background: rgba(6, 81, 117, 0.04) !important;
+  border-bottom: 1px solid rgba(6, 81, 117, 0.08) !important;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }

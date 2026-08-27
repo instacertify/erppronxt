@@ -12,6 +12,8 @@ required_apps = ["erpnext", "india_compliance"]
 # Includes in <head>
 app_include_css = "/assets/instacertify/css/instacertify.css"
 app_include_js = "/assets/instacertify/js/instacertify.js"
+web_include_css = "/assets/instacertify/css/instacertify.css"
+website_include_css = "/assets/instacertify/css/instacertify.css"
 
 # Website / portal
 website_route_rules = [
