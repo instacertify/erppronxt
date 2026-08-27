@@ -787,14 +787,43 @@ def _ensure_home_workspace():
 		ws.shortcuts = []
 		ws.links = []
 		ws.custom_blocks = []
+		ws.number_cards = []
+		ws.charts = []
 		for s in safe_shortcuts:
 			ws.append("shortcuts", s)
 		for l in safe_links:
 			ws.append("links", l)
 		ws.append("custom_blocks", {"custom_block_name": "Home Dashboard", "label": "Home Dashboard"})
+		ws.append("custom_blocks", {"custom_block_name": "CRM Lead Tracker", "label": "CRM Lead Tracker"})
+		for block in content:
+			btype = block.get("type")
+			data = block.get("data") or {}
+			if btype == "number_card" and data.get("number_card_name"):
+				nc = data["number_card_name"]
+				if frappe.db.exists("Number Card", nc):
+					ws.append(
+						"number_cards",
+						{"number_card_name": nc, "label": nc},
+					)
+			elif btype == "chart" and data.get("chart_name"):
+				ch = data["chart_name"]
+				if frappe.db.exists("Dashboard Chart", ch):
+					ws.append("charts", {"chart_name": ch, "label": ch})
 		ws.content = json.dumps(content)
 		ws.save(ignore_permissions=True)
 	else:
 		ws = frappe.get_doc(payload)
 		ws.append("custom_blocks", {"custom_block_name": "Home Dashboard", "label": "Home Dashboard"})
+		ws.append("custom_blocks", {"custom_block_name": "CRM Lead Tracker", "label": "CRM Lead Tracker"})
+		for block in content:
+			btype = block.get("type")
+			data = block.get("data") or {}
+			if btype == "number_card" and data.get("number_card_name"):
+				nc = data["number_card_name"]
+				if frappe.db.exists("Number Card", nc):
+					ws.append("number_cards", {"number_card_name": nc, "label": nc})
+			elif btype == "chart" and data.get("chart_name"):
+				ch = data["chart_name"]
+				if frappe.db.exists("Dashboard Chart", ch):
+					ws.append("charts", {"chart_name": ch, "label": ch})
 		ws.insert(ignore_permissions=True)
