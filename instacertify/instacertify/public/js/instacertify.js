@@ -1116,6 +1116,10 @@ instacertify.render_lead_reminder_banner = function (frm) {
 		return;
 	}
 
+	// Avoid stacking duplicate headlines when multiple refresh handlers fire.
+	if (frm.__ic_lead_reminder_painting) return;
+	frm.__ic_lead_reminder_painting = true;
+
 	const due = frm.doc.ic_next_contact_date;
 	const today = frappe.datetime.get_today();
 	let urgency = "blue";
@@ -1135,7 +1139,15 @@ instacertify.render_lead_reminder_banner = function (frm) {
 
 	const person = frm.doc.ic_party_name || frm.doc.lead_name || frm.doc.company_name || frm.doc.name;
 	const phone = frm.doc.mobile_no || frm.doc.phone || frm.doc.ic_alternate_phone || "—";
-	const withUser = frm.doc.ic_assigned_salesperson || frm.doc.lead_owner || __("Unassigned");
+	let withUser = frm.doc.ic_assigned_salesperson || frm.doc.lead_owner || __("Unassigned");
+	try {
+		if (withUser && frappe.user_info) {
+			const info = frappe.user_info(withUser);
+			if (info && info.fullname) withUser = info.fullname;
+		}
+	} catch (e) {
+		/* keep id */
+	}
 	const remarks = (frm.doc.ic_call_remarks || "").trim() || __("No customer remarks yet — capture what they said after the call.");
 	const connected = frm.doc.ic_lead_connected ? __("Connected") : __("Not connected yet");
 
@@ -1152,29 +1164,21 @@ instacertify.render_lead_reminder_banner = function (frm) {
 		</div>
 	`;
 
-	const paint = () => {
-		try {
-			if (frm.dashboard && frm.dashboard.set_headline) {
-				frm.dashboard.set_headline(intro, urgency, true);
-			} else if (frm.set_intro) {
-				frm.set_intro(intro, urgency);
-			}
-		} catch (e) {
-			console.warn("ic lead reminder", e);
+	try {
+		if (frm.dashboard) {
+			frm.dashboard.clear_headline();
+			frm.dashboard.set_headline(intro, urgency, true);
+		} else if (frm.set_intro) {
+			frm.set_intro(intro, urgency);
 		}
-	};
-	paint();
-	setTimeout(paint, 300);
+	} catch (e) {
+		console.warn("ic lead reminder", e);
+	} finally {
+		setTimeout(() => {
+			frm.__ic_lead_reminder_painting = false;
+		}, 400);
+	}
 };
-
-frappe.ui.form.on("Lead", {
-	refresh(frm) {
-		// Paint early so reminder is visible even if later handlers throw.
-		if (!frm.is_new()) {
-			instacertify.render_lead_reminder_banner(frm);
-		}
-	},
-});
 
 instacertify.load_lead_related = function (frm) {
 	if (!frm.fields_dict.ic_history_html) return;
