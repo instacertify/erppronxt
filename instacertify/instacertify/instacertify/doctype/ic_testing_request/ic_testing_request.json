@@ -1,0 +1,309 @@
+{
+ "name": "IC Testing Request",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "module": "Instacertify",
+ "is_submittable": 0,
+ "track_changes": 1,
+ "track_seen": 1,
+ "title_field": "title",
+ "search_fields": "customer,project,product,test_name",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "TR-.YYYY.-.####",
+   "default": "TR-.YYYY.-.####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "in_list_view": 1,
+   "default": "Testing Request Created",
+   "options": "Testing Request Created\nSample Awaited\nSample Received\nSample Dispatched to Laboratory\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "label": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "options": "Project",
+   "label": "Project",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "options": "Quotation",
+   "label": "Quotation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "assigned_person",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Assigned Person",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nUrgent",
+   "default": "Medium"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_timeline",
+   "fieldtype": "Data",
+   "label": "Testing Timeline"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "expected_completion",
+   "fieldtype": "Date",
+   "label": "Expected Completion"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_product",
+   "fieldtype": "Section Break",
+   "label": "Product & Test"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "product",
+   "fieldtype": "Data",
+   "label": "Product",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_name",
+   "fieldtype": "Data",
+   "label": "Test",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Applicable Standard"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "number_of_samples",
+   "fieldtype": "Int",
+   "label": "Number of Samples",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Laboratory"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory_location",
+   "fieldtype": "Data",
+   "label": "Laboratory Location",
+   "fetch_from": "laboratory.location"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Additional Tests"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_items",
+   "fieldtype": "Table",
+   "label": "Test Items",
+   "options": "IC Testing Request Item"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_report",
+   "fieldtype": "Section Break",
+   "label": "Report"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_report",
+   "fieldtype": "Attach",
+   "label": "Test Report"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "report_shared_on",
+   "fieldtype": "Datetime",
+   "label": "Report Shared On",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "share_token",
+   "fieldtype": "Data",
+   "label": "Share Token",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "qr_code",
+   "fieldtype": "Attach Image",
+   "label": "QR Code",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "remarks",
+   "fieldtype": "Text Editor",
+   "label": "Remarks"
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Sales Person",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 0,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

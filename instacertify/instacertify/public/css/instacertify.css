@@ -1,0 +1,237 @@
+/* Instacertify branding for ERPNext Desk */
+:root {
+  --ic-primary: #065175;
+  --ic-accent: #EC6820;
+  --ic-primary-soft: #e8f3f8;
+  --ic-accent-soft: #fff1e8;
+  --ic-surface: #f5f9fb;
+  --ic-radius: 14px;
+}
+
+.ic-greeting {
+  background: linear-gradient(135deg, #065175 0%, #0a7aa8 55%, #ec6820 140%);
+  color: #fff;
+  border-radius: var(--ic-radius);
+  padding: 22px 26px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 28px rgba(6, 81, 117, 0.18);
+}
+
+.ic-greeting h2 {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  font-size: 1.55rem;
+}
+
+.ic-greeting .ic-datetime {
+  opacity: 0.92;
+  font-size: 0.95rem;
+}
+
+.ic-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.ic-summary-card {
+  background: #fff;
+  border-radius: var(--ic-radius);
+  padding: 14px 16px;
+  border: 1px solid #d7e6ef;
+  box-shadow: 0 4px 14px rgba(6, 81, 117, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ic-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(6, 81, 117, 0.12);
+}
+
+.ic-summary-card .label {
+  color: #5b7382;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ic-summary-card .value {
+  color: var(--ic-primary);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.ic-summary-card.accent .value {
+  color: var(--ic-accent);
+}
+
+.ic-project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.ic-project-card {
+  background: #fff;
+  border-radius: var(--ic-radius);
+  border: 1px solid #d7e6ef;
+  padding: 16px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ic-project-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--ic-primary);
+}
+
+.ic-project-card.priority-High::before,
+.ic-project-card.priority-Urgent::before {
+  background: var(--ic-accent);
+}
+
+.ic-project-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(6, 81, 117, 0.14);
+}
+
+.ic-project-card h4 {
+  margin: 0 0 8px 0;
+  color: var(--ic-primary);
+  font-size: 1rem;
+}
+
+.ic-project-card .meta {
+  color: #526874;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.ic-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.ic-badge.high { background: var(--ic-accent-soft); color: var(--ic-accent); }
+.ic-badge.medium { background: var(--ic-primary-soft); color: var(--ic-primary); }
+.ic-badge.low { background: #eef2f4; color: #607078; }
+.ic-badge.urgent { background: #ffe5e0; color: #c0392b; }
+
+.ic-progress {
+  height: 8px;
+  background: #e7eef3;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0 6px;
+}
+
+.ic-progress > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--ic-primary), var(--ic-accent));
+  border-radius: 999px;
+}
+
+.ic-stage-tracker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ic-stage-tracker .stage {
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef4f8;
+  color: #6a7f8c;
+}
+
+.ic-stage-tracker .stage.active {
+  background: var(--ic-primary);
+  color: #fff;
+}
+
+.ic-stage-tracker .stage.done {
+  background: #d9f0e4;
+  color: #1e7a4c;
+}
+
+/* Soft desk accents */
+.navbar { border-bottom: 2px solid rgba(6, 81, 117, 0.12) !important; }
+
+.page-container .page-head {
+  border-bottom: 1px solid rgba(6, 81, 117, 0.08);
+}
+
+.widget.number-widget-box,
+.widget.dashboard-widget-box {
+  border-radius: 14px !important;
+  border-color: #d7e6ef !important;
+}
+
+.indicator-pill.green,
+.indicator-pill.blue {
+  border-radius: 999px;
+}
+
+/* Customer portal */
+.ic-portal-body {
+  margin: 0;
+  background: linear-gradient(180deg, #e8f3f8 0%, #fff 40%);
+  min-height: 100vh;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.ic-portal-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 18px 60px;
+}
+
+.ic-portal-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(6, 81, 117, 0.12);
+  padding: 24px;
+  border-top: 5px solid var(--ic-primary);
+}
+
+.ic-portal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.ic-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ic-btn-primary { background: var(--ic-primary); color: #fff; }
+.ic-btn-accent { background: var(--ic-accent); color: #fff; }
+.ic-btn-ghost { background: #eef4f8; color: var(--ic-primary); }
+
+@media (max-width: 768px) {
+  .ic-summary-grid,
+  .ic-project-grid {
+    grid-template-columns: 1fr;
+  }
+}

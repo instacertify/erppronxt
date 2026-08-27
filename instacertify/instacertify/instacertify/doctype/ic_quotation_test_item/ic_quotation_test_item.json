@@ -1,0 +1,91 @@
+{
+ "name": "IC Quotation Test Item",
+ "module": "Instacertify",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_name",
+   "fieldtype": "Data",
+   "label": "Test Name",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Applicable Standard",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "number_of_samples",
+   "fieldtype": "Int",
+   "label": "Number of Samples",
+   "default": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_type",
+   "fieldtype": "Data",
+   "label": "Sample Type"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Laboratory",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory_location",
+   "fieldtype": "Data",
+   "label": "Laboratory Location",
+   "fetch_from": "laboratory.location"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory_accreditation",
+   "fieldtype": "Data",
+   "label": "Laboratory Accreditation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_timeline",
+   "fieldtype": "Data",
+   "label": "Testing Timeline"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_charges",
+   "fieldtype": "Currency",
+   "label": "Testing Charges",
+   "in_list_view": 1,
+   "options": "currency"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "hidden": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

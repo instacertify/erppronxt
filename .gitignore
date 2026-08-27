@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+node_modules/
+.env
+*.log
+.DS_Store
+sites/
+frappe-bench/

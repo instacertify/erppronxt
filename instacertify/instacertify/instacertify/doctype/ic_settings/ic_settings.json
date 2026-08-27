@@ -1,0 +1,127 @@
+{
+ "name": "IC Settings",
+ "module": "Instacertify",
+ "issingle": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "section_branding",
+   "fieldtype": "Section Break",
+   "label": "Branding"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "options": "Company",
+   "label": "Company"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "primary_color",
+   "fieldtype": "Color",
+   "label": "Primary Color",
+   "default": "#065175"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "accent_color",
+   "fieldtype": "Color",
+   "label": "Accent Color",
+   "default": "#EC6820"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Instacertify Logo"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "header_image",
+   "fieldtype": "Attach Image",
+   "label": "Header Asset"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_quotation",
+   "fieldtype": "Section Break",
+   "label": "Quotation Defaults"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "default_terms",
+   "fieldtype": "Text Editor",
+   "label": "Default Terms and Conditions"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "default_force_majeure",
+   "fieldtype": "Text Editor",
+   "label": "Default Force Majeure"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation_validity_days",
+   "fieldtype": "Int",
+   "label": "Default Validity (Days)",
+   "default": 30
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_portal",
+   "fieldtype": "Section Break",
+   "label": "Customer Portal"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "portal_base_url",
+   "fieldtype": "Data",
+   "label": "Portal Base URL",
+   "description": "Leave blank to use site URL"
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

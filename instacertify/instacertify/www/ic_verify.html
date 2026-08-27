@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Instacertify Verification</title>
+  <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+</head>
+<body class="ic-portal-body">
+  <div class="ic-portal-wrap">
+    <div class="ic-portal-card">
+      <h2 style="color:#065175;margin-top:0;">Document Verification</h2>
+      {% if valid %}
+        <p style="color:#1e7a4c;font-weight:600;">Verified authentic Instacertify record</p>
+        <p><b>Type:</b> {{ doctype }}</p>
+        <p><b>Reference:</b> {{ details.name }}</p>
+        <p><b>Title:</b> {{ details.title }}</p>
+        <p><b>Status:</b> {{ details.status }}</p>
+        <p><b>Last Updated:</b> {{ details.modified }}</p>
+      {% else %}
+        <p style="color:#c0392b;">This reference could not be verified.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

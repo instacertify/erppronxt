@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Instacertify Quotation</title>
+  <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+</head>
+<body class="ic-portal-body">
+  <div class="ic-portal-wrap">
+    <div class="ic-portal-card" id="app">
+      <h2 style="color:#065175;margin-top:0;">Instacertify Quotation</h2>
+      <div id="content">Loading…</div>
+      <div class="ic-portal-actions" id="actions" style="display:none;">
+        <button class="ic-btn ic-btn-primary" id="btn-accept">Accept Quotation</button>
+        <button class="ic-btn ic-btn-accent" id="btn-changes">Request Changes</button>
+        <a class="ic-btn ic-btn-ghost" id="btn-download" href="#" target="_blank">Download PDF</a>
+      </div>
+      <div id="remarks-box" style="display:none;margin-top:12px;">
+        <textarea id="remarks" rows="4" style="width:100%;border-radius:10px;border:1px solid #cfe0ea;padding:10px;" placeholder="Enter remarks / change requests"></textarea>
+        <button class="ic-btn ic-btn-accent" id="btn-submit-changes" style="margin-top:8px;">Submit Change Request</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    const token = {{ token|tojson }};
+    const csrf = {{ csrf_token|tojson }};
+    function load() {
+      fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
+        .then(r => r.json()).then(r => {
+          const d = r.message;
+          if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
+          document.getElementById('content').innerHTML =
+            '<p><b>' + d.name + '</b> · Rev ' + (d.ic_revision_number || 0) + '</p>' +
+            '<p>Customer: <b>' + (d.customer_name || d.party_name || '') + '</b></p>' +
+            '<p>Type: ' + (d.ic_quotation_type || '') + ' · Status: <b>' + (d.ic_workflow_status || '') + '</b></p>' +
+            '<p>Service: ' + (d.ic_service_name || '') + '</p>' +
+            '<p>Timeline: ' + (d.ic_estimated_timeline || '') + '</p>' +
+            '<div>' + (d.ic_scope_of_work || '') + '</div>' +
+            '<p style="margin-top:12px;"><b>Commercial Value:</b> ' + (d.ic_commercial_value || 0) + ' ' + (d.currency || '') + '</p>' +
+            '<p><b>Pass-through:</b> ' + (d.ic_passthrough_value || 0) + ' ' + (d.currency || '') + '</p>' +
+            '<p><b>Total:</b> ' + (d.ic_total_quoted_value || d.grand_total || 0) + ' ' + (d.currency || '') + '</p>';
+          document.getElementById('actions').style.display = 'flex';
+          document.getElementById('btn-download').href = '/printview?doctype=Quotation&name=' + encodeURIComponent(d.name) + '&format=Instacertify%20Quotation';
+        });
+    }
+    document.getElementById('btn-accept').onclick = function () {
+      fetch('/api/method/instacertify.quotation.events.customer_accept_quotation', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
+        body: JSON.stringify({token: token})
+      }).then(function () { alert('Quotation accepted. Thank you!'); load(); });
+    };
+    document.getElementById('btn-changes').onclick = function () {
+      document.getElementById('remarks-box').style.display = 'block';
+    };
+    document.getElementById('btn-submit-changes').onclick = function () {
+      var remarks = document.getElementById('remarks').value;
+      fetch('/api/method/instacertify.quotation.events.customer_request_changes', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
+        body: JSON.stringify({token: token, remarks: remarks})
+      }).then(function () { alert('Change request submitted.'); load(); });
+    };
+    load();
+  </script>
+</body>
+</html>

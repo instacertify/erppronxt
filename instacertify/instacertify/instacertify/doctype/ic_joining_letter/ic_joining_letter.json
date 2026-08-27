@@ -1,0 +1,162 @@
+{
+ "name": "IC Joining Letter",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "module": "Instacertify",
+ "track_changes": 1,
+ "title_field": "employee_name",
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "JL-.YYYY.-.####",
+   "default": "JL-.YYYY.-.####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "options": "Employee",
+   "label": "Employee",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "fetch_from": "employee.employee_name",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "joining_date",
+   "fieldtype": "Date",
+   "label": "Joining Date",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "options": "Designation",
+   "label": "Designation",
+   "fetch_from": "employee.designation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "options": "Department",
+   "label": "Department",
+   "fetch_from": "employee.department"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_letter",
+   "fieldtype": "Section Break",
+   "label": "Letter"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "letter_content",
+   "fieldtype": "Text Editor",
+   "label": "Letter Content"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "qr_code",
+   "fieldtype": "Attach Image",
+   "label": "QR Code",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "verification_code",
+   "fieldtype": "Data",
+   "label": "Verification Code",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Employee",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 1,
+   "email": 0
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}
