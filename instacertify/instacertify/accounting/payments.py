@@ -151,17 +151,9 @@ def _projects_for_payment(customer: str, invoice_names: list[str]):
 
 
 def _project_recipients(project) -> list[str]:
-	users = [project.owner, "Administrator"]
-	assigned = project.ic_assigned_employee
-	if assigned:
-		# May be User or Employee name
-		if frappe.db.exists("User", assigned):
-			users.append(assigned)
-		else:
-			uid = frappe.db.get_value("Employee", assigned, "user_id")
-			if uid:
-				users.append(uid)
-	return users
+	from instacertify.project.events import get_project_assignee_users
+
+	return get_project_assignee_users(project) + [project.owner, "Administrator"]
 
 
 def _customer_outstanding(customer: str, company: str | None = None) -> float:

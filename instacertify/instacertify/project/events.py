@@ -31,9 +31,140 @@ def validate_project(doc, method=None):
 		if suggested is not None:
 			doc.ic_progress_percentage = suggested
 
+	_sync_project_team(doc)
 	_sync_amc_dates(doc)
 	if doc.ic_project_stage == "Project Completed" and doc.status != "Completed":
 		doc.status = "Completed"
+
+
+def _sync_project_team(doc):
+	"""Keep Assign People, Primary Assignee, and ERPNext Users table aligned."""
+	members = []
+	seen = set()
+	for row in doc.get("ic_team_members") or []:
+		user = row.get("user")
+		if not user or user in seen:
+			continue
+		seen.add(user)
+		if not row.get("full_name"):
+			row.full_name = frappe.db.get_value("User", user, "full_name") or user
+		role = row.get("role_on_project") or "Member"
+		members.append({"user": user, "full_name": row.full_name, "role_on_project": role})
+
+	# Seed from legacy primary if team empty
+	if not members and doc.get("ic_assigned_employee"):
+		user = doc.ic_assigned_employee
+		members.append(
+			{
+				"user": user,
+				"full_name": frappe.db.get_value("User", user, "full_name") or user,
+				"role_on_project": "Primary",
+			}
+		)
+		doc.set("ic_team_members", [])
+		doc.append(
+			"ic_team_members",
+			{"user": user, "full_name": members[0]["full_name"], "role_on_project": "Primary"},
+		)
+
+	# Ensure a single Primary
+	primaries = [m for m in members if m["role_on_project"] == "Primary"]
+	if members and not primaries:
+		members[0]["role_on_project"] = "Primary"
+		if doc.get("ic_team_members"):
+			doc.ic_team_members[0].role_on_project = "Primary"
+	elif len(primaries) > 1:
+		# Keep first Primary only
+		first = True
+		for row in doc.get("ic_team_members") or []:
+			if row.get("role_on_project") == "Primary":
+				if first:
+					first = False
+				else:
+					row.role_on_project = "Member"
+		members = []
+		seen = set()
+		for row in doc.get("ic_team_members") or []:
+			if row.user and row.user not in seen:
+				seen.add(row.user)
+				members.append(
+					{
+						"user": row.user,
+						"full_name": row.full_name or row.user,
+						"role_on_project": row.role_on_project or "Member",
+					}
+				)
+
+	primary = next((m for m in members if m["role_on_project"] == "Primary"), members[0] if members else None)
+	doc.ic_assigned_employee = primary["user"] if primary else None
+
+	# Sync into standard Project User child table when present
+	if doc.meta.has_field("users"):
+		existing = {row.user: row for row in (doc.get("users") or []) if row.get("user")}
+		wanted = {m["user"] for m in members}
+		# Remove users no longer assigned (only those we manage — keep unmatched? remove extras from team sync)
+		doc.set(
+			"users",
+			[row for row in (doc.get("users") or []) if row.get("user") in wanted],
+		)
+		have = {row.user for row in (doc.get("users") or []) if row.get("user")}
+		for m in members:
+			if m["user"] not in have:
+				doc.append("users", {"user": m["user"]})
+
+
+def get_project_assignee_users(project) -> list[str]:
+	"""Return user ids assigned to a project (team + primary + users table)."""
+	if isinstance(project, str):
+		if not frappe.db.exists("Project", project):
+			return []
+		project = frappe.get_doc("Project", project)
+	users = []
+	for row in project.get("ic_team_members") or []:
+		if row.get("user"):
+			users.append(row.user)
+	if project.get("ic_assigned_employee"):
+		users.append(project.ic_assigned_employee)
+	if project.meta.has_field("users"):
+		for row in project.get("users") or []:
+			if row.get("user"):
+				users.append(row.user)
+	# unique preserve order
+	out = []
+	seen = set()
+	for u in users:
+		if u and u not in seen:
+			seen.add(u)
+			out.append(u)
+	return out
+
+
+def format_assignee_label(project) -> str:
+	"""Human label for tiles: 'Priya Sharma +2'."""
+	if isinstance(project, str):
+		names = frappe.get_all(
+			"Project Team Member",
+			filters={"parent": project, "parenttype": "Project"},
+			fields=["user", "full_name", "role_on_project"],
+			order_by="idx asc",
+		)
+		if not names:
+			primary = frappe.db.get_value("Project", project, "ic_assigned_employee")
+			if primary:
+				return frappe.db.get_value("User", primary, "full_name") or primary
+			return "Unassigned"
+		ordered = sorted(names, key=lambda r: 0 if r.role_on_project == "Primary" else 1)
+		first = ordered[0].full_name or frappe.db.get_value("User", ordered[0].user, "full_name") or ordered[0].user
+		extra = len(ordered) - 1
+		return f"{first} +{extra}" if extra else first
+
+	users = get_project_assignee_users(project)
+	if not users:
+		return "Unassigned"
+	first = frappe.db.get_value("User", users[0], "full_name") or users[0]
+	extra = len(users) - 1
+	return f"{first} +{extra}" if extra else first
+
 
 
 def _sync_amc_dates(doc):
@@ -72,7 +203,7 @@ def on_update_project(doc, method=None):
 
 
 def _notify_stage_change(doc):
-	users = [doc.ic_assigned_employee, doc.owner, "Administrator"]
+	users = get_project_assignee_users(doc) + [doc.owner, "Administrator"]
 	for user in set(filter(None, users)):
 		if not frappe.db.exists("User", user):
 			continue
@@ -94,7 +225,7 @@ def _notify_stage_change(doc):
 
 
 def _amc_notify_users(doc):
-	users = set(filter(None, [doc.owner, doc.ic_assigned_employee, "Administrator"]))
+	users = set(filter(None, get_project_assignee_users(doc) + [doc.owner, "Administrator"]))
 	try:
 		from frappe.utils.user import get_users_with_role
 
@@ -212,44 +343,58 @@ def get_ongoing_project_cards(limit: int = 12):
 	)
 	today = frappe.utils.getdate(frappe.utils.today())
 	for p in projects:
-		if p.get("customer"):
-			p["customer_name"] = frappe.db.get_value("Customer", p.customer, "customer_name")
-		p["progress"] = int(round(p.get("ic_progress_percentage") or p.get("percent_complete") or 0))
-		p["deadline"] = p.get("ic_deadline") or p.get("expected_end_date")
-		p["deadline_label"] = (
-			frappe.utils.formatdate(p["deadline"], "dd MMM yyyy") if p.get("deadline") else ""
-		)
-		days_left = None
-		urgency = "ok"
-		if p.get("deadline"):
-			try:
-				days_left = (frappe.utils.getdate(p["deadline"]) - today).days
-				if days_left < 0:
-					urgency = "overdue"
-				elif days_left <= 3:
-					urgency = "soon"
-				elif days_left <= 14:
-					urgency = "upcoming"
-			except Exception:
-				days_left = None
-		p["days_left"] = days_left
-		p["urgency"] = urgency
-		assigned = p.get("ic_assigned_employee")
-		assigned_name = ""
-		if assigned:
-			if frappe.db.exists("Employee", assigned):
-				assigned_name = frappe.db.get_value("Employee", assigned, "employee_name") or assigned
-			elif frappe.db.exists("User", assigned):
-				assigned_name = frappe.db.get_value("User", assigned, "full_name") or assigned
-			else:
-				assigned_name = assigned
-		p["assigned_name"] = assigned_name
-		title = p.get("project_name") or p.get("name") or "?"
-		parts = [x for x in title.replace("-", " ").split() if x]
-		p["initials"] = ("".join(w[0] for w in parts[:2]) or "?").upper()
-		p["stage"] = p.get("ic_project_stage") or p.get("status") or "Active"
-		p["priority"] = p.get("ic_priority") or "Medium"
+		_enrich_project_tile(p, today)
 	return projects
+
+
+def _enrich_project_tile(p, today=None):
+	today = today or frappe.utils.getdate(frappe.utils.today())
+	if p.get("customer"):
+		p["customer_name"] = frappe.db.get_value("Customer", p.customer, "customer_name")
+	p["progress"] = int(round(p.get("ic_progress_percentage") or p.get("percent_complete") or 0))
+	p["deadline"] = p.get("ic_deadline") or p.get("expected_end_date")
+	p["deadline_label"] = (
+		frappe.utils.formatdate(p["deadline"], "dd MMM yyyy") if p.get("deadline") else ""
+	)
+	days_left = None
+	urgency = "ok"
+	if p.get("deadline"):
+		try:
+			days_left = (frappe.utils.getdate(p["deadline"]) - today).days
+			if days_left < 0:
+				urgency = "overdue"
+			elif days_left <= 3:
+				urgency = "soon"
+			elif days_left <= 14:
+				urgency = "upcoming"
+		except Exception:
+			days_left = None
+	p["days_left"] = days_left
+	p["urgency"] = urgency
+	p["assigned_name"] = format_assignee_label(p.get("name"))
+	# detailed list for UI tooltips
+	team = frappe.get_all(
+		"Project Team Member",
+		filters={"parent": p.get("name"), "parenttype": "Project"},
+		fields=["user", "full_name", "role_on_project"],
+		order_by="idx asc",
+	)
+	if not team and p.get("ic_assigned_employee"):
+		uid = p.ic_assigned_employee
+		team = [
+			{
+				"user": uid,
+				"full_name": frappe.db.get_value("User", uid, "full_name") or uid,
+				"role_on_project": "Primary",
+			}
+		]
+	p["assignees"] = team
+	p["assignee_count"] = len(team)
+	title = p.get("project_name") or p.get("name") or "?"
+	parts = [x for x in title.replace("-", " ").split() if x]
+	p["initials"] = ("".join(w[0] for w in parts[:2]) or "?").upper()
+	p["stage"] = p.get("ic_project_stage") or p.get("status") or "Active"
+	p["priority"] = p.get("ic_priority") or "Medium"
 
 
 @frappe.whitelist()
@@ -267,7 +412,6 @@ def get_project_board(limit: int = 48, search: str | None = None, priority: str 
 			["name", "like", f"%{search}%"],
 			["customer", "like", f"%{search}%"],
 		]
-	# Reuse card enrichment via larger limit then filter — call list then enrich
 	projects = frappe.get_list(
 		"Project",
 		filters=filters,
@@ -290,46 +434,9 @@ def get_project_board(limit: int = 48, search: str | None = None, priority: str 
 		order_by="modified desc",
 		limit_page_length=limit,
 	)
-	# Enrich using same logic as cards
 	today = frappe.utils.getdate(frappe.utils.today())
 	for p in projects:
-		if p.get("customer"):
-			p["customer_name"] = frappe.db.get_value("Customer", p.customer, "customer_name")
-		p["progress"] = int(round(p.get("ic_progress_percentage") or p.get("percent_complete") or 0))
-		p["deadline"] = p.get("ic_deadline") or p.get("expected_end_date")
-		p["deadline_label"] = (
-			frappe.utils.formatdate(p["deadline"], "dd MMM yyyy") if p.get("deadline") else ""
-		)
-		days_left = None
-		urgency = "ok"
-		if p.get("deadline"):
-			try:
-				days_left = (frappe.utils.getdate(p["deadline"]) - today).days
-				if days_left < 0:
-					urgency = "overdue"
-				elif days_left <= 3:
-					urgency = "soon"
-				elif days_left <= 14:
-					urgency = "upcoming"
-			except Exception:
-				pass
-		p["days_left"] = days_left
-		p["urgency"] = urgency
-		assigned = p.get("ic_assigned_employee")
-		assigned_name = ""
-		if assigned:
-			if frappe.db.exists("Employee", assigned):
-				assigned_name = frappe.db.get_value("Employee", assigned, "employee_name") or assigned
-			elif frappe.db.exists("User", assigned):
-				assigned_name = frappe.db.get_value("User", assigned, "full_name") or assigned
-			else:
-				assigned_name = assigned
-		p["assigned_name"] = assigned_name
-		title = p.get("project_name") or p.get("name") or "?"
-		parts = [x for x in title.replace("-", " ").split() if x]
-		p["initials"] = ("".join(w[0] for w in parts[:2]) or "?").upper()
-		p["stage"] = p.get("ic_project_stage") or p.get("status") or "Active"
-		p["priority"] = p.get("ic_priority") or "Medium"
+		_enrich_project_tile(p, today)
 	return {"projects": projects}
 
 

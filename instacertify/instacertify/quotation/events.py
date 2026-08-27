@@ -603,10 +603,28 @@ def start_project_from_quotation(quotation: str):
 			"ic_deliverables": frappe.utils.strip_html(qt.ic_deliverables or "")[:500],
 			"ic_testing_requirements": "\n".join(testing),
 			"ic_assigned_employee": qt.ic_assigned_salesperson
-			if hasattr(qt, "ic_assigned_salesperson")
+			if hasattr(qt, "ic_assigned_salesperson") and qt.ic_assigned_salesperson
 			else qt.owner,
 		}
 	)
+	# Seed team: salesperson + ops manager + owner
+	team_users = []
+	for u in (
+		getattr(qt, "ic_assigned_salesperson", None),
+		getattr(qt, "ic_assigned_operations_manager", None),
+		qt.owner,
+	):
+		if u and u not in team_users and frappe.db.exists("User", u):
+			team_users.append(u)
+	for i, user in enumerate(team_users):
+		project.append(
+			"ic_team_members",
+			{
+				"user": user,
+				"full_name": frappe.db.get_value("User", user, "full_name") or user,
+				"role_on_project": "Primary" if i == 0 else "Member",
+			},
+		)
 	# Map estimated end from timeline if possible
 	project.insert(ignore_permissions=True)
 
@@ -998,7 +1016,9 @@ def _notify_revision_opened(doc):
 
 
 def _notify_project_assigned(project):
-	recipients = [project.ic_assigned_employee or project.owner, "Administrator"]
+	from instacertify.project.events import get_project_assignee_users
+
+	recipients = get_project_assignee_users(project) + [project.owner, "Administrator"]
 	_send_notification("New Project Assigned", project, recipients)
 
 

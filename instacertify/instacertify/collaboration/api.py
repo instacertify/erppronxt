@@ -221,21 +221,9 @@ def _last_message(project: str) -> dict | None:
 
 def _notify_project_team(project: str, msg_doc):
 	proj = frappe.get_doc("Project", project)
-	recipients = [proj.owner, "Administrator"]
-	if proj.get("ic_assigned_employee"):
-		assigned = proj.ic_assigned_employee
-		if frappe.db.exists("User", assigned):
-			recipients.append(assigned)
-		else:
-			uid = frappe.db.get_value("Employee", assigned, "user_id")
-			if uid:
-				recipients.append(uid)
+	from instacertify.project.events import get_project_assignee_users
 
-	# Standard Project User child table (multiple assignees)
-	if proj.meta.has_field("users"):
-		for row in proj.get("users") or []:
-			if row.get("user"):
-				recipients.append(row.user)
+	recipients = get_project_assignee_users(proj) + [proj.owner, "Administrator"]
 
 	# Also users who already chatted
 	prior = frappe.get_all(

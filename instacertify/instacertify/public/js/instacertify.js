@@ -187,8 +187,28 @@ instacertify.project_tile_html = function (p) {
 		else due_txt = __("{0}d left", [p.days_left]);
 	}
 	const pending = p.ic_pending_action || "";
-	const assigned = p.assigned_name || p.ic_assigned_employee || "Unassigned";
+	const assigned = p.assigned_name || "Unassigned";
+	const count = p.assignee_count || (p.assignees || []).length || 0;
+	const team_title = (p.assignees || [])
+		.map((a) => `${a.full_name || a.user}${a.role_on_project === "Primary" ? " (Primary)" : ""}`)
+		.join(", ");
 	const initials = p.initials || "?";
+	const avatars = (p.assignees || [])
+		.slice(0, 4)
+		.map((a, i) => {
+			const name = a.full_name || a.user || "?";
+			const ini = name
+				.split(/\s+/)
+				.filter(Boolean)
+				.slice(0, 2)
+				.map((w) => w[0])
+				.join("")
+				.toUpperCase();
+			return `<span class="ic-project-avatar" style="z-index:${4 - i}" title="${esc(name)}">${esc(ini || "?")}</span>`;
+		})
+		.join("");
+	const more =
+		count > 4 ? `<span class="ic-project-avatar more">+${count - 4}</span>` : "";
 	return `
 		<article class="ic-project-tile priority-${esc(priority)} urgency-${esc(urgency)}" data-name="${esc(p.name)}" tabindex="0" role="button">
 			<div class="ic-project-tile-glow"></div>
@@ -212,8 +232,9 @@ instacertify.project_tile_html = function (p) {
 				</div>
 			</div>
 			<div class="ic-project-tile-foot">
-				<div class="ic-project-tile-person" title="${esc(assigned)}">
-					<span class="ic-project-person-dot"></span>${esc(assigned)}
+				<div class="ic-project-tile-person" title="${esc(team_title || assigned)}">
+					<span class="ic-project-avatars">${avatars}${more}</span>
+					<span class="ic-project-person-label">${esc(assigned)}</span>
 				</div>
 				<div class="ic-project-tile-due urgency-${esc(urgency)}">${esc(due_txt)}</div>
 			</div>
@@ -1244,6 +1265,40 @@ frappe.ui.form.on("Project", {
 			subject: frm.doc.project_name ? `Project: ${frm.doc.project_name}` : "",
 		});
 		instacertify.render_project_chat_panel(frm);
+		frm.add_custom_button(__("Add Me to Team"), () => {
+			const me = frappe.session.user;
+			const exists = (frm.doc.ic_team_members || []).some((r) => r.user === me);
+			if (exists) {
+				frappe.show_alert({ message: __("You are already on this team"), indicator: "blue" });
+				return;
+			}
+			frm.add_child("ic_team_members", {
+				user: me,
+				full_name: frappe.boot.user.full_name || me,
+				role_on_project: (frm.doc.ic_team_members || []).length ? "Member" : "Primary",
+			});
+			frm.refresh_field("ic_team_members");
+			frappe.show_alert({ message: __("Added — save the project to confirm"), indicator: "green" });
+		}, __("Actions"));
+	},
+});
+
+frappe.ui.form.on("Project Team Member", {
+	user(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (!row.user) return;
+		frappe.db.get_value("User", row.user, "full_name", (r) => {
+			if (r && r.full_name) frappe.model.set_value(cdt, cdn, "full_name", r.full_name);
+		});
+	},
+	role_on_project(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (row.role_on_project !== "Primary") return;
+		(frm.doc.ic_team_members || []).forEach((r) => {
+			if (r.name !== cdn && r.role_on_project === "Primary") {
+				frappe.model.set_value(r.doctype, r.name, "role_on_project", "Member");
+			}
+		});
 	},
 });
 

@@ -62,6 +62,7 @@ FRIENDLY_LABELS = {
 	"IC Quotation Changes Requested": "Quotation Changes Requested",
 	"IC Home Dashboard": "Home Dashboard",
 	"IC CRM Lead Tracker": "CRM Lead Tracker",
+	"Project Team Member": "Team Member",
 }
 
 

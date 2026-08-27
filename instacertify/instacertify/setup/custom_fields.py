@@ -803,7 +803,7 @@ PROJECT_FIELDS = [
 	{
 		"fieldname": "ic_section_stage",
 		"fieldtype": "Section Break",
-		"label": "Instacertify Project Stage",
+		"label": "Project Stage & Assignment",
 		"insert_after": "project_name",
 	},
 	{
@@ -842,17 +842,39 @@ PROJECT_FIELDS = [
 		"insert_after": "ic_pending_action",
 	},
 	{
+		"fieldname": "ic_section_team",
+		"fieldtype": "Section Break",
+		"label": "Assigned Team — one or more people",
+		"insert_after": "ic_progress_percentage",
+		"collapsible": 0,
+	},
+	{
+		"fieldname": "ic_team_members",
+		"fieldtype": "Table",
+		"label": "Assign People",
+		"options": "Project Team Member",
+		"insert_after": "ic_section_team",
+		"description": "Add everyone on this project. Mark one row as Primary (otherwise the first person is primary).",
+	},
+	{
 		"fieldname": "ic_assigned_employee",
 		"fieldtype": "Link",
-		"label": "Assigned Employee",
+		"label": "Primary Assignee",
 		"options": "User",
-		"insert_after": "ic_progress_percentage",
+		"insert_after": "ic_team_members",
+		"read_only": 1,
+		"description": "Auto-set from the Primary team member (or the first person listed).",
+	},
+	{
+		"fieldname": "ic_column_team",
+		"fieldtype": "Column Break",
+		"insert_after": "ic_assigned_employee",
 	},
 	{
 		"fieldname": "ic_deadline",
 		"fieldtype": "Date",
 		"label": "Deadline",
-		"insert_after": "ic_assigned_employee",
+		"insert_after": "ic_column_team",
 	},
 	{
 		"fieldname": "ic_quotation",

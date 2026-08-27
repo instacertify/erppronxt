@@ -1834,3 +1834,35 @@ textarea.form-control {
     grid-template-columns: 1fr;
   }
 }
+
+/* Multi-assignee avatars on project tiles */
+.ic-project-avatars {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+}
+.ic-project-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(145deg, #065175, #3d8aab);
+  border: 2px solid #fff;
+  margin-left: -6px;
+}
+.ic-project-avatar:first-child {
+  margin-left: 0;
+}
+.ic-project-avatar.more {
+  background: #dce8f0;
+  color: #065175;
+}
+.ic-project-person-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
