@@ -2285,3 +2285,168 @@ textarea.form-control {
     animation: none !important;
   }
 }
+
+/* ——— Modern Poppins · colorful prompts & highlights ——— */
+html, body, .desk-page, .page-container, .form-layout,
+.navbar, .btn, input, textarea, select, .modal,
+.ic-lead-prompt, .ic-summary-card, .ic-workdesk-panel {
+  font-family: "Poppins", "Segoe UI", sans-serif !important;
+}
+
+.ic-lead-prompt-title,
+.ic-workdesk-title,
+.ic-crm-tracker-title,
+.ic-project-section-head h3,
+.ic-greeting-brand {
+  font-family: "Poppins", "Segoe UI", sans-serif !important;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Color-coded prompt cards */
+.ic-lead-prompt.overdue,
+.ic-lead-hub-card.overdue {
+  background: linear-gradient(165deg, #fff5f4 0%, #ffffff 55%) !important;
+  border-color: rgba(192, 57, 43, 0.35) !important;
+  box-shadow: inset 4px 0 0 #c0392b, 0 10px 24px rgba(192, 57, 43, 0.08) !important;
+}
+.ic-lead-prompt.today,
+.ic-lead-hub-card.today {
+  background: linear-gradient(165deg, #fff8f0 0%, #ffffff 55%) !important;
+  border-color: rgba(236, 104, 32, 0.4) !important;
+  box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236, 104, 32, 0.1) !important;
+}
+.ic-lead-prompt.upcoming,
+.ic-lead-hub-card.upcoming {
+  background: linear-gradient(165deg, #f0f9fc 0%, #ffffff 55%) !important;
+  border-color: rgba(10, 143, 181, 0.35) !important;
+  box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10, 143, 181, 0.08) !important;
+}
+
+.ic-lead-prompt-when.overdue {
+  background: #c0392b !important;
+  color: #fff !important;
+}
+.ic-lead-prompt-when.today {
+  background: #EC6820 !important;
+  color: #fff !important;
+}
+.ic-lead-prompt-when.upcoming {
+  background: #0a8fb5 !important;
+  color: #fff !important;
+}
+
+.ic-lead-hub-kicker {
+  color: #EC6820 !important;
+}
+.ic-lead-hub-card.overdue .ic-lead-hub-kicker { color: #c0392b !important; }
+.ic-lead-hub-card.upcoming .ic-lead-hub-kicker { color: #0a8fb5 !important; }
+
+.ic-lead-hub-remarks-wrap {
+  background: rgba(6, 81, 117, 0.04);
+  border-radius: 10px;
+  border-top: none !important;
+  padding: 10px 12px !important;
+  margin-top: 8px !important;
+}
+.ic-lead-hub-card.overdue .ic-lead-hub-remarks-wrap {
+  background: rgba(192, 57, 43, 0.06);
+}
+.ic-lead-hub-card.today .ic-lead-hub-remarks-wrap {
+  background: rgba(236, 104, 32, 0.07);
+}
+.ic-lead-hub-card.upcoming .ic-lead-hub-remarks-wrap {
+  background: rgba(10, 143, 181, 0.07);
+}
+
+.ic-lead-prompt-remarks {
+  font-family: "Poppins", "Segoe UI", sans-serif !important;
+  font-weight: 500;
+  color: #1c2f3a !important;
+}
+.ic-lead-prompt-connected.connected {
+  color: #1b7a4e !important;
+  background: #e7f6ee;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.ic-lead-prompt-connected.not-connected {
+  color: #b54708 !important;
+  background: #ffedd9;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.ic-lead-hub-counts {
+  background: linear-gradient(90deg, #EC6820, #c44710) !important;
+  color: #fff !important;
+  font-family: "Poppins", sans-serif !important;
+  font-weight: 700 !important;
+}
+
+.ic-lead-hub-chip.overdue {
+  background: #c0392b !important;
+  color: #fff !important;
+}
+.ic-lead-hub-chip.upcoming {
+  background: #0a8fb5 !important;
+  color: #fff !important;
+}
+
+/* KPI / summary color rhythm */
+.ic-summary-card .value {
+  font-family: "Poppins", sans-serif !important;
+  font-weight: 800 !important;
+}
+.ic-summary-card.accent,
+.ic-summary-card:nth-child(3n) {
+  background: linear-gradient(180deg, #fff8f1 0%, #fff 70%) !important;
+}
+.ic-summary-card:nth-child(3n+1) {
+  border-left-color: #065175 !important;
+}
+.ic-summary-card:nth-child(3n+2) {
+  border-left-color: #EC6820 !important;
+}
+.ic-summary-card:nth-child(3n) {
+  border-left-color: #0a8fb5 !important;
+}
+.ic-summary-card:nth-child(3n) .value {
+  color: #0a8fb5 !important;
+}
+
+/* Workdesk row urgency colors */
+.ic-workdesk-row.overdue {
+  background: linear-gradient(90deg, #fff5f4, #fff) !important;
+  box-shadow: inset 3px 0 0 #c0392b;
+}
+.ic-workdesk-row .ic-lead-prompt-when.overdue,
+.ic-workdesk-row-meta .ic-lead-prompt-when.overdue {
+  background: #c0392b !important;
+  color: #fff !important;
+}
+.ic-workdesk-title {
+  color: #065175 !important;
+}
+
+/* Form reminder color pops */
+.ic-lead-form-reminder {
+  font-family: "Poppins", sans-serif !important;
+}
+.ic-lead-form-reminder.overdue {
+  border-left-color: #c0392b !important;
+  background: linear-gradient(135deg, #fff1f0 0%, #fff 55%) !important;
+}
+.ic-lead-form-reminder.today {
+  border-left-color: #EC6820 !important;
+  background: linear-gradient(135deg, #fff8f1 0%, #fff 55%) !important;
+}
+.form-message.red .ic-lead-form-reminder-title { color: #c0392b !important; }
+.form-message.orange .ic-lead-form-reminder-title { color: #EC6820 !important; }
+
+/* Navbar / page title Poppins punch */
+.navbar .nav-link,
+.page-head .title-text,
+.desk-sidebar .standard-sidebar-label {
+  font-family: "Poppins", sans-serif !important;
+}

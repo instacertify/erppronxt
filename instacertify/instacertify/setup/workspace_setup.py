@@ -543,6 +543,7 @@ _SHADOW_THEME_CSS = """
   line-height: 1.05;
   color: #fff;
   margin: 0 0 8px;
+  font-family: "Poppins", sans-serif !important;
 }
 .ic-greeting-brand span { color: #ffd7b8; }
 .ic-greeting h2 {
@@ -550,8 +551,53 @@ _SHADOW_THEME_CSS = """
   font-weight: 500;
   font-size: 1.05rem;
   color: rgba(255,255,255,0.92) !important;
+  font-family: "Poppins", sans-serif !important;
 }
 .ic-greeting .ic-datetime { opacity: 0.88; font-size: 0.88rem; color: #fff; }
+
+/* Colorful prompts inside shadow (critical path; full CSS also imported) */
+.ic-lead-prompt-title, .ic-workdesk-title {
+  font-family: "Poppins", sans-serif !important;
+  font-weight: 700;
+  color: #065175;
+  letter-spacing: -0.02em;
+}
+.ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
+  background: linear-gradient(165deg, #fff5f4 0%, #fff 55%) !important;
+  box-shadow: inset 4px 0 0 #c0392b, 0 10px 24px rgba(192,57,43,0.08) !important;
+}
+.ic-lead-prompt.today, .ic-lead-hub-card.today {
+  background: linear-gradient(165deg, #fff8f0 0%, #fff 55%) !important;
+  box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236,104,32,0.1) !important;
+}
+.ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
+  background: linear-gradient(165deg, #f0f9fc 0%, #fff 55%) !important;
+  box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10,143,181,0.08) !important;
+}
+.ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
+.ic-lead-prompt-when.today { background: #EC6820 !important; color: #fff !important; }
+.ic-lead-prompt-when.upcoming { background: #0a8fb5 !important; color: #fff !important; }
+.ic-lead-hub-counts {
+  background: linear-gradient(90deg, #EC6820, #c44710) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+.ic-lead-hub-chip.overdue { background: #c0392b !important; color: #fff !important; }
+.ic-lead-hub-chip.upcoming { background: #0a8fb5 !important; color: #fff !important; }
+.ic-lead-hub-remarks-wrap {
+  background: rgba(6,81,117,0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+.ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
+.ic-summary-card:nth-child(3n+1) { border-left: 4px solid #065175 !important; }
+.ic-summary-card:nth-child(3n+2) { border-left: 4px solid #EC6820 !important; }
+.ic-summary-card:nth-child(3n) { border-left: 4px solid #0a8fb5 !important; }
+.ic-summary-card:nth-child(3n) .value { color: #0a8fb5 !important; }
+.ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC6820 !important; }
 """
 
 
