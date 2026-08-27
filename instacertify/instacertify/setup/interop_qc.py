@@ -131,6 +131,19 @@ def run():
 	except Exception as e:
 		fail(f"Explore prompts: {e}")
 
+	# Print formats printable / shareable
+	try:
+		from instacertify.setup.print_format_qc import run_print_format_qc
+
+		pq = run_print_format_qc(save_samples=0) or {}
+		sm = pq.get("summary") or {}
+		if sm.get("passed"):
+			ok(f"Print formats QC ok={sm.get('ok')} formats={len(pq.get('formats') or [])}")
+		else:
+			fail(f"Print formats QC fail={pq.get('fail')}")
+	except Exception as e:
+		fail(f"Print formats QC: {e}")
+
 	# Quotation PDF
 	try:
 		from instacertify.utils.pdf import get_quotation_pdf_bytes

@@ -32,10 +32,11 @@ QUOTATION_HTML = """
   table.ic-table td { border-bottom: 1px solid #e5eef3; padding: 6px 8px; }
   .badge-pass { background: #fff3e8; color: #EC6820; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
   .badge-rev { background: #e8f4fa; color: #065175; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
-  .ic-footer { position: relative; margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; min-height: 90px; }
-  .ic-qr { position: absolute; right: 0; bottom: 0; text-align: center; }
+  .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; }
+  .ic-qr { float: right; margin: 0 0 8px 16px; text-align: center; }
   .ic-qr img { width: 72px; height: 72px; }
-  .ic-sign { margin-top: 28px; }
+  .ic-qr .cap { font-size: 8px; color: #555; }
+  .ic-sign { margin-top: 28px; page-break-inside: avoid; }
   .ic-footer-bar {
     background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
@@ -992,29 +993,11 @@ def ensure_print_formats():
 			frappe.log_error(frappe.get_traceback(), f"Print Format {name}")
 
 	# Prefer Instacertify Quotation as the Quotation default print format
-	try:
-		if frappe.db.exists("Property Setter", "Quotation-main-default_print_format"):
-			frappe.db.set_value(
-				"Property Setter",
-				"Quotation-main-default_print_format",
-				"value",
-				"Instacertify Quotation",
-				update_modified=False,
-			)
-		else:
-			frappe.get_doc(
-				{
-					"doctype": "Property Setter",
-					"doctype_or_field": "DocType",
-					"doc_type": "Quotation",
-					"property": "default_print_format",
-					"property_type": "Data",
-					"value": "Instacertify Quotation",
-					"name": "Quotation-main-default_print_format",
-				}
-			).insert(ignore_permissions=True)
-	except Exception:
-		frappe.log_error(frappe.get_traceback(), "Quotation default print format")
+	_ensure_default_print_format("Quotation", "Instacertify Quotation")
+	_ensure_default_print_format("Sales Invoice", "Instacertify Sales Invoice")
+	_ensure_default_print_format("IC Sample Tracking", "Instacertify Sample Label")
+	_ensure_default_print_format("IC Testing Request", "Instacertify Testing Request")
+	_ensure_default_print_format("IC Joining Letter", "Instacertify Joining Letter")
 
 	# Prefer Chrome system-wide when Print Settings supports it
 	try:
@@ -1022,3 +1005,27 @@ def ensure_print_formats():
 			frappe.db.set_single_value("Print Settings", "pdf_generator", "chrome")
 	except Exception:
 		pass
+
+
+def _ensure_default_print_format(doctype: str, print_format: str):
+	"""Set DocType default_print_format via Property Setter when missing/outdated."""
+	if not frappe.db.exists("Print Format", print_format):
+		return
+	ps_name = f"{doctype}-main-default_print_format"
+	try:
+		if frappe.db.exists("Property Setter", ps_name):
+			frappe.db.set_value("Property Setter", ps_name, "value", print_format, update_modified=False)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Property Setter",
+					"doctype_or_field": "DocType",
+					"doc_type": doctype,
+					"property": "default_print_format",
+					"property_type": "Data",
+					"value": print_format,
+					"name": ps_name,
+				}
+			).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), f"Default print format {doctype}")
