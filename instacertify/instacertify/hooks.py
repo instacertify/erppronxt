@@ -141,6 +141,9 @@ boot_session = "instacertify.boot.boot_session"
 # Form Connections dashboards
 override_doctype_dashboards = {
 	"Customer": "instacertify.overrides.customer.get_dashboard_data",
+	"Quotation": "instacertify.overrides.quotation.get_dashboard_data",
+	"Project": "instacertify.overrides.project.get_dashboard_data",
+	"Lead": "instacertify.overrides.lead.get_dashboard_data",
 }
 
 override_doctype_class = {

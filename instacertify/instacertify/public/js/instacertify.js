@@ -11,6 +11,29 @@ instacertify.brand = {
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
+/** Land every user on Instacertify Home dashboard after login / desk boot. */
+$(document).on("app_ready", function () {
+	try {
+		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+		const route = frappe.get_route_str ? frappe.get_route_str() : "";
+		const isDeskRoot =
+			!route ||
+			route === "Workspaces" ||
+			route === "workspace" ||
+			route === "desktop" ||
+			route === "Home" ||
+			route === "Welcome Workspace";
+		if (isDeskRoot) {
+			localStorage.setItem("current_page", home);
+			frappe.set_route("Workspaces", home);
+		} else if (!localStorage.getItem("current_page")) {
+			localStorage.setItem("current_page", home);
+		}
+	} catch (e) {
+		/* ignore */
+	}
+});
+
 /** Open a new Helpdesk Ticket with CRM context defaults. */
 instacertify.raise_helpdesk_ticket = function (defaults) {
 	defaults = defaults || {};
@@ -431,6 +454,17 @@ frappe.ui.form.on("Quotation", {
 				channel: "Internal",
 				subject: `Quotation ${frm.doc.name}`,
 			});
+			instacertify.load_quotation_links(frm);
+			if (frm.doc.quotation_to === "Lead" && frm.doc.party_name) {
+				frm.add_custom_button(__("Open Lead"), () => {
+					frappe.set_route("Form", "Lead", frm.doc.party_name);
+				}, __("Links"));
+			}
+			if (frm.doc.quotation_to === "Customer" && frm.doc.party_name) {
+				frm.add_custom_button(__("Open Customer"), () => {
+					frappe.set_route("Form", "Customer", frm.doc.party_name);
+				}, __("Links"));
+			}
 			frm.add_custom_button(__("Share with Customer"), () => {
 				frappe.call({
 					method: "instacertify.quotation.events.share_with_customer",
@@ -1042,6 +1076,153 @@ instacertify.load_customer_related = function (frm) {
 	});
 };
 
+instacertify.load_lead_related = function (frm) {
+	if (!frm.fields_dict.ic_history_html) return;
+	frappe.call({
+		method: "instacertify.crm.events.get_lead_history",
+		args: { lead: frm.doc.name },
+		callback(r) {
+			frm.set_df_property("ic_history_html", "options", ic_render_lead_related(r.message || {}));
+		},
+	});
+};
+
+instacertify.load_quotation_links = function (frm) {
+	if (!frm.fields_dict.ic_links_html) return;
+	frappe.call({
+		method: "instacertify.crm.events.get_quotation_links",
+		args: { quotation: frm.doc.name },
+		callback(r) {
+			frm.set_df_property("ic_links_html", "options", ic_render_quotation_links(r.message || {}));
+		},
+	});
+};
+
+function ic_render_lead_related(d) {
+	const lead = (d.lead && d.lead.name) || "";
+	const cards = `
+		<div class="ic-summary-grid">
+			<div class="ic-summary-card"><div class="label">${__("Quotations")}</div><div class="value">${(d.quotations || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Open Quotes")}</div><div class="value">${(d.open_quotations || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Accepted")}</div><div class="value">${(d.accepted_quotations || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Opportunities")}</div><div class="value">${(d.opportunities || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Projects")}</div><div class="value">${(d.projects || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Tickets")}</div><div class="value">${(d.tickets || []).length}</div></div>
+		</div>
+		<p class="ic-related-hint text-muted">${__("Quotations created from this lead, plus customer journey after conversion.")}</p>
+	`;
+	const quote_rows = (d.quotations || []).map((q) => [
+		ic_doc_link("Quotation", q.name),
+		ic_status_pill(q.ic_workflow_status || q.status),
+		ic_esc(q.ic_quotation_type || "—"),
+		ic_fmt_money(q.grand_total, q.currency),
+		ic_esc(q.transaction_date || "—"),
+	]);
+	const opp_rows = (d.opportunities || []).map((o) => [
+		ic_doc_link("Opportunity", o.name, o.title || o.name),
+		ic_status_pill(o.status),
+		ic_fmt_money(o.opportunity_amount, o.currency),
+		ic_esc(o.transaction_date || "—"),
+	]);
+	const project_rows = (d.projects || []).map((p) => [
+		ic_doc_link("Project", p.name, p.project_name || p.name),
+		ic_status_pill(p.status),
+		ic_esc(p.ic_project_stage || "—"),
+		p.ic_quotation ? ic_doc_link("Quotation", p.ic_quotation) : "—",
+	]);
+	const customer_block = d.customer
+		? `<p>${__("Converted Customer")}: ${ic_doc_link("Customer", d.customer.name, d.customer.customer_name || d.customer.name)}</p>`
+		: `<p class="text-muted">${__("Not converted to Customer yet.")}</p>`;
+
+	return `
+		<div class="ic-customer-related">
+			${cards}
+			${customer_block}
+			${ic_related_section(
+				__("Quotations"),
+				ic_table([__("Quotation"), __("Status"), __("Type"), __("Amount"), __("Date")], quote_rows),
+				__("No quotations yet — use Create → Create Quotation"),
+				lead ? ic_list_link("Quotation", null, __("View all"), { party_name: lead, quotation_to: "Lead" }) : ""
+			)}
+			${ic_related_section(
+				__("Opportunities"),
+				ic_table([__("Opportunity"), __("Status"), __("Amount"), __("Date")], opp_rows),
+				__("No opportunities")
+			)}
+			${ic_related_section(
+				__("Projects (after conversion)"),
+				ic_table([__("Project"), __("Status"), __("Stage"), __("Quotation")], project_rows),
+				__("No projects yet")
+			)}
+		</div>
+	`;
+}
+
+function ic_render_quotation_links(d) {
+	const q = d.quotation || {};
+	const partyBits = [];
+	if (d.lead) {
+		partyBits.push(
+			`${__("Lead")}: ${ic_doc_link("Lead", d.lead.name, d.lead.ic_party_name || d.lead.company_name || d.lead.name)} ${ic_status_pill(d.lead.ic_pipeline_stage || d.lead.status)}`
+		);
+	}
+	if (d.customer) {
+		partyBits.push(
+			`${__("Customer")}: ${ic_doc_link("Customer", d.customer.name, d.customer.customer_name || d.customer.name)}`
+		);
+	}
+	if (d.opportunity) {
+		partyBits.push(`${__("Opportunity")}: ${ic_doc_link("Opportunity", d.opportunity)}`);
+	}
+	if (d.parent_quotation) {
+		partyBits.push(`${__("Revision of")}: ${ic_doc_link("Quotation", d.parent_quotation)}`);
+	}
+
+	const cards = `
+		<div class="ic-summary-grid">
+			<div class="ic-summary-card"><div class="label">${__("Projects")}</div><div class="value">${(d.projects || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Invoices")}</div><div class="value">${(d.invoices || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Testing")}</div><div class="value">${(d.testing_requests || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Documents")}</div><div class="value">${(d.documents || []).length}</div></div>
+		</div>
+		<div class="ic-related-party">${partyBits.join(" · ") || `<span class="text-muted">${__("No party linked")}</span>`}</div>
+	`;
+
+	const project_rows = (d.projects || []).map((p) => [
+		ic_doc_link("Project", p.name, p.project_name || p.name),
+		ic_status_pill(p.status),
+		ic_esc(p.ic_project_stage || "—"),
+		ic_esc(p.ic_deadline || "—"),
+	]);
+	const invoice_rows = (d.invoices || []).map((i) => [
+		ic_doc_link("Sales Invoice", i.name),
+		ic_status_pill(i.status),
+		ic_fmt_money(i.grand_total, i.currency),
+		ic_esc(i.posting_date || "—"),
+	]);
+	const testing_rows = (d.testing_requests || []).map((t) => [
+		ic_doc_link("IC Testing Request", t.name, t.title || t.name),
+		ic_status_pill(t.status),
+		t.project ? ic_doc_link("Project", t.project) : "—",
+		ic_esc(t.product || "—"),
+	]);
+	const doc_rows = (d.documents || []).map((x) => [
+		ic_doc_link("IC Document Request", x.name, x.title || x.name),
+		ic_status_pill(x.status),
+		x.project ? ic_doc_link("Project", x.project) : "—",
+	]);
+
+	return `
+		<div class="ic-customer-related">
+			${cards}
+			${ic_related_section(__("Projects"), ic_table([__("Project"), __("Status"), __("Stage"), __("Deadline")], project_rows), __("No projects from this quotation yet"))}
+			${ic_related_section(__("Sales Invoices"), ic_table([__("Invoice"), __("Status"), __("Amount"), __("Date")], invoice_rows), __("No invoices yet"))}
+			${ic_related_section(__("Testing Requests"), ic_table([__("Request"), __("Status"), __("Project"), __("Product")], testing_rows), __("No testing requests"))}
+			${ic_related_section(__("Document Requests"), ic_table([__("Request"), __("Status"), __("Project")], doc_rows), __("No document requests"))}
+		</div>
+	`;
+}
+
 function ic_file_rows(files) {
 	return (files || []).map((f) => [
 		`<a href="${frappe.utils.escape_html(f.file_url || "#")}" target="_blank" rel="noopener">${ic_esc(
@@ -1398,6 +1579,17 @@ frappe.ui.form.on("Project", {
 		html += "</div>";
 		html += `<div class="ic-progress" style="margin-top:12px;"><span style="width:${frm.doc.ic_progress_percentage||0}%"></span></div>`;
 		frm.set_df_property("ic_progress_html", "options", html);
+
+		if (frm.doc.ic_quotation) {
+			frm.add_custom_button(__("Open Quotation"), () => {
+				frappe.set_route("Form", "Quotation", frm.doc.ic_quotation);
+			}, __("Links"));
+		}
+		if (frm.doc.customer) {
+			frm.add_custom_button(__("Open Customer"), () => {
+				frappe.set_route("Form", "Customer", frm.doc.customer);
+			}, __("Links"));
+		}
 
 		frm.add_custom_button(__("Add Project Update"), () => {
 			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
@@ -2017,6 +2209,16 @@ frappe.ui.form.on("Lead", {
 				contact_phone: frm.doc.mobile_no || frm.doc.phone,
 				channel: "Internal",
 			});
+			instacertify.load_lead_related(frm);
+			frm.add_custom_button(__("Create Quotation"), () => {
+				frappe.model.open_mapped_doc({
+					method: "erpnext.crm.doctype.lead.lead.make_quotation",
+					frm: frm,
+				});
+			}, __("Create"));
+			frm.add_custom_button(__("Open Dashboard"), () => {
+				frappe.set_route("Workspaces", "Instacertify Home");
+			}, __("View"));
 		}
 	},
 	ic_party_name(frm) {

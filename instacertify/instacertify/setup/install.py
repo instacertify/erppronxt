@@ -63,6 +63,7 @@ def after_install():
 	from instacertify.setup.friendly_labels import ensure_friendly_labels
 
 	ensure_friendly_labels()
+	setup_default_dashboard()
 	setup_permissions()
 	setup_gst()
 	setup_disable_pos()
@@ -161,11 +162,18 @@ def after_migrate():
 
 	ensure_friendly_labels()
 	setup_workspace()
+	setup_default_dashboard()
 	setup_gst()
 	setup_disable_pos()
 	setup_gst_returns()
 	setup_consulting_billing()
 	frappe.db.commit()
+
+
+def setup_default_dashboard():
+	from instacertify.setup.dashboard_default import ensure_default_dashboard
+
+	ensure_default_dashboard()
 
 
 def setup_consulting_billing():

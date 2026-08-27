@@ -467,9 +467,16 @@ body {
   color: var(--ic-accent);
 }
 
-.ic-customer-related {
-  padding: 4px 0 12px;
+.ic-related-party {
+  margin: 0 0 14px;
+  color: #3d5563;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
+.ic-related-party .ic-status-pill {
+  margin-left: 4px;
+}
+
 
 .ic-related-hint {
   margin: 0 0 18px;

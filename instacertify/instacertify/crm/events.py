@@ -316,6 +316,245 @@ def get_customer_history(customer: str):
 	}
 
 
+@frappe.whitelist()
+def get_lead_history(lead: str):
+	"""Linked quotations, opportunities, customer and support for a Lead."""
+	if not lead or not frappe.db.exists("Lead", lead):
+		return {}
+
+	def list_docs(doctype, filters, fields=None, limit=80):
+		if not frappe.db.exists("DocType", doctype):
+			return []
+		try:
+			return frappe.get_list(
+				doctype,
+				filters=filters,
+				fields=fields or ["name", "modified"],
+				order_by="modified desc",
+				limit_page_length=limit,
+			)
+		except Exception:
+			return []
+
+	lead_doc = frappe.db.get_value(
+		"Lead",
+		lead,
+		[
+			"name",
+			"status",
+			"company_name",
+			"lead_name",
+			"ic_party_name",
+			"ic_pipeline_stage",
+			"email_id",
+			"mobile_no",
+			"phone",
+			"ic_next_contact_date",
+			"ic_call_remarks",
+			"ic_lead_connected",
+			"ic_project_type",
+			"ic_estimated_value",
+		],
+		as_dict=True,
+	) or {}
+
+	quotations = list_docs(
+		"Quotation",
+		{"party_name": lead, "quotation_to": "Lead"},
+		[
+			"name",
+			"status",
+			"ic_workflow_status",
+			"grand_total",
+			"currency",
+			"transaction_date",
+			"ic_quotation_type",
+			"valid_till",
+		],
+	)
+	# Also quotes created after conversion (party became Customer) via opportunity
+	opportunities = list_docs(
+		"Opportunity",
+		{"party_name": lead, "opportunity_from": "Lead"},
+		["name", "status", "opportunity_amount", "currency", "transaction_date", "title"],
+	)
+	# Quotes linked via Opportunity
+	for opp in opportunities:
+		extra = list_docs(
+			"Quotation",
+			{"opportunity": opp["name"]},
+			[
+				"name",
+				"status",
+				"ic_workflow_status",
+				"grand_total",
+				"currency",
+				"transaction_date",
+				"ic_quotation_type",
+				"valid_till",
+			],
+		)
+		seen = {q["name"] for q in quotations}
+		for q in extra:
+			if q["name"] not in seen:
+				quotations.append(q)
+				seen.add(q["name"])
+
+	customer = None
+	if frappe.db.has_column("Customer", "lead_name"):
+		customer = frappe.db.get_value("Customer", {"lead_name": lead}, ["name", "customer_name"], as_dict=True)
+	projects = []
+	invoices = []
+	if customer:
+		projects = list_docs(
+			"Project",
+			{"customer": customer.name},
+			["name", "project_name", "status", "ic_project_stage", "ic_quotation", "ic_deadline"],
+		)
+		invoices = list_docs(
+			"Sales Invoice",
+			{"customer": customer.name, "docstatus": ["<", 2]},
+			["name", "grand_total", "status", "posting_date", "ic_quotation", "currency"],
+		)
+
+	tickets = list_docs(
+		"Helpdesk Ticket",
+		{"lead": lead} if frappe.get_meta("Helpdesk Ticket").has_field("lead") else {"name": "__none__"},
+		["name", "subject", "status", "ticket_type", "priority", "modified"],
+	)
+	documents = list_docs(
+		"IC Document Request",
+		{"lead": lead} if frappe.get_meta("IC Document Request").has_field("lead") else {"name": "__none__"},
+		["name", "title", "status", "modified"],
+	)
+
+	return {
+		"lead": lead_doc,
+		"quotations": quotations,
+		"opportunities": opportunities,
+		"customer": customer,
+		"projects": projects,
+		"invoices": invoices,
+		"tickets": tickets,
+		"documents": documents,
+		"accepted_quotations": [q for q in quotations if q.get("ic_workflow_status") == "Accepted"],
+		"open_quotations": [
+			q
+			for q in quotations
+			if q.get("ic_workflow_status")
+			in ("Draft", "Ready to Share", "Shared with Customer", "Customer Review", "Changes Requested")
+		],
+	}
+
+
+@frappe.whitelist()
+def get_quotation_links(quotation: str):
+	"""Linked Lead/Customer, projects, invoices, testing and documents for a Quotation."""
+	if not quotation or not frappe.db.exists("Quotation", quotation):
+		return {}
+
+	def list_docs(doctype, filters, fields=None, limit=50):
+		if not frappe.db.exists("DocType", doctype):
+			return []
+		try:
+			return frappe.get_list(
+				doctype,
+				filters=filters,
+				fields=fields or ["name", "modified"],
+				order_by="modified desc",
+				limit_page_length=limit,
+			)
+		except Exception:
+			return []
+
+	q = frappe.db.get_value(
+		"Quotation",
+		quotation,
+		[
+			"name",
+			"quotation_to",
+			"party_name",
+			"customer_name",
+			"opportunity",
+			"ic_workflow_status",
+			"ic_quotation_type",
+			"ic_parent_quotation",
+			"grand_total",
+			"currency",
+			"status",
+		],
+		as_dict=True,
+	) or {}
+
+	party = {"doctype": q.get("quotation_to"), "name": q.get("party_name"), "label": q.get("customer_name")}
+	lead = None
+	customer = None
+	if q.get("quotation_to") == "Lead" and q.get("party_name"):
+		lead = frappe.db.get_value(
+			"Lead",
+			q.party_name,
+			["name", "status", "ic_pipeline_stage", "ic_party_name", "company_name", "email_id", "mobile_no"],
+			as_dict=True,
+		)
+	elif q.get("quotation_to") == "Customer" and q.get("party_name"):
+		customer = frappe.db.get_value(
+			"Customer", q.party_name, ["name", "customer_name", "lead_name"], as_dict=True
+		)
+		if customer and customer.get("lead_name"):
+			lead = frappe.db.get_value(
+				"Lead",
+				customer.lead_name,
+				["name", "status", "ic_pipeline_stage", "ic_party_name", "company_name"],
+				as_dict=True,
+			)
+
+	projects = list_docs(
+		"Project",
+		{"ic_quotation": quotation},
+		["name", "project_name", "status", "ic_project_stage", "customer", "ic_deadline", "percent_complete"],
+	)
+	invoices = list_docs(
+		"Sales Invoice",
+		{"ic_quotation": quotation, "docstatus": ["<", 2]},
+		["name", "grand_total", "outstanding_amount", "status", "posting_date", "currency", "customer"],
+	)
+	testing = list_docs(
+		"IC Testing Request",
+		{"quotation": quotation},
+		["name", "title", "status", "product", "project", "modified"],
+	)
+	documents = list_docs(
+		"IC Document Request",
+		{"quotation": quotation},
+		["name", "title", "status", "project", "modified"],
+	)
+	samples = list_docs(
+		"IC Sample Tracking",
+		{"quotation": quotation} if frappe.get_meta("IC Sample Tracking").has_field("quotation") else {"name": "__none__"},
+		["name", "tracking_number", "status", "sample_location", "modified"],
+	)
+	revisions = list_docs(
+		"Quotation",
+		{"ic_parent_quotation": quotation},
+		["name", "ic_revision_number", "ic_workflow_status", "grand_total", "transaction_date"],
+	)
+
+	return {
+		"quotation": q,
+		"party": party,
+		"lead": lead,
+		"customer": customer,
+		"opportunity": q.get("opportunity"),
+		"projects": projects,
+		"invoices": invoices,
+		"testing_requests": testing,
+		"documents": documents,
+		"samples": samples,
+		"revisions": revisions,
+		"parent_quotation": q.get("ic_parent_quotation"),
+	}
+
+
 def _copy_file_to_customer(src_file_name, customer, prefix, existing_hashes, existing_names):
 	"""Attach an existing File's URL onto Customer. Returns 'copied' | 'skipped'."""
 	src = frappe.get_doc("File", src_file_name)

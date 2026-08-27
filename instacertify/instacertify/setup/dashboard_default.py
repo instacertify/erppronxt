@@ -1,0 +1,63 @@
+# Copyright (c) Instacertify
+"""Make Instacertify Home the default dashboard across the ERP."""
+
+from __future__ import annotations
+
+import frappe
+
+
+HOME_WORKSPACE = "Instacertify Home"
+
+
+def ensure_default_dashboard():
+	"""Pin Instacertify Home as the desk landing page for all system users."""
+	if not frappe.db.exists("Workspace", HOME_WORKSPACE):
+		from instacertify.setup.workspace_setup import ensure_workspaces
+
+		ensure_workspaces()
+
+	if not frappe.db.exists("Workspace", HOME_WORKSPACE):
+		return
+
+	# Always first in the workspace sidebar
+	frappe.db.set_value(
+		"Workspace",
+		HOME_WORKSPACE,
+		{"public": 1, "is_hidden": 0, "sequence_id": 0},
+		update_modified=False,
+	)
+
+	# Deprioritize generic Welcome / Home so they don't steal first slot
+	for name, seq in (("Welcome Workspace", 90), ("Home", 91), ("Build", 92)):
+		if frappe.db.exists("Workspace", name):
+			frappe.db.set_value("Workspace", name, "sequence_id", seq, update_modified=False)
+
+	# Explicit per-user default (Frappe login redirects here)
+	users = frappe.get_all(
+		"User",
+		filters={"enabled": 1, "user_type": "System User"},
+		pluck="name",
+	)
+	for user in users:
+		if user in ("Guest", "Administrator"):
+			# Still set Administrator so desk opens on Instacertify Home
+			pass
+		try:
+			frappe.db.set_value(
+				"User",
+				user,
+				"default_workspace",
+				HOME_WORKSPACE,
+				update_modified=False,
+			)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"default_workspace {user}")
+
+	# Global desk home preference
+	try:
+		frappe.db.set_default("desktop:home_page", "workspace")
+	except Exception:
+		pass
+
+	# Soft-hide unused ERPNext module workspaces from cluttering new users?
+	# Keep visible but later in sequence — already done above for Welcome/Home.

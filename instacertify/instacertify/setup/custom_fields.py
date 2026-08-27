@@ -213,6 +213,24 @@ LEAD_FIELDS = [
 		"options": "Phone",
 		"insert_after": "mobile_no",
 	},
+	{
+		"fieldname": "ic_related_tab",
+		"fieldtype": "Tab Break",
+		"label": "Related Data",
+		"insert_after": "ic_pipeline_stage",
+	},
+	{
+		"fieldname": "ic_section_history",
+		"fieldtype": "Section Break",
+		"label": "Lead Journey Overview",
+		"insert_after": "ic_related_tab",
+	},
+	{
+		"fieldname": "ic_history_html",
+		"fieldtype": "HTML",
+		"label": "History",
+		"insert_after": "ic_section_history",
+	},
 ]
 
 CUSTOMER_FIELDS = [
@@ -796,6 +814,24 @@ QUOTATION_FIELDS = [
 		"label": "Parent Quotation (Revision Of)",
 		"options": "Quotation",
 		"insert_after": "ic_force_majeure",
+	},
+	{
+		"fieldname": "ic_links_tab",
+		"fieldtype": "Tab Break",
+		"label": "Linked Records",
+		"insert_after": "ic_parent_quotation",
+	},
+	{
+		"fieldname": "ic_section_links",
+		"fieldtype": "Section Break",
+		"label": "Lead · Project · Invoice · Testing",
+		"insert_after": "ic_links_tab",
+	},
+	{
+		"fieldname": "ic_links_html",
+		"fieldtype": "HTML",
+		"label": "Linked Records",
+		"insert_after": "ic_section_links",
 	},
 ]
 
