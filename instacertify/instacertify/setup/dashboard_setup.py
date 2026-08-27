@@ -24,14 +24,78 @@ def _ensure_renamed(doctype: str, old: str, new: str):
 	return new if frappe.db.exists(doctype, new) else old
 
 
+def _list_filters(doctype: str, filters) -> list:
+	"""Convert dict / short filters into Number Card list format.
+
+	Clickable Number Cards require:
+	  [["DocType", "field", "operator", value], ...]
+	A plain dict breaks widget click (no .reduce).
+	"""
+	out = []
+	if not filters:
+		return out
+	if isinstance(filters, dict):
+		for field, value in filters.items():
+			if isinstance(value, (list, tuple)) and len(value) == 2 and value[0] in (
+				"=",
+				"!=",
+				">",
+				"<",
+				">=",
+				"<=",
+				"like",
+				"not like",
+				"in",
+				"not in",
+				"between",
+				"Timespan",
+			):
+				out.append([doctype, field, value[0], value[1]])
+			elif isinstance(value, (list, tuple)) and value and value[0] == "in":
+				out.append([doctype, field, "in", value[1]])
+			elif isinstance(value, (list, tuple)) and value and value[0] == "not in":
+				out.append([doctype, field, "not in", value[1]])
+			elif isinstance(value, (list, tuple)):
+				# already ["in", [...]] style from our defs
+				op = value[0] if value and isinstance(value[0], str) else "="
+				val = value[1] if len(value) > 1 else value
+				out.append([doctype, field, op, val])
+			else:
+				out.append([doctype, field, "=", value])
+		return out
+	if isinstance(filters, list):
+		for f in filters:
+			if not isinstance(f, (list, tuple)):
+				continue
+			if len(f) == 4 and f[0] == doctype:
+				out.append(list(f))
+			elif len(f) == 3:
+				out.append([doctype, f[0], f[1], f[2]])
+			elif len(f) == 4:
+				out.append(list(f))
+		return out
+	return out
+
+
 def ensure_number_cards():
 	today = nowdate()
 	week_start = str(add_days(today, -6))
 	month_start = str(get_first_day(today))
+	deadline_end = str(add_days(today, 14))
 
 	cards = [
 		("New Leads", "Lead", {"status": "Lead"}, 0, "Daily"),
 		("Active Leads", "Lead", {"status": ["in", ["Open", "Replied", "Opportunity"]]}, 0, "Daily"),
+		(
+			"Leads to Contact",
+			"Lead",
+			[
+				["status", "not in", ["Converted", "Do Not Contact"]],
+				["ic_next_contact_date", "<=", today],
+			],
+			0,
+			"Daily",
+		),
 		("Leads This Week", "Lead", [["creation", ">=", week_start]], 1, "Weekly"),
 		("Leads This Month", "Lead", [["creation", ">=", month_start]], 1, "Monthly"),
 		(
@@ -45,6 +109,20 @@ def ensure_number_cards():
 		("Active Projects", "Project", {"status": ["not in", ["Completed", "Cancelled"]]}, 0, "Daily"),
 		("Pending Tasks", "Task", {"status": ["in", ["Open", "Working"]]}, 0, "Daily"),
 		(
+			"Open Tickets",
+			"Helpdesk Ticket",
+			{"status": ["in", ["Open", "In Progress", "Waiting on Customer"]]},
+			0,
+			"Daily",
+		),
+		(
+			"Pending Documents",
+			"IC Document Request",
+			{"status": ["in", ["Sent to Customer", "Partially Uploaded"]]},
+			0,
+			"Daily",
+		),
+		(
 			"Testing Requests",
 			"IC Testing Request",
 			{"status": ["not in", ["Report Shared with Customer"]]},
@@ -54,7 +132,21 @@ def ensure_number_cards():
 		(
 			"Upcoming Deadlines",
 			"Project",
-			{"status": ["not in", ["Completed", "Cancelled"]]},
+			{
+				"status": ["not in", ["Completed", "Cancelled"]],
+				"ic_deadline": ["<=", deadline_end],
+			},
+			0,
+			"Daily",
+		),
+		(
+			"AMC Due Soon",
+			"Project",
+			{
+				"ic_requires_amc": 1,
+				"ic_amc_status": ["in", ["Scheduled", "Reminded"]],
+				"ic_amc_contact_date": ["<=", str(add_days(today, 31))],
+			},
 			0,
 			"Daily",
 		),
@@ -106,12 +198,14 @@ def ensure_number_cards():
 			continue
 		# migrate legacy IC-prefixed card names
 		_ensure_renamed("Number Card", f"IC {name}", name)
+		list_filters = _list_filters(dt, filters)
 		try:
 			payload = {
 				"label": name,
 				"document_type": dt,
+				"type": "Document Type",
 				"function": "Count",
-				"filters_json": json.dumps(filters),
+				"filters_json": json.dumps(list_filters),
 				"is_public": 1,
 				"module": "Instacertify",
 				"show_percentage_stats": pct,
@@ -120,7 +214,6 @@ def ensure_number_cards():
 			if frappe.db.exists("Number Card", name):
 				frappe.db.set_value("Number Card", name, payload, update_modified=False)
 			else:
-				# Avoid autoname collisions creating New Leads-1, etc.
 				doc = frappe.get_doc({"doctype": "Number Card", "name": name, **payload})
 				doc.insert(ignore_permissions=True, ignore_if_duplicate=True)
 				if doc.name != name and not frappe.db.exists("Number Card", name):

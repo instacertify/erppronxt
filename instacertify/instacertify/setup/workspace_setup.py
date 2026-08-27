@@ -186,8 +186,17 @@ def _ensure_home_html_block():
       const grid = document.getElementById("ic-summary-grid");
       if (!grid) return;
       grid.innerHTML = items.map(([label, value, accent]) =>
-        `<div class="ic-summary-card ${accent ? "accent" : ""}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`
+        `<div class="ic-summary-card is-clickable ${accent ? "accent" : ""}" data-kpi="${frappe.utils.escape_html(label)}" title="Click to open list"><div class="label">${frappe.utils.escape_html(label)}</div><div class="value">${value ?? 0}</div></div>`
       ).join("");
+      if (window.instacertify && instacertify.bind_summary_card_clicks) {
+        instacertify.bind_summary_card_clicks(grid);
+      } else {
+        grid.querySelectorAll(".ic-summary-card[data-kpi]").forEach((el) => {
+          el.addEventListener("click", () => {
+            if (window.instacertify && instacertify.open_kpi) instacertify.open_kpi(el.getAttribute("data-kpi"));
+          });
+        });
+      }
     }
   });
 
@@ -488,8 +497,13 @@ def _ensure_crm_lead_tracker_block():
         ].map(([label, value, extra]) => {
           const accent = extra === true ? "accent" : "";
           const trend = (extra === "up" || extra === "down") ? extra : "";
-          return `<div class="ic-summary-card ${accent} ${trend}"><div class="label">${label}</div><div class="value" style="font-size:${typeof value==='string'?'1.15rem':'1.6rem'}">${value ?? 0}</div></div>`;
+          const clickable = ["This Week", "This Month", "Last 7 Days", "Last 30 Days"].includes(label) ? "is-clickable" : "";
+          const kpi = clickable ? ` data-kpi="${frappe.utils.escape_html(label)}" title="Click to open leads"` : "";
+          return `<div class="ic-summary-card ${accent} ${trend} ${clickable}"${kpi}><div class="label">${label}</div><div class="value" style="font-size:${typeof value==='string'?'1.15rem':'1.6rem'}">${value ?? 0}</div></div>`;
         }).join("");
+        if (window.instacertify && instacertify.bind_summary_card_clicks) {
+          instacertify.bind_summary_card_clicks(kpi);
+        }
       }
       const week = d.week_compare || [];
       makeChart(document.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#065175", "#8fb6c9"]);
@@ -551,8 +565,12 @@ def _ensure_home_workspace():
 		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "Quotations Accepted", "col": 3}},
 		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "Active Projects", "col": 3}},
 		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "Pending Tasks", "col": 3}},
+		{"id": "nc_open_tickets", "type": "number_card", "data": {"number_card_name": "Open Tickets", "col": 3}},
+		{"id": "nc_pending_docs", "type": "number_card", "data": {"number_card_name": "Pending Documents", "col": 3}},
+		{"id": "nc_leads_contact", "type": "number_card", "data": {"number_card_name": "Leads to Contact", "col": 3}},
 		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "Testing Requests", "col": 3}},
 		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "Upcoming Deadlines", "col": 3}},
+		{"id": "nc_amc", "type": "number_card", "data": {"number_card_name": "AMC Due Soon", "col": 3}},
 		{"id": "ic_samples_header", "type": "header", "data": {"text": "<span class=\"h5\">Sample Custody</span>", "col": 12}},
 		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "Samples Transit to Office", "col": 2}},
 		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "Samples At Office", "col": 2}},

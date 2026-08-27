@@ -423,6 +423,22 @@ body {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+.ic-summary-card.is-clickable,
+.ic-summary-card[data-kpi] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.ic-summary-card.is-clickable:focus-visible,
+.ic-summary-card[data-kpi]:focus-visible {
+  outline: 2px solid var(--ic-accent);
+  outline-offset: 2px;
+}
+
+.widget.number-widget-box {
+  cursor: pointer;
+}
+
 .ic-summary-card:nth-child(even) {
   border-top-color: var(--ic-accent);
 }

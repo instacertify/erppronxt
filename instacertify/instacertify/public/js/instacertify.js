@@ -115,6 +115,146 @@ instacertify.render_home_banner = function (wrapper) {
 	instacertify.load_project_cards();
 };
 
+/** KPI tile → filtered list. Used by Home summary cards and workspace HTML. */
+instacertify.kpi_routes = function () {
+	const today = frappe.datetime.get_today();
+	const week_start = frappe.datetime.add_days(today, -6);
+	const month_start = moment(today).startOf("month").format("YYYY-MM-DD");
+	const deadline_end = frappe.datetime.add_days(today, 14);
+	const amc_end = frappe.datetime.add_days(today, 31);
+	return {
+		"New Leads": { doctype: "Lead", filters: { status: "Lead" } },
+		"Active Leads": {
+			doctype: "Lead",
+			filters: { status: ["in", ["Open", "Replied", "Opportunity"]] },
+		},
+		"Leads to Contact": {
+			doctype: "Lead",
+			filters: {
+				status: ["not in", ["Converted", "Do Not Contact"]],
+				ic_next_contact_date: ["<=", today],
+			},
+		},
+		"Leads This Week": { doctype: "Lead", filters: { creation: [">=", week_start] } },
+		"Leads This Month": { doctype: "Lead", filters: { creation: [">=", month_start] } },
+		"This Week": { doctype: "Lead", filters: { creation: [">=", week_start] } },
+		"Last 7 Days": { doctype: "Lead", filters: { creation: [">=", week_start] } },
+		"This Month": { doctype: "Lead", filters: { creation: [">=", month_start] } },
+		"Last 30 Days": {
+			doctype: "Lead",
+			filters: { creation: [">=", frappe.datetime.add_days(today, -29)] },
+		},
+		"Quotations Sent": {
+			doctype: "Quotation",
+			filters: {
+				ic_workflow_status: ["in", ["Shared with Customer", "Customer Review"]],
+			},
+		},
+		"Awaiting Response": {
+			doctype: "Quotation",
+			filters: {
+				ic_workflow_status: ["in", ["Shared with Customer", "Customer Review"]],
+			},
+		},
+		"Quotations Accepted": {
+			doctype: "Quotation",
+			filters: { ic_workflow_status: "Accepted" },
+		},
+		"Active Projects": {
+			doctype: "Project",
+			filters: { status: ["not in", ["Completed", "Cancelled"]] },
+		},
+		"Pending Tasks": {
+			doctype: "Task",
+			filters: { status: ["in", ["Open", "Working"]] },
+		},
+		"Open Tickets": {
+			doctype: "Helpdesk Ticket",
+			filters: { status: ["in", ["Open", "In Progress", "Waiting on Customer"]] },
+		},
+		"Open Complaints": {
+			doctype: "Helpdesk Ticket",
+			filters: {
+				status: ["in", ["Open", "In Progress", "Waiting on Customer"]],
+				ticket_type: "Complaint",
+			},
+		},
+		"Pending Documents": {
+			doctype: "IC Document Request",
+			filters: { status: ["in", ["Sent to Customer", "Partially Uploaded"]] },
+		},
+		"Testing Requests": {
+			doctype: "IC Testing Request",
+			filters: { status: ["not in", ["Report Shared with Customer"]] },
+		},
+		"Upcoming Deadlines": {
+			doctype: "Project",
+			filters: {
+				status: ["not in", ["Completed", "Cancelled"]],
+				ic_deadline: ["<=", deadline_end],
+			},
+		},
+		"AMC Due Soon": {
+			doctype: "Project",
+			filters: {
+				ic_requires_amc: 1,
+				ic_amc_status: ["in", ["Scheduled", "Reminded"]],
+				ic_amc_contact_date: ["<=", amc_end],
+			},
+		},
+		"Samples Transit to Office": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "In Transit to Office" },
+		},
+		"Samples At Office": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "At Instacertify Office" },
+		},
+		"Samples Transit to Lab": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "In Transit to Lab" },
+		},
+		"Samples At Laboratory": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "At Laboratory" },
+		},
+		"Samples In Storage": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "At Instacertify Storage" },
+		},
+		"Samples Discarded": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "Discarded" },
+		},
+	};
+};
+
+instacertify.open_kpi = function (label) {
+	const route = (instacertify.kpi_routes() || {})[label];
+	if (!route || !route.doctype) {
+		frappe.show_alert({ message: __("No list linked for {0}", [label]), indicator: "orange" });
+		return;
+	}
+	if (!frappe.model.can_read(route.doctype)) {
+		frappe.show_alert({
+			message: __("You do not have permission to open {0}", [route.doctype]),
+			indicator: "red",
+		});
+		return;
+	}
+	frappe.route_options = route.filters || {};
+	frappe.set_route("List", route.doctype);
+};
+
+instacertify.bind_summary_card_clicks = function (root) {
+	const $root = root ? $(root) : $(document);
+	$root.find(".ic-summary-card[data-kpi]").off("click.icKpi").on("click.icKpi", function (e) {
+		e.preventDefault();
+		const label = $(this).attr("data-kpi");
+		if (label) instacertify.open_kpi(label);
+	});
+};
+
 instacertify.load_summary_cards = function () {
 	frappe.call({
 		method: "instacertify.project.events.get_dashboard_counts",
@@ -123,26 +263,30 @@ instacertify.load_summary_cards = function () {
 			const items = [
 				["New Leads", d.new_leads],
 				["Active Leads", d.active_leads],
+				["Leads to Contact", d.leads_to_contact, true],
 				["Quotations Sent", d.quotations_sent],
 				["Awaiting Response", d.quotations_awaiting],
 				["Quotations Accepted", d.quotations_accepted, true],
 				["Active Projects", d.active_projects],
 				["Pending Tasks", d.pending_tasks],
+				["Open Tickets", d.open_tickets, true],
 				["Pending Documents", d.pending_documents],
 				["Testing Requests", d.testing_requests],
 				["Upcoming Deadlines", d.upcoming_deadlines, true],
+				["AMC Due Soon", d.amc_due_soon, true],
 			];
 			const $grid = $("#ic-summary-grid");
 			if (!$grid.length) return;
 			$grid.empty();
 			items.forEach(([label, value, accent]) => {
 				$grid.append(`
-					<div class="ic-summary-card ${accent ? "accent" : ""}">
-						<div class="label">${label}</div>
+					<div class="ic-summary-card is-clickable ${accent ? "accent" : ""}" data-kpi="${frappe.utils.escape_html(label)}" title="${__("Click to open list")}">
+						<div class="label">${__(label)}</div>
 						<div class="value">${value ?? 0}</div>
 					</div>
 				`);
 			});
+			instacertify.bind_summary_card_clicks($grid);
 		},
 	});
 };
