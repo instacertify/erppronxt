@@ -186,8 +186,8 @@ def schedule_project_amc(project: str, contact_date: str = None):
 
 
 @frappe.whitelist()
-def get_ongoing_project_cards(limit: int = 8):
-	"""Return project card data for dashboard (permission-aware)."""
+def get_ongoing_project_cards(limit: int = 12):
+	"""Return project tile data for dashboard / board (permission-aware)."""
 	filters = {"status": ["not in", ["Cancelled", "Completed"]]}
 	projects = frappe.get_list(
 		"Project",
@@ -205,16 +205,133 @@ def get_ongoing_project_cards(limit: int = 8):
 			"ic_assigned_employee",
 			"ic_deadline",
 			"expected_end_date",
+			"modified",
 		],
 		order_by="ic_deadline asc, modified desc",
-		limit_page_length=int(limit),
+		limit_page_length=int(limit or 12),
 	)
+	today = frappe.utils.getdate(frappe.utils.today())
 	for p in projects:
 		if p.get("customer"):
 			p["customer_name"] = frappe.db.get_value("Customer", p.customer, "customer_name")
-		p["progress"] = p.get("ic_progress_percentage") or p.get("percent_complete") or 0
+		p["progress"] = int(round(p.get("ic_progress_percentage") or p.get("percent_complete") or 0))
 		p["deadline"] = p.get("ic_deadline") or p.get("expected_end_date")
+		p["deadline_label"] = (
+			frappe.utils.formatdate(p["deadline"], "dd MMM yyyy") if p.get("deadline") else ""
+		)
+		days_left = None
+		urgency = "ok"
+		if p.get("deadline"):
+			try:
+				days_left = (frappe.utils.getdate(p["deadline"]) - today).days
+				if days_left < 0:
+					urgency = "overdue"
+				elif days_left <= 3:
+					urgency = "soon"
+				elif days_left <= 14:
+					urgency = "upcoming"
+			except Exception:
+				days_left = None
+		p["days_left"] = days_left
+		p["urgency"] = urgency
+		assigned = p.get("ic_assigned_employee")
+		assigned_name = ""
+		if assigned:
+			if frappe.db.exists("Employee", assigned):
+				assigned_name = frappe.db.get_value("Employee", assigned, "employee_name") or assigned
+			elif frappe.db.exists("User", assigned):
+				assigned_name = frappe.db.get_value("User", assigned, "full_name") or assigned
+			else:
+				assigned_name = assigned
+		p["assigned_name"] = assigned_name
+		title = p.get("project_name") or p.get("name") or "?"
+		parts = [x for x in title.replace("-", " ").split() if x]
+		p["initials"] = ("".join(w[0] for w in parts[:2]) or "?").upper()
+		p["stage"] = p.get("ic_project_stage") or p.get("status") or "Active"
+		p["priority"] = p.get("ic_priority") or "Medium"
 	return projects
+
+
+@frappe.whitelist()
+def get_project_board(limit: int = 48, search: str | None = None, priority: str | None = None):
+	"""Tile board for Project list / Projects page."""
+	limit = min(int(limit or 48), 100)
+	filters: dict = {"status": ["not in", ["Cancelled"]]}
+	if priority and priority not in ("All", ""):
+		filters["ic_priority"] = priority
+	or_filters = None
+	search = (search or "").strip()
+	if search:
+		or_filters = [
+			["project_name", "like", f"%{search}%"],
+			["name", "like", f"%{search}%"],
+			["customer", "like", f"%{search}%"],
+		]
+	# Reuse card enrichment via larger limit then filter — call list then enrich
+	projects = frappe.get_list(
+		"Project",
+		filters=filters,
+		or_filters=or_filters,
+		fields=[
+			"name",
+			"project_name",
+			"customer",
+			"status",
+			"percent_complete",
+			"ic_project_stage",
+			"ic_priority",
+			"ic_pending_action",
+			"ic_progress_percentage",
+			"ic_assigned_employee",
+			"ic_deadline",
+			"expected_end_date",
+			"modified",
+		],
+		order_by="modified desc",
+		limit_page_length=limit,
+	)
+	# Enrich using same logic as cards
+	today = frappe.utils.getdate(frappe.utils.today())
+	for p in projects:
+		if p.get("customer"):
+			p["customer_name"] = frappe.db.get_value("Customer", p.customer, "customer_name")
+		p["progress"] = int(round(p.get("ic_progress_percentage") or p.get("percent_complete") or 0))
+		p["deadline"] = p.get("ic_deadline") or p.get("expected_end_date")
+		p["deadline_label"] = (
+			frappe.utils.formatdate(p["deadline"], "dd MMM yyyy") if p.get("deadline") else ""
+		)
+		days_left = None
+		urgency = "ok"
+		if p.get("deadline"):
+			try:
+				days_left = (frappe.utils.getdate(p["deadline"]) - today).days
+				if days_left < 0:
+					urgency = "overdue"
+				elif days_left <= 3:
+					urgency = "soon"
+				elif days_left <= 14:
+					urgency = "upcoming"
+			except Exception:
+				pass
+		p["days_left"] = days_left
+		p["urgency"] = urgency
+		assigned = p.get("ic_assigned_employee")
+		assigned_name = ""
+		if assigned:
+			if frappe.db.exists("Employee", assigned):
+				assigned_name = frappe.db.get_value("Employee", assigned, "employee_name") or assigned
+			elif frappe.db.exists("User", assigned):
+				assigned_name = frappe.db.get_value("User", assigned, "full_name") or assigned
+			else:
+				assigned_name = assigned
+		p["assigned_name"] = assigned_name
+		title = p.get("project_name") or p.get("name") or "?"
+		parts = [x for x in title.replace("-", " ").split() if x]
+		p["initials"] = ("".join(w[0] for w in parts[:2]) or "?").upper()
+		p["stage"] = p.get("ic_project_stage") or p.get("status") or "Active"
+		p["priority"] = p.get("ic_priority") or "Medium"
+	return {"projects": projects}
+
 
 
 @frappe.whitelist()

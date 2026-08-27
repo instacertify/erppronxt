@@ -98,7 +98,10 @@ instacertify.render_home_banner = function (wrapper) {
 			</div>
 		</div>
 		<div class="ic-summary-grid" id="ic-summary-grid"></div>
-		<div class="ic-section-title" style="margin:8px 0 10px;color:#065175;font-weight:600;">Ongoing Projects</div>
+		<div class="ic-project-section-head">
+			<h3>${__("Ongoing Projects")}</h3>
+			<a class="ic-view-all" href="/app/project-board">${__("Open tile board")}</a>
+		</div>
 		<div class="ic-project-grid" id="ic-project-grid"></div>
 	`;
 	wrapper.prepend(html);
@@ -147,35 +150,77 @@ instacertify.load_summary_cards = function () {
 instacertify.load_project_cards = function () {
 	frappe.call({
 		method: "instacertify.project.events.get_ongoing_project_cards",
-		args: { limit: 8 },
+		args: { limit: 12 },
 		callback(r) {
 			const $grid = $("#ic-project-grid");
 			if (!$grid.length) return;
-			$grid.empty();
-			(r.message || []).forEach((p) => {
-				const priority = p.ic_priority || "Medium";
-				const progress = Math.round(p.progress || 0);
-				const badgeClass = priority.toLowerCase();
-				$grid.append(`
-					<div class="ic-project-card priority-${frappe.utils.escape_html(priority)}" data-name="${p.name}">
-						<h4>${frappe.utils.escape_html(p.project_name || p.name)}</h4>
-						<div class="meta"><b>Customer:</b> ${frappe.utils.escape_html(p.customer_name || p.customer || "-")}</div>
-						<div class="meta"><b>Priority:</b> <span class="ic-badge ${badgeClass}">${frappe.utils.escape_html(priority)}</span></div>
-						<div class="meta"><b>Status:</b> ${frappe.utils.escape_html(p.ic_project_stage || p.status || "-")}</div>
-						<div class="ic-progress"><span style="width:${progress}%"></span></div>
-						<div class="meta"><b>Progress:</b> ${progress}%</div>
-						<div class="meta"><b>Pending:</b> ${frappe.utils.escape_html(p.ic_pending_action || "-")}</div>
-						<div class="meta"><b>Assigned:</b> ${frappe.utils.escape_html(p.ic_assigned_employee || "-")}</div>
-						<div class="meta"><b>Deadline:</b> ${p.deadline ? frappe.datetime.str_to_user(p.deadline) : "-"}</div>
-					</div>
-				`);
-			});
-			$grid.find(".ic-project-card").on("click", function () {
+			const rows = r.message || [];
+			if (!rows.length) {
+				$grid.html(
+					`<div class="ic-project-empty">${__("No ongoing projects yet.")} <a href="/app/project/new">${__("Create one")}</a></div>`
+				);
+				return;
+			}
+			$grid.html(rows.map((p) => instacertify.project_tile_html(p)).join(""));
+			$grid.find(".ic-project-tile").on("click", function () {
 				frappe.set_route("Form", "Project", $(this).data("name"));
 			});
 		},
 	});
 };
+
+instacertify.project_tile_html = function (p) {
+	const esc = frappe.utils.escape_html;
+	const priority = p.priority || p.ic_priority || "Medium";
+	const progress = Math.round(p.progress || 0);
+	const urgency = p.urgency || "ok";
+	const stage = p.stage || p.ic_project_stage || p.status || "Active";
+	const deadline = p.deadline_label
+		? p.deadline_label
+		: p.deadline
+			? frappe.datetime.str_to_user(p.deadline)
+			: "No deadline";
+	let due_txt = deadline;
+	if (p.days_left != null) {
+		if (p.days_left < 0) due_txt = __("{0}d overdue", [Math.abs(p.days_left)]);
+		else if (p.days_left === 0) due_txt = __("Due today");
+		else due_txt = __("{0}d left", [p.days_left]);
+	}
+	const pending = p.ic_pending_action || "";
+	const assigned = p.assigned_name || p.ic_assigned_employee || "Unassigned";
+	const initials = p.initials || "?";
+	return `
+		<article class="ic-project-tile priority-${esc(priority)} urgency-${esc(urgency)}" data-name="${esc(p.name)}" tabindex="0" role="button">
+			<div class="ic-project-tile-glow"></div>
+			<div class="ic-project-tile-top">
+				<div class="ic-project-tile-mark">${esc(initials)}</div>
+				<div class="ic-project-tile-badges">
+					<span class="ic-badge ${esc(String(priority).toLowerCase())}">${esc(priority)}</span>
+					<span class="ic-project-stage">${esc(stage)}</span>
+				</div>
+			</div>
+			<h4 class="ic-project-tile-title">${esc(p.project_name || p.name)}</h4>
+			<div class="ic-project-tile-customer">${esc(p.customer_name || p.customer || "No customer")}</div>
+			<div class="ic-project-tile-progress">
+				<div class="ic-project-ring" style="--ic-prog:${progress}">
+					<span>${progress}%</span>
+				</div>
+				<div class="ic-project-tile-progress-meta">
+					<div class="ic-project-tile-progress-label">${__("Progress")}</div>
+					<div class="ic-progress"><span style="width:${progress}%"></span></div>
+					${pending ? `<div class="ic-project-pending">${esc(pending)}</div>` : `<div class="ic-project-pending muted">${__("On track")}</div>`}
+				</div>
+			</div>
+			<div class="ic-project-tile-foot">
+				<div class="ic-project-tile-person" title="${esc(assigned)}">
+					<span class="ic-project-person-dot"></span>${esc(assigned)}
+				</div>
+				<div class="ic-project-tile-due urgency-${esc(urgency)}">${esc(due_txt)}</div>
+			</div>
+		</article>
+	`;
+};
+
 
 // Inject greeting on Instacertify Home workspace
 $(document).on("page-change", function () {
@@ -1806,6 +1851,33 @@ frappe.ui.form.on("Project", {
 		);
 	},
 });
+
+// Project list — tile board entry + indicators
+frappe.listview_settings["Project"] = {
+	add_fields: [
+		"status",
+		"percent_complete",
+		"ic_project_stage",
+		"ic_priority",
+		"ic_deadline",
+		"ic_assigned_employee",
+		"customer",
+	],
+	get_indicator(doc) {
+		const priority = doc.ic_priority || "Medium";
+		const colors = { Urgent: "red", High: "orange", Medium: "blue", Low: "gray" };
+		const stage = doc.ic_project_stage || doc.status || "";
+		return [__(stage || priority), colors[priority] || "blue", "status,=," + (doc.status || "")];
+	},
+	onload(listview) {
+		listview.page.add_inner_button(__("Tile Board"), () => {
+			frappe.set_route("project-board");
+		});
+		listview.page.add_inner_button(__("New Project"), () => {
+			frappe.new_doc("Project");
+		});
+	},
+};
 
 // Sample custody — location management + list indicators
 frappe.listview_settings["IC Sample Tracking"] = {

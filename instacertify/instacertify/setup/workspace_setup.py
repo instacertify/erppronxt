@@ -121,7 +121,10 @@ def _ensure_home_html_block():
     <div id="ic-hr-links" class="ic-hr-links"></div>
   </div>
 
-  <div style="margin:14px 0 10px;color:#065175;font-weight:600;">Ongoing Projects</div>
+  <div class="ic-project-section-head">
+    <h3>Ongoing Projects</h3>
+    <a class="ic-view-all" href="/app/project-board">Open tile board</a>
+  </div>
   <div class="ic-project-grid" id="ic-project-grid"></div>
 </div>
 """
@@ -147,6 +150,19 @@ def _ensure_home_html_block():
   setInterval(refreshClock, 30000);
 
   function empty(msg){ return "<div class='ic-lead-prompt-empty'>"+msg+"</div>"; }
+
+  function projectTile(p) {
+    if (window.instacertify && instacertify.project_tile_html) {
+      return instacertify.project_tile_html(p);
+    }
+    const priority = p.priority || p.ic_priority || "Medium";
+    const progress = Math.round(p.progress || 0);
+    return `<article class="ic-project-tile priority-${esc(priority)}" data-name="${esc(p.name)}" onclick="frappe.set_route('Form','Project','${esc(p.name)}')">
+      <h4 class="ic-project-tile-title">${esc(p.project_name || p.name)}</h4>
+      <div class="ic-project-tile-customer">${esc(p.customer_name || p.customer || "-")}</div>
+      <div class="ic-progress"><span style="width:${progress}%"></span></div>
+    </article>`;
+  }
 
   frappe.call({
     method: "instacertify.project.events.get_dashboard_counts",
@@ -356,26 +372,19 @@ def _ensure_home_html_block():
 
   frappe.call({
     method: "instacertify.project.events.get_ongoing_project_cards",
-    args: {limit: 8},
+    args: {limit: 12},
     callback(r) {
       const grid = document.getElementById("ic-project-grid");
       if (!grid) return;
-      grid.innerHTML = (r.message || []).map(p => {
-        const priority = p.ic_priority || "Medium";
-        const progress = Math.round(p.progress || 0);
-        const deadline = p.deadline ? frappe.datetime.str_to_user(p.deadline) : "-";
-        return `<div class="ic-project-card priority-${esc(priority)}" onclick="frappe.set_route('Form','Project','${p.name}')">
-          <h4>${esc(p.project_name || p.name)}</h4>
-          <div class="meta"><b>Customer:</b> ${esc(p.customer_name || p.customer || "-")}</div>
-          <div class="meta"><b>Priority:</b> <span class="ic-badge ${priority.toLowerCase()}">${esc(priority)}</span></div>
-          <div class="meta"><b>Status:</b> ${esc(p.ic_project_stage || p.status || "-")}</div>
-          <div class="ic-progress"><span style="width:${progress}%"></span></div>
-          <div class="meta"><b>Progress:</b> ${progress}%</div>
-          <div class="meta"><b>Pending:</b> ${esc(p.ic_pending_action || "-")}</div>
-          <div class="meta"><b>Assigned:</b> ${esc(p.ic_assigned_employee || "-")}</div>
-          <div class="meta"><b>Deadline:</b> ${deadline}</div>
-        </div>`;
-      }).join("");
+      const rows = r.message || [];
+      if (!rows.length) {
+        grid.innerHTML = "<div class='ic-project-empty'>No ongoing projects yet.</div>";
+        return;
+      }
+      grid.innerHTML = rows.map(projectTile).join("");
+      grid.querySelectorAll(".ic-project-tile").forEach((el) => {
+        el.addEventListener("click", () => frappe.set_route("Form", "Project", el.getAttribute("data-name")));
+      });
     }
   });
 })();
@@ -566,6 +575,7 @@ def _ensure_home_workspace():
 		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 3}},
 		{"id": "sc_quotations", "type": "shortcut", "data": {"shortcut_name": "Quotations", "col": 3}},
 		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 3}},
+		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 3}},
 		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 3}},
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 3}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
@@ -586,6 +596,7 @@ def _ensure_home_workspace():
 		{"label": "Customers", "link_to": "Customer", "type": "DocType", "doc_view": "List"},
 		{"label": "Quotations", "link_to": "Quotation", "type": "DocType", "doc_view": "List"},
 		{"label": "Projects", "link_to": "Project", "type": "DocType", "doc_view": "List"},
+		{"label": "Project Board", "link_to": "project-board", "type": "Page"},
 		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
@@ -633,6 +644,7 @@ def _ensure_home_workspace():
 		{"label": "GSTR-3B Details", "link_type": "Report", "link_to": "GSTR-3B Details", "type": "Link", "is_query_report": 1},
 		{"label": "Projects", "type": "Card Break"},
 		{"label": "Project", "link_type": "DocType", "link_to": "Project", "type": "Link"},
+		{"label": "Project Board (tiles)", "link_type": "Page", "link_to": "project-board", "type": "Link"},
 		{"label": "Team Collaboration", "link_type": "Page", "link_to": "team-collaboration", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
 		{"label": "Team Chat Messages", "link_type": "DocType", "link_to": "Project Chat Message", "type": "Link"},
