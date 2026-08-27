@@ -1418,3 +1418,131 @@ textarea.form-control {
     max-height: 420px;
   }
 }
+
+/* Quotation data-entry — stretched & clear */
+.ic-quotation-form .form-section {
+  margin-bottom: 18px;
+}
+.ic-quotation-form .form-section .section-head {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ic-primary, #065175);
+  padding: 10px 0 6px;
+}
+.ic-quotation-form .frappe-control[data-fieldname="ic_quotation_type"] select,
+.ic-quotation-form .frappe-control[data-fieldname="ic_quotation_template"] .control-input,
+.ic-quotation-form .frappe-control[data-fieldname="ic_workflow_status"] select,
+.ic-quotation-form .frappe-control[data-fieldname="ic_post_accept_action"] select {
+  min-height: 42px;
+  font-size: 14px;
+}
+.ic-quotation-form .frappe-control[data-fieldname="ic_quotation_type"] .control-label,
+.ic-quotation-form .frappe-control[data-fieldname="ic_quotation_template"] .control-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: #12485f;
+}
+.ic-quotation-form .form-grid {
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ic-quotation-form .grid-heading-row,
+.ic-quotation-form .grid-row {
+  min-height: 40px;
+}
+.ic-quote-entry {
+  margin: 4px 0 14px;
+  padding: 16px 18px;
+  border: 1px solid #cfe0ea;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f3f9fc 0%, #ffffff 55%);
+}
+.ic-quote-entry-kicker {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5f7f90;
+}
+.ic-quote-entry-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #065175;
+  margin-top: 2px;
+}
+.ic-quote-entry-sub {
+  color: #5f7f90;
+  font-size: 13px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+.ic-quote-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ic-quote-type-chip {
+  text-align: left;
+  border: 1px solid #d5e4ed;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.ic-quote-type-chip:hover {
+  border-color: #7eb3cb;
+  transform: translateY(-1px);
+}
+.ic-quote-type-chip.active {
+  border-color: #065175;
+  background: #e8f3f8;
+  box-shadow: 0 0 0 1px rgba(6, 81, 117, 0.12);
+}
+.ic-quote-type-name {
+  display: block;
+  font-weight: 700;
+  color: #12485f;
+  font-size: 13px;
+}
+.ic-quote-type-hint {
+  display: block;
+  font-size: 11px;
+  color: #6b8492;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+.ic-quote-steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #1f3a45;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.ic-quote-steps li {
+  margin-bottom: 4px;
+}
+.ic-quote-guide-empty {
+  margin: 0;
+  color: #6b8492;
+  font-size: 13px;
+}
+.ic-quote-dialog-help {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f3f9fc;
+  border: 1px solid #d7e6ef;
+  line-height: 1.55;
+  color: #1f3a45;
+}
+@media (max-width: 900px) {
+  .ic-quote-type-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .ic-quote-type-grid {
+    grid-template-columns: 1fr;
+  }
+}
