@@ -84,6 +84,17 @@ def _ensure_home_html_block():
     <div id="ic-helpdesk-tickets" class="ic-lead-prompt-list"></div>
   </div>
 
+  <div class="ic-lead-prompt-panel" id="ic-collab-panel">
+    <div class="ic-lead-prompt-header">
+      <div>
+        <div class="ic-lead-prompt-title">Team Collaboration</div>
+        <div class="ic-lead-prompt-sub">Project chats · discuss delivery with teammates</div>
+      </div>
+      <a class="ic-view-all" href="/app/team-collaboration">Open all chats</a>
+    </div>
+    <div id="ic-collab-recent" class="ic-lead-prompt-list"></div>
+  </div>
+
   <div class="ic-hr-panel">
     <div class="ic-workdesk-head">
       <div>
@@ -263,6 +274,41 @@ def _ensure_home_html_block():
           </div>
         </a>`;
       }).join("");
+    }
+  });
+
+  frappe.call({
+    method: "instacertify.collaboration.api.get_recent_chat_activity",
+    args: { limit: 8 },
+    callback(r) {
+      const el = document.getElementById("ic-collab-recent");
+      if (!el) return;
+      const rows = (r.message && r.message.items) || [];
+      if (!rows.length) {
+        el.innerHTML = empty("No project chats yet. Open <a href='/app/team-collaboration'>Team Collaboration</a> or a Project to start discussing.");
+        return;
+      }
+      el.innerHTML = rows.map(row => {
+        return `<a class="ic-lead-prompt upcoming" href="/app/team-collaboration">
+          <div class="ic-lead-prompt-top">
+            <div class="ic-lead-prompt-name">${esc(row.project_name || row.project)}</div>
+            <span class="ic-lead-prompt-when upcoming">${esc(row.time_label || "")}</span>
+          </div>
+          <div class="ic-lead-prompt-meta">
+            <span class="ic-lead-prompt-connected">${esc(row.sender_name || "")}</span>
+            <span class="ic-lead-prompt-phone">${esc(row.project || "")}</span>
+          </div>
+          <div class="ic-lead-prompt-remarks">${esc(row.plain || "")}</div>
+        </a>`;
+      }).join("");
+      el.querySelectorAll("a.ic-lead-prompt").forEach((a, idx) => {
+        a.addEventListener("click", (e) => {
+          e.preventDefault();
+          const row = rows[idx];
+          frappe.route_options = { project: row.project };
+          frappe.set_route("team-collaboration");
+        });
+      });
     }
   });
 
@@ -513,6 +559,7 @@ def _ensure_home_workspace():
 		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 3}},
 		{"id": "sc_quotations", "type": "shortcut", "data": {"shortcut_name": "Quotations", "col": 3}},
 		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 3}},
+		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 3}},
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 3}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
@@ -532,6 +579,7 @@ def _ensure_home_workspace():
 		{"label": "Customers", "link_to": "Customer", "type": "DocType", "doc_view": "List"},
 		{"label": "Quotations", "link_to": "Quotation", "type": "DocType", "doc_view": "List"},
 		{"label": "Projects", "link_to": "Project", "type": "DocType", "doc_view": "List"},
+		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
@@ -578,6 +626,7 @@ def _ensure_home_workspace():
 		{"label": "GSTR-3B Details", "link_type": "Report", "link_to": "GSTR-3B Details", "type": "Link", "is_query_report": 1},
 		{"label": "Projects", "type": "Card Break"},
 		{"label": "Project", "link_type": "DocType", "link_to": "Project", "type": "Link"},
+		{"label": "Team Collaboration", "link_type": "Page", "link_to": "team-collaboration", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
 		{"label": "Team Chat Messages", "link_type": "DocType", "link_to": "Project Chat Message", "type": "Link"},
 		{"label": "IC Project Update", "link_type": "DocType", "link_to": "IC Project Update", "type": "Link"},
@@ -611,7 +660,7 @@ def _ensure_home_workspace():
 		{"label": "IC Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
 	]
 
-	# Filter missing DocTypes / Reports
+	# Filter missing DocTypes / Reports / Pages
 	safe_links = []
 	for link in links:
 		if link.get("type") == "Card Break":
@@ -622,6 +671,9 @@ def _ensure_home_workspace():
 		if link_type == "Report":
 			if dt and not frappe.db.exists("Report", dt):
 				continue
+		elif link_type == "Page":
+			if dt and not frappe.db.exists("Page", dt):
+				continue
 		elif dt and not frappe.db.exists("DocType", dt):
 			continue
 		safe_links.append(link)
@@ -629,7 +681,11 @@ def _ensure_home_workspace():
 	safe_shortcuts = []
 	for s in shortcuts:
 		dt = s.get("link_to")
-		if dt and not frappe.db.exists("DocType", dt):
+		stype = s.get("type") or "DocType"
+		if stype == "Page":
+			if dt and not frappe.db.exists("Page", dt):
+				continue
+		elif dt and not frappe.db.exists("DocType", dt):
 			continue
 		safe_shortcuts.append(s)
 

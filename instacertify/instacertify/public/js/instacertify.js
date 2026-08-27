@@ -1048,6 +1048,10 @@ frappe.ui.form.on("Project", {
 		frm.add_custom_button(__("Open Team Chat"), () => {
 			instacertify.open_project_chat(frm);
 		}, __("Instacertify"));
+		frm.add_custom_button(__("Collaboration Hub"), () => {
+			frappe.route_options = { project: frm.doc.name };
+			frappe.set_route("team-collaboration");
+		}, __("Instacertify"));
 		instacertify.add_helpdesk_buttons(frm, {
 			project: frm.doc.name,
 			customer: frm.doc.customer,
@@ -1806,8 +1810,11 @@ instacertify.render_project_chat_panel = function (frm) {
 		host.append(`
 			<div id="${wrap_id}" class="ic-project-chat">
 				<div class="ic-project-chat-head">
-					<strong>${__("Team chat")}</strong>
-					<span class="text-muted">${__("Discuss this project with teammates")}</span>
+					<div>
+						<strong>${__("Team chat")}</strong>
+						<span class="text-muted"> · ${__("Discuss this project with teammates")}</span>
+					</div>
+					<a href="/app/team-collaboration" class="btn btn-xs btn-default">${__("All project chats")}</a>
 				</div>
 				<div class="ic-project-chat-log" id="ic-project-chat-log-${frm.doc.name}"></div>
 				<div class="ic-project-chat-compose">

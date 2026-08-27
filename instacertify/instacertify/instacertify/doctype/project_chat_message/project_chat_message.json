@@ -160,6 +160,32 @@
    "share": 1,
    "print": 1,
    "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Employee",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "All",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
   }
  ],
  "doctype": "DocType",
