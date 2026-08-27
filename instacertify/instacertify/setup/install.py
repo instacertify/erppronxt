@@ -175,7 +175,50 @@ def ensure_roles():
 def setup_custom_fields():
 	from instacertify.setup.custom_fields import CUSTOM_FIELDS
 
-	create_custom_fields(CUSTOM_FIELDS, update=True)
+	try:
+		# Avoid Version formatting crash on Custom Field updates in some Frappe builds
+		frappe.flags.ignore_version = True
+		create_custom_fields(CUSTOM_FIELDS, update=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "create_custom_fields")
+		_apply_quotation_type_options()
+		_ensure_service_family_field()
+	finally:
+		frappe.flags.ignore_version = False
+	_apply_quotation_type_options()
+	_ensure_service_family_field()
+
+
+def _apply_quotation_type_options():
+	if frappe.db.exists("Custom Field", "Quotation-ic_quotation_type"):
+		frappe.db.set_value(
+			"Custom Field",
+			"Quotation-ic_quotation_type",
+			{
+				"options": "\nConsulting\nTesting\nRenewal\nOther\nMultiple Products / Multiple Services\nService",
+				"description": "Consulting, Testing, or Renewal. Pick a matching template below.",
+			},
+		)
+
+
+def _ensure_service_family_field():
+	if frappe.db.exists("Custom Field", "Quotation-ic_service_family"):
+		return
+	try:
+		frappe.get_doc(
+			{
+				"doctype": "Custom Field",
+				"dt": "Quotation",
+				"fieldname": "ic_service_family",
+				"label": "Service Family / Subtype",
+				"fieldtype": "Data",
+				"insert_after": "ic_quotation_template",
+				"module": "Instacertify",
+				"description": "e.g. BIS CRS, TEC, EMC, Safety, BIS Renewal",
+			}
+		).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ic_service_family field")
 
 
 def setup_company():

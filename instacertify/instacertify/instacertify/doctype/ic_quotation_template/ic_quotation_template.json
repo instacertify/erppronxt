@@ -5,7 +5,7 @@
  "module": "Instacertify",
  "track_changes": 1,
  "title_field": "template_name",
- "search_fields": "template_name,quotation_type,service_name",
+ "search_fields": "template_name,quotation_type,service_family,service_name",
  "sort_field": "modified",
  "sort_order": "DESC",
  "fields": [
@@ -22,10 +22,21 @@
    "doctype": "DocField",
    "fieldname": "quotation_type",
    "fieldtype": "Select",
-   "label": "Quotation Type",
-   "options": "Service\nTesting\nOther\nMultiple Products / Multiple Services",
+   "label": "Template Type",
+   "options": "Consulting\nTesting\nRenewal\nOther\nMultiple Products / Multiple Services\nService",
    "reqd": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Consulting, Testing, or Renewal — create as many templates as needed per type."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "service_family",
+   "fieldtype": "Data",
+   "label": "Service Family / Subtype",
+   "description": "e.g. BIS CRS, TEC, WPC, EMC, Safety, IP65, BIS Renewal",
+   "in_list_view": 1,
+   "in_standard_filter": 1
   },
   {
    "doctype": "DocField",
@@ -38,13 +49,22 @@
    "fieldtype": "Check",
    "label": "Active",
    "default": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "template_notes",
+   "fieldtype": "Small Text",
+   "label": "Template Notes",
+   "description": "Internal note shown when selecting this template"
   },
   {
    "doctype": "DocField",
    "fieldname": "section_service",
    "fieldtype": "Section Break",
-   "label": "Service / Consulting"
+   "label": "Service / Consulting / Renewal",
+   "depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Multiple Products / Multiple Services'], doc.quotation_type)"
   },
   {
    "doctype": "DocField",

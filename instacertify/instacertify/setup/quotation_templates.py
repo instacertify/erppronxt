@@ -105,6 +105,279 @@ laboratories, or certification bodies. Reasonable measures shall be implemented 
 
 def ensure_quotation_templates():
 	_ensure_bis_crs_template()
+	_ensure_starter_templates()
+	_migrate_legacy_service_type()
+
+
+def _migrate_legacy_service_type():
+	"""Map old Service templates to Consulting where helpful."""
+	frappe.db.sql(
+		"""
+		UPDATE `tabIC Quotation Template`
+		SET quotation_type = 'Consulting'
+		WHERE quotation_type = 'Service'
+		  AND IFNULL(service_family, '') NOT LIKE '%%Renewal%%'
+		  AND IFNULL(template_name, '') NOT LIKE '%%Renewal%%'
+		"""
+	)
+	frappe.db.sql(
+		"""
+		UPDATE `tabIC Quotation Template`
+		SET quotation_type = 'Renewal'
+		WHERE quotation_type IN ('Service', 'Consulting')
+		  AND (
+		    IFNULL(service_family, '') LIKE '%%Renewal%%'
+		    OR IFNULL(template_name, '') LIKE '%%Renewal%%'
+		  )
+		"""
+	)
+
+
+def _upsert_template(name: str, values: dict, cost_rows: list | None = None, test_rows: list | None = None):
+	if frappe.db.exists("IC Quotation Template", name):
+		doc = frappe.get_doc("IC Quotation Template", name)
+		doc.update(values)
+		doc.set("cost_items", [])
+		for row in cost_rows or []:
+			doc.append("cost_items", row)
+		doc.set("test_items", [])
+		for row in test_rows or []:
+			doc.append("test_items", row)
+		doc.save(ignore_permissions=True)
+	else:
+		doc = frappe.get_doc({"doctype": "IC Quotation Template", "template_name": name, **values})
+		for row in cost_rows or []:
+			doc.append("cost_items", row)
+		for row in test_rows or []:
+			doc.append("test_items", row)
+		doc.insert(ignore_permissions=True)
+
+
+def _ensure_starter_templates():
+	"""Multiple consulting / testing / renewal starter templates."""
+	# Consulting
+	_upsert_template(
+		"TEC Approval Consultancy",
+		{
+			"quotation_type": "Consulting",
+			"service_family": "TEC",
+			"is_active": 1,
+			"service_name": "TEC Approval Consultancy",
+			"certification_type": "TEC",
+			"applicable_standard": "TEC MTCTE",
+			"estimated_timeline": "4–6 weeks",
+			"validity_days": 90,
+			"about_service": "<p>TEC / MTCTE consultancy covering documentation, testing coordination, and portal filings for telecom products.</p>",
+			"payment_terms": "<ul><li>Consultancy charges payable on confirmation.</li><li>Government / lab fees payable in advance at actuals.</li></ul>",
+		},
+		[
+			{
+				"cost_component": "Consulting Charges",
+				"particulars": "Consultancy Charges",
+				"amount": 25000,
+				"charges_display": "₹ 25,000/-",
+				"payment_destination": "Payable to Instacertify",
+			},
+			{
+				"cost_component": "Government Fees",
+				"particulars": "Government / Authority Fees",
+				"amount": 10000,
+				"charges_display": "At actuals",
+				"payment_destination": "Payable Directly to Government",
+				"is_passthrough": 1,
+			},
+		],
+	)
+	_upsert_template(
+		"WPC ETA Consultancy",
+		{
+			"quotation_type": "Consulting",
+			"service_family": "WPC",
+			"is_active": 1,
+			"service_name": "WPC ETA Consultancy",
+			"certification_type": "WPC ETA",
+			"applicable_standard": "WPC Guidelines",
+			"estimated_timeline": "3–5 weeks",
+			"validity_days": 90,
+			"about_service": "<p>Wireless Planning & Coordination (WPC) ETA consultancy for RF / wireless products.</p>",
+		},
+		[
+			{
+				"cost_component": "Consulting Charges",
+				"particulars": "Consultancy Charges",
+				"amount": 20000,
+				"charges_display": "₹ 20,000/-",
+				"payment_destination": "Payable to Instacertify",
+			}
+		],
+	)
+	_upsert_template(
+		"EPR Compliance Consultancy",
+		{
+			"quotation_type": "Consulting",
+			"service_family": "EPR",
+			"is_active": 1,
+			"service_name": "EPR Compliance Consultancy",
+			"certification_type": "EPR",
+			"applicable_standard": "EPR Rules",
+			"estimated_timeline": "2–4 weeks",
+			"validity_days": 90,
+			"about_service": "<p>Extended Producer Responsibility (EPR) registration and compliance support.</p>",
+		},
+		[
+			{
+				"cost_component": "Consulting Charges",
+				"particulars": "Consultancy Charges",
+				"amount": 30000,
+				"charges_display": "₹ 30,000/-",
+				"payment_destination": "Payable to Instacertify",
+			}
+		],
+	)
+
+	# Testing
+	_upsert_template(
+		"EMC Testing Package",
+		{
+			"quotation_type": "Testing",
+			"service_family": "EMC",
+			"is_active": 1,
+			"service_name": "EMC Testing",
+			"subject": "Testing",
+			"applicable_standard": "IEC 61000 series",
+			"estimated_timeline": "5–7 working days",
+			"validity_days": 30,
+			"about_testing": "<p>EMC immunity and emission testing package as per applicable IEC 61000 standards.</p>",
+			"gst_note": "Note: GST @ 18% shall be charged additionally on the above testing charges.",
+		},
+		None,
+		[
+			{
+				"product_name": "Product Under Test",
+				"test_name": "Surge Immunity Test",
+				"applicable_standard": "IEC 61000-4-5",
+				"number_of_samples": 4,
+				"per_unit_charges": 20000,
+				"testing_charges": 80000,
+				"sample_requirement": "4 complete functional product samples with accessories.",
+			},
+			{
+				"product_name": "Product Under Test",
+				"test_name": "Voltage Dips & Interruptions",
+				"applicable_standard": "IEC 61000-4-11",
+				"number_of_samples": 4,
+				"per_unit_charges": 20000,
+				"testing_charges": 80000,
+			},
+		],
+	)
+	_upsert_template(
+		"Safety Testing Package",
+		{
+			"quotation_type": "Testing",
+			"service_family": "Safety",
+			"is_active": 1,
+			"service_name": "Safety Testing",
+			"subject": "Testing",
+			"applicable_standard": "IS/IEC 62368-1",
+			"estimated_timeline": "7–10 working days",
+			"validity_days": 30,
+			"about_testing": "<p>Safety testing as per IS/IEC 62368-1 for AV/ICT equipment.</p>",
+		},
+		None,
+		[
+			{
+				"product_name": "Product Under Test",
+				"test_name": "Safety Requirements for AV/ICT Equipment",
+				"applicable_standard": "IS/IEC 62368-1",
+				"number_of_samples": 4,
+				"per_unit_charges": 40000,
+				"testing_charges": 160000,
+			}
+		],
+	)
+	_upsert_template(
+		"IP65 Ingress Protection Testing",
+		{
+			"quotation_type": "Testing",
+			"service_family": "IP",
+			"is_active": 1,
+			"service_name": "IP65 Testing",
+			"subject": "Testing",
+			"applicable_standard": "IP65",
+			"estimated_timeline": "3–5 working days",
+			"validity_days": 30,
+			"about_testing": "<p>Ingress protection testing against dust and water jets (IP65).</p>",
+		},
+		None,
+		[
+			{
+				"product_name": "Enclosure / Product",
+				"test_name": "Ingress Protection Test",
+				"applicable_standard": "IP65",
+				"number_of_samples": 4,
+				"per_unit_charges": 6000,
+				"testing_charges": 24000,
+			}
+		],
+	)
+
+	# Renewal
+	_upsert_template(
+		"BIS CRS Renewal",
+		{
+			"quotation_type": "Renewal",
+			"service_family": "BIS CRS Renewal",
+			"is_active": 1,
+			"service_name": "BIS CRS Renewal Consultancy",
+			"certification_type": "BIS CRS Renewal",
+			"applicable_standard": "Existing BIS CRS Registration",
+			"estimated_timeline": "10–15 working days",
+			"validity_days": 90,
+			"about_service": "<p>Renewal support for existing BIS CRS registrations, including documentation review, portal filings, and authority liaison.</p>",
+			"process_steps": "<p><b>Renewal Process</b></p><ol><li>Review existing registration and validity.</li><li>Prepare renewal documentation.</li><li>Submit renewal on BIS portal.</li><li>Follow-up until grant of renewed registration.</li></ol>",
+			"payment_terms": "<ul><li>Consultancy charges payable on confirmation.</li><li>BIS renewal fees payable in advance at actuals.</li></ul>",
+		},
+		[
+			{
+				"cost_component": "Consulting Charges",
+				"particulars": "Renewal Consultancy Charges",
+				"amount": 8000,
+				"charges_display": "₹ 8,000/-",
+				"payment_destination": "Payable to Instacertify",
+			},
+			{
+				"cost_component": "Government Fees",
+				"particulars": "BIS Renewal Fees (Including GST)",
+				"amount": 5000,
+				"charges_display": "At actuals",
+				"payment_destination": "Payable Directly to Government",
+				"is_passthrough": 1,
+			},
+		],
+	)
+	_upsert_template(
+		"Licence / Certificate Renewal",
+		{
+			"quotation_type": "Renewal",
+			"service_family": "General Renewal",
+			"is_active": 1,
+			"service_name": "Licence / Certificate Renewal",
+			"certification_type": "Renewal",
+			"estimated_timeline": "2–4 weeks",
+			"validity_days": 90,
+			"about_service": "<p>General renewal consultancy for product certifications and licences nearing expiry.</p>",
+		},
+		[
+			{
+				"cost_component": "Consulting Charges",
+				"particulars": "Renewal Consultancy Charges",
+				"amount": 15000,
+				"charges_display": "₹ 15,000/-",
+				"payment_destination": "Payable to Instacertify",
+			}
+		],
+	)
 
 
 def _ensure_bis_crs_template():
@@ -139,7 +412,8 @@ def _ensure_bis_crs_template():
 		},
 	]
 	values = {
-		"quotation_type": "Service",
+		"quotation_type": "Consulting",
+		"service_family": "BIS CRS",
 		"is_active": 1,
 		"service_name": "BIS CRS Consultancy",
 		"certification_type": "BIS CRS",

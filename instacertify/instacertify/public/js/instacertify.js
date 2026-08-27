@@ -208,6 +208,23 @@ frappe.ui.form.on("Quotation", {
 				);
 			}, __("Instacertify"));
 
+			frm.add_custom_button(__("Manage Templates"), () => {
+				frappe.set_route("List", "IC Quotation Template", {
+					quotation_type: frm.doc.ic_quotation_type || undefined,
+				});
+			}, __("Instacertify"));
+
+			frm.add_custom_button(__("New Template"), () => {
+				frappe.new_doc("IC Quotation Template", {
+					quotation_type:
+						frm.doc.ic_quotation_type === "Service"
+							? "Consulting"
+							: frm.doc.ic_quotation_type || "Consulting",
+					service_family: frm.doc.ic_service_family,
+					service_name: frm.doc.ic_service_name,
+				});
+			}, __("Instacertify"));
+
 			if (frm.doc.ic_workflow_status === "Accepted") {
 				frm.add_custom_button(__("Start Project"), () => {
 					frappe.call({
@@ -225,15 +242,20 @@ frappe.ui.form.on("Quotation", {
 		if (frm.doc.ic_quotation_type) {
 			instacertify.toggle_quotation_sections(frm);
 		}
+		instacertify.setup_quotation_template_filter(frm);
 	},
 
 	ic_quotation_type(frm) {
 		instacertify.toggle_quotation_sections(frm);
+		instacertify.setup_quotation_template_filter(frm);
+		if (frm.doc.ic_quotation_template) {
+			frm.set_value("ic_quotation_template", "");
+		}
 		if (frm.is_new() && !frm.doc.ic_quotation_type) return;
 	},
 
 	ic_quotation_template(frm) {
-		if (!frm.doc.ic_quotation_template || frm.is_new() && !frm.doc.name) {
+		if (!frm.doc.ic_quotation_template || (frm.is_new() && !frm.doc.name)) {
 			if (!frm.doc.ic_quotation_template) return;
 		}
 		if (!frm.doc.name) {
@@ -251,15 +273,29 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
+instacertify.setup_quotation_template_filter = function (frm) {
+	frm.set_query("ic_quotation_template", () => {
+		const t = frm.doc.ic_quotation_type;
+		const filters = { is_active: 1 };
+		if (t === "Consulting" || t === "Service") {
+			filters.quotation_type = ["in", ["Consulting", "Service"]];
+		} else if (t) {
+			filters.quotation_type = t;
+		}
+		return { filters };
+	});
+};
+
 instacertify.toggle_quotation_sections = function (frm) {
 	const t = frm.doc.ic_quotation_type;
-	frm.toggle_display("ic_section_service", ["Service", "Other", "Multiple Products / Multiple Services"].includes(t));
+	const consultingLike = ["Consulting", "Renewal", "Service", "Other", "Multiple Products / Multiple Services"];
+	frm.toggle_display("ic_section_service", consultingLike.includes(t));
 	frm.toggle_display("ic_section_testing", ["Testing", "Multiple Products / Multiple Services"].includes(t));
 	frm.toggle_display("ic_section_products", t === "Multiple Products / Multiple Services");
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 		frm.set_df_property("ic_subject", "reqd", 1);
-	} else if (["Service", "Other"].includes(t)) {
+	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {
 		frm.meta.default_print_format = "Instacertify Consulting Quotation";
 		frm.set_df_property("ic_subject", "reqd", 0);
 	} else {
@@ -288,6 +324,7 @@ instacertify.recalc_test_row = function (frm, cdt, cdn) {
 // Prompt for quotation type on new
 frappe.ui.form.on("Quotation", {
 	onload(frm) {
+		instacertify.setup_quotation_template_filter(frm);
 		if (frm.is_new() && !frm.doc.ic_quotation_type) {
 			frappe.prompt(
 				[
@@ -295,14 +332,19 @@ frappe.ui.form.on("Quotation", {
 						fieldname: "ic_quotation_type",
 						fieldtype: "Select",
 						label: "Quotation Type",
-						options: "Service\nTesting\nOther\nMultiple Products / Multiple Services",
+						options: "Consulting\nTesting\nRenewal\nOther\nMultiple Products / Multiple Services",
 						reqd: 1,
+						default: "Consulting",
 					},
 					{
 						fieldname: "ic_quotation_template",
 						fieldtype: "Link",
 						label: "Quotation Template",
 						options: "IC Quotation Template",
+						get_query() {
+							// evaluated in prompt via options only; filter applied after type set
+							return {};
+						},
 					},
 				],
 				(values) => {

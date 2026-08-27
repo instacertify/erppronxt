@@ -97,8 +97,11 @@ def apply_quotation_template(quotation: str, template: str):
 	"""Populate quotation fields from IC Quotation Template."""
 	qt = frappe.get_doc("Quotation", quotation)
 	tmpl = frappe.get_doc("IC Quotation Template", template)
-	qt.ic_quotation_type = tmpl.quotation_type
+	qt.ic_quotation_type = (
+		"Consulting" if tmpl.quotation_type == "Service" else tmpl.quotation_type
+	)
 	qt.ic_quotation_template = tmpl.name
+	qt.ic_service_family = tmpl.get("service_family")
 	qt.ic_service_name = tmpl.service_name
 	qt.ic_certification_type = tmpl.certification_type
 	qt.ic_applicable_standard = tmpl.applicable_standard
@@ -163,6 +166,21 @@ def apply_quotation_template(quotation: str, template: str):
 
 
 @frappe.whitelist()
+def duplicate_quotation_template(template: str, new_name: str):
+	"""Clone an existing template under a new name."""
+	src = frappe.get_doc("IC Quotation Template", template)
+	name = (new_name or "").strip()
+	if not name:
+		frappe.throw(_("Template name is required"))
+	if frappe.db.exists("IC Quotation Template", name):
+		frappe.throw(_("Template {0} already exists").format(name), frappe.DuplicateEntryError)
+	doc = frappe.copy_doc(src)
+	doc.template_name = name
+	doc.insert(ignore_permissions=True)
+	return {"template": doc.name}
+
+
+@frappe.whitelist()
 def save_quotation_as_template(quotation: str, template_name: str | None = None, overwrite: int = 0):
 	"""Save any quotation (Service/Testing/Other) as an editable IC Quotation Template."""
 	qt = frappe.get_doc("Quotation", quotation)
@@ -179,8 +197,13 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 		tmpl = frappe.new_doc("IC Quotation Template")
 		tmpl.template_name = name
 
-	tmpl.quotation_type = qt.ic_quotation_type or "Service"
+	tmpl.quotation_type = (
+		"Consulting"
+		if (qt.ic_quotation_type or "Consulting") in ("Service", "Consulting")
+		else qt.ic_quotation_type or "Consulting"
+	)
 	tmpl.is_active = 1
+	tmpl.service_family = qt.get("ic_service_family")
 	tmpl.service_name = qt.ic_service_name
 	tmpl.certification_type = qt.ic_certification_type
 	tmpl.applicable_standard = qt.ic_applicable_standard
