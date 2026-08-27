@@ -140,6 +140,8 @@ def ensure_masters():
 def after_migrate():
 	setup_custom_fields()
 	ensure_roles()
+	setup_print_formats()
+	setup_settings()
 	setup_workspace()
 	frappe.db.commit()
 
@@ -320,6 +322,7 @@ def setup_settings():
 		)
 		doc.header_image = doc.header_image or "/assets/instacertify/images/instacertify_letterhead.png"
 		doc.logo = doc.logo or "/assets/instacertify/images/instacertify_letterhead.png"
+		doc.stamp_image = doc.stamp_image or "/assets/instacertify/images/instacertify_stamp.png"
 		doc.save(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "IC Settings Setup")

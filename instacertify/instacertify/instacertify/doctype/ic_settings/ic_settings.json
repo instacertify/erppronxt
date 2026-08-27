@@ -56,6 +56,12 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "stamp_image",
+   "fieldtype": "Attach Image",
+   "label": "Company Stamp / Signature"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_letterhead",
    "fieldtype": "Section Break",
    "label": "Letterhead Contact"

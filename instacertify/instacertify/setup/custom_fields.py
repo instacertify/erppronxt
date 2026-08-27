@@ -361,11 +361,19 @@ QUOTATION_FIELDS = [
 		"depends_on": "eval:in_list(['Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
 	},
 	{
+		"fieldname": "ic_quote_number",
+		"fieldtype": "Data",
+		"label": "Quote No (Print)",
+		"description": "Printed quotation number, e.g. ILPL/C/2026-2027/100. Defaults to document name if blank.",
+		"insert_after": "ic_section_testing",
+		"depends_on": "eval:doc.ic_quotation_type=='Testing'",
+	},
+	{
 		"fieldname": "ic_subject",
 		"fieldtype": "Data",
 		"label": "Subject",
 		"default": "Testing",
-		"insert_after": "ic_section_testing",
+		"insert_after": "ic_quote_number",
 		"depends_on": "eval:doc.ic_quotation_type=='Testing'",
 	},
 	{

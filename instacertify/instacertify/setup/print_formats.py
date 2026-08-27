@@ -251,7 +251,13 @@ JOINING_HTML = """
 """
 
 # Matches uploaded Instacertify Labs testing quotation template (A4)
+# Source: public/templates/testing_quotation_template.pdf
 TESTING_QUOTATION_HTML = """
+{%- macro inr(amount) -%}
+{%- if (doc.currency or 'INR') == 'INR' -%}₹{{ '{:,.0f}'.format(amount or 0) }}/-
+{%- else -%}{{ frappe.utils.fmt_money(amount or 0, currency=doc.currency) }}/-
+{%- endif -%}
+{%- endmacro -%}
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
 {%- set legal = s.legal_name or 'INSTACERTIFY LABS PVT LTD' -%}
 {%- set phone = s.phone or '+91 9999118039' -%}
@@ -260,39 +266,45 @@ TESTING_QUOTATION_HTML = """
 {%- set cin = s.cin or 'UP74999UP2022PTC170291' -%}
 {%- set address = (s.address_line or 'PK 1 Sector 63 A Noida\\nUttar Pradesh, India - 201301').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+{%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
+{%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
-  @page { size: A4; margin: 12mm 12mm 18mm 12mm; }
-  .tq { font-family: 'Segoe UI', Arial, Helvetica, sans-serif; color:#222; font-size:10.5px; line-height:1.45; }
+  @page { size: A4; margin: 14mm 12mm 16mm 12mm; }
+  .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:2px solid #EC6820; margin-bottom:14px; }
-  .tq-logo img { max-height:52px; max-width:260px; }
-  .tq-co { text-align:right; color:#333; font-size:10px; line-height:1.35; }
-  .tq-co .name { color:#EC6820; font-weight:700; font-size:13px; letter-spacing:0.3px; margin-bottom:3px; }
-  .tq-meta { display:flex; justify-content:space-between; margin:10px 0 6px; font-size:11px; }
-  .tq-title { text-align:center; font-size:20px; font-weight:700; margin:8px 0 14px; color:#111; }
-  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:10px; }
-  table.tq-grid > tbody > tr > td { border:1px solid #cfcfcf; vertical-align:top; padding:0; }
-  .tq-label { width:18%; background:#f2f2f2; font-weight:700; padding:10px 8px; color:#222; }
-  .tq-value { width:82%; padding:10px 12px; }
+  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #222; margin-bottom:12px; }
+  .tq-logo img { max-height:58px; max-width:280px; }
+  .tq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
+  .tq-co .name { color:#EC6820; font-weight:700; font-size:13px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
+  .tq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 16px; color:#111; }
+  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
+  table.tq-grid > tbody > tr { page-break-inside:avoid; }
+  table.tq-grid > tbody > tr > td { border:1px solid #333; vertical-align:top; padding:0; }
+  .tq-label { width:17%; background:#efefef; font-weight:700; padding:10px 8px; color:#111; font-size:10.5px; }
+  .tq-value { width:83%; padding:10px 12px; }
   .tq-value ul { margin:6px 0 0 18px; padding:0; }
-  .tq-value li { margin-bottom:3px; }
+  .tq-value ol { margin:6px 0 0 18px; padding:0; }
+  .tq-value li { margin-bottom:4px; }
   .tq-h { font-weight:700; margin:0 0 6px; }
   table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.tq-comm th { background:#f7f7f7; border:1px solid #bdbdbd; padding:7px 6px; font-size:10px; text-align:center; }
-  table.tq-comm td { border:1px solid #bdbdbd; padding:7px 6px; font-size:10px; vertical-align:top; }
+  table.tq-comm th { background:#f5f5f5; border:1px solid #555; padding:7px 5px; font-size:9.5px; text-align:center; font-weight:700; }
+  table.tq-comm td { border:1px solid #555; padding:7px 5px; font-size:10px; vertical-align:top; }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
-  table.tq-comm td.amt { text-align:right; white-space:nowrap; }
+  table.tq-comm td.amt { text-align:center; white-space:nowrap; font-weight:600; }
   .tq-note { margin-top:8px; font-size:10px; }
-  .tq-section { margin:14px 0 8px; }
   table.tq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.tq-bank td { border:1px solid #bdbdbd; padding:7px 8px; }
-  table.tq-bank td.k { width:34%; background:#f7f7f7; font-weight:600; }
-  .tq-close { margin-top:22px; }
-  .tq-sign { margin-top:36px; font-weight:600; }
-  .tq-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:7px 10px; margin-top:22px; font-size:11px; position:relative; }
-  .tq-qr { position:absolute; right:8px; bottom:42px; text-align:center; }
-  .tq-qr img { width:68px; height:68px; }
+  table.tq-bank td { border:1px solid #555; padding:7px 8px; }
+  table.tq-bank td.k { width:34%; background:#f5f5f5; font-weight:600; }
+  .tq-close { margin-top:28px; page-break-inside:avoid; }
+  .tq-close p { margin:6px 0; }
+  .tq-stamp { margin-top:18px; margin-bottom:6px; }
+  .tq-stamp img { max-height:110px; max-width:140px; }
+  .tq-sign { margin-top:8px; font-weight:700; }
+  .tq-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:28px; font-size:11px; }
+  .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
+  .tq-qr img { width:72px; height:72px; }
   .tq-qr .cap { font-size:8px; color:#555; }
   .print-format { padding:0 !important; }
 </style>
@@ -307,20 +319,20 @@ TESTING_QUOTATION_HTML = """
       <div>☎ {{ phone }}</div>
       <div>✉ {{ email }}</div>
       <div>{{ website }}</div>
-      <div>CIN : {{ cin }}</div>
+      <div><b>CIN : {{ cin }}</b></div>
     </div>
   </div>
 
   <div class="tq-meta">
-    <div><b>No:</b> {{ doc.name }}{% if doc.ic_revision_number %} &nbsp;|&nbsp; <b>Rev:</b> {{ doc.ic_revision_number }}{% endif %}</div>
-    <div><b>Date:</b> {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
+    <div>No: {{ quote_no }}</div>
+    <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
   <div class="tq-title">Quotation</div>
 
   <table class="tq-grid">
     <tr>
       <td class="tq-label">Subject</td>
-      <td class="tq-value">{{ doc.ic_subject or 'Testing' }}</td>
+      <td class="tq-value"><b>{{ doc.ic_subject or 'Testing' }}</b></td>
     </tr>
     <tr>
       <td class="tq-label">ABOUT</td>
@@ -341,7 +353,7 @@ TESTING_QUOTATION_HTML = """
           <div>The following standards are applicable for the proposed testing:</div>
           <ul>
           {% for row in doc.ic_test_items or [] %}
-            <li>{{ row.applicable_standard }}{% if row.test_name %} – {{ row.test_name }}{% endif %}</li>
+            <li><b>{{ row.applicable_standard }}</b>{% if row.test_name %} – {{ row.test_name }}{% endif %}</li>
           {% endfor %}
           </ul>
         {% endif %}
@@ -357,12 +369,12 @@ TESTING_QUOTATION_HTML = """
             {{ row.sample_requirement or ((row.number_of_samples or 1)|string + ' complete functional product sample, including all necessary accessories, cables, and power supply components.') }}
           </div>
         {% endfor %}
-        <div class="tq-note">{{ doc.ic_samples_note or 'Note: Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.' }}</div>
+        <div class="tq-note"><b>Note:</b> {{ (doc.ic_samples_note or 'Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.')|replace('Note: ','') }}</div>
       </td>
     </tr>
   </table>
 
-  <table class="tq-grid">
+  <table class="tq-grid" style="margin-top:-1px;">
     <tr>
       <td class="tq-label">Commercials</td>
       <td class="tq-value">
@@ -388,13 +400,13 @@ TESTING_QUOTATION_HTML = """
               <td>{{ row.applicable_standard or '' }}</td>
               <td>{{ row.test_name or '' }}</td>
               <td class="num">{{ units }}</td>
-              <td class="amt">{{ frappe.utils.fmt_money(per, currency=curr) }}/-</td>
-              <td class="amt">{{ frappe.utils.fmt_money(total, currency=curr) }}/-</td>
+              <td class="amt">{{ inr(per) }}</td>
+              <td class="amt">{{ inr(total) }}</td>
             </tr>
           {% endfor %}
           </tbody>
         </table>
-        <div class="tq-note">{{ doc.ic_gst_note or 'Note: GST @ 18% shall be charged additionally on the above testing charges.' }}</div>
+        <div class="tq-note"><b>{{ doc.ic_gst_note or 'Note: GST @ 18% shall be charged additionally on the above testing charges.' }}</b></div>
       </td>
     </tr>
     <tr>
@@ -405,9 +417,9 @@ TESTING_QUOTATION_HTML = """
           {{ doc.ic_deliverables }}
         {% else %}
           <ul>
-            <li>Test Report covering the applicable standards and tests performed.</li>
-            <li>Test Results with observations and measured parameters.</li>
-            <li>Certificate/Report of Compliance, wherever applicable.</li>
+            <li><b>Test Report</b> covering the applicable standards and tests performed.</li>
+            <li><b>Test Results</b> with observations and measured parameters.</li>
+            <li><b>Certificate/Report of Compliance</b>, wherever applicable.</li>
           </ul>
         {% endif %}
       </td>
@@ -417,7 +429,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-value">
         <div class="tq-h">Timeline</div>
         <ul>
-          <li>Estimated Testing Timeline: {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
+          <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
           <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
           <li>The timeline may vary depending on laboratory scheduling, sample condition, test requirements, and any additional testing, if applicable.</li>
         </ul>
@@ -431,7 +443,7 @@ TESTING_QUOTATION_HTML = """
           {{ doc.ic_payment_terms }}
         {% else %}
           <ul>
-            <li>100% Advance Payment is required to initiate the testing process.</li>
+            <li><b>100% Advance Payment</b> is required to initiate the testing process.</li>
             <li>Testing will commence upon receipt of the payment and sample.</li>
             <li>Any additional testing or charges, if applicable, shall be communicated separately.</li>
           </ul>
@@ -439,18 +451,18 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Sample handling & disposal policy</td>
+      <td class="tq-label">Sample handling &amp; disposal policy</td>
       <td class="tq-value">
         {% if doc.ic_sample_handling_policy %}
           {{ doc.ic_sample_handling_policy }}
         {% else %}
           <ol>
             <li>Samples may be subjected to destructive and/or non-destructive testing as required by the applicable standard or test protocol.</li>
-            <li>After completion of testing and receipt of the samples from the laboratory, Instacertify Labs Pvt. Ltd. shall retain the remaining samples for a maximum period of 15 days.</li>
+            <li>After completion of testing and receipt of the samples from the laboratory, Instacertify Labs Pvt. Ltd. shall retain the remaining samples for a maximum period of <b>15 days</b>.</li>
             <li>Clients wishing to recover their samples must arrange collection or request return shipment within the 15-day retention period.</li>
             <li>All sample shipping, return shipping, handling, storage, customs duties, taxes, and related logistics costs shall be borne solely by the Client.</li>
-            <li>For samples returned within India through a reputed courier service arranged by Instacertify Labs Pvt. Ltd., return shipping charges shall be ₹450 per kg + applicable GST.</li>
-            <li>For samples returned outside India, return shipping charges shall be USD 90 per kg, exclusive of customs duties, taxes, import/export charges, and other applicable logistics costs, which shall be borne by the Client.</li>
+            <li>For samples returned within India through a reputed courier service arranged by Instacertify Labs Pvt. Ltd., return shipping charges shall be <b>₹450 per kg + applicable GST</b>.</li>
+            <li>For samples returned outside India, return shipping charges shall be <b>USD 90 per kg</b>, exclusive of customs duties, taxes, import/export charges, and other applicable logistics costs, which shall be borne by the Client.</li>
             <li>Samples not claimed, or for which return arrangements are not confirmed within 15 days, shall be considered abandoned and may be disposed of at the sole discretion of Instacertify Labs Pvt. Ltd., without further notice or liability.</li>
             <li>Instacertify Labs Pvt. Ltd. shall not be responsible for any loss, damage, delay, or deterioration of samples during transit through third-party courier or logistics providers.</li>
           </ol>
@@ -462,6 +474,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-value">
         <div class="tq-h">Bank Details for Payment</div>
         <table class="tq-bank">
+          <tr><td class="k">Particulars</td><td><b>Details</b></td></tr>
           <tr><td class="k">Beneficiary Name</td><td>{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
           <tr><td class="k">Bank Name</td><td>{{ s.bank_name or 'YES BANK' }}</td></tr>
           <tr><td class="k">Account Number</td><td>{{ s.account_number or '026485800001318' }}</td></tr>
@@ -489,37 +502,38 @@ TESTING_QUOTATION_HTML = """
         {% if doc.ic_force_majeure %}
           {{ doc.ic_force_majeure }}
         {% else %}
-          Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events.
+          Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events
         {% endif %}
       </td>
     </tr>
     <tr>
-      <td class="tq-label">CONFIDENTIALITY & DATA PROTECTION</td>
+      <td class="tq-label">CONFIDENTIALITY &amp; DATA PROTECTION</td>
       <td class="tq-value">
         {% if doc.ic_confidentiality %}
           {{ doc.ic_confidentiality }}
         {% else %}
-          Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection.
+          Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection
         {% endif %}
       </td>
     </tr>
   </table>
 
   <div class="tq-close">
+    <div class="tq-qr">
+      {% if doc.ic_qr_code %}
+        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+      {% else %}
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+      {% endif %}
+      <div class="cap">Scan to verify</div>
+    </div>
     <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
-    <p>Thanking You,</p>
+    <p><b>Thanking You,</b></p>
+    <div class="tq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="tq-sign">For Instacertify Labs Private Limited</div>
   </div>
 
-  <div class="tq-qr">
-    {% if doc.ic_qr_code %}
-      <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-    {% else %}
-      <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
-    {% endif %}
-    <div class="cap">Scan to verify</div>
-  </div>
-
+  <div style="clear:both;"></div>
   <div class="tq-footer-bar">{{ website }}</div>
 </div>
 """
