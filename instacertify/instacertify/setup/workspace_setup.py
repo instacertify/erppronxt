@@ -25,6 +25,17 @@ def _ensure_home_html_block():
     <h2 id="ic-greet-title">Welcome</h2>
     <div class="ic-datetime"><span id="ic-date"></span> · <span id="ic-time"></span></div>
   </div>
+
+  <div class="ic-explore-panel" id="ic-explore-panel">
+    <div class="ic-explore-head">
+      <div>
+        <div class="ic-explore-title">Explore Instacertify</div>
+        <div class="ic-explore-sub" id="ic-explore-hint">Relevant options for you — tap any card to open</div>
+      </div>
+    </div>
+    <div class="ic-explore-grid" id="ic-explore-grid"></div>
+  </div>
+
   <div class="ic-summary-grid" id="ic-summary-grid"></div>
 
   <div class="ic-workdesk-grid">
@@ -204,6 +215,66 @@ def _ensure_home_html_block():
   setInterval(refreshClock, 30000);
 
   function empty(msg){ return "<div class='ic-lead-prompt-empty'>"+msg+"</div>"; }
+
+  function openExploreCard(card) {
+    if (!card) return;
+    if (card.action === "upload_quote_format" && window.instacertify && instacertify.open_quote_format_upload) {
+      instacertify.open_quote_format_upload();
+      return;
+    }
+    if (card.action === "upload_laboratory" && window.instacertify && instacertify.open_laboratory_upload) {
+      instacertify.open_laboratory_upload();
+      return;
+    }
+    if (card.action === "new_expense") {
+      frappe.new_doc("IC Expense Claim");
+      return;
+    }
+    const route = card.route || [];
+    if (!route.length) return;
+    if (route[0] === "List") {
+      frappe.set_route.apply(null, route);
+    } else if (route.length === 1) {
+      frappe.set_route(route[0]);
+    } else {
+      frappe.set_route.apply(null, route);
+    }
+  }
+
+  frappe.call({
+    method: "instacertify.explore.dashboard.get_explore_prompts",
+    callback(r) {
+      const d = r.message || {};
+      const grid = root_element.getElementById("ic-explore-grid");
+      const hint = root_element.getElementById("ic-explore-hint");
+      if (hint && d.hint) hint.textContent = d.hint;
+      if (!grid) return;
+      const cards = d.cards || [];
+      if (!cards.length) {
+        grid.innerHTML = empty("No explore options available for your role.");
+        return;
+      }
+      grid.innerHTML = cards.map((c, idx) => {
+        const count = (c.count != null)
+          ? `<span class="ic-explore-count">${esc(c.count)}</span>`
+          : "";
+        const actionHint = c.action
+          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "New" : "Open")}</span>`
+          : "";
+        return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
+          <div class="ic-explore-card-top">${actionHint}${count}</div>
+          <div class="ic-explore-card-title">${esc(c.title)}</div>
+          <div class="ic-explore-card-sub">${esc(c.subtitle || "")}</div>
+        </button>`;
+      }).join("");
+      grid.querySelectorAll(".ic-explore-card").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const i = parseInt(btn.getAttribute("data-idx"), 10);
+          openExploreCard(cards[i]);
+        });
+      });
+    }
+  });
 
   function projectTile(p) {
     if (window.instacertify && instacertify.project_tile_html) {
@@ -598,6 +669,46 @@ _SHADOW_THEME_CSS = """
 .ic-summary-card:nth-child(3n) { border-left: 4px solid #0a8fb5 !important; }
 .ic-summary-card:nth-child(3n) .value { color: #0a8fb5 !important; }
 .ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC6820 !important; }
+.ic-explore-panel { margin-bottom: 20px; }
+.ic-explore-title {
+  font-family: "Poppins", sans-serif !important;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #065175;
+  letter-spacing: -0.02em;
+}
+.ic-explore-sub { color: #5a6f7a; font-size: 0.86rem; margin-top: 2px; margin-bottom: 12px; }
+.ic-explore-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 10px;
+}
+.ic-explore-card {
+  text-align: left;
+  border: 1px solid rgba(6,81,117,0.12);
+  border-radius: 12px;
+  padding: 14px 14px 16px;
+  background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 16px rgba(6,81,117,0.05);
+  font-family: "Poppins", sans-serif !important;
+}
+.ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,81,117,0.1); }
+.ic-explore-card.accent-coral { border-left: 4px solid #c0392b; }
+.ic-explore-card.accent-citrus { border-left: 4px solid #EC6820; }
+.ic-explore-card.accent-teal { border-left: 4px solid #065175; }
+.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; }
+.ic-explore-count {
+  background: #065175; color: #fff; font-size: 0.72rem; font-weight: 700;
+  border-radius: 999px; padding: 2px 8px;
+}
+.ic-explore-action {
+  background: #fff4ec; color: #c44710; font-size: 0.7rem; font-weight: 700;
+  border-radius: 6px; padding: 2px 7px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.ic-explore-card-title { font-weight: 700; color: #033447; font-size: 0.95rem; }
+.ic-explore-card-sub { color: #5a6f7a; font-size: 0.78rem; margin-top: 4px; line-height: 1.35; }
 """
 
 
@@ -783,6 +894,7 @@ def _ensure_home_workspace():
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 3}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
 		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 3}},
+		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
 		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
 		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 3}},
@@ -806,6 +918,7 @@ def _ensure_home_workspace():
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Quote Format Library", "link_to": "IC Quotation Template", "type": "DocType", "doc_view": "List"},
+		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
 		{"label": "Document Requests", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Helpdesk", "link_to": "Helpdesk Ticket", "type": "DocType", "doc_view": "List"},
@@ -872,6 +985,8 @@ def _ensure_home_workspace():
 		{"label": "Event", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
 		{"label": "My HR & Employment", "type": "Card Break"},
+		{"label": "File an Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "My Expense Claims", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
 		{"label": "My Employee Profile", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
 		{"label": "Joining Letters", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
 		{"label": "Salary Slips & Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},

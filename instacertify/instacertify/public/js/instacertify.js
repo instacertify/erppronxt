@@ -2639,6 +2639,25 @@ frappe.ui.form.on("Project", {
 	},
 });
 
+frappe.listview_settings["IC Expense Claim"] = {
+	add_fields: ["status", "category", "amount", "expense_date"],
+	get_indicator(doc) {
+		const map = {
+			Draft: ["Draft", "gray", "status,=,Draft"],
+			Submitted: ["Submitted", "orange", "status,=,Submitted"],
+			Approved: ["Approved", "green", "status,=,Approved"],
+			Rejected: ["Rejected", "red", "status,=,Rejected"],
+			Reimbursed: ["Reimbursed", "blue", "status,=,Reimbursed"],
+		};
+		return map[doc.status] || [__(doc.status || "Draft"), "gray", "status,=," + (doc.status || "Draft")];
+	},
+	onload(listview) {
+		listview.page.add_inner_button(__("File New Expense"), () => {
+			frappe.new_doc("IC Expense Claim");
+		});
+	},
+};
+
 // Quote Format + Laboratory libraries — list upload actions
 frappe.listview_settings["IC Quotation Template"] = {
 	onload(listview) {

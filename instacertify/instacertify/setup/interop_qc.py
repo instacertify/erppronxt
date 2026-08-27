@@ -33,6 +33,9 @@ def run():
 		"IC Testing Request",
 		"IC Document Request",
 		"IC Sample Tracking",
+		"IC Expense Claim",
+		"IC Quotation Template",
+		"IC Laboratory",
 		"IC Settings",
 	]:
 		(ok if frappe.db.exists("DocType", dt) else fail)(f"DocType {dt}")
@@ -61,6 +64,8 @@ def run():
 		("instacertify.project.events.get_dashboard_counts", {}),
 		("instacertify.hr.dashboard.get_workdesk_insights", {"limit": 5}),
 		("instacertify.crm.dashboard.get_lead_contact_prompts", {"limit": 5}),
+		("instacertify.explore.dashboard.get_explore_prompts", {}),
+		("instacertify.setup.library_upload.get_library_summary", {}),
 		("instacertify.calendar.events.get_team_users", {}),
 		("instacertify.crm.dashboard.get_lead_tracker_stats", {}),
 	]
@@ -115,6 +120,16 @@ def run():
 			ok(f"Dashboard counts ok { {k: counts[k] for k in needed} }")
 	except Exception as e:
 		fail(f"Dashboard counts: {e}")
+
+	# Explore prompts
+	try:
+		explore = frappe.call("instacertify.explore.dashboard.get_explore_prompts") or {}
+		cards = explore.get("cards") or []
+		ok(f"Explore cards={len(cards)} ids={[c.get('id') for c in cards[:8]]}")
+		if len(cards) < 3:
+			warn("Explore cards sparse for current user roles")
+	except Exception as e:
+		fail(f"Explore prompts: {e}")
 
 	# Quotation PDF
 	try:

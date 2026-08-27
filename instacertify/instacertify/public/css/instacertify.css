@@ -480,6 +480,94 @@ body {
   margin-bottom: 20px;
 }
 
+.ic-explore-panel {
+  margin-bottom: 20px;
+  animation: ic-rise-in 0.5s var(--ic-rise) both;
+}
+
+.ic-explore-title {
+  font-family: "Poppins", var(--ic-font);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ic-primary);
+  letter-spacing: -0.02em;
+}
+
+.ic-explore-sub {
+  color: var(--ic-muted, #5a6f7a);
+  font-size: 0.86rem;
+  margin-top: 2px;
+  margin-bottom: 12px;
+}
+
+.ic-explore-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 10px;
+}
+
+.ic-explore-card {
+  text-align: left;
+  border: 1px solid rgba(6, 81, 117, 0.12);
+  border-radius: 12px;
+  padding: 14px 14px 16px;
+  background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
+  cursor: pointer;
+  transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease);
+  box-shadow: var(--ic-shadow);
+  font-family: "Poppins", var(--ic-font);
+}
+
+.ic-explore-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(6, 81, 117, 0.1);
+}
+
+.ic-explore-card.accent-coral { border-left: 4px solid #c0392b; }
+.ic-explore-card.accent-citrus { border-left: 4px solid var(--ic-accent); }
+.ic-explore-card.accent-teal { border-left: 4px solid var(--ic-primary); }
+
+.ic-explore-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 22px;
+  margin-bottom: 6px;
+}
+
+.ic-explore-count {
+  background: var(--ic-primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.ic-explore-action {
+  background: #fff4ec;
+  color: #c44710;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ic-explore-card-title {
+  font-weight: 700;
+  color: #033447;
+  font-size: 0.95rem;
+}
+
+.ic-explore-card-sub {
+  color: var(--ic-muted, #5a6f7a);
+  font-size: 0.78rem;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
 .ic-summary-card {
   background: linear-gradient(180deg, #ffffff 0%, #f7fbfd 100%);
   border-radius: var(--ic-radius);

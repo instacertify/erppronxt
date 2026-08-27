@@ -31,6 +31,8 @@ FRIENDLY_LABELS = {
 	"IC Lead Source": "Lead Source",
 	"IC Joining Letter": "Joining Letter",
 	"IC Employee Document": "Employee Document",
+	"IC Expense Claim": "Expense Claim",
+	"IC Quote Format File": "Quote Format File",
 	"IC Settings": "Settings",
 	# Reports
 	"IC Commercial Summary": "Commercial Summary",
