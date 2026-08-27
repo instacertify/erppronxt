@@ -420,33 +420,235 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
-// Customer history
+// Customer Related Data tab — full per-customer history
 frappe.ui.form.on("Customer", {
 	refresh(frm) {
-		if (frm.doc.name) {
-			frappe.call({
-				method: "instacertify.crm.events.get_customer_history",
-				args: { customer: frm.doc.name },
-				callback(r) {
-					const d = r.message || {};
-					const html = `
-						<div class="ic-summary-grid">
-							<div class="ic-summary-card"><div class="label">Leads</div><div class="value">${(d.leads||[]).length}</div></div>
-							<div class="ic-summary-card"><div class="label">Quotations</div><div class="value">${(d.quotations||[]).length}</div></div>
-							<div class="ic-summary-card accent"><div class="label">Accepted</div><div class="value">${(d.accepted_quotations||[]).length}</div></div>
-							<div class="ic-summary-card"><div class="label">Active Projects</div><div class="value">${(d.active_projects||[]).length}</div></div>
-							<div class="ic-summary-card"><div class="label">Testing</div><div class="value">${(d.testing_requests||[]).length}</div></div>
-							<div class="ic-summary-card"><div class="label">Invoices</div><div class="value">${(d.invoices||[]).length}</div></div>
-							<div class="ic-summary-card accent"><div class="label">Outstanding</div><div class="value" style="font-size:1.1rem;">${format_currency(d.outstanding_amount||0)}</div></div>
-						</div>
-						<div class="text-muted">Contacts: ${(d.contacts||[]).length} · Documents: ${(d.documents||[]).length} · Records: ${(d.records||[]).length}</div>
-					`;
-					frm.set_df_property("ic_history_html", "options", html);
-				},
-			});
-		}
+		if (!frm.doc.name || frm.is_new()) return;
+		frappe.call({
+			method: "instacertify.crm.events.get_customer_history",
+			args: { customer: frm.doc.name },
+			callback(r) {
+				const d = r.message || {};
+				frm.set_df_property("ic_history_html", "options", ic_render_customer_related(d));
+			},
+		});
 	},
 });
+
+function ic_esc(v) {
+	return frappe.utils.escape_html(v == null ? "" : String(v));
+}
+
+function ic_fmt_money(amount, currency) {
+	try {
+		return format_currency(amount || 0, currency);
+	} catch (e) {
+		return String(amount || 0);
+	}
+}
+
+function ic_doc_link(doctype, name, label) {
+	const route = `/app/${frappe.router.slug(doctype)}/${encodeURIComponent(name)}`;
+	return `<a href="${route}" class="ic-doc-link">${ic_esc(label || name)}</a>`;
+}
+
+function ic_list_link(doctype, customer, label, extra_params) {
+	const params = new URLSearchParams(extra_params || { customer });
+	const route = `/app/${frappe.router.slug(doctype)}?${params.toString()}`;
+	return `<a href="${route}" class="ic-view-all">${ic_esc(label || __("View all"))}</a>`;
+}
+
+function ic_status_pill(status) {
+	if (!status) return '<span class="text-muted">—</span>';
+	return `<span class="ic-status-pill">${ic_esc(status)}</span>`;
+}
+
+function ic_related_section(title, rows_html, empty_msg, view_all_html) {
+	return `
+		<section class="ic-related-section">
+			<div class="ic-related-header">
+				<h4>${ic_esc(title)}</h4>
+				${view_all_html || ""}
+			</div>
+			${rows_html || `<div class="ic-related-empty">${ic_esc(empty_msg || __("No records"))}</div>`}
+		</section>
+	`;
+}
+
+function ic_table(headers, body_rows) {
+	if (!body_rows || !body_rows.length) return "";
+	const th = headers.map((h) => `<th>${ic_esc(h)}</th>`).join("");
+	const tr = body_rows.map((cols) => `<tr>${cols.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("");
+	return `<div class="ic-related-table-wrap"><table class="ic-related-table"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+
+function ic_render_customer_related(d) {
+	const customer = d.customer || "";
+	const cards = `
+		<div class="ic-summary-grid">
+			<div class="ic-summary-card"><div class="label">${__("Quotations")}</div><div class="value">${(d.quotations || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Shared / Accepted")}</div><div class="value">${(d.shared_quotations || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Projects")}</div><div class="value">${(d.projects || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Active Projects")}</div><div class="value">${(d.active_projects || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Invoices")}</div><div class="value">${(d.invoices || []).length}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Payments")}</div><div class="value">${(d.payments || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Outstanding")}</div><div class="value" style="font-size:1.1rem;">${ic_fmt_money(d.outstanding_amount || 0)}</div></div>
+			<div class="ic-summary-card"><div class="label">${__("Testing")}</div><div class="value">${(d.testing_requests || []).length}</div></div>
+		</div>
+		<p class="ic-related-hint text-muted">${__("All quotations, projects, invoices, payments, and Instacertify records for this customer. Open a row or use Connections for filtered lists.")}</p>
+	`;
+
+	const quote_rows = (d.quotations || []).map((q) => [
+		ic_doc_link("Quotation", q.name),
+		ic_status_pill(q.ic_workflow_status || q.status),
+		ic_fmt_money(q.grand_total, q.currency),
+		ic_esc(q.transaction_date || "—"),
+	]);
+	const project_rows = (d.projects || []).map((p) => [
+		ic_doc_link("Project", p.name, p.project_name || p.name),
+		ic_status_pill(p.status),
+		ic_esc(p.ic_project_stage || "—"),
+		`${ic_esc(p.ic_progress_percentage || 0)}%`,
+		ic_esc(p.ic_deadline || p.expected_end_date || "—"),
+	]);
+	const invoice_rows = (d.invoices || []).map((i) => [
+		ic_doc_link("Sales Invoice", i.name),
+		ic_status_pill(i.status),
+		ic_fmt_money(i.grand_total, i.currency),
+		ic_fmt_money(i.outstanding_amount, i.currency),
+		ic_esc(i.posting_date || "—"),
+		i.ic_quotation ? ic_doc_link("Quotation", i.ic_quotation) : "—",
+	]);
+	const payment_rows = (d.payments || []).map((p) => [
+		ic_doc_link("Payment Entry", p.name),
+		ic_status_pill(p.status || (cint(p.docstatus) === 1 ? "Submitted" : "Draft")),
+		ic_esc(p.payment_type || "—"),
+		ic_fmt_money(p.received_amount || p.paid_amount, p.currency),
+		ic_esc(p.mode_of_payment || "—"),
+		ic_esc(p.posting_date || "—"),
+	]);
+	const opportunity_rows = (d.opportunities || []).map((o) => [
+		ic_doc_link("Opportunity", o.name, o.title || o.name),
+		ic_status_pill(o.status),
+		ic_fmt_money(o.opportunity_amount, o.currency),
+		ic_esc(o.transaction_date || "—"),
+	]);
+	const testing_rows = (d.testing_requests || []).map((t) => [
+		ic_doc_link("IC Testing Request", t.name, t.title || t.name),
+		ic_status_pill(t.status),
+		ic_esc(t.product || t.test_name || "—"),
+	]);
+	const doc_rows = (d.documents || []).map((doc) => [
+		ic_doc_link("IC Document Request", doc.name, doc.title || doc.name),
+		ic_status_pill(doc.status),
+	]);
+	const sample_rows = (d.samples || []).map((s) => [
+		ic_doc_link("IC Sample Tracking", s.name, s.tracking_number || s.name),
+		ic_status_pill(s.status),
+		ic_esc(s.sample_description || "—"),
+	]);
+	const record_rows = (d.records || []).map((rec) => [
+		ic_doc_link("IC Project Record", rec.name, rec.subject || rec.name),
+		ic_esc(rec.record_type || "—"),
+		ic_esc(rec.category || "—"),
+	]);
+	const contact_rows = (d.contacts || []).map((c) => {
+		const full = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.name;
+		return [
+			ic_doc_link("Contact", c.name, full),
+			ic_esc(c.email_id || "—"),
+			ic_esc(c.mobile_no || "—"),
+			c.is_primary_contact ? __("Primary") : "",
+		];
+	});
+	const lead_rows = (d.leads || []).map((l) => [
+		ic_doc_link("Lead", l.name),
+		ic_status_pill(l.status),
+		ic_esc(l.ic_request_category || l.source || "—"),
+	]);
+
+	return `
+		<div class="ic-customer-related">
+			${cards}
+			${ic_related_section(
+				__("Quotations Shared"),
+				ic_table([__("Quotation"), __("Status"), __("Amount"), __("Date")], quote_rows),
+				__("No quotations for this customer"),
+				customer
+					? ic_list_link("Quotation", customer, null, {
+							party_name: customer,
+							quotation_to: "Customer",
+					  })
+					: ""
+			)}
+			${ic_related_section(
+				__("Customer Projects"),
+				ic_table([__("Project"), __("Status"), __("Stage"), __("Progress"), __("Deadline")], project_rows),
+				__("No projects for this customer"),
+				customer ? ic_list_link("Project", customer) : ""
+			)}
+			${ic_related_section(
+				__("Invoices"),
+				ic_table([__("Invoice"), __("Status"), __("Amount"), __("Outstanding"), __("Date"), __("Quotation")], invoice_rows),
+				__("No invoices for this customer"),
+				customer ? ic_list_link("Sales Invoice", customer) : ""
+			)}
+			${ic_related_section(
+				__("Payments"),
+				ic_table([__("Payment"), __("Status"), __("Type"), __("Amount"), __("Mode"), __("Date")], payment_rows),
+				__("No payments for this customer"),
+				customer
+					? ic_list_link("Payment Entry", customer, null, {
+							party: customer,
+							party_type: "Customer",
+					  })
+					: ""
+			)}
+			${ic_related_section(
+				__("Opportunities"),
+				ic_table([__("Opportunity"), __("Status"), __("Amount"), __("Date")], opportunity_rows),
+				__("No opportunities for this customer"),
+				customer
+					? ic_list_link("Opportunity", customer, null, {
+							party_name: customer,
+							opportunity_from: "Customer",
+					  })
+					: ""
+			)}
+			${ic_related_section(
+				__("Testing Requests"),
+				ic_table([__("Request"), __("Status"), __("Product / Test")], testing_rows),
+				__("No testing requests"),
+				customer ? ic_list_link("IC Testing Request", customer) : ""
+			)}
+			${ic_related_section(
+				__("Document Requests"),
+				ic_table([__("Document Request"), __("Status")], doc_rows),
+				__("No document requests")
+			)}
+			${ic_related_section(
+				__("Samples"),
+				ic_table([__("Sample"), __("Status"), __("Description")], sample_rows),
+				__("No samples")
+			)}
+			${ic_related_section(
+				__("Project Records"),
+				ic_table([__("Record"), __("Type"), __("Category")], record_rows),
+				__("No project records")
+			)}
+			${ic_related_section(
+				__("Contacts"),
+				ic_table([__("Contact"), __("Email"), __("Mobile"), __("Role")], contact_rows),
+				__("No contacts linked")
+			)}
+			${ic_related_section(
+				__("Leads"),
+				ic_table([__("Lead"), __("Status"), __("Category / Source")], lead_rows),
+				__("No matching leads")
+			)}
+		</div>
+	`;
+}
 
 // Project progress HTML
 frappe.ui.form.on("Project", {

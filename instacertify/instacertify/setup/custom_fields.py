@@ -191,10 +191,16 @@ CUSTOMER_FIELDS = [
 		"default": "0",
 	},
 	{
+		"fieldname": "ic_related_tab",
+		"fieldtype": "Tab Break",
+		"label": "Related Data",
+		"insert_after": "column_break_hdmn",
+	},
+	{
 		"fieldname": "ic_section_history",
 		"fieldtype": "Section Break",
 		"label": "Customer History Overview",
-		"insert_after": "ic_currency_manual",
+		"insert_after": "ic_related_tab",
 	},
 	{
 		"fieldname": "ic_history_html",

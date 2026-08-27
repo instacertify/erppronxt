@@ -212,6 +212,7 @@ def setup_custom_fields():
 	_apply_quotation_type_options()
 	_ensure_service_family_field()
 	_ensure_sales_invoice_quotation_link()
+	_ensure_customer_related_tab()
 
 
 def _apply_quotation_type_options():
@@ -265,6 +266,55 @@ def _ensure_sales_invoice_quotation_link():
 		).insert(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Sales Invoice ic_quotation field")
+
+
+def _ensure_customer_related_tab():
+	"""Dedicated Customer tab listing projects, invoices, quotations, etc."""
+	fields = [
+		{
+			"fieldname": "ic_related_tab",
+			"label": "Related Data",
+			"fieldtype": "Tab Break",
+			"insert_after": "column_break_hdmn",
+		},
+		{
+			"fieldname": "ic_section_history",
+			"label": "Customer History Overview",
+			"fieldtype": "Section Break",
+			"insert_after": "ic_related_tab",
+		},
+		{
+			"fieldname": "ic_history_html",
+			"label": "History",
+			"fieldtype": "HTML",
+			"insert_after": "ic_section_history",
+		},
+	]
+	for meta in fields:
+		cf_name = f"Customer-{meta['fieldname']}"
+		try:
+			if frappe.db.exists("Custom Field", cf_name):
+				frappe.db.set_value(
+					"Custom Field",
+					cf_name,
+					{
+						"label": meta["label"],
+						"fieldtype": meta["fieldtype"],
+						"insert_after": meta["insert_after"],
+						"module": "Instacertify",
+					},
+				)
+			else:
+				frappe.get_doc(
+					{
+						"doctype": "Custom Field",
+						"dt": "Customer",
+						"module": "Instacertify",
+						**meta,
+					}
+				).insert(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Customer field {meta['fieldname']}")
 
 
 def setup_company():

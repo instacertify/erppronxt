@@ -128,6 +128,11 @@ jinja = {
 # Bootinfo / branding
 boot_session = "instacertify.boot.boot_session"
 
+# Form Connections dashboards
+override_doctype_dashboards = {
+	"Customer": "instacertify.overrides.customer.get_dashboard_data",
+}
+
 # After migrate
 after_migrate = [
 	"instacertify.setup.install.after_migrate",
