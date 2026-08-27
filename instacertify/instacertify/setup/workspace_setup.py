@@ -138,6 +138,48 @@ def _ensure_home_html_block():
     else if (hour < 17) g = "Good Afternoon";
     return g + ", " + (frappe.session.user_fullname || "there");
   }
+  function openKpi(label) {
+    if (window.instacertify && typeof instacertify.open_kpi === "function") {
+      instacertify.open_kpi(label);
+      return;
+    }
+    const today = frappe.datetime.get_today();
+    const week_start = frappe.datetime.add_days(today, -6);
+    const deadline_end = frappe.datetime.add_days(today, 14);
+    const amc_end = frappe.datetime.add_days(today, 31);
+    const map = {
+      "New Leads": ["Lead", {status: "Lead"}],
+      "Active Leads": ["Lead", {status: ["in", ["Open", "Replied", "Opportunity"]]}],
+      "Leads to Contact": ["Lead", {status: ["not in", ["Converted", "Do Not Contact"]], ic_next_contact_date: ["<=", today]}],
+      "Pending Tasks": ["Task", {status: ["in", ["Open", "Working"]]}],
+      "Open Tickets": ["Helpdesk Ticket", {status: ["in", ["Open", "In Progress", "Waiting on Customer"]]}],
+      "Open Complaints": ["Helpdesk Ticket", {status: ["in", ["Open", "In Progress", "Waiting on Customer"]], ticket_type: "Complaint"}],
+      "Quotations Sent": ["Quotation", {ic_workflow_status: ["in", ["Shared with Customer", "Customer Review"]]}],
+      "Quotations Accepted": ["Quotation", {ic_workflow_status: "Accepted"}],
+      "Active Projects": ["Project", {status: ["not in", ["Completed", "Cancelled"]]}],
+      "Upcoming Deadlines": ["Project", {status: ["not in", ["Completed", "Cancelled"]], ic_deadline: ["<=", deadline_end]}],
+      "Pending Documents": ["IC Document Request", {status: ["in", ["Sent to Customer", "Partially Uploaded"]]}],
+      "Testing Requests": ["IC Testing Request", {status: ["not in", ["Report Shared with Customer"]]}],
+      "AMC Due Soon": ["Project", {ic_requires_amc: 1, ic_amc_status: ["in", ["Scheduled", "Reminded"]], ic_amc_contact_date: ["<=", amc_end]}],
+      "This Week": ["Lead", {creation: [">=", week_start]}],
+      "Last 7 Days": ["Lead", {creation: [">=", week_start]}],
+      "This Month": ["Lead", {creation: [">=", moment(today).startOf("month").format("YYYY-MM-DD")]}],
+      "Last 30 Days": ["Lead", {creation: [">=", frappe.datetime.add_days(today, -29)]}],
+    };
+    const hit = map[label];
+    if (!hit) {
+      frappe.show_alert({message: "No list linked for " + label, indicator: "orange"});
+      return;
+    }
+    frappe.route_options = hit[1] || {};
+    frappe.set_route("List", hit[0]);
+  }
+  function bindKpiClicks(root) {
+    (root || document).querySelectorAll(".ic-summary-card[data-kpi]").forEach((el) => {
+      el.style.cursor = "pointer";
+      el.onclick = function () { openKpi(el.getAttribute("data-kpi")); };
+    });
+  }
   function refreshClock() {
     const t = document.getElementById("ic-greet-title");
     const d = document.getElementById("ic-date");
@@ -188,15 +230,7 @@ def _ensure_home_html_block():
       grid.innerHTML = items.map(([label, value, accent]) =>
         `<div class="ic-summary-card is-clickable ${accent ? "accent" : ""}" data-kpi="${frappe.utils.escape_html(label)}" title="Click to open list"><div class="label">${frappe.utils.escape_html(label)}</div><div class="value">${value ?? 0}</div></div>`
       ).join("");
-      if (window.instacertify && instacertify.bind_summary_card_clicks) {
-        instacertify.bind_summary_card_clicks(grid);
-      } else {
-        grid.querySelectorAll(".ic-summary-card[data-kpi]").forEach((el) => {
-          el.addEventListener("click", () => {
-            if (window.instacertify && instacertify.open_kpi) instacertify.open_kpi(el.getAttribute("data-kpi"));
-          });
-        });
-      }
+      bindKpiClicks(grid);
     }
   });
 
@@ -503,6 +537,13 @@ def _ensure_crm_lead_tracker_block():
         }).join("");
         if (window.instacertify && instacertify.bind_summary_card_clicks) {
           instacertify.bind_summary_card_clicks(kpi);
+        } else {
+          kpi.querySelectorAll(".ic-summary-card[data-kpi]").forEach((el) => {
+            el.style.cursor = "pointer";
+            el.onclick = () => {
+              if (window.instacertify && instacertify.open_kpi) instacertify.open_kpi(el.getAttribute("data-kpi"));
+            };
+          });
         }
       }
       const week = d.week_compare || [];

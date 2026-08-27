@@ -83,7 +83,11 @@ instacertify.greeting = function (fullName) {
 };
 
 instacertify.render_home_banner = function (wrapper) {
-	if (!wrapper || wrapper.find(".ic-greeting").length) return;
+	// Prefer the Custom HTML Block home dashboard when present.
+	if (!wrapper || wrapper.find("#ic-home-root, .ic-greeting").length) {
+		instacertify.bind_summary_card_clicks(document);
+		return;
+	}
 	const html = `
 		<div class="ic-greeting">
 			<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
@@ -254,6 +258,14 @@ instacertify.bind_summary_card_clicks = function (root) {
 		if (label) instacertify.open_kpi(label);
 	});
 };
+
+// Global delegation so workspace HTML blocks work even after partial re-renders
+$(document).on("click.icKpiGlobal", ".ic-summary-card[data-kpi]", function (e) {
+	if ($(e.target).closest("a").length) return;
+	e.preventDefault();
+	const label = $(this).attr("data-kpi");
+	if (label) instacertify.open_kpi(label);
+});
 
 instacertify.load_summary_cards = function () {
 	frappe.call({
