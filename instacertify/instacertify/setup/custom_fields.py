@@ -5,6 +5,33 @@ from __future__ import annotations
 
 LEAD_FIELDS = [
 	{
+		"fieldname": "ic_section_capture",
+		"fieldtype": "Section Break",
+		"label": "Lead Capture",
+		"insert_after": "salutation",
+	},
+	{
+		"fieldname": "ic_party_name",
+		"fieldtype": "Data",
+		"label": "Name of Person / Firm",
+		"reqd": 1,
+		"in_list_view": 1,
+		"insert_after": "ic_section_capture",
+		"description": "Mandatory — person name or company / firm name",
+	},
+	{
+		"fieldname": "ic_column_capture",
+		"fieldtype": "Column Break",
+		"insert_after": "ic_party_name",
+	},
+	{
+		"fieldname": "ic_company_size",
+		"fieldtype": "Select",
+		"label": "Company Size",
+		"options": "\nMicro\nSmall\nMedium\nLarge",
+		"insert_after": "ic_column_capture",
+	},
+	{
 		"fieldname": "ic_section_company_extra",
 		"fieldtype": "Section Break",
 		"label": "Instacertify Company Details",
@@ -17,16 +44,9 @@ LEAD_FIELDS = [
 		"insert_after": "ic_section_company_extra",
 	},
 	{
-		"fieldname": "ic_company_size",
-		"fieldtype": "Select",
-		"label": "Company Size",
-		"options": "\nMicro\nSmall\nMedium\nLarge",
-		"insert_after": "ic_factory_address",
-	},
-	{
 		"fieldname": "ic_column_break_1",
 		"fieldtype": "Column Break",
-		"insert_after": "ic_company_size",
+		"insert_after": "ic_factory_address",
 	},
 	{
 		"fieldname": "ic_gst_number",
@@ -49,19 +69,29 @@ LEAD_FIELDS = [
 		"insert_after": "ic_state",
 	},
 	{
+		"fieldname": "ic_project_type",
+		"fieldtype": "Link",
+		"label": "Project Type",
+		"options": "IC Project Type",
+		"insert_after": "ic_section_request",
+		"in_list_view": 1,
+		"description": "BIS, Testing, EPR, LMPC, SABER, GMARK, MSDS Authoring — editable in IC Project Type",
+	},
+	{
 		"fieldname": "ic_request_category",
 		"fieldtype": "Select",
 		"label": "Request Category",
 		"options": "\nService Request\nTesting Request\nCertification Request\nOther",
-		"insert_after": "ic_section_request",
-		"in_list_view": 1,
+		"insert_after": "ic_project_type",
 	},
 	{
 		"fieldname": "ic_lead_source_detail",
-		"fieldtype": "Select",
-		"label": "Lead Source Detail",
-		"options": "\nGoogle\nDirect Call\nLead Generated\nReferral by Existing Customer\nIndiaMART\nExisting Customer\nOther",
+		"fieldtype": "Link",
+		"label": "Lead Source",
+		"options": "IC Lead Source",
 		"insert_after": "ic_request_category",
+		"in_list_view": 1,
+		"description": "Editable master — IC Lead Source (Google Search, Ads, IndiaMART, Reference, Consultant, …)",
 	},
 	{
 		"fieldname": "ic_consultant_referral",
@@ -69,6 +99,7 @@ LEAD_FIELDS = [
 		"label": "Consultant / Referral Person",
 		"options": "Consultant Referral",
 		"insert_after": "ic_lead_source_detail",
+		"depends_on": "eval:doc.ic_lead_source_detail=='Consultant' || doc.ic_lead_source_detail=='Reference'",
 	},
 	{
 		"fieldname": "ic_column_break_2",

@@ -6,16 +6,46 @@ from __future__ import annotations
 import frappe
 
 
-def validate_lead(doc, method=None):
-	# Keep UTM source aligned for analytics when available
-	if doc.ic_lead_source_detail and hasattr(doc, "utm_source") and not doc.utm_source:
-		if frappe.db.exists("DocType", "UTM Source") and frappe.db.exists(
-			"UTM Source", doc.ic_lead_source_detail
-		):
-			doc.utm_source = doc.ic_lead_source_detail
+def before_validate_lead(doc, method=None):
+	"""Run before ERPNext Lead.validate so party name satisfies core checks."""
+	_sync_party_name(doc)
 
-	if doc.country == "India" and doc.ic_gst_number:
+
+def validate_lead(doc, method=None):
+	_sync_party_name(doc)
+	_ensure_mandatory_name(doc)
+
+	# Keep UTM source aligned for analytics when available
+	if doc.get("ic_lead_source_detail") and hasattr(doc, "utm_source") and not doc.utm_source:
+		source = doc.ic_lead_source_detail
+		if frappe.db.exists("DocType", "UTM Source") and frappe.db.exists("UTM Source", source):
+			doc.utm_source = source
+
+	if doc.country == "India" and doc.get("ic_gst_number"):
 		doc.ic_gst_number = (doc.ic_gst_number or "").strip().upper()
+
+
+def _sync_party_name(doc):
+	"""Keep ERPNext company_name / first_name in sync with mandatory party name."""
+	party = (doc.get("ic_party_name") or "").strip()
+	if not party:
+		party = (doc.get("company_name") or doc.get("lead_name") or doc.get("first_name") or "").strip()
+		if party:
+			doc.ic_party_name = party
+	if not party:
+		return
+
+	if not doc.company_name:
+		doc.company_name = party
+	if not (doc.first_name or doc.last_name or doc.middle_name):
+		doc.first_name = party.split()[0][:140]
+
+
+def _ensure_mandatory_name(doc):
+	from frappe import _
+
+	if not (doc.get("ic_party_name") or "").strip():
+		frappe.throw(_("Name of Person / Firm is mandatory"))
 
 
 @frappe.whitelist()

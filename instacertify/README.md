@@ -43,6 +43,20 @@ POS billing is **disabled**. Use standard Sales Invoice only. The Include Paymen
    - **Selling Price / Unit** is prefilled from the library and remains editable
 4. After Accept → **Start Project** (or **Create Testing Requests**) assigns lab-scoped testing projects.
 
+## CRM Lead Tracker & Capture
+
+**Instacertify Home → CRM Lead Tracker** shows:
+- This week vs last week, this month vs last month (bar charts + % change)
+- Last 7 / 30 days pie & donut charts by **Lead Source**, **Project Type**, and status
+
+**Lead capture fields**
+- **Name of Person / Firm** (mandatory)
+- Phone & email optional
+- **Country** dropdown with India on top (default India)
+- **Company Size**: Micro / Small / Medium / Large
+- **Lead Source**: Google Search, Google Ads, IndiaMART, Reference, Consultant (+ more) — edit under **IC Lead Source**
+- **Project Type**: BIS, Testing, EPR, LMPC, SABER, GMARK, MSDS Authoring — edit under **IC Project Type**
+
 ## Customer Related Data
 
 Open any **Customer** → **Related Data** tab to view that customer’s:

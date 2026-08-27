@@ -477,3 +477,44 @@ body.for-login,
     grid-template-columns: 1fr;
   }
 }
+
+/* CRM Lead Tracker */
+.ic-crm-tracker {
+  background: linear-gradient(180deg, #f3f8fb 0%, #ffffff 40%);
+  border: 1px solid #d7e6ef;
+  border-radius: var(--ic-radius);
+  padding: 16px 18px 8px;
+  margin-bottom: 12px;
+}
+.ic-crm-tracker-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ic-primary);
+  margin-bottom: 12px;
+}
+.ic-crm-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin: 8px 0 12px;
+}
+.ic-crm-chart-card {
+  background: #fff;
+  border: 1px solid #d7e6ef;
+  border-radius: var(--ic-radius);
+  padding: 12px 12px 4px;
+  min-height: 260px;
+}
+.ic-crm-chart-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5b7382;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.ic-summary-card.up .value { color: #1b7a4e; }
+.ic-summary-card.down .value { color: #b42318; }
+@media (max-width: 768px) {
+  .ic-crm-charts { grid-template-columns: 1fr; }
+}

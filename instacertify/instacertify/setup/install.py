@@ -49,6 +49,7 @@ def after_install():
 	setup_company()
 	setup_lead_sources()
 	setup_project_types()
+	setup_lead_capture_properties()
 	setup_items_and_groups()
 	setup_settings()
 	setup_branding()
@@ -144,11 +145,15 @@ def ensure_masters():
 def after_migrate():
 	setup_custom_fields()
 	ensure_roles()
+	setup_lead_sources()
+	setup_project_types()
+	setup_lead_capture_properties()
 	setup_print_formats()
 	setup_settings()
 	setup_branding()
 	setup_quotation_templates()
 	setup_workspace()
+	setup_dashboard_charts()
 	setup_gst()
 	setup_disable_pos()
 	setup_gst_returns()
@@ -213,6 +218,98 @@ def setup_custom_fields():
 	_ensure_service_family_field()
 	_ensure_sales_invoice_quotation_link()
 	_ensure_customer_related_tab()
+	_ensure_lead_source_link_field()
+	_ensure_lead_project_type_field()
+	_ensure_lead_party_name_field()
+
+
+def _ensure_lead_party_name_field():
+	cf_name = "Lead-ic_party_name"
+	meta = {
+		"fieldname": "ic_party_name",
+		"label": "Name of Person / Firm",
+		"fieldtype": "Data",
+		"insert_after": "ic_section_capture",
+		"reqd": 1,
+		"in_list_view": 1,
+		"description": "Mandatory — person name or company / firm name",
+	}
+	_upsert_lead_custom_field(cf_name, meta)
+	# Ensure section exists
+	if not frappe.db.exists("Custom Field", "Lead-ic_section_capture"):
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "Custom Field",
+					"dt": "Lead",
+					"module": "Instacertify",
+					"fieldname": "ic_section_capture",
+					"label": "Lead Capture",
+					"fieldtype": "Section Break",
+					"insert_after": "salutation",
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			pass
+
+
+def _ensure_lead_source_link_field():
+	"""Force Lead Source to Link → IC Lead Source (editable master)."""
+	cf_name = "Lead-ic_lead_source_detail"
+	meta = {
+		"fieldname": "ic_lead_source_detail",
+		"label": "Lead Source",
+		"fieldtype": "Link",
+		"options": "IC Lead Source",
+		"insert_after": "ic_request_category",
+		"in_list_view": 1,
+		"description": "Editable under IC Lead Source",
+	}
+	_upsert_lead_custom_field(cf_name, meta)
+
+
+def _ensure_lead_project_type_field():
+	cf_name = "Lead-ic_project_type"
+	meta = {
+		"fieldname": "ic_project_type",
+		"label": "Project Type",
+		"fieldtype": "Link",
+		"options": "IC Project Type",
+		"insert_after": "ic_section_request",
+		"in_list_view": 1,
+		"description": "Editable under IC Project Type",
+	}
+	_upsert_lead_custom_field(cf_name, meta)
+
+
+def _upsert_lead_custom_field(cf_name, meta):
+	try:
+		if frappe.db.exists("Custom Field", cf_name):
+			frappe.db.set_value(
+				"Custom Field",
+				cf_name,
+				{
+					"label": meta["label"],
+					"fieldtype": meta["fieldtype"],
+					"options": meta.get("options"),
+					"insert_after": meta.get("insert_after"),
+					"reqd": meta.get("reqd", 0),
+					"in_list_view": meta.get("in_list_view", 0),
+					"description": meta.get("description"),
+					"module": "Instacertify",
+				},
+			)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Custom Field",
+					"dt": "Lead",
+					"module": "Instacertify",
+					**meta,
+				}
+			).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), f"Upsert {cf_name}")
 
 
 def _apply_quotation_type_options():
@@ -368,36 +465,110 @@ def _ensure_company_invoice_defaults(company_name: str):
 
 
 def setup_lead_sources():
-	# ERPNext v16 no longer ships Lead Source DocType.
-	# Instacertify tracks sources via Lead.ic_lead_source_detail (Select).
-	return
+	"""Seed editable IC Lead Source masters (admin can add/remove later)."""
+	sources = [
+		("Google Search", 10),
+		("Google Ads", 20),
+		("IndiaMART", 30),
+		("Reference", 40),
+		("Consultant", 50),
+		# Preserve legacy values used on existing leads
+		("Google", 60),
+		("Direct Call", 70),
+		("Lead Generated", 80),
+		("Referral by Existing Customer", 90),
+		("Existing Customer", 100),
+		("Other", 110),
+	]
+	if not frappe.db.exists("DocType", "IC Lead Source"):
+		return
+	for name, order in sources:
+		if frappe.db.exists("IC Lead Source", name):
+			frappe.db.set_value(
+				"IC Lead Source",
+				name,
+				{"is_active": 1, "sort_order": order},
+				update_modified=False,
+			)
+			continue
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "IC Lead Source",
+					"source_name": name,
+					"is_active": 1,
+					"sort_order": order,
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Seed lead source {name}")
 
 
 def setup_project_types():
-	for stage in PROJECT_STAGES:
-		# Use Project Type lightly; stages stored on custom field
+	"""Seed IC Project Type masters for lead capture (editable by admin)."""
+	types = [
+		("BIS", 10),
+		("Testing", 20),
+		("EPR", 30),
+		("LMPC", 40),
+		("SABER", 50),
+		("GMARK", 60),
+		("MSDS Authoring", 70),
+		("Certification", 80),
+		("Consulting", 90),
+	]
+	if frappe.db.exists("DocType", "IC Project Type"):
+		for name, order in types:
+			if frappe.db.exists("IC Project Type", name):
+				frappe.db.set_value(
+					"IC Project Type",
+					name,
+					{"is_active": 1, "sort_order": order},
+					update_modified=False,
+				)
+				continue
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "IC Project Type",
+						"project_type_name": name,
+						"is_active": 1,
+						"sort_order": order,
+					}
+				).insert(ignore_permissions=True)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), f"Seed IC Project Type {name}")
+
+	# Keep ERPNext Project Type in sync for project forms
+	for name, _order in types:
+		if frappe.db.exists("DocType", "Project Type") and not frappe.db.exists("Project Type", name):
+			try:
+				frappe.get_doc({"doctype": "Project Type", "project_type": name}).insert(
+					ignore_permissions=True
+				)
+			except Exception:
+				pass
+
+
+def setup_lead_capture_properties():
+	"""Phone/email optional; clarify country dropdown."""
+	from instacertify.setup.pos import _make_setter
+
+	for field in ("email_id", "mobile_no", "phone"):
+		try:
+			_make_setter("Lead", field, "reqd", "0", "Check")
+		except Exception:
+			pass
+	try:
+		_make_setter(
+			"Lead",
+			"country",
+			"description",
+			"India is listed first in the dropdown",
+			"Small Text",
+		)
+	except Exception:
 		pass
-	if not frappe.db.exists("Project Type", "Certification"):
-		try:
-			frappe.get_doc({"doctype": "Project Type", "project_type": "Certification"}).insert(
-				ignore_permissions=True
-			)
-		except Exception:
-			pass
-	if not frappe.db.exists("Project Type", "Testing"):
-		try:
-			frappe.get_doc({"doctype": "Project Type", "project_type": "Testing"}).insert(
-				ignore_permissions=True
-			)
-		except Exception:
-			pass
-	if not frappe.db.exists("Project Type", "Consulting"):
-		try:
-			frappe.get_doc({"doctype": "Project Type", "project_type": "Consulting"}).insert(
-				ignore_permissions=True
-			)
-		except Exception:
-			pass
 
 
 def setup_items_and_groups():

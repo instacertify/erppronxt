@@ -40,6 +40,8 @@ doc_events = {
 	},
 	"Lead": {
 		"validate": "instacertify.crm.events.validate_lead",
+		"before_validate": "instacertify.crm.events.before_validate_lead",
+		"before_insert": "instacertify.crm.events.before_validate_lead",
 	},
 	"IC Sample Tracking": {
 		"before_insert": "instacertify.testing.events.before_insert_sample",
@@ -131,6 +133,10 @@ boot_session = "instacertify.boot.boot_session"
 # Form Connections dashboards
 override_doctype_dashboards = {
 	"Customer": "instacertify.overrides.customer.get_dashboard_data",
+}
+
+override_doctype_class = {
+	"Lead": "instacertify.crm.lead.ICLead",
 }
 
 # After migrate

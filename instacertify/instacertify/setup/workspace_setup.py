@@ -97,6 +97,11 @@ def _ensure_home_html_block():
   });
 })();
 """
+	_upsert_html_block(name, html, script)
+	_ensure_crm_lead_tracker_block()
+
+
+def _upsert_html_block(name, html, script):
 	if frappe.db.exists("Custom HTML Block", name):
 		doc = frappe.get_doc("Custom HTML Block", name)
 		doc.html = html
@@ -115,15 +120,105 @@ def _ensure_home_html_block():
 		).insert(ignore_permissions=True)
 
 
+def _ensure_crm_lead_tracker_block():
+	name = "IC CRM Lead Tracker"
+	html = """
+<div id="ic-crm-tracker" class="ic-crm-tracker">
+  <div class="ic-crm-tracker-title">CRM Lead Tracker</div>
+  <div class="ic-summary-grid" id="ic-crm-kpi"></div>
+  <div class="ic-crm-charts">
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">This Week vs Last Week</div><div id="ic-crm-week-bar"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">This Month vs Last Month</div><div id="ic-crm-month-bar"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 7 Days by Source</div><div id="ic-crm-source-7"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Project Type</div><div id="ic-crm-ptype-30"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Source</div><div id="ic-crm-source-30"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Status</div><div id="ic-crm-status-30"></div></div>
+  </div>
+</div>
+"""
+	script = """
+(function() {
+  function pctLabel(v) {
+    const n = Number(v || 0);
+    const arrow = n > 0 ? "▲" : (n < 0 ? "▼" : "•");
+    return arrow + " " + Math.abs(n) + "%";
+  }
+  function makeChart(el, type, labels, values, colors) {
+    if (!el) return;
+    el.innerHTML = "";
+    if (!(window.frappe && frappe.Chart)) {
+      el.innerHTML = "<div class='text-muted'>Chart unavailable</div>";
+      return;
+    }
+    if (!labels.length) {
+      el.innerHTML = "<div class='text-muted'>No leads in this period</div>";
+      return;
+    }
+    new frappe.Chart(el, {
+      type: type,
+      height: 220,
+      data: {
+        labels: labels,
+        datasets: [{ name: "Leads", values: values }]
+      },
+      colors: colors || ["#065175", "#EC6820", "#2a9d8f", "#e9c46a", "#264653", "#f4a261"]
+    });
+  }
+  frappe.call({
+    method: "instacertify.crm.dashboard.get_lead_tracker_stats",
+    callback(r) {
+      const d = r.message || {};
+      const kpi = document.getElementById("ic-crm-kpi");
+      if (kpi) {
+        const weekCls = (d.week_change_pct || 0) >= 0 ? "up" : "down";
+        const monthCls = (d.month_change_pct || 0) >= 0 ? "up" : "down";
+        kpi.innerHTML = [
+          ["This Week", d.this_week],
+          ["Last Week", d.last_week],
+          ["Week Change", pctLabel(d.week_change_pct), weekCls],
+          ["This Month", d.this_month],
+          ["Last Month", d.last_month],
+          ["Month Change", pctLabel(d.month_change_pct), monthCls],
+          ["Last 7 Days", d.last_7_days],
+          ["Last 30 Days", d.last_30_days, true],
+        ].map(([label, value, extra]) => {
+          const accent = extra === true ? "accent" : "";
+          const trend = (extra === "up" || extra === "down") ? extra : "";
+          return `<div class="ic-summary-card ${accent} ${trend}"><div class="label">${label}</div><div class="value" style="font-size:${typeof value==='string'?'1.15rem':'1.6rem'}">${value ?? 0}</div></div>`;
+        }).join("");
+      }
+      const week = d.week_compare || [];
+      makeChart(document.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#065175", "#8fb6c9"]);
+      const month = d.month_compare || [];
+      makeChart(document.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#EC6820", "#f3b48d"]);
+      const s7 = d.by_source_7d || [];
+      makeChart(document.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count));
+      const p30 = d.by_project_type_30d || [];
+      makeChart(document.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count));
+      const s30 = d.by_source_30d || [];
+      makeChart(document.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count));
+      const st30 = d.by_status_30d || [];
+      makeChart(document.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count));
+    }
+  });
+})();
+"""
+	_upsert_html_block(name, html, script)
+
+
 def _ensure_home_workspace():
 	name = "Instacertify Home"
 	content = [
 		{"id": "ic_home_block", "type": "custom_block", "data": {"custom_block_name": "IC Home Dashboard", "col": 12}},
 		{"id": "ic_header", "type": "header", "data": {"text": "<span class=\"h4\"><b>Instacertify Home</b></span>", "col": 12}},
 		{"id": "ic_spacer1", "type": "spacer", "data": {"col": 12}},
-		{"id": "ic_cards_header", "type": "header", "data": {"text": "<span class=\"h5\">Operations Snapshot</span>", "col": 12}},
+		{"id": "ic_crm_header", "type": "header", "data": {"text": "<span class=\"h5\">CRM Lead Tracker</span>", "col": 12}},
+		{"id": "ic_crm_block", "type": "custom_block", "data": {"custom_block_name": "IC CRM Lead Tracker", "col": 12}},
+		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "IC Leads This Week", "col": 3}},
+		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "IC Leads This Month", "col": 3}},
 		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "IC New Leads", "col": 3}},
 		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "IC Active Leads", "col": 3}},
+		{"id": "ic_cards_header", "type": "header", "data": {"text": "<span class=\"h5\">Operations Snapshot</span>", "col": 12}},
 		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "IC Quotations Sent", "col": 3}},
 		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "IC Quotations Accepted", "col": 3}},
 		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "IC Active Projects", "col": 3}},
@@ -131,7 +226,11 @@ def _ensure_home_workspace():
 		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "IC Testing Requests", "col": 3}},
 		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "IC Upcoming Deadlines", "col": 3}},
 		{"id": "ic_charts_header", "type": "header", "data": {"text": "<span class=\"h5\">Insights</span>", "col": 12}},
-		{"id": "chart_leads_source", "type": "chart", "data": {"chart_name": "IC Leads by Source", "col": 6}},
+		{"id": "chart_leads_7d_source", "type": "chart", "data": {"chart_name": "IC Leads Last 7 Days by Source", "col": 6}},
+		{"id": "chart_leads_30d_ptype", "type": "chart", "data": {"chart_name": "IC Leads Last 30 Days by Project Type", "col": 6}},
+		{"id": "chart_leads_30d_source", "type": "chart", "data": {"chart_name": "IC Leads Last 30 Days by Source", "col": 6}},
+		{"id": "chart_leads_status", "type": "chart", "data": {"chart_name": "IC Leads by Status", "col": 6}},
+		{"id": "chart_lead_trend", "type": "chart", "data": {"chart_name": "IC Lead Trend Weekly", "col": 12}},
 		{"id": "chart_quotes_status", "type": "chart", "data": {"chart_name": "IC Quotations by Status", "col": 6}},
 		{"id": "chart_projects_status", "type": "chart", "data": {"chart_name": "IC Projects by Status", "col": 6}},
 		{"id": "chart_projects_priority", "type": "chart", "data": {"chart_name": "IC Projects by Priority", "col": 6}},
@@ -149,6 +248,7 @@ def _ensure_home_workspace():
 		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 3}},
 		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 3}},
 	]
+
 
 	shortcuts = [
 		{"label": "Leads", "link_to": "Lead", "type": "DocType", "doc_view": "List"},
@@ -170,6 +270,8 @@ def _ensure_home_workspace():
 		{"label": "Lead", "link_type": "DocType", "link_to": "Lead", "type": "Link"},
 		{"label": "Opportunity", "link_type": "DocType", "link_to": "Opportunity", "type": "Link"},
 		{"label": "Consultant Referral", "link_type": "DocType", "link_to": "Consultant Referral", "type": "Link"},
+		{"label": "Lead Sources (edit)", "link_type": "DocType", "link_to": "IC Lead Source", "type": "Link"},
+		{"label": "Project Types (edit)", "link_type": "DocType", "link_to": "IC Project Type", "type": "Link"},
 		{"label": "Customers", "type": "Card Break"},
 		{"label": "Customer", "link_type": "DocType", "link_to": "Customer", "type": "Link"},
 		{"label": "Contact", "link_type": "DocType", "link_to": "Contact", "type": "Link"},

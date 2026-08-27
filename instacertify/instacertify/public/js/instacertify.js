@@ -1105,3 +1105,47 @@ $(document).ready(function () {
 	setTimeout(tryInject, 800);
 	setTimeout(tryInject, 2000);
 });
+
+// --- Lead capture: mandatory name, India-first country, editable source/type ---
+frappe.ui.form.on("Lead", {
+	setup(frm) {
+		frm.set_query("country", () => ({
+			query: "instacertify.crm.dashboard.search_country_india_first",
+		}));
+		frm.set_query("ic_lead_source_detail", () => ({
+			filters: { is_active: 1 },
+		}));
+		frm.set_query("ic_project_type", () => ({
+			filters: { is_active: 1 },
+		}));
+	},
+	refresh(frm) {
+		frm.set_df_property("email_id", "reqd", 0);
+		frm.set_df_property("mobile_no", "reqd", 0);
+		frm.set_df_property("phone", "reqd", 0);
+		frm.set_df_property("ic_party_name", "reqd", 1);
+		if (!frm.doc.country && frm.is_new()) {
+			frm.set_value("country", "India");
+		}
+		if (!frm.doc.ic_party_name) {
+			const party = frm.doc.company_name || frm.doc.lead_name || frm.doc.first_name;
+			if (party) frm.set_value("ic_party_name", party);
+		}
+	},
+	ic_party_name(frm) {
+		const party = (frm.doc.ic_party_name || "").trim();
+		if (!party) return;
+		if (!frm.doc.company_name) {
+			frm.set_value("company_name", party);
+		}
+		if (!frm.doc.first_name) {
+			frm.set_value("first_name", party.split(/\s+/)[0]);
+		}
+	},
+	ic_lead_source_detail(frm) {
+		const src = frm.doc.ic_lead_source_detail;
+		if (src !== "Consultant" && src !== "Reference") {
+			frm.set_value("ic_consultant_referral", "");
+		}
+	},
+});
