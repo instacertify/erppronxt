@@ -1108,23 +1108,27 @@ instacertify.load_customer_related = function (frm) {
 
 instacertify.render_lead_reminder_banner = function (frm) {
 	if (!frm || !frm.doc || frm.is_new()) {
-		if (frm && frm.set_intro) frm.set_intro("");
+		try {
+			frm.dashboard && frm.dashboard.clear_headline();
+		} catch (e) {
+			/* ignore */
+		}
 		return;
 	}
 
 	const due = frm.doc.ic_next_contact_date;
 	const today = frappe.datetime.get_today();
-	let urgency = "";
+	let urgency = "blue";
 	let when = __("No next contact date set");
 	if (due) {
 		if (due < today) {
-			urgency = "overdue";
+			urgency = "red";
 			when = __("Overdue — was {0}", [frappe.datetime.str_to_user(due)]);
 		} else if (due === today) {
-			urgency = "today";
+			urgency = "orange";
 			when = __("Call today");
 		} else {
-			urgency = "upcoming";
+			urgency = "blue";
 			when = __("Next contact {0}", [frappe.datetime.str_to_user(due)]);
 		}
 	}
@@ -1136,7 +1140,7 @@ instacertify.render_lead_reminder_banner = function (frm) {
 	const connected = frm.doc.ic_lead_connected ? __("Connected") : __("Not connected yet");
 
 	const intro = `
-		<div class="ic-lead-form-reminder ${urgency}">
+		<div class="ic-lead-form-reminder ${urgency === "red" ? "overdue" : urgency === "orange" ? "today" : ""}">
 			<div class="ic-lead-form-reminder-title">${__("Lead reminder")} · ${frappe.utils.escape_html(when)}</div>
 			<div class="ic-lead-form-reminder-grid">
 				<div><strong>${__("Whom to call")}</strong>${frappe.utils.escape_html(person)}</div>
@@ -1148,15 +1152,29 @@ instacertify.render_lead_reminder_banner = function (frm) {
 		</div>
 	`;
 
-	try {
-		frm.set_intro(intro, urgency === "overdue" ? "red" : urgency === "today" ? "orange" : "blue");
-	} catch (e) {
-		console.warn("ic lead intro", e);
-	}
-
-	const $page = $(frm.$wrapper || frm.wrapper);
-	$page.find(".ic-lead-form-reminder").not(".form-intro .ic-lead-form-reminder").remove();
+	const paint = () => {
+		try {
+			if (frm.dashboard && frm.dashboard.set_headline) {
+				frm.dashboard.set_headline(intro, urgency, true);
+			} else if (frm.set_intro) {
+				frm.set_intro(intro, urgency);
+			}
+		} catch (e) {
+			console.warn("ic lead reminder", e);
+		}
+	};
+	paint();
+	setTimeout(paint, 300);
 };
+
+frappe.ui.form.on("Lead", {
+	refresh(frm) {
+		// Paint early so reminder is visible even if later handlers throw.
+		if (!frm.is_new()) {
+			instacertify.render_lead_reminder_banner(frm);
+		}
+	},
+});
 
 instacertify.load_lead_related = function (frm) {
 	if (!frm.fields_dict.ic_history_html) return;
