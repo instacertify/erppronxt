@@ -946,6 +946,23 @@ frappe.ui.form.on("IC Testing Request", {
 				});
 			}, __("Instacertify"));
 		}
+		if (!frm.is_new() && frm.doc.laboratory) {
+			frm.add_custom_button(__("Buy Lab Service (PI)"), () => {
+				frappe.call({
+					method: "instacertify.accounting.consulting_billing.create_lab_purchase_invoice",
+					args: {
+						laboratory: frm.doc.laboratory,
+						testing_request: frm.doc.name,
+						project: frm.doc.project,
+						amount: frm.doc.suggested_selling_price,
+					},
+					freeze: true,
+					callback(r) {
+						frappe.set_route("Form", "Purchase Invoice", r.message.name);
+					},
+				});
+			}, __("Billing"));
+		}
 	},
 	laboratory(frm) {
 		frm.set_value("lab_test_scope", "");
@@ -1031,7 +1048,7 @@ frappe.ui.form.on("IC Laboratory", {
 		} else {
 			frm.set_intro(
 				__(
-					"Laboratory Library — Active labs and their scope pricing are available when assigning tests on Quotations and Testing Requests."
+					"Laboratory Library — buy lab services via Purchase Invoice (non-stock, no warehouse). Link a Supplier, then create PI."
 				),
 				"blue"
 			);
@@ -1042,6 +1059,57 @@ frappe.ui.form.on("IC Laboratory", {
 				quotation_to: "Customer",
 			});
 		}, __("Instacertify"));
+		if (!frm.is_new()) {
+			frm.add_custom_button(__("Link / Create Supplier"), () => {
+				frappe.call({
+					method: "instacertify.accounting.consulting_billing.ensure_supplier_for_laboratory",
+					args: { laboratory: frm.doc.name },
+					freeze: true,
+					callback(r) {
+						frappe.show_alert({
+							message: r.message.created
+								? __("Supplier {0} created and linked", [r.message.supplier])
+								: __("Supplier {0} linked", [r.message.supplier]),
+							indicator: "green",
+						});
+						frm.reload_doc();
+					},
+				});
+			}, __("Billing"));
+			frm.add_custom_button(__("Buy Lab Service (Purchase Invoice)"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "amount",
+							label: __("Amount"),
+							fieldtype: "Currency",
+							reqd: 1,
+						},
+						{
+							fieldname: "description",
+							label: __("Description"),
+							fieldtype: "Small Text",
+						},
+					],
+					(values) => {
+						frappe.call({
+							method: "instacertify.accounting.consulting_billing.create_lab_purchase_invoice",
+							args: {
+								laboratory: frm.doc.name,
+								amount: values.amount,
+								description: values.description,
+							},
+							freeze: true,
+							callback(r) {
+								frappe.set_route("Form", "Purchase Invoice", r.message.name);
+							},
+						});
+					},
+					__("Buy laboratory service"),
+					__("Create Purchase Invoice")
+				);
+			}, __("Billing"));
+		}
 	},
 });
 
@@ -1170,6 +1238,11 @@ frappe.ui.form.on("Sales Invoice", {
 	},
 	refresh(frm) {
 		instacertify.hide_pos_on_sales_invoice(frm);
+		instacertify.apply_consulting_no_warehouse(frm);
+		frm.set_intro(
+			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required."),
+			"blue"
+		);
 	},
 	customer(frm) {
 		if (!frm.doc.customer) return;
@@ -1196,7 +1269,82 @@ frappe.ui.form.on("Sales Invoice", {
 			});
 		}
 	},
+	update_stock(frm) {
+		if (frm.doc.update_stock) {
+			frm.set_value("update_stock", 0);
+			frappe.show_alert({
+				message: __("Stock update disabled for consulting service billing."),
+				indicator: "orange",
+			});
+		}
+	},
 });
+
+frappe.ui.form.on("Purchase Invoice", {
+	refresh(frm) {
+		instacertify.apply_consulting_no_warehouse(frm);
+		frm.set_intro(
+			__(
+				"Buy lab/vendor services or organisational purchases as non-stock. Link Laboratory / Testing Request when buying lab work. Use Asset for company equipment."
+			),
+			"blue"
+		);
+		if (!frm.is_new()) {
+			frm.add_custom_button(__("Create Asset"), () => {
+				frappe.new_doc("Asset", {
+					ic_purchase_invoice: frm.doc.name,
+					supplier: frm.doc.supplier,
+				});
+			}, __("Billing"));
+		}
+	},
+	update_stock(frm) {
+		if (frm.doc.update_stock) {
+			frm.set_value("update_stock", 0);
+			frappe.show_alert({
+				message: __("Stock update disabled — consulting purchases do not use warehouse."),
+				indicator: "orange",
+			});
+		}
+	},
+	ic_laboratory(frm) {
+		if (!frm.doc.ic_laboratory || frm.doc.supplier) return;
+		frappe.call({
+			method: "instacertify.accounting.consulting_billing.ensure_supplier_for_laboratory",
+			args: { laboratory: frm.doc.ic_laboratory },
+			callback(r) {
+				if (r.message && r.message.supplier) {
+					frm.set_value("supplier", r.message.supplier);
+				}
+			},
+		});
+	},
+});
+
+frappe.ui.form.on("Asset", {
+	refresh(frm) {
+		frm.set_intro(
+			__("Organisational assets — purchase via Purchase Invoice, then record the asset here (not warehouse stock)."),
+			"blue"
+		);
+	},
+});
+
+instacertify.apply_consulting_no_warehouse = function (frm) {
+	if (frm.fields_dict.update_stock) {
+		frm.set_df_property("update_stock", "hidden", 1);
+		if (frm.doc.update_stock) {
+			frm.set_value("update_stock", 0);
+		}
+	}
+	(frm.doc.items || []).forEach((row) => {
+		["warehouse", "target_warehouse", "from_warehouse"].forEach((f) => {
+			if (row[f]) {
+				frappe.model.set_value(row.doctype, row.name, f, null);
+			}
+		});
+	});
+};
 
 instacertify.hide_pos_on_sales_invoice = function (frm) {
 	["is_pos", "pos_profile"].forEach((f) => {

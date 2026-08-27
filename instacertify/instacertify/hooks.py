@@ -23,13 +23,16 @@ website_route_rules = [
 
 # Document Events
 doc_events = {
+	"Sales Invoice": {
+		"validate": "instacertify.accounting.events.validate_sales_invoice",
+	},
+	"Purchase Invoice": {
+		"validate": "instacertify.accounting.events.validate_purchase_invoice",
+	},
 	"Quotation": {
 		"validate": "instacertify.quotation.events.validate_quotation",
 		"on_update_after_submit": "instacertify.quotation.events.on_update_after_submit",
 		"on_submit": "instacertify.quotation.events.on_submit_quotation",
-	},
-	"Sales Invoice": {
-		"validate": "instacertify.accounting.events.validate_sales_invoice",
 	},
 	"Customer": {
 		"validate": "instacertify.accounting.events.validate_customer",

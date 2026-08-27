@@ -22,6 +22,9 @@ def validate_quotation(doc, method=None):
 		from instacertify.accounting.billing import apply_transaction_billing_defaults
 
 		apply_transaction_billing_defaults(doc, customer_field="party_name")
+	from instacertify.accounting.consulting_billing import strip_warehouse_from_service_items
+
+	strip_warehouse_from_service_items(doc)
 
 
 def _calculate_test_line_totals(doc):

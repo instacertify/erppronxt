@@ -860,6 +860,56 @@ SALES_INVOICE_FIELDS = [
 		"options": "Project",
 		"insert_after": "project",
 	},
+	{
+		"fieldname": "ic_consulting_note",
+		"fieldtype": "Small Text",
+		"label": "Consulting Billing Note",
+		"insert_after": "ic_project",
+		"description": "Services are non-stock — no warehouse required when selling to customers.",
+	},
+]
+
+PURCHASE_INVOICE_FIELDS = [
+	{
+		"fieldname": "ic_section_consulting",
+		"fieldtype": "Section Break",
+		"label": "Consulting / Lab Purchase",
+		"insert_after": "supplier_name",
+	},
+	{
+		"fieldname": "ic_laboratory",
+		"fieldtype": "Link",
+		"label": "Laboratory",
+		"options": "IC Laboratory",
+		"insert_after": "ic_section_consulting",
+		"description": "External lab whose service you are buying (non-stock).",
+	},
+	{
+		"fieldname": "ic_testing_request",
+		"fieldtype": "Link",
+		"label": "Testing Request",
+		"options": "IC Testing Request",
+		"insert_after": "ic_laboratory",
+	},
+	{
+		"fieldname": "ic_column_consulting",
+		"fieldtype": "Column Break",
+		"insert_after": "ic_testing_request",
+	},
+	{
+		"fieldname": "ic_project",
+		"fieldtype": "Link",
+		"label": "Project",
+		"options": "Project",
+		"insert_after": "ic_column_consulting",
+	},
+	{
+		"fieldname": "ic_consulting_note",
+		"fieldtype": "Small Text",
+		"label": "Consulting Purchase Note",
+		"insert_after": "ic_project",
+		"default": "Buy lab/vendor service for consulting delivery — no warehouse.",
+	},
 ]
 
 ASSET_FIELDS = [
@@ -870,6 +920,21 @@ ASSET_FIELDS = [
 		"options": "Employee",
 		"insert_after": "custodian",
 	},
+	{
+		"fieldname": "ic_purchase_invoice",
+		"fieldtype": "Link",
+		"label": "Source Purchase Invoice",
+		"options": "Purchase Invoice",
+		"insert_after": "ic_current_holder",
+		"description": "Link the PI used to buy this organisational asset.",
+	},
+	{
+		"fieldname": "ic_asset_purpose",
+		"fieldtype": "Small Text",
+		"label": "Asset Purpose",
+		"insert_after": "ic_purchase_invoice",
+		"description": "Why this asset was purchased for the organisation.",
+	},
 ]
 
 CUSTOM_FIELDS = {
@@ -878,5 +943,6 @@ CUSTOM_FIELDS = {
 	"Quotation": QUOTATION_FIELDS,
 	"Project": PROJECT_FIELDS,
 	"Sales Invoice": SALES_INVOICE_FIELDS,
+	"Purchase Invoice": PURCHASE_INVOICE_FIELDS,
 	"Asset": ASSET_FIELDS,
 }

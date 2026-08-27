@@ -51,6 +51,7 @@ def after_install():
 	setup_project_types()
 	setup_lead_capture_properties()
 	setup_items_and_groups()
+	setup_consulting_billing()
 	setup_settings()
 	setup_branding()
 	setup_workflows()
@@ -157,7 +158,14 @@ def after_migrate():
 	setup_gst()
 	setup_disable_pos()
 	setup_gst_returns()
+	setup_consulting_billing()
 	frappe.db.commit()
+
+
+def setup_consulting_billing():
+	from instacertify.accounting.consulting_billing import setup_consulting_billing as _setup
+
+	_setup()
 
 
 def setup_gst():
