@@ -61,6 +61,40 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_upload_library",
+   "fieldtype": "Section Break",
+   "label": "Upload Quote Format Library",
+   "description": "Upload PDF / DOCX / HTML quote formats and supporting template packs for this library entry."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "uploaded_format",
+   "fieldtype": "Attach",
+   "label": "Primary Quote Format",
+   "description": "Main printable quote format file (PDF, DOCX, HTML)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_upload_library",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "uploaded_template_pack",
+   "fieldtype": "Attach",
+   "label": "Template Pack / Extra File",
+   "description": "Optional second file (scope sheet, annex, zip pack)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "format_library",
+   "fieldtype": "Table",
+   "label": "Format Library Files",
+   "options": "IC Quote Format File",
+   "description": "Add multiple quote format files to this template library"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_service",
    "fieldtype": "Section Break",
    "label": "Service / Consulting / Renewal",

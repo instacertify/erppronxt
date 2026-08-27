@@ -63,6 +63,211 @@ instacertify.raise_helpdesk_ticket = function (defaults) {
 	frappe.new_doc("Helpdesk Ticket", defaults);
 };
 
+/** Upload dialog → create/update IC Quotation Template with format file. */
+instacertify.open_quote_format_upload = function (opts) {
+	opts = opts || {};
+	const d = new frappe.ui.Dialog({
+		title: __("Upload Quote Format / Template"),
+		fields: [
+			{
+				fieldname: "template_name",
+				fieldtype: "Data",
+				label: __("Template Name"),
+				reqd: 1,
+				default: opts.template_name || "",
+			},
+			{
+				fieldname: "quotation_type",
+				fieldtype: "Select",
+				label: __("Quote Type"),
+				options: "Consulting\nTesting\nRenewal\nService\nOther\nMultiple Products / Multiple Services",
+				reqd: 1,
+				default: opts.quotation_type || "Consulting",
+			},
+			{
+				fieldname: "service_family",
+				fieldtype: "Data",
+				label: __("Service Family / Subtype"),
+				description: __("e.g. BIS CRS, TEC, EMC"),
+			},
+			{
+				fieldname: "file",
+				fieldtype: "Attach",
+				label: __("Upload Quote Format File"),
+				reqd: 1,
+				description: __("PDF, DOCX, HTML, or image"),
+			},
+			{
+				fieldname: "template_notes",
+				fieldtype: "Small Text",
+				label: __("Notes"),
+			},
+		],
+		primary_action_label: __("Save to Library"),
+		primary_action(values) {
+			frappe.call({
+				method: "instacertify.setup.library_upload.create_quote_format_from_upload",
+				args: {
+					template_name: values.template_name,
+					quotation_type: values.quotation_type,
+					file_url: values.file,
+					service_family: values.service_family,
+					template_notes: values.template_notes,
+				},
+				freeze: true,
+				freeze_message: __("Saving quote format…"),
+				callback(r) {
+					d.hide();
+					frappe.show_alert({
+						message: __("Quote format saved: {0}", [r.message.template]),
+						indicator: "green",
+					});
+					if (opts.on_done) opts.on_done(r.message.template);
+					else frappe.set_route("Form", "IC Quotation Template", r.message.template);
+				},
+			});
+		},
+	});
+	d.$wrapper.find(".modal-footer").prepend(
+		`<button type="button" class="btn btn-default btn-sm ic-dl-quote-tpl" style="margin-right:auto;">${__("Download Upload Template")}</button>`
+	);
+	d.$wrapper.find(".ic-dl-quote-tpl").on("click", () => {
+		frappe.call({
+			method: "instacertify.setup.library_upload.download_quote_format_upload_template",
+			callback(r) {
+				const m = r.message || {};
+				if (m.file_url) window.open(m.file_url, "_blank");
+			},
+		});
+	});
+	d.show();
+};
+
+/** Upload dialog → create/update IC Laboratory with name + scope file. */
+instacertify.open_laboratory_upload = function (opts) {
+	opts = opts || {};
+	const d = new frappe.ui.Dialog({
+		title: __("Upload Laboratory / Scope"),
+		fields: [
+			{
+				fieldname: "laboratory_name",
+				fieldtype: "Data",
+				label: __("Laboratory Name"),
+				reqd: 1,
+				default: opts.laboratory_name || "",
+			},
+			{
+				fieldname: "location",
+				fieldtype: "Data",
+				label: __("Location"),
+				default: opts.location || "",
+			},
+			{
+				fieldname: "accreditation_scope",
+				fieldtype: "Text",
+				label: __("Accreditation Scope (text)"),
+				description: __("Describe tests / standards covered"),
+			},
+			{
+				fieldname: "scope_file",
+				fieldtype: "Attach",
+				label: __("Upload Scope Sheet / PDF"),
+				description: __("PDF or sheet of laboratory scope"),
+			},
+			{
+				fieldname: "contact_person",
+				fieldtype: "Data",
+				label: __("Contact Person"),
+			},
+			{
+				fieldname: "email",
+				fieldtype: "Data",
+				label: __("Email"),
+				options: "Email",
+			},
+			{
+				fieldname: "phone",
+				fieldtype: "Data",
+				label: __("Phone"),
+				options: "Phone",
+			},
+		],
+		primary_action_label: __("Save to Library"),
+		primary_action(values) {
+			if (!values.accreditation_scope && !values.scope_file) {
+				frappe.msgprint(__("Add scope text or upload a scope file."));
+				return;
+			}
+			frappe.call({
+				method: "instacertify.setup.library_upload.create_laboratory_from_upload",
+				args: values,
+				freeze: true,
+				freeze_message: __("Saving laboratory…"),
+				callback(r) {
+					d.hide();
+					frappe.show_alert({
+						message: __("Laboratory saved: {0}", [r.message.laboratory_name]),
+						indicator: "green",
+					});
+					if (opts.on_done) opts.on_done(r.message.laboratory);
+					else frappe.set_route("Form", "IC Laboratory", r.message.laboratory);
+				},
+			});
+		},
+	});
+	d.show();
+};
+
+instacertify.open_lab_scope_csv_import = function (frm) {
+	const d = new frappe.ui.Dialog({
+		title: __("Import Laboratory Scope CSV"),
+		fields: [
+			{
+				fieldname: "help",
+				fieldtype: "HTML",
+				options: `<p class="text-muted">${__(
+					"CSV headers: test_name, applicable_standard, category, selling_price, purchase_price"
+				)}</p>`,
+			},
+			{
+				fieldname: "file",
+				fieldtype: "Attach",
+				label: __("CSV File"),
+				reqd: 1,
+			},
+		],
+		primary_action_label: __("Import"),
+		primary_action(values) {
+			frappe.call({
+				method: "instacertify.setup.library_upload.import_laboratory_scopes_csv",
+				args: { laboratory: frm.doc.name, file_url: values.file },
+				freeze: true,
+				callback(r) {
+					d.hide();
+					frappe.show_alert({
+						message: __("Added {0} scope rows", [r.message.added]),
+						indicator: "green",
+					});
+					frm.reload_doc();
+				},
+			});
+		},
+	});
+	d.$wrapper.find(".modal-footer").prepend(
+		`<button type="button" class="btn btn-default btn-sm ic-dl-scope-tpl" style="margin-right:auto;">${__("Download CSV Template")}</button>`
+	);
+	d.$wrapper.find(".ic-dl-scope-tpl").on("click", () => {
+		frappe.call({
+			method: "instacertify.setup.library_upload.download_lab_scope_template",
+			callback(r) {
+				const m = r.message || {};
+				if (m.file_url) window.open(m.file_url, "_blank");
+			},
+		});
+	});
+	d.show();
+};
+
 /** Add Raise Ticket / Raise Complaint buttons on CRM forms. */
 instacertify.add_helpdesk_buttons = function (frm, defaults) {
 	if (frm.is_new()) return;
@@ -476,6 +681,18 @@ $(document).on("page-change", function () {
 // Quotation form enhancements
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
+		frm.add_custom_button(__("Upload Quote Format"), () => {
+			instacertify.open_quote_format_upload({
+				quotation_type: frm.doc.ic_quotation_type || "Consulting",
+			});
+		}, __("Library"));
+		frm.add_custom_button(__("Quote Format Library"), () => {
+			frappe.set_route("List", "IC Quotation Template");
+		}, __("Library"));
+		frm.add_custom_button(__("Upload Lab / Scope"), () => {
+			instacertify.open_laboratory_upload();
+		}, __("Library"));
+
 		if (!frm.is_new()) {
 			instacertify.add_helpdesk_buttons(frm, {
 				quotation: frm.doc.name,
@@ -1935,17 +2152,32 @@ frappe.ui.form.on("IC Laboratory", {
 		if (frm.is_new()) {
 			frm.set_intro(
 				__(
-					"Register the lab, attach accreditation documents, and add each accredited test with Buying Price and Suggested Selling Price. These prices appear as a dropdown on Testing quotations."
+					"Laboratory Library — enter Laboratory Name, Accreditation Scope, and upload Scope Sheet / Scope PDF. Add each accredited test with buying & selling prices."
 				),
 				"blue"
 			);
 		} else {
 			frm.set_intro(
 				__(
-					"Laboratory Library — buy lab services via Purchase Invoice (non-stock, no warehouse). Link a Supplier, then create PI."
+					"Laboratory Library — buy lab services via Purchase Invoice (non-stock). Upload scope files and import CSV scope rows from Library menu."
 				),
 				"blue"
 			);
+		}
+		frm.add_custom_button(__("Upload Lab / Scope"), () => {
+			instacertify.open_laboratory_upload({
+				laboratory_name: frm.doc.laboratory_name,
+				location: frm.doc.location,
+				on_done(name) {
+					if (name === frm.doc.name) frm.reload_doc();
+					else frappe.set_route("Form", "IC Laboratory", name);
+				},
+			});
+		}, __("Library"));
+		if (!frm.is_new()) {
+			frm.add_custom_button(__("Import Scope CSV"), () => {
+				instacertify.open_lab_scope_csv_import(frm);
+			}, __("Library"));
 		}
 		frm.add_custom_button(__("New Testing Quotation"), () => {
 			frappe.new_doc("Quotation", {
@@ -2406,6 +2638,41 @@ frappe.ui.form.on("Project", {
 		);
 	},
 });
+
+// Quote Format + Laboratory libraries — list upload actions
+frappe.listview_settings["IC Quotation Template"] = {
+	onload(listview) {
+		listview.page.add_inner_button(__("Upload Quote Format"), () => {
+			instacertify.open_quote_format_upload();
+		});
+		listview.page.add_inner_button(__("Download Upload Template"), () => {
+			frappe.call({
+				method: "instacertify.setup.library_upload.download_quote_format_upload_template",
+				callback(r) {
+					const m = r.message || {};
+					if (m.file_url) window.open(m.file_url, "_blank");
+				},
+			});
+		});
+	},
+};
+
+frappe.listview_settings["IC Laboratory"] = {
+	onload(listview) {
+		listview.page.add_inner_button(__("Upload Lab / Scope"), () => {
+			instacertify.open_laboratory_upload();
+		});
+		listview.page.add_inner_button(__("Download Scope CSV Template"), () => {
+			frappe.call({
+				method: "instacertify.setup.library_upload.download_lab_scope_template",
+				callback(r) {
+					const m = r.message || {};
+					if (m.file_url) window.open(m.file_url, "_blank");
+				},
+			});
+		});
+	},
+};
 
 // Project list — tile board entry + indicators
 frappe.listview_settings["Project"] = {

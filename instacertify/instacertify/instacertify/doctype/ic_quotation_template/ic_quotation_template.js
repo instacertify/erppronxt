@@ -1,12 +1,23 @@
-// Copyright (c) Instacertify
+# Copyright (c) Instacertify
 frappe.ui.form.on("IC Quotation Template", {
 	refresh(frm) {
 		frm.set_intro(
 			__(
-				"Create separate templates for each consulting service, testing package, or renewal quote. Active templates appear when making a Quotation of the same type."
+				"Quote Format Library — upload PDF/DOCX/HTML formats below, then fill narrative fields. Active templates appear when making a Quotation of the same type."
 			),
 			"blue"
 		);
+
+		frm.add_custom_button(__("Upload Quote Format"), () => {
+			instacertify.open_quote_format_upload({
+				template_name: frm.doc.template_name,
+				quotation_type: frm.doc.quotation_type,
+				on_done(name) {
+					if (name === frm.doc.name) frm.reload_doc();
+					else frappe.set_route("Form", "IC Quotation Template", name);
+				},
+			});
+		}, __("Library"));
 
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Duplicate Template"), () => {
