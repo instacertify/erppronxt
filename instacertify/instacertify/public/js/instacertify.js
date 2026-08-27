@@ -1107,8 +1107,8 @@ instacertify.load_customer_related = function (frm) {
 };
 
 instacertify.render_lead_reminder_banner = function (frm) {
-	const $wrap = $(frm.wrapper).find(".form-layout").first();
-	$wrap.find(".ic-lead-form-reminder").remove();
+	const $page = $(frm.$wrapper || frm.wrapper);
+	$page.find(".ic-lead-form-reminder").remove();
 	if (!frm.doc || frm.is_new()) return;
 
 	const due = frm.doc.ic_next_contact_date;
@@ -1146,7 +1146,20 @@ instacertify.render_lead_reminder_banner = function (frm) {
 			</div>
 		</div>
 	`;
-	$wrap.prepend(html);
+
+	const $anchor = $page.find(".form-layout").first();
+	if ($anchor.length) {
+		$anchor.prepend(html);
+	} else {
+		$page.find(".layout-main-section, .page-body").first().prepend(html);
+	}
+
+	if (frm.dashboard && due && (due <= today)) {
+		frm.dashboard.set_headline_alert(
+			__("Call {0} ({1}) · {2}", [person, phone, remarks]),
+			urgency === "overdue" ? "red" : "orange"
+		);
+	}
 };
 
 instacertify.load_lead_related = function (frm) {
