@@ -386,6 +386,18 @@ def _ensure_customer_related_tab():
 			"fieldtype": "HTML",
 			"insert_after": "ic_section_history",
 		},
+		{
+			"fieldname": "ic_section_files",
+			"label": "Completed Project Files",
+			"fieldtype": "Section Break",
+			"insert_after": "ic_history_html",
+		},
+		{
+			"fieldname": "ic_customer_files_html",
+			"label": "Customer Files",
+			"fieldtype": "HTML",
+			"insert_after": "ic_section_files",
+		},
 	]
 	for meta in fields:
 		cf_name = f"Customer-{meta['fieldname']}"

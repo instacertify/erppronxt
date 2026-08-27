@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import frappe
+from frappe import _
 
 
 def before_validate_lead(doc, method=None):
@@ -157,10 +158,12 @@ def get_customer_history(customer: str):
 	)
 	# Files attached to completed projects for this customer
 	project_files = []
-	completed_projects = [
-		p["name"] for p in projects if p.get("status") == "Completed"
-	] or [p["name"] for p in projects]
-	for pname in completed_projects[:20]:
+	completed_project_names = [
+		p["name"]
+		for p in projects
+		if p.get("status") == "Completed" or p.get("ic_project_stage") == "Project Completed"
+	]
+	for pname in completed_project_names[:30]:
 		files = frappe.get_all(
 			"File",
 			filters={
@@ -168,14 +171,15 @@ def get_customer_history(customer: str):
 				"attached_to_name": pname,
 				"is_folder": 0,
 			},
-			fields=["name", "file_name", "file_url", "creation", "attached_to_name"],
+			fields=["name", "file_name", "file_url", "creation", "attached_to_name", "content_hash"],
 			order_by="creation desc",
-			limit_page_length=20,
+			limit_page_length=30,
 		)
 		for f in files:
 			f["project"] = pname
+			f["source"] = "Project"
 			project_files.append(f)
-	# Also IC Project Record attachments
+	# Also IC Project Record attachments for this customer
 	for rec in records[:30]:
 		files = frappe.get_all(
 			"File",
@@ -184,13 +188,27 @@ def get_customer_history(customer: str):
 				"attached_to_name": rec["name"],
 				"is_folder": 0,
 			},
-			fields=["name", "file_name", "file_url", "creation", "attached_to_name"],
-			limit_page_length=10,
+			fields=["name", "file_name", "file_url", "creation", "attached_to_name", "content_hash"],
+			limit_page_length=15,
 		)
 		for f in files:
 			f["project"] = rec["name"]
 			f["record"] = rec["name"]
+			f["source"] = "IC Project Record"
 			project_files.append(f)
+
+	# Files already saved on this Customer
+	customer_files = frappe.get_all(
+		"File",
+		filters={
+			"attached_to_doctype": "Customer",
+			"attached_to_name": customer,
+			"is_folder": 0,
+		},
+		fields=["name", "file_name", "file_url", "creation", "content_hash"],
+		order_by="creation desc",
+		limit_page_length=100,
+	)
 
 	contacts = frappe.get_list(
 		"Dynamic Link",
@@ -230,7 +248,11 @@ def get_customer_history(customer: str):
 		in ("Shared with Customer", "Customer Review", "Accepted", "Ready to Share")
 	]
 	active_projects = [p for p in projects if p.get("status") not in ("Completed", "Cancelled")]
-	completed_projects = [p for p in projects if p.get("status") == "Completed"]
+	completed_projects = [
+		p
+		for p in projects
+		if p.get("status") == "Completed" or p.get("ic_project_stage") == "Project Completed"
+	]
 
 	billed = sum(
 		float(i.get("grand_total") or 0) for i in invoices if int(i.get("docstatus") or 0) == 1
@@ -265,8 +287,140 @@ def get_customer_history(customer: str):
 		"documents": documents,
 		"records": records,
 		"project_files": project_files,
+		"customer_files": customer_files,
+		"completed_project_names": completed_project_names,
 		"contacts": contact_details,
 		"amount_billed": billed,
 		"outstanding_amount": outstanding,
 		"amount_paid": paid,
+	}
+
+
+def _copy_file_to_customer(src_file_name, customer, prefix, existing_hashes, existing_names):
+	"""Attach an existing File's URL onto Customer. Returns 'copied' | 'skipped'."""
+	src = frappe.get_doc("File", src_file_name)
+	if src.content_hash and src.content_hash in existing_hashes:
+		return "skipped"
+	target_name = f"{prefix}-{src.file_name}" if prefix else src.file_name
+	if target_name in existing_names or src.file_name in existing_names:
+		return "skipped"
+	new_file = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": target_name,
+			"file_url": src.file_url,
+			"is_private": src.is_private,
+			"attached_to_doctype": "Customer",
+			"attached_to_name": customer,
+			"content_hash": src.content_hash,
+			"folder": "Home/Attachments",
+		}
+	)
+	new_file.insert(ignore_permissions=True)
+	if src.content_hash:
+		existing_hashes.add(src.content_hash)
+	existing_names.add(new_file.file_name)
+	return "copied"
+
+
+@frappe.whitelist()
+def import_completed_project_files(customer: str):
+	"""Copy attachments from completed projects onto the Customer record."""
+	if not customer or not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer is required"))
+
+	all_p = frappe.get_all(
+		"Project",
+		filters={"customer": customer},
+		fields=["name", "status", "ic_project_stage"],
+	)
+	projects = [
+		p.name
+		for p in all_p
+		if p.status == "Completed" or p.get("ic_project_stage") == "Project Completed"
+	]
+
+	existing_hashes = {
+		h
+		for h in frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Customer",
+				"attached_to_name": customer,
+				"is_folder": 0,
+			},
+			pluck="content_hash",
+		)
+		if h
+	}
+	existing_names = set(
+		frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Customer",
+				"attached_to_name": customer,
+				"is_folder": 0,
+			},
+			pluck="file_name",
+		)
+	)
+
+	copied = []
+	skipped = 0
+	for pname in projects:
+		files = frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Project",
+				"attached_to_name": pname,
+				"is_folder": 0,
+			},
+			fields=["name", "file_name", "file_url", "content_hash", "is_private"],
+		)
+		for f in files:
+			try:
+				result = _copy_file_to_customer(
+					f.name, customer, pname, existing_hashes, existing_names
+				)
+				if result == "copied":
+					copied.append(f.file_name)
+				else:
+					skipped += 1
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), f"Copy file {f.name} to customer")
+
+	# Also pull IC Project Record attachments for this customer
+	records = frappe.get_all(
+		"IC Project Record",
+		filters={"customer": customer},
+		pluck="name",
+		limit=50,
+	) if frappe.db.exists("DocType", "IC Project Record") else []
+	for rec in records:
+		files = frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "IC Project Record",
+				"attached_to_name": rec,
+				"is_folder": 0,
+			},
+			fields=["name", "file_name"],
+		)
+		for f in files:
+			try:
+				result = _copy_file_to_customer(
+					f.name, customer, rec, existing_hashes, existing_names
+				)
+				if result == "copied":
+					copied.append(f.file_name)
+				else:
+					skipped += 1
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), f"Copy record file {f.name} to customer")
+
+	return {
+		"copied": len(copied),
+		"skipped": skipped,
+		"projects": len(projects),
+		"files": copied,
 	}

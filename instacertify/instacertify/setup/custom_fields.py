@@ -279,6 +279,19 @@ CUSTOMER_FIELDS = [
 		"label": "History",
 		"insert_after": "ic_section_history",
 	},
+	{
+		"fieldname": "ic_section_files",
+		"fieldtype": "Section Break",
+		"label": "Completed Project Files",
+		"insert_after": "ic_history_html",
+		"collapsible": 0,
+	},
+	{
+		"fieldname": "ic_customer_files_html",
+		"fieldtype": "HTML",
+		"label": "Customer Files",
+		"insert_after": "ic_section_files",
+	},
 ]
 
 QUOTATION_FIELDS = [

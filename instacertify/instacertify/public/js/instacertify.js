@@ -551,20 +551,139 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
-// Customer Related Data tab — full per-customer history
+// Customer Related Data tab — full per-customer history + completed project files
 frappe.ui.form.on("Customer", {
 	refresh(frm) {
 		if (!frm.doc.name || frm.is_new()) return;
-		frappe.call({
-			method: "instacertify.crm.events.get_customer_history",
-			args: { customer: frm.doc.name },
-			callback(r) {
-				const d = r.message || {};
-				frm.set_df_property("ic_history_html", "options", ic_render_customer_related(d));
-			},
-		});
+		instacertify.load_customer_related(frm);
 	},
 });
+
+instacertify.load_customer_related = function (frm) {
+	frappe.call({
+		method: "instacertify.crm.events.get_customer_history",
+		args: { customer: frm.doc.name },
+		callback(r) {
+			const d = r.message || {};
+			frm.set_df_property("ic_history_html", "options", ic_render_customer_related(d));
+			if (frm.fields_dict.ic_customer_files_html) {
+				frm.set_df_property(
+					"ic_customer_files_html",
+					"options",
+					ic_render_customer_files(frm, d)
+				);
+				ic_bind_customer_file_actions(frm);
+			}
+		},
+	});
+};
+
+function ic_file_rows(files) {
+	return (files || []).map((f) => [
+		`<a href="${frappe.utils.escape_html(f.file_url || "#")}" target="_blank" rel="noopener">${ic_esc(
+			f.file_name || f.name
+		)}</a>`,
+		ic_esc(f.source || f.project || f.attached_to_name || "—"),
+		ic_esc((f.creation || "").toString().slice(0, 10) || "—"),
+	]);
+}
+
+function ic_render_customer_files(frm, d) {
+	const saved = ic_table(
+		[__("File"), __("Source"), __("Date")],
+		(d.customer_files || []).map((f) => [
+			`<a href="${frappe.utils.escape_html(f.file_url || "#")}" target="_blank" rel="noopener">${ic_esc(
+				f.file_name || f.name
+			)}</a>`,
+			__("Saved on Customer"),
+			ic_esc((f.creation || "").toString().slice(0, 10) || "—"),
+		])
+	);
+	const from_projects = ic_table(
+		[__("File"), __("Project / Record"), __("Date")],
+		ic_file_rows(d.project_files)
+	);
+	const completed_count = (d.completed_project_names || []).length;
+	const pending_count = (d.project_files || []).length;
+
+	return `
+		<div class="ic-customer-files">
+			<p class="text-muted" style="margin-bottom:12px;">
+				${__(
+					"Save certificates, reports, and other files from completed projects onto this customer. You can also upload files directly."
+				)}
+			</p>
+			<div class="ic-file-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+				<button type="button" class="btn btn-primary btn-sm ic-import-project-files">
+					${__("Save files from completed projects")}
+					${pending_count ? ` (${pending_count})` : ""}
+				</button>
+				<button type="button" class="btn btn-default btn-sm ic-upload-customer-file">
+					${__("Upload file to customer")}
+				</button>
+			</div>
+			<p class="text-muted" style="font-size:12px;margin-bottom:8px;">
+				${__("Completed projects")}: ${completed_count}
+			</p>
+			${ic_related_section(
+				__("Saved on this Customer"),
+				saved,
+				__("No files saved on this customer yet")
+			)}
+			${ic_related_section(
+				__("Available from Completed Projects"),
+				from_projects,
+				__("No files on completed projects yet")
+			)}
+		</div>
+	`;
+}
+
+function ic_bind_customer_file_actions(frm) {
+	const $wrap = frm.fields_dict.ic_customer_files_html
+		? $(frm.fields_dict.ic_customer_files_html.wrapper)
+		: $();
+
+	$wrap.find(".ic-import-project-files").off("click").on("click", () => {
+		frappe.confirm(
+			__(
+				"Copy files from completed projects onto this customer? Existing files with the same name or content are skipped."
+			),
+			() => {
+				frappe.call({
+					method: "instacertify.crm.events.import_completed_project_files",
+					args: { customer: frm.doc.name },
+					freeze: true,
+					freeze_message: __("Saving project files…"),
+					callback(r) {
+						const m = r.message || {};
+						frappe.show_alert({
+							message: __(
+								"Saved {0} file(s); skipped {1} (already on customer). From {2} completed project(s).",
+								[m.copied || 0, m.skipped || 0, m.projects || 0]
+							),
+							indicator: m.copied ? "green" : "orange",
+						});
+						frm.reload_doc();
+					},
+				});
+			}
+		);
+	});
+
+	$wrap.find(".ic-upload-customer-file").off("click").on("click", () => {
+		new frappe.ui.FileUploader({
+			doctype: frm.doctype,
+			docname: frm.doc.name,
+			frm: frm,
+			folder: "Home/Attachments",
+			on_success() {
+				frappe.show_alert({ message: __("File uploaded"), indicator: "green" });
+				instacertify.load_customer_related(frm);
+			},
+		});
+	});
+}
 
 function ic_esc(v) {
 	return frappe.utils.escape_html(v == null ? "" : String(v));
@@ -776,15 +895,6 @@ function ic_render_customer_related(d) {
 				__("Leads"),
 				ic_table([__("Lead"), __("Status"), __("Category / Source")], lead_rows),
 				__("No matching leads")
-			)}
-			${ic_related_section(
-				__("Project Files (Completed)"),
-				ic_table([__("File"), __("Project / Record"), __("Date")], (d.project_files||[]).map(f => [
-					`<a href="${frappe.utils.escape_html(f.file_url||'#')}" target="_blank">${ic_esc(f.file_name||f.name)}</a>`,
-					ic_esc(f.project || f.attached_to_name || "—"),
-					ic_esc((f.creation||"").toString().slice(0,10) || "—"),
-				])),
-				__("No files attached on this customer's projects yet")
 			)}
 		</div>
 	`;
