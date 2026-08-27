@@ -151,7 +151,7 @@ LEAD_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "Follow-up / Calls",
 		"insert_after": "ic_remarks",
-		"collapsible": 1,
+		"collapsible": 0,
 	},
 	{
 		"fieldname": "ic_next_contact_date",
@@ -159,7 +159,8 @@ LEAD_FIELDS = [
 		"label": "Next Contact Date",
 		"insert_after": "ic_section_followup",
 		"in_list_view": 1,
-		"description": "Shown on CRM dashboard when due",
+		"in_standard_filter": 1,
+		"description": "Shown as a contact prompt on Instacertify Home when due",
 	},
 	{
 		"fieldname": "ic_last_contacted",
@@ -177,13 +178,15 @@ LEAD_FIELDS = [
 		"fieldtype": "Small Text",
 		"label": "Call / Lead Remarks",
 		"insert_after": "ic_column_followup",
-		"description": "Notes from calls or lead conversations",
+		"in_list_view": 1,
+		"description": "Notes from calls or lead conversations — shown on the dashboard",
 	},
 	{
 		"fieldname": "ic_lead_connected",
 		"fieldtype": "Check",
 		"label": "Lead Connected",
 		"insert_after": "ic_call_remarks",
+		"in_list_view": 1,
 		"description": "Mark when a live conversation happened",
 	},
 	{

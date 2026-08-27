@@ -25,6 +25,16 @@ def _ensure_home_html_block():
     <div class="ic-datetime"><span id="ic-date"></span> · <span id="ic-time"></span></div>
   </div>
   <div class="ic-summary-grid" id="ic-summary-grid"></div>
+  <div class="ic-lead-prompt-panel">
+    <div class="ic-lead-prompt-header">
+      <div>
+        <div class="ic-lead-prompt-title">Lead contact prompts</div>
+        <div class="ic-lead-prompt-sub">When to call · remarks · connected status</div>
+      </div>
+      <a class="ic-view-all" href="/app/lead">Open Leads</a>
+    </div>
+    <div id="ic-lead-prompts" class="ic-lead-prompt-list"></div>
+  </div>
   <div style="margin:8px 0 10px;color:#065175;font-weight:600;">Ongoing Projects</div>
   <div class="ic-project-grid" id="ic-project-grid"></div>
 </div>
@@ -55,6 +65,7 @@ def _ensure_home_html_block():
       const items = [
         ["New Leads", data.new_leads],
         ["Active Leads", data.active_leads],
+        ["Leads to Contact", data.leads_to_contact, true],
         ["Quotations Sent", data.quotations_sent],
         ["Awaiting Response", data.quotations_awaiting],
         ["Quotations Accepted", data.quotations_accepted, true],
@@ -64,13 +75,46 @@ def _ensure_home_html_block():
         ["Testing Requests", data.testing_requests],
         ["Upcoming Deadlines", data.upcoming_deadlines, true],
         ["AMC Due Soon", data.amc_due_soon, true],
-        ["Leads to Contact", data.leads_to_contact, true],
       ];
       const grid = document.getElementById("ic-summary-grid");
       if (!grid) return;
       grid.innerHTML = items.map(([label, value, accent]) =>
         `<div class="ic-summary-card ${accent ? "accent" : ""}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`
       ).join("");
+    }
+  });
+  frappe.call({
+    method: "instacertify.crm.dashboard.get_lead_contact_prompts",
+    args: { limit: 8 },
+    callback(r) {
+      const el = document.getElementById("ic-lead-prompts");
+      if (!el) return;
+      const d = r.message || {};
+      const rows = d.prompts || [];
+      if (!rows.length) {
+        el.innerHTML = "<div class='ic-lead-prompt-empty'>No contact prompts yet. Set <b>Next Contact Date</b>, <b>Call Remarks</b>, and <b>Lead Connected</b> on a Lead.</div>";
+        return;
+      }
+      el.innerHTML = rows.map(row => {
+        const title = frappe.utils.escape_html(row.title || row.name);
+        const when = frappe.utils.escape_html(row.due_label || row.ic_next_contact_date || "—");
+        const remarks = frappe.utils.escape_html(row.ic_call_remarks || "No call remarks yet");
+        const phone = frappe.utils.escape_html(row.phone || "—");
+        const connected = row.ic_lead_connected ? "Connected" : "Not connected";
+        const connCls = row.ic_lead_connected ? "connected" : "not-connected";
+        const urg = frappe.utils.escape_html(row.urgency || "upcoming");
+        return `<a class="ic-lead-prompt ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
+          <div class="ic-lead-prompt-top">
+            <div class="ic-lead-prompt-name">${title}</div>
+            <span class="ic-lead-prompt-when ${urg}">${when}</span>
+          </div>
+          <div class="ic-lead-prompt-meta">
+            <span class="ic-lead-prompt-connected ${connCls}">${connected}</span>
+            <span class="ic-lead-prompt-phone">${phone}</span>
+          </div>
+          <div class="ic-lead-prompt-remarks">${remarks}</div>
+        </a>`;
+      }).join("");
     }
   });
   frappe.call({
@@ -136,7 +180,10 @@ def _ensure_crm_lead_tracker_block():
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Source</div><div id="ic-crm-source-30"></div></div>
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Status</div><div id="ic-crm-status-30"></div></div>
   </div>
-  <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">Leads to Contact · Call remarks</div><div id="ic-crm-leads-contact"></div></div>
+  <div class="ic-crm-chart-card" style="margin-top:12px;min-height:auto;">
+    <div class="ic-crm-chart-label">Lead contact prompts · When / Connected / Remarks</div>
+    <div id="ic-crm-leads-contact"></div>
+  </div>
   <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC Renewals Due (31 days)</div><div id="ic-crm-amc-due"></div></div>
 </div>
 """
@@ -207,19 +254,24 @@ def _ensure_crm_lead_tracker_block():
         const el = document.getElementById("ic-crm-leads-contact");
         const rows = d.leads_to_contact || [];
         if (el) {
-          if (!rows.length) el.innerHTML = "<div class='text-muted'>No leads due for contact</div>";
-          else el.innerHTML = "<table class='ic-related-table'><thead><tr><th>Lead</th><th>When</th><th>Connected</th><th>Remarks</th></tr></thead><tbody>" +
-            rows.map(r => {
-              const title = r.ic_party_name || r.company_name || r.lead_name || r.name;
-              return "<tr><td><a href='/app/lead/"+encodeURIComponent(r.name)+"'>"+frappe.utils.escape_html(title)+"</a></td><td>"+frappe.utils.escape_html(r.ic_next_contact_date||"—")+"</td><td>"+(r.ic_lead_connected?"Yes":"—")+"</td><td>"+frappe.utils.escape_html(r.ic_call_remarks||"—")+"</td></tr>";
-            }).join("") + "</tbody></table>";
+          if (!rows.length) {
+            el.innerHTML = "<div class='ic-lead-prompt-empty'>No leads due. Set Next Contact Date + Call Remarks on Leads.</div>";
+          } else {
+            el.innerHTML = "<table class='ic-related-table'><thead><tr><th>Lead</th><th>When</th><th>Phone</th><th>Connected</th><th>Call remarks</th></tr></thead><tbody>" +
+              rows.map(r => {
+                const title = r.title || r.ic_party_name || r.company_name || r.lead_name || r.name;
+                const when = r.due_label || r.ic_next_contact_date || "—";
+                const connected = r.ic_lead_connected ? "<span class='ic-lead-prompt-connected connected'>Connected</span>" : "<span class='ic-lead-prompt-connected not-connected'>Not connected</span>";
+                return "<tr><td><a href='/app/lead/"+encodeURIComponent(r.name)+"'>"+frappe.utils.escape_html(title)+"</a></td><td><span class='ic-lead-prompt-when "+frappe.utils.escape_html(r.urgency||'')+"'>"+frappe.utils.escape_html(when)+"</span></td><td>"+frappe.utils.escape_html(r.phone||r.mobile_no||"—")+"</td><td>"+connected+"</td><td>"+frappe.utils.escape_html(r.ic_call_remarks||"—")+"</td></tr>";
+              }).join("") + "</tbody></table>";
+          }
         }
         const amc = document.getElementById("ic-crm-amc-due");
         const arows = d.amc_due || [];
         if (amc) {
           if (!arows.length) amc.innerHTML = "<div class='text-muted'>No AMC renewals due</div>";
-          else amc.innerHTML = "<table class='ic-related-table'><thead><tr><th>Project</th><th>Customer</th><th>Contact</th><th>Status</th></tr></thead><tbody>" +
-            arows.map(r => "<tr><td><a href='/app/project/"+encodeURIComponent(r.name)+"'>"+frappe.utils.escape_html(r.project_name||r.name)+"</a></td><td>"+frappe.utils.escape_html(r.customer||"—")+"</td><td>"+frappe.utils.escape_html(r.ic_amc_contact_date||"—")+"</td><td>"+frappe.utils.escape_html(r.ic_amc_status||"—")+"</td></tr>").join("") + "</tbody></table>";
+          else amc.innerHTML = "<table class='ic-related-table'><thead><tr><th>Project</th><th>Customer</th><th>Contact Date</th><th>Status</th></tr></thead><tbody>" +
+            arows.map(a => "<tr><td><a href='/app/project/"+encodeURIComponent(a.name)+"'>"+frappe.utils.escape_html(a.project_name||a.name)+"</a></td><td>"+frappe.utils.escape_html(a.customer||"—")+"</td><td>"+frappe.utils.escape_html(a.ic_amc_contact_date||"—")+"</td><td>"+frappe.utils.escape_html(a.ic_amc_status||"—")+"</td></tr>").join("") + "</tbody></table>";
         }
       })();
     }

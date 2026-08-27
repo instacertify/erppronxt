@@ -116,32 +116,81 @@ def get_lead_tracker_stats():
 	}
 
 
-def _leads_to_contact(limit=15):
+def _leads_to_contact(limit=20, include_upcoming_days=7):
+	"""Leads due for contact (overdue/today) plus upcoming within N days.
+
+	Returns rows with due_label, phone, remarks, connected flag for dashboard prompts.
+	"""
 	if not frappe.get_meta("Lead").has_field("ic_next_contact_date"):
 		return []
+
+	today = getdate(nowdate())
+	horizon = add_days(today, include_upcoming_days)
+
 	rows = frappe.get_all(
 		"Lead",
-		filters={
-			"status": ["not in", ["Converted", "Do Not Contact"]],
-			"ic_next_contact_date": ["<=", nowdate()],
-		},
+		filters=[
+			["status", "not in", ["Converted", "Do Not Contact"]],
+			["ic_next_contact_date", "is", "set"],
+			["ic_next_contact_date", "<=", str(horizon)],
+		],
 		fields=[
 			"name",
 			"lead_name",
 			"company_name",
 			"ic_party_name",
 			"ic_next_contact_date",
+			"ic_last_contacted",
 			"ic_call_remarks",
 			"ic_lead_connected",
 			"status",
 			"mobile_no",
+			"phone",
 			"email_id",
+			"lead_owner",
 		],
 		order_by="ic_next_contact_date asc",
 		limit_page_length=limit,
 	)
-	return rows
 
+	out = []
+	for r in rows:
+		due = getdate(r.ic_next_contact_date) if r.ic_next_contact_date else None
+		if not due:
+			continue
+		if due < today:
+			due_label = "Overdue"
+			urgency = "overdue"
+		elif due == today:
+			due_label = "Contact today"
+			urgency = "today"
+		else:
+			due_label = f"Due {due.strftime('%d %b')}"
+			urgency = "upcoming"
+		out.append(
+			{
+				**r,
+				"title": r.ic_party_name or r.company_name or r.lead_name or r.name,
+				"phone": r.mobile_no or r.phone or "",
+				"due_label": due_label,
+				"urgency": urgency,
+				"connected_label": "Connected" if r.ic_lead_connected else "Not connected",
+			}
+		)
+	return out
+
+
+@frappe.whitelist()
+def get_lead_contact_prompts(limit=12):
+	"""Dashboard prompts: when to contact, call remarks, connected status."""
+	rows = _leads_to_contact(limit=limit)
+	due_now = [r for r in rows if r.get("urgency") in ("overdue", "today")]
+	return {
+		"prompts": rows,
+		"due_now": due_now,
+		"due_count": len(due_now),
+		"upcoming_count": len([r for r in rows if r.get("urgency") == "upcoming"]),
+	}
 
 def _amc_due_list(limit=10):
 	if not frappe.get_meta("Project").has_field("ic_requires_amc"):

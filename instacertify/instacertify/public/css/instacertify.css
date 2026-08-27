@@ -608,3 +608,114 @@ body.for-login,
   border-top: 4px solid var(--ic-primary);
   border-bottom: 3px solid var(--ic-accent);
 }
+
+/* Lead contact prompts on home / CRM tracker */
+.ic-lead-prompt-panel {
+  margin: 14px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #d7e6ef;
+  border-radius: var(--ic-radius, 10px);
+  background: linear-gradient(135deg, #f3f8fb 0%, #ffffff 55%);
+  border-left: 4px solid var(--ic-accent, #EC6820);
+}
+.ic-lead-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ic-lead-prompt-title {
+  font-weight: 700;
+  color: var(--ic-primary, #065175);
+  font-size: 1rem;
+}
+.ic-lead-prompt-sub {
+  font-size: 0.8rem;
+  color: #5b7382;
+}
+.ic-lead-prompt-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.ic-lead-prompt {
+  display: block;
+  text-decoration: none !important;
+  color: inherit;
+  background: #fff;
+  border: 1px solid #d7e6ef;
+  border-radius: 10px;
+  padding: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ic-lead-prompt:hover {
+  border-color: var(--ic-primary, #065175);
+  box-shadow: 0 4px 14px rgba(6, 81, 117, 0.08);
+}
+.ic-lead-prompt.overdue {
+  border-color: #f3b4ae;
+  background: #fff8f7;
+}
+.ic-lead-prompt.today {
+  border-color: #f3c9a5;
+  background: #fffaf5;
+}
+.ic-lead-prompt-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+.ic-lead-prompt-name {
+  font-weight: 600;
+  color: var(--ic-primary, #065175);
+}
+.ic-lead-prompt-when {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e8f1f6;
+  color: #065175;
+  white-space: nowrap;
+}
+.ic-lead-prompt-when.overdue {
+  background: #fde8e6;
+  color: #b42318;
+}
+.ic-lead-prompt-when.today {
+  background: #ffedd9;
+  color: #b54708;
+}
+.ic-lead-prompt-when.upcoming {
+  background: #e8f1f6;
+  color: #065175;
+}
+.ic-lead-prompt-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+  color: #5b7382;
+}
+.ic-lead-prompt-connected {
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.ic-lead-prompt-connected.connected { color: #1b7a4e; }
+.ic-lead-prompt-connected.not-connected { color: #b54708; }
+.ic-lead-prompt-remarks {
+  font-size: 0.85rem;
+  color: #334155;
+  line-height: 1.35;
+}
+.ic-lead-prompt-empty {
+  color: #5b7382;
+  font-size: 0.9rem;
+  padding: 8px 2px;
+}

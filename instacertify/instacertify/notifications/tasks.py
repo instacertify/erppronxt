@@ -101,14 +101,28 @@ def lead_contact_reminders():
 		return
 	leads = frappe.get_all(
 		"Lead",
-		filters={
-			"status": ["not in", ["Converted", "Do Not Contact"]],
-			"ic_next_contact_date": ["<=", today()],
-		},
-		fields=["name", "lead_name", "company_name", "ic_call_remarks", "lead_owner", "owner"],
+		filters=[
+			["status", "not in", ["Converted", "Do Not Contact"]],
+			["ic_next_contact_date", "is", "set"],
+			["ic_next_contact_date", "<=", today()],
+		],
+		fields=[
+			"name",
+			"lead_name",
+			"company_name",
+			"ic_party_name",
+			"ic_call_remarks",
+			"ic_lead_connected",
+			"lead_owner",
+			"owner",
+			"ic_next_contact_date",
+		],
 		limit=50,
 	)
 	for lead in leads:
+		title = lead.ic_party_name or lead.company_name or lead.lead_name or lead.name
+		connected = "Connected" if lead.ic_lead_connected else "Not connected yet"
+		remarks = lead.ic_call_remarks or "No call remarks yet"
 		for user in set(filter(None, [lead.lead_owner, lead.owner, "Administrator"])):
 			if not frappe.db.exists("User", user):
 				continue
@@ -116,8 +130,11 @@ def lead_contact_reminders():
 				frappe.get_doc(
 					{
 						"doctype": "Notification Log",
-						"subject": f"Contact lead: {lead.company_name or lead.lead_name or lead.name}",
-						"email_content": lead.ic_call_remarks or "Follow up as scheduled",
+						"subject": f"Contact lead today: {title}",
+						"email_content": (
+							f"Next contact: {lead.ic_next_contact_date}. "
+							f"{connected}. Remarks: {remarks}"
+						),
 						"document_type": "Lead",
 						"document_name": lead.name,
 						"for_user": user,

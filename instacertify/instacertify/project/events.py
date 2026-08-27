@@ -265,9 +265,10 @@ def get_dashboard_counts():
 		),
 		"leads_to_contact": count(
 			"Lead",
-			{
-				"status": ["not in", ["Converted", "Do Not Contact"]],
-				"ic_next_contact_date": ["<=", frappe.utils.today()],
-			},
+			[
+				["status", "not in", ["Converted", "Do Not Contact"]],
+				["ic_next_contact_date", "is", "set"],
+				["ic_next_contact_date", "<=", frappe.utils.today()],
+			],
 		),
 	}
