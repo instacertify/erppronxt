@@ -41,19 +41,21 @@ def run_session_bulk_qc(target: int = 50) -> dict:
 			return report
 
 		# --- Leads (10) ---
+		# Note: Lead.lead_name can truncate long titles — key uniqueness by email.
 		leads = []
 		for i in range(10):
-			name = frappe.db.get_value("Lead", {"lead_name": f"{marker} Lead {i+1}"}, "name")
+			email = f"qc50.lead{i+1}@example.com"
+			name = frappe.db.get_value("Lead", {"email_id": email}, "name")
 			if name:
 				leads.append(name)
 				continue
 			doc = frappe.get_doc(
 				{
 					"doctype": "Lead",
-					"lead_name": f"{marker} Lead {i+1}",
+					"lead_name": f"{marker} L{i+1}",
 					"company_name": f"{marker} Co {i+1}",
 					"status": "Lead",
-					"email_id": f"qc50.lead{i+1}@example.com",
+					"email_id": email,
 					"mobile_no": f"90000000{i:02d}",
 					"ic_next_contact_date": add_days(nowdate(), i % 5),
 					"ic_call_remarks": f"QC bulk contact note {i+1}",
@@ -357,6 +359,21 @@ def run_session_bulk_qc(target: int = 50) -> dict:
 		else:
 			report["warnings"].append(f"Only {total} records vs target {target}")
 
+		# Live DB counts for this session marker
+		db_counts = {
+			"leads": frappe.db.count("Lead", {"email_id": ["like", "qc50.lead%@example.com"]}),
+			"customers": frappe.db.count("Customer", {"customer_name": ["like", f"{marker}%"]}),
+			"projects": frappe.db.count("Project", {"project_name": ["like", f"{marker}%"]}),
+			"expenses": frappe.db.count("IC Expense Claim", {"title": ["like", f"{marker}%"]}),
+			"laboratories": frappe.db.count("IC Laboratory", {"laboratory_name": ["like", f"{marker}%"]}),
+			"tickets": frappe.db.count("Helpdesk Ticket", {"subject": ["like", f"{marker}%"]}),
+			"tasks": frappe.db.count("Task", {"subject": ["like", f"{marker}%"]}),
+			"templates": frappe.db.count("IC Quotation Template", {"name": ["like", f"{marker}%"]}),
+		}
+		report["db_counts"] = db_counts
+		report["validated"].append(f"DB counts={db_counts}")
+		report["validated"].append(f"DB total marked≈{sum(db_counts.values())} (+quotations/docs/samples)")
+
 		# Link checks
 		linked = 0
 		if frappe.get_meta("Project").has_field("ic_quotation"):
@@ -366,6 +383,13 @@ def run_session_bulk_qc(target: int = 50) -> dict:
 				"Project", {"project_name": ["like", f"{marker}%"], "custom_source_quotation": ["is", "set"]}
 			)
 		report["validated"].append(f"Projects linked to quotations: {linked}")
+		if linked < len(projects):
+			report["warnings"].append(f"Expected {len(projects)} project↔quote links, found {linked}")
+
+		expense_linked = frappe.db.count(
+			"IC Expense Claim", {"title": ["like", f"{marker}%"], "project": ["is", "set"]}
+		)
+		report["validated"].append(f"Expenses linked to projects: {expense_linked}")
 
 		# APIs still healthy
 		from instacertify.setup.interop_qc import run as interop_run
@@ -382,6 +406,23 @@ def run_session_bulk_qc(target: int = 50) -> dict:
 		report["validated"].append(f"Explore cards={len(explore.get('cards') or [])}")
 		lib = frappe.call("instacertify.setup.library_upload.get_library_summary") or {}
 		report["validated"].append(f"Library summary={lib}")
+
+		# Cross-session smoke: share a QC quotation + expense create API
+		if quotations:
+			from instacertify.quotation.events import share_with_customer
+
+			share = share_with_customer(quotations[0])
+			report["validated"].append(f"Share portal token ok for {quotations[0]} url={bool(share.get('url'))}")
+		from instacertify.expenses.api import create_expense_claim
+
+		exp = create_expense_claim(
+			title=f"{marker} Interop Expense",
+			category="Travel",
+			amount=999,
+			description="Session interop QC travel expense",
+		)
+		report["validated"].append(f"Expense API create={exp.get('name')}")
+		report["total_created"] += 1
 
 	except Exception:
 		frappe.db.rollback()
