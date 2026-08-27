@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import frappe
-from frappe.utils import add_days, add_months, get_first_day, getdate, nowdate
+from frappe.utils import add_days, add_months, cint, get_first_day, getdate, nowdate
 
 
 def _count_leads(from_date, to_date=None):
@@ -116,81 +116,183 @@ def get_lead_tracker_stats():
 	}
 
 
-def _leads_to_contact(limit=20, include_upcoming_days=7):
+def _leads_to_contact(limit=20, include_upcoming_days=7, mine_first=True):
 	"""Leads due for contact (overdue/today) plus upcoming within N days.
 
-	Returns rows with due_label, phone, remarks, connected flag for dashboard prompts.
+	Returns reminder-hub rows: whom to call, phone, who to connect with, remarks.
 	"""
 	if not frappe.get_meta("Lead").has_field("ic_next_contact_date"):
 		return []
 
 	today = getdate(nowdate())
 	horizon = add_days(today, include_upcoming_days)
+	user = frappe.session.user
+
+	fields = [
+		"name",
+		"lead_name",
+		"company_name",
+		"ic_party_name",
+		"ic_next_contact_date",
+		"ic_last_contacted",
+		"ic_call_remarks",
+		"ic_lead_connected",
+		"status",
+		"mobile_no",
+		"phone",
+		"email_id",
+		"lead_owner",
+		"city",
+	]
+	meta = frappe.get_meta("Lead")
+	for optional in (
+		"ic_assigned_salesperson",
+		"ic_assigned_operations_manager",
+		"ic_remarks",
+		"ic_priority",
+		"ic_pipeline_stage",
+		"ic_alternate_phone",
+		"designation",
+	):
+		if meta.has_field(optional):
+			fields.append(optional)
+
+	filters = [
+		["status", "not in", ["Converted", "Do Not Contact"]],
+		["ic_next_contact_date", "is", "set"],
+		["ic_next_contact_date", "<=", str(horizon)],
+	]
 
 	rows = frappe.get_all(
 		"Lead",
-		filters=[
-			["status", "not in", ["Converted", "Do Not Contact"]],
-			["ic_next_contact_date", "is", "set"],
-			["ic_next_contact_date", "<=", str(horizon)],
-		],
-		fields=[
-			"name",
-			"lead_name",
-			"company_name",
-			"ic_party_name",
-			"ic_next_contact_date",
-			"ic_last_contacted",
-			"ic_call_remarks",
-			"ic_lead_connected",
-			"status",
-			"mobile_no",
-			"phone",
-			"email_id",
-			"lead_owner",
-		],
+		filters=filters,
+		fields=fields,
 		order_by="ic_next_contact_date asc",
-		limit_page_length=limit,
+		limit_page_length=max(limit * 3, 30),
 	)
+
+	# Resolve user display names once
+	user_ids = set()
+	for r in rows:
+		for key in ("lead_owner", "ic_assigned_salesperson", "ic_assigned_operations_manager"):
+			if r.get(key):
+				user_ids.add(r.get(key))
+	user_names = {}
+	if user_ids:
+		for u in frappe.get_all(
+			"User",
+			filters={"name": ["in", list(user_ids)]},
+			fields=["name", "full_name"],
+		):
+			user_names[u.name] = u.full_name or u.name
+
+	def _plain(html_or_text):
+		if not html_or_text:
+			return ""
+		text = frappe.utils.strip_html(str(html_or_text))
+		return " ".join(text.split())
 
 	out = []
 	for r in rows:
 		due = getdate(r.ic_next_contact_date) if r.ic_next_contact_date else None
 		if not due:
 			continue
+		days = (due - today).days
 		if due < today:
-			due_label = "Overdue"
+			due_label = f"Overdue · {abs(days)}d"
 			urgency = "overdue"
 		elif due == today:
-			due_label = "Contact today"
+			due_label = "Call today"
 			urgency = "today"
 		else:
 			due_label = f"Due {due.strftime('%d %b')}"
 			urgency = "upcoming"
+
+		contact_person = (r.get("ic_party_name") or r.get("lead_name") or "").strip()
+		company = (r.get("company_name") or "").strip()
+		title = contact_person or company or r.name
+		phone = r.get("mobile_no") or r.get("phone") or r.get("ic_alternate_phone") or ""
+
+		salesperson = r.get("ic_assigned_salesperson") or ""
+		owner = r.get("lead_owner") or ""
+		ops = r.get("ic_assigned_operations_manager") or ""
+		# Who to dial with / coordinate with on this lead
+		call_with_id = salesperson or owner
+		call_with = user_names.get(call_with_id) if call_with_id else ""
+		if not call_with and call_with_id:
+			call_with = call_with_id
+		ops_name = user_names.get(ops) if ops else ""
+
+		remarks = _plain(r.get("ic_call_remarks")) or _plain(r.get("ic_remarks")) or ""
+
+		mine = bool(
+			user
+			and user not in ("Guest", "Administrator")
+			and user in {salesperson, owner, ops}
+		) or (user == "Administrator")
+
 		out.append(
 			{
-				**r,
-				"title": r.ic_party_name or r.company_name or r.lead_name or r.name,
-				"phone": r.mobile_no or r.phone or "",
+				**{k: r.get(k) for k in fields},
+				"title": title,
+				"contact_person": contact_person or title,
+				"company": company,
+				"phone": phone,
+				"email": r.get("email_id") or "",
 				"due_label": due_label,
 				"urgency": urgency,
-				"connected_label": "Connected" if r.ic_lead_connected else "Not connected",
+				"days_offset": days,
+				"connected_label": "Connected" if r.get("ic_lead_connected") else "Not connected yet",
+				"call_with": call_with or "Unassigned",
+				"call_with_user": call_with_id or "",
+				"ops_manager": ops_name,
+				"remarks": remarks or "No customer remarks yet — add Call / Lead Remarks after the conversation.",
+				"has_remarks": 1 if remarks else 0,
+				"mine": 1 if mine else 0,
+				"priority": r.get("ic_priority") or "",
+				"pipeline_stage": r.get("ic_pipeline_stage") or r.get("status") or "",
 			}
 		)
-	return out
+
+	# Prefer my leads, then urgency (overdue → today → upcoming), then date
+	urgency_rank = {"overdue": 0, "today": 1, "upcoming": 2}
+	if mine_first and user not in ("Guest",):
+		out.sort(
+			key=lambda x: (
+				0 if x.get("mine") else 1,
+				urgency_rank.get(x.get("urgency"), 9),
+				x.get("ic_next_contact_date") or "",
+			)
+		)
+	else:
+		out.sort(
+			key=lambda x: (
+				urgency_rank.get(x.get("urgency"), 9),
+				x.get("ic_next_contact_date") or "",
+			)
+		)
+	return out[:limit]
 
 
 @frappe.whitelist()
-def get_lead_contact_prompts(limit=12):
-	"""Dashboard prompts: when to contact, call remarks, connected status."""
-	rows = _leads_to_contact(limit=limit)
+def get_lead_contact_prompts(limit=12, mine_only=0):
+	"""Reminder hub: whom to call, who to connect with, customer remarks, due when."""
+	limit = int(limit or 12)
+	rows = _leads_to_contact(limit=limit * 2 if cint(mine_only) else limit)
+	if cint(mine_only):
+		rows = [r for r in rows if r.get("mine")][:limit]
 	due_now = [r for r in rows if r.get("urgency") in ("overdue", "today")]
+	upcoming = [r for r in rows if r.get("urgency") == "upcoming"]
 	return {
 		"prompts": rows,
 		"due_now": due_now,
+		"upcoming": upcoming,
 		"due_count": len(due_now),
-		"upcoming_count": len([r for r in rows if r.get("urgency") == "upcoming"]),
+		"upcoming_count": len(upcoming),
+		"hub_title": "Lead reminder hub",
+		"hub_sub": "Whom to call · who to connect with · customer remarks",
 	}
+
 
 def _amc_due_list(limit=10):
 	if not frappe.get_meta("Project").has_field("ic_requires_amc"):

@@ -1391,6 +1391,149 @@ body.for-login,
   padding: 8px 2px;
 }
 
+/* Lead reminder hub — whom / with / remarks */
+.ic-lead-hub .ic-lead-prompt-header {
+  align-items: flex-start;
+}
+.ic-lead-hub-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.ic-lead-hub-counts {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ic-accent, #EC6820);
+  background: var(--ic-accent-soft, #fff1e6);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.ic-lead-hub-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.ic-lead-hub-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: #e8f1f6;
+  color: #065175;
+}
+.ic-lead-hub-chip.overdue {
+  background: #fde8e6;
+  color: #c0392b;
+}
+.ic-lead-hub-chip.upcoming {
+  background: #e4f4fa;
+  color: #0a8fb5;
+}
+.ic-lead-hub-chip.tip {
+  background: transparent;
+  color: #5b7382;
+  font-weight: 500;
+  padding-left: 0;
+}
+.ic-lead-hub-card {
+  padding: 14px 14px 12px !important;
+}
+.ic-lead-hub-kicker {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ic-accent, #EC6820);
+  margin-bottom: 2px;
+}
+.ic-lead-hub-company {
+  font-size: 0.8rem;
+  color: #5b7382;
+  margin-top: 2px;
+}
+.ic-lead-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+.ic-lead-hub-cell {
+  min-width: 0;
+}
+.ic-lead-hub-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a93a1;
+  margin-bottom: 2px;
+}
+.ic-lead-hub-value {
+  font-size: 0.84rem;
+  font-weight: 560;
+  color: #1c2f3a;
+  word-break: break-word;
+}
+.ic-lead-hub-remarks-wrap {
+  border-top: 1px dashed rgba(6, 81, 117, 0.12);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+.ic-lead-prompt-remarks.muted {
+  color: #8aa0ab;
+  font-style: italic;
+}
+.ic-lead-prompt-phone {
+  color: var(--ic-primary, #065175) !important;
+  font-weight: 650;
+  text-decoration: none !important;
+}
+a.ic-lead-prompt-phone:hover {
+  color: var(--ic-accent, #EC6820) !important;
+}
+.ic-lead-form-reminder {
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(236, 104, 32, 0.28);
+  background: linear-gradient(135deg, #fff8f1 0%, #ffffff 60%);
+  border-left: 5px solid var(--ic-accent, #EC6820);
+}
+.ic-lead-form-reminder.overdue {
+  border-left-color: #c0392b;
+  background: linear-gradient(135deg, #fff5f4 0%, #ffffff 60%);
+}
+.ic-lead-form-reminder-title {
+  font-weight: 700;
+  color: #065175;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+.ic-lead-form-reminder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 14px;
+  font-size: 0.84rem;
+  color: #1c2f3a;
+}
+.ic-lead-form-reminder-grid strong {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7a93a1;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+@media (max-width: 720px) {
+  .ic-lead-hub-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 /* ——— Apple-inspired premium CRM chrome ——— */
 .navbar {
