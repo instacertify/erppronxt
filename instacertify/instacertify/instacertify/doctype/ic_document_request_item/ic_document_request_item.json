@@ -45,6 +45,12 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "customer_remarks",
+   "fieldtype": "Small Text",
+   "label": "Customer Remarks"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "review_remarks",
    "fieldtype": "Small Text",
    "label": "Review Remarks"

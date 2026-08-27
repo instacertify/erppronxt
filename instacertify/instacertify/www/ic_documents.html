@@ -3,10 +3,19 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Instacertify Document Request</title>
+  <title>Document Checklist</title>
   <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
-  <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+  <style>
+    .ic-doc-item { border:1px solid #d7e6ef; border-radius:12px; padding:14px; margin:12px 0; background:#fff; }
+    .ic-doc-item textarea { width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; margin-top:8px; }
+    .ic-doc-meta { font-size:12px; color:#667; margin-top:4px; }
+    .ic-sample-box { margin-top:18px; padding:14px; border-radius:12px; background:#f3f8fb; border:1px solid #d7e6ef; }
+    .ic-sample-box input, .ic-sample-box textarea { width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; margin:6px 0 10px; }
+    .ic-msg { margin-top:10px; padding:10px 12px; border-radius:10px; display:none; }
+    .ic-msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
+    .ic-msg.err { display:block; background:#fdecea; color:#b42318; }
+  </style>
 </head>
 <body class="ic-portal-body">
   <div class="ic-portal-wrap">
@@ -14,46 +23,138 @@
       <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
     </div>
     <div class="ic-portal-card">
-      <h2 style="color:#065175;margin-top:0;">Document Checklist</h2>
+      <h2 style="color:#065175;margin-top:0;">Documents & Sample Dispatch</h2>
       <div id="content">Loading…</div>
+      <div id="msg" class="ic-msg"></div>
       <div id="list"></div>
+      <div class="ic-sample-box" id="sample-box" style="display:none;">
+        <h3 style="color:#065175;margin-top:0;">Sample dispatch</h3>
+        <p style="color:#5b7380;font-size:0.92rem;">Enter courier details and upload POD so our team can track your sample.</p>
+        <label>Courier name</label>
+        <input id="courier_name" type="text" placeholder="e.g. BlueDart / DTDC"/>
+        <label>Tracking / AWB number</label>
+        <input id="tracking_number" type="text" placeholder="Tracking number"/>
+        <label>Dispatch date</label>
+        <input id="dispatch_date" type="date"/>
+        <label>Remarks</label>
+        <textarea id="sample_remarks" rows="3" placeholder="Any notes about the sample shipment"></textarea>
+        <label>POD / dispatch proof</label>
+        <input id="pod_file" type="file"/>
+        <div id="pod_link" style="margin:6px 0;"></div>
+        <button class="ic-btn ic-btn-primary" id="btn-sample">Save sample dispatch</button>
+      </div>
     </div>
   </div>
   <script>
     const token = {{ token|tojson }};
-    fetch('/api/method/instacertify.documents.api.get_document_request_by_token?token=' + encodeURIComponent(token))
-      .then(r => r.json()).then(r => {
-        const d = r.message;
-        if (!d) { document.getElementById('content').innerText = 'Not found'; return; }
-        document.getElementById('content').innerHTML = '<p><b>' + d.title + '</b></p><p>Status: ' + d.status + '</p>';
-        const list = document.getElementById('list');
-        (d.items || []).forEach(item => {
-          const div = document.createElement('div');
-          div.style.cssText = 'border:1px solid #d7e6ef;border-radius:12px;padding:12px;margin:10px 0;';
-          div.innerHTML = '<b>' + item.document_name + '</b> <span class="ic-badge medium">' + item.status + '</span>' +
-            '<div style="font-size:12px;color:#667;">' + (item.category || '') + (item.is_mandatory ? ' · Mandatory' : '') + '</div>' +
-            (item.uploaded_file ? '<div><a href="' + item.uploaded_file + '" target="_blank">View uploaded file</a></div>' : '') +
-            '<input type="file" data-item="' + item.name + '" style="margin-top:8px;"/>';
-          list.appendChild(div);
-          div.querySelector('input').addEventListener('change', async function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const fd = new FormData();
-            fd.append('file', file);
-            fd.append('is_private', 0);
-            const up = await fetch('/api/method/upload_file', { method: 'POST', body: fd, headers: {'X-Frappe-CSRF-Token': {{ csrf_token|tojson }} }});
-            const uj = await up.json();
-            const file_url = uj.message.file_url;
-            await fetch('/api/method/instacertify.documents.api.upload_document_item', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': {{ csrf_token|tojson }}},
-              body: JSON.stringify({token: token, item_name: item.name, file_url: file_url})
-            });
-            alert('Uploaded successfully');
-            location.reload();
-          });
-        });
+    const csrf = {{ csrf_token|tojson }};
+    function showMsg(t, ok) {
+      const el = document.getElementById('msg');
+      el.className = 'ic-msg ' + (ok ? 'ok' : 'err');
+      el.textContent = t;
+    }
+    async function uploadFile(file) {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('is_private', 0);
+      const up = await fetch('/api/method/upload_file', {
+        method: 'POST', body: fd, headers: {'X-Frappe-CSRF-Token': csrf}
       });
+      const uj = await up.json();
+      if (!uj.message || !uj.message.file_url) throw new Error('Upload failed');
+      return uj.message.file_url;
+    }
+    async function post(method, body) {
+      const r = await fetch('/api/method/' + method, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
+        body: JSON.stringify(body || {})
+      });
+      const data = await r.json();
+      if (data.exc || data._server_messages) {
+        let msg = 'Request failed';
+        try {
+          const sm = JSON.parse(data._server_messages || '[]');
+          if (sm[0]) msg = JSON.parse(sm[0]).message || msg;
+        } catch (e) {}
+        throw new Error(msg);
+      }
+      return data.message;
+    }
+    function load() {
+      fetch('/api/method/instacertify.documents.api.get_document_request_by_token?token=' + encodeURIComponent(token))
+        .then(r => r.json()).then(r => {
+          const d = r.message;
+          if (!d) { document.getElementById('content').innerText = 'Not found'; return; }
+          document.getElementById('content').innerHTML =
+            '<p><b>' + (d.title || '') + '</b></p><p>Status: <b>' + (d.status || '') + '</b></p>' +
+            '<p style="color:#5b7380;font-size:0.92rem;">Upload each requested document and add remarks. You can also share sample courier / POD details below.</p>';
+          const list = document.getElementById('list');
+          list.innerHTML = '';
+          (d.items || []).forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'ic-doc-item';
+            div.innerHTML =
+              '<b>' + (item.document_name || '') + '</b> <span class="ic-badge medium">' + (item.status || '') + '</span>' +
+              '<div class="ic-doc-meta">' + (item.category || '') + (item.is_mandatory ? ' · Mandatory' : '') + '</div>' +
+              (item.review_remarks ? '<div class="ic-doc-meta">Review: ' + item.review_remarks + '</div>' : '') +
+              (item.uploaded_file ? '<div><a href="' + item.uploaded_file + '" target="_blank" rel="noopener">View uploaded file</a></div>' : '') +
+              '<label class="ic-doc-meta">Your remarks</label>' +
+              '<textarea data-remarks="' + item.name + '" rows="2" placeholder="Remarks for this requirement">' + (item.customer_remarks || '') + '</textarea>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
+              '<button class="ic-btn ic-btn-ghost" data-save-remarks="' + item.name + '">Save remarks</button>' +
+              '<label class="ic-btn ic-btn-accent" style="cursor:pointer;margin:0;">Upload / Replace<input type="file" data-item="' + item.name + '" style="display:none;"/></label>' +
+              '</div>';
+            list.appendChild(div);
+            div.querySelector('[data-save-remarks]').onclick = async () => {
+              try {
+                const remarks = div.querySelector('[data-remarks]').value || '';
+                await post('instacertify.documents.api.save_item_remarks', {token, item_name: item.name, remarks});
+                showMsg('Remarks saved.', true);
+              } catch (e) { showMsg(e.message, false); }
+            };
+            div.querySelector('input[type=file]').addEventListener('change', async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              try {
+                const remarks = div.querySelector('[data-remarks]').value || '';
+                const file_url = await uploadFile(file);
+                await post('instacertify.documents.api.upload_document_item', {
+                  token, item_name: item.name, file_url, remarks
+                });
+                showMsg('Uploaded successfully.', true);
+                setTimeout(load, 600);
+              } catch (err) { showMsg(err.message || 'Upload failed', false); }
+            });
+          });
+
+          document.getElementById('sample-box').style.display = 'block';
+          document.getElementById('courier_name').value = d.courier_name || '';
+          document.getElementById('tracking_number').value = d.tracking_number || '';
+          document.getElementById('dispatch_date').value = d.dispatch_date || '';
+          document.getElementById('sample_remarks').value = d.sample_dispatch_remarks || '';
+          document.getElementById('pod_link').innerHTML = d.pod_attachment
+            ? '<a href="' + d.pod_attachment + '" target="_blank" rel="noopener">Current POD</a>' : '';
+        });
+    }
+    document.getElementById('btn-sample').onclick = async () => {
+      try {
+        let pod = null;
+        const f = document.getElementById('pod_file').files[0];
+        if (f) pod = await uploadFile(f);
+        await post('instacertify.documents.api.save_sample_dispatch', {
+          token,
+          courier_name: document.getElementById('courier_name').value,
+          tracking_number: document.getElementById('tracking_number').value,
+          dispatch_date: document.getElementById('dispatch_date').value,
+          pod_attachment: pod,
+          sample_dispatch_remarks: document.getElementById('sample_remarks').value
+        });
+        showMsg('Sample dispatch saved. Our team can now track it.', true);
+        setTimeout(load, 600);
+      } catch (e) { showMsg(e.message || 'Could not save sample dispatch', false); }
+    };
+    load();
   </script>
 </body>
 </html>

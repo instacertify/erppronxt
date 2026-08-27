@@ -1197,3 +1197,65 @@ textarea.form-control {
     grid-template-columns: 1fr;
   }
 }
+
+/* Project team chat */
+.ic-project-chat {
+  margin-top: 16px;
+  border: 1px solid var(--ic-border, #d7e6ef);
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+.ic-project-chat-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #f3f8fb, #fff);
+  border-bottom: 1px solid var(--ic-border, #d7e6ef);
+  color: var(--ic-primary, #065175);
+}
+.ic-project-chat-log {
+  max-height: 280px;
+  overflow: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fbfd;
+}
+.ic-project-chat.dialog .ic-project-chat-log {
+  max-height: 420px;
+}
+.ic-chat-bubble {
+  align-self: flex-start;
+  max-width: 85%;
+  background: #fff;
+  border: 1px solid #e2eef4;
+  border-radius: 12px 12px 12px 4px;
+  padding: 8px 10px;
+}
+.ic-chat-bubble.mine {
+  align-self: flex-end;
+  background: #e8f3f8;
+  border-color: #c5dce8;
+  border-radius: 12px 12px 4px 12px;
+}
+.ic-chat-meta {
+  font-size: 11px;
+  color: #6b8492;
+  margin-bottom: 4px;
+}
+.ic-chat-body {
+  font-size: 13px;
+  color: #1f3a45;
+  line-height: 1.4;
+}
+.ic-project-chat-compose {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--ic-border, #d7e6ef);
+  background: #fff;
+}

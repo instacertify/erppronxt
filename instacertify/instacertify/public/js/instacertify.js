@@ -1021,12 +1021,40 @@ frappe.ui.form.on("Project", {
 		frm.add_custom_button(__("Add Project Update"), () => {
 			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
 		}, __("Instacertify"));
+		frm.add_custom_button(__("Request Documents from Customer"), () => {
+			frappe.call({
+				method: "instacertify.documents.api.create_document_request_for_project",
+				args: { project: frm.doc.name },
+				freeze: true,
+				callback(r) {
+					const url = r.message && r.message.url;
+					frappe.msgprint({
+						title: __("Customer document link"),
+						message: `
+							<p>${__("Share this link so the customer can upload documents, remarks, and sample POD / tracking:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+						`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+					}
+					if (r.message && r.message.document_request) {
+						frappe.set_route("Form", "IC Document Request", r.message.document_request);
+					}
+				},
+			});
+		}, __("Instacertify"));
+		frm.add_custom_button(__("Open Team Chat"), () => {
+			instacertify.open_project_chat(frm);
+		}, __("Instacertify"));
 		instacertify.add_helpdesk_buttons(frm, {
 			project: frm.doc.name,
 			customer: frm.doc.customer,
 			channel: "Internal",
 			subject: frm.doc.project_name ? `Project: ${frm.doc.project_name}` : "",
 		});
+		instacertify.render_project_chat_panel(frm);
 	},
 });
 
@@ -1121,11 +1149,60 @@ frappe.ui.form.on("IC Document Request", {
 					method: "instacertify.documents.api.share_document_request",
 					args: { document_request: frm.doc.name },
 					callback(r) {
-						frappe.msgprint(`Customer link: <a href="${r.message.url}" target="_blank">${r.message.url}</a>`);
+						const url = r.message && r.message.url;
+						frappe.msgprint({
+							title: __("Customer link"),
+							message: `<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+								<p class="text-muted">${__("Customer can upload docs, remarks, and sample POD / tracking.")}</p>`,
+							indicator: "green",
+						});
 						frm.reload_doc();
 					},
 				});
 			}, __("Instacertify"));
+
+			(frm.doc.items || []).forEach((row) => {
+				if (!row.name) return;
+				if (row.uploaded_file) {
+					frm.add_custom_button(__("Clear: {0}", [row.document_name]), () => {
+						frappe.confirm(__("Delete this customer upload? They can upload again."), () => {
+							frappe.call({
+								method: "instacertify.documents.api.clear_document_item",
+								args: { document_request: frm.doc.name, item_name: row.name },
+								callback() { frm.reload_doc(); },
+							});
+						});
+					}, __("Manage Uploads"));
+				}
+				if (["Uploaded", "Under Review", "Replacement Requested"].includes(row.status) || row.uploaded_file) {
+					frm.add_custom_button(__("Approve: {0}", [row.document_name]), () => {
+						frappe.call({
+							method: "instacertify.documents.api.review_document_item",
+							args: { document_request: frm.doc.name, item_name: row.name, action: "approve" },
+							callback() { frm.reload_doc(); },
+						});
+					}, __("Review"));
+					frm.add_custom_button(__("Reject: {0}", [row.document_name]), () => {
+						frappe.prompt(
+							[{ fieldname: "remarks", fieldtype: "Small Text", label: __("Remarks"), reqd: 1 }],
+							(v) => {
+								frappe.call({
+									method: "instacertify.documents.api.review_document_item",
+									args: {
+										document_request: frm.doc.name,
+										item_name: row.name,
+										action: "reject",
+										remarks: v.remarks,
+									},
+									callback() { frm.reload_doc(); },
+								});
+							},
+							__("Reject document"),
+							__("Reject")
+						);
+					}, __("Review"));
+				}
+			});
 		}
 	},
 	checklist_template(frm) {
@@ -1718,3 +1795,129 @@ frappe.ui.form.on("Opportunity", {
 		});
 	},
 });
+
+// --- Project team chat / collaboration ---
+instacertify.render_project_chat_panel = function (frm) {
+	if (frm.is_new() || !frm.fields_dict.ic_progress_html) return;
+	const wrap_id = "ic-project-chat-inline";
+	let host = frm.fields_dict.ic_progress_html.$wrapper;
+	if (!host || !host.length) return;
+	if (!host.find("#" + wrap_id).length) {
+		host.append(`
+			<div id="${wrap_id}" class="ic-project-chat">
+				<div class="ic-project-chat-head">
+					<strong>${__("Team chat")}</strong>
+					<span class="text-muted">${__("Discuss this project with teammates")}</span>
+				</div>
+				<div class="ic-project-chat-log" id="ic-project-chat-log-${frm.doc.name}"></div>
+				<div class="ic-project-chat-compose">
+					<textarea class="form-control" rows="2" placeholder="${__("Write a message…")}"></textarea>
+					<button class="btn btn-primary btn-sm ic-chat-send">${__("Send")}</button>
+				</div>
+			</div>
+		`);
+		host.find(".ic-chat-send").on("click", () => {
+			const $ta = host.find("textarea");
+			const message = ($ta.val() || "").trim();
+			if (!message) return;
+			frappe.call({
+				method: "instacertify.collaboration.api.post_project_message",
+				args: { project: frm.doc.name, message },
+				freeze: true,
+				callback() {
+					$ta.val("");
+					instacertify.load_project_chat(frm);
+				},
+			});
+		});
+	}
+	instacertify.load_project_chat(frm);
+};
+
+instacertify.load_project_chat = function (frm) {
+	const $log = $(`#ic-project-chat-log-${frm.doc.name}`);
+	if (!$log.length) return;
+	frappe.call({
+		method: "instacertify.collaboration.api.get_project_messages",
+		args: { project: frm.doc.name, limit: 60 },
+		callback(r) {
+			const rows = (r.message && r.message.messages) || [];
+			if (!rows.length) {
+				$log.html(`<div class="text-muted">${__("No messages yet — start the conversation.")}</div>`);
+				return;
+			}
+			$log.html(
+				rows
+					.map((m) => {
+						const mine = m.is_mine ? "mine" : "";
+						const attach = m.attachment
+							? ` <a href="${frappe.utils.escape_html(m.attachment)}" target="_blank">${__("Attachment")}</a>`
+							: "";
+						return `<div class="ic-chat-bubble ${mine}">
+							<div class="ic-chat-meta">${frappe.utils.escape_html(m.sender_name || m.sender || "")} · ${frappe.utils.escape_html(m.time_label || "")}</div>
+							<div class="ic-chat-body">${m.message || frappe.utils.escape_html(m.plain || "")}${attach}</div>
+						</div>`;
+					})
+					.join("")
+			);
+			$log.scrollTop($log[0].scrollHeight);
+		},
+	});
+};
+
+instacertify.open_project_chat = function (frm) {
+	const d = new frappe.ui.Dialog({
+		title: __("Team chat — {0}", [frm.doc.project_name || frm.doc.name]),
+		size: "large",
+		fields: [{ fieldtype: "HTML", fieldname: "chat_html" }],
+	});
+	d.show();
+	const $body = $(d.fields_dict.chat_html.wrapper);
+	$body.html(`
+		<div class="ic-project-chat dialog">
+			<div class="ic-project-chat-log" id="ic-chat-dialog-log"></div>
+			<div class="ic-project-chat-compose">
+				<textarea class="form-control" rows="3" placeholder="${__("Write a message…")}"></textarea>
+				<button class="btn btn-primary btn-sm" id="ic-chat-dialog-send">${__("Send")}</button>
+			</div>
+		</div>
+	`);
+	const refresh = () => {
+		frappe.call({
+			method: "instacertify.collaboration.api.get_project_messages",
+			args: { project: frm.doc.name, limit: 100 },
+			callback(r) {
+				const $log = $body.find("#ic-chat-dialog-log");
+				const rows = (r.message && r.message.messages) || [];
+				$log.html(
+					rows.length
+						? rows
+								.map((m) => {
+									const mine = m.is_mine ? "mine" : "";
+									return `<div class="ic-chat-bubble ${mine}">
+										<div class="ic-chat-meta">${frappe.utils.escape_html(m.sender_name || m.sender || "")} · ${frappe.utils.escape_html(m.time_label || "")}</div>
+										<div class="ic-chat-body">${m.message || frappe.utils.escape_html(m.plain || "")}</div>
+									</div>`;
+								})
+								.join("")
+						: `<div class="text-muted">${__("No messages yet.")}</div>`
+				);
+				$log.scrollTop($log[0].scrollHeight);
+			},
+		});
+	};
+	$body.find("#ic-chat-dialog-send").on("click", () => {
+		const message = ($body.find("textarea").val() || "").trim();
+		if (!message) return;
+		frappe.call({
+			method: "instacertify.collaboration.api.post_project_message",
+			args: { project: frm.doc.name, message },
+			callback() {
+				$body.find("textarea").val("");
+				refresh();
+				instacertify.load_project_chat(frm);
+			},
+		});
+	});
+	refresh();
+};

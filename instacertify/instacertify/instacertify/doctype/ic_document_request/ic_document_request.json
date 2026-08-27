@@ -117,6 +117,49 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_sample",
+   "fieldtype": "Section Break",
+   "label": "Sample Dispatch (from Customer)",
+   "collapsible": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "courier_name",
+   "fieldtype": "Data",
+   "label": "Courier Name"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "tracking_number",
+   "fieldtype": "Data",
+   "label": "Tracking / AWB Number",
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_sample",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "label": "Dispatch Date"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "pod_attachment",
+   "fieldtype": "Attach",
+   "label": "POD / Dispatch Proof"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_dispatch_remarks",
+   "fieldtype": "Small Text",
+   "label": "Sample Dispatch Remarks"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_notes",
    "fieldtype": "Section Break",
    "label": "Notes"
