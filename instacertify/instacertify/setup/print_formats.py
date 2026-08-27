@@ -16,6 +16,8 @@ QUOTATION_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: #1a1a1a; font-size: 11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
@@ -414,7 +416,7 @@ TESTING_QUOTATION_HTML = """
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
-  @page { size: A4; margin: 14mm 12mm 16mm 12mm; }
+  @page { size: A4; margin: 12mm; }
   .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
   .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
@@ -455,7 +457,7 @@ TESTING_QUOTATION_HTML = """
   .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
   .tq-qr img { width:72px; height:72px; }
   .tq-qr .cap { font-size:8px; color:#555; }
-  .print-format { padding:0 !important; }
+  .print-format { padding:0 !important; margin:0 !important; }
 </style>
 <div class="tq">
   <div class="tq-head">
@@ -711,7 +713,7 @@ CONSULTING_QUOTATION_HTML = """
 {%- set title = doc.ic_service_name or 'Consultancy' -%}
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
-  @page { size: A4; margin: 14mm 12mm 16mm 12mm; }
+  @page { size: A4; margin: 12mm; }
   .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
   .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
@@ -748,7 +750,7 @@ CONSULTING_QUOTATION_HTML = """
   .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
   .cq-qr img { width:72px; height:72px; }
   .cq-qr .cap { font-size:8px; color:#555; }
-  .print-format { padding:0 !important; }
+  .print-format { padding:0 !important; margin:0 !important; }
 </style>
 <div class="cq">
   <div class="cq-head">

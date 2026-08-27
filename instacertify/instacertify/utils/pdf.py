@@ -85,14 +85,32 @@ def quotation_print_format(doc) -> str | None:
 	return None
 
 
+def even_print_margins() -> dict:
+	"""Even A4 margins so printed PDFs align cleanly on all sides."""
+	return {
+		"page-size": "A4",
+		"margin-top": "12mm",
+		"margin-right": "12mm",
+		"margin-bottom": "12mm",
+		"margin-left": "12mm",
+	}
+
+
 def make_pdf(html: str, options: dict | None = None) -> bytes:
 	"""Generate PDF bytes: try Chrome on the HTML, then inlined wkhtmltopdf."""
 	options = dict(options or {})
+	options.update(even_print_margins())
 	options.setdefault("disable-javascript", "")
 	options.setdefault("load-error-handling", "ignore")
 	options.setdefault("load-media-error-handling", "ignore")
 
 	safe_html = inline_local_assets(html)
+	# Ensure CSS page box matches engine margins (even 12mm).
+	if "@page" not in safe_html:
+		safe_html = (
+			"<style>@page{size:A4;margin:12mm}.print-format{padding:0!important;margin:0!important}</style>"
+			+ safe_html
+		)
 
 	try:
 		from frappe.utils.pdf import get_chrome_pdf
@@ -122,11 +140,20 @@ def make_pdf(html: str, options: dict | None = None) -> bytes:
 
 
 def get_quotation_pdf_bytes(name: str, print_format: str | None = None, no_letterhead: int = 1) -> bytes:
-	"""Build quotation PDF with resilient generators."""
+	"""Build quotation PDF with resilient generators and even print margins."""
 	doc = frappe.get_doc("Quotation", name)
 	fmt = print_format or quotation_print_format(doc)
 
-	# Try Chrome through Frappe's get_print pipeline first
+	# Prefer HTML → make_pdf so even margins are applied consistently.
+	try:
+		html = frappe.get_print("Quotation", name, print_format=fmt, no_letterhead=no_letterhead)
+		pdf = make_pdf(html)
+		if pdf:
+			return pdf
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation make_pdf")
+
+	# Last resort: Frappe chrome get_print pipeline
 	try:
 		pdf = frappe.get_print(
 			"Quotation",
@@ -140,9 +167,7 @@ def get_quotation_pdf_bytes(name: str, print_format: str | None = None, no_lette
 			return pdf
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Quotation Chrome get_print")
-
-	html = frappe.get_print("Quotation", name, print_format=fmt, no_letterhead=no_letterhead)
-	return make_pdf(html)
+		raise
 
 
 @frappe.whitelist()
