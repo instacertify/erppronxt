@@ -112,21 +112,22 @@
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
           document.getElementById('content').innerHTML =
-            '<p><b>' + esc(d.name) + '</b> · Revision ' + esc(d.ic_revision_number || 0) +
+            (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
+            '<p><b>' + esc(d.reference || d.customer_name || 'Quotation') + '</b> · Revision ' + esc(d.ic_revision_number || 0) +
             ' · <span class="ic-status-pill ' + statusClass(d.ic_workflow_status) + '">' + esc(d.ic_workflow_status || '') + '</span></p>' +
-            '<p>Customer: <b>' + esc(d.customer_name || d.party_name || '') + '</b></p>' +
+            '<p>Customer: <b>' + esc(d.customer_name || '') + '</b></p>' +
             '<p>Service: <b>' + esc(d.ic_service_name || d.ic_quotation_type || '') + '</b></p>' +
             '<p class="ic-portal-muted">Date: ' + esc(d.transaction_date || '') +
               (d.valid_till ? (' · Valid till ' + esc(d.valid_till)) : '') +
               (d.ic_estimated_timeline ? (' · Timeline: ' + esc(d.ic_estimated_timeline)) : '') + '</p>' +
-            '<div style="margin-top:10px;">' + (d.ic_scope_of_work || '') + '</div>' +
-            (d.ic_deliverables ? ('<h4 style="color:#065175;">Deliverables</h4><div>' + d.ic_deliverables + '</div>') : '') +
+            (d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
+            (d.ic_deliverables ? ('<h4 style="color:#065175;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
             '<h4 style="color:#065175;margin-bottom:4px;">Commercials</h4>' +
             costTable(d.cost_items, d.currency) +
             '<p><b>Commercial:</b> ' + esc(money(d.ic_commercial_value, d.currency)) + '</p>' +
             '<p><b>Pass-through:</b> ' + esc(money(d.ic_passthrough_value, d.currency)) + '</p>' +
             '<p><b>Total:</b> ' + esc(money(d.ic_total_quoted_value || d.grand_total, d.currency)) + '</p>' +
-            (d.ic_payment_terms ? ('<h4 style="color:#065175;">Payment Terms</h4><div>' + d.ic_payment_terms + '</div>') : '') +
+            (d.ic_payment_terms ? ('<h4 style="color:#065175;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
 
           document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));
@@ -144,7 +145,7 @@
       openRemarks('accept', 'Optional remarks (approve)', 'Any note for Instacertify (optional)');
     };
     document.getElementById('btn-reject').onclick = function () {
-      openRemarks('reject', 'Reason for rejection', 'Please tell us why you are rejecting');
+      openRemarks('reject', 'Reason for rejection (required)', 'Please tell us why you are rejecting');
     };
     document.getElementById('btn-changes').onclick = function () {
       openRemarks('changes', 'Revision request', 'What should we change in the quotation?');
@@ -157,6 +158,10 @@
       const remarks = document.getElementById('remarks').value || '';
       if (pendingAction === 'changes' && !remarks.trim()) {
         showMsg('Please enter revision remarks.', false);
+        return;
+      }
+      if (pendingAction === 'reject' && !remarks.trim()) {
+        showMsg('Please enter a rejection reason.', false);
         return;
       }
       let method = 'instacertify.quotation.events.customer_accept_quotation';

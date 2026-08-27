@@ -17,6 +17,9 @@ ALLOWED_UPLOAD_EXTENSIONS = {
 	".jpeg",
 	".webp",
 	".gif",
+	".bmp",
+	".tif",
+	".tiff",
 	".xls",
 	".xlsx",
 	".csv",
@@ -24,20 +27,60 @@ ALLOWED_UPLOAD_EXTENSIONS = {
 	".docx",
 }
 
+OPEN_DOC_STATUSES = {
+	"Sent to Customer",
+	"Partially Uploaded",
+	"Under Review",
+	"Draft",
+}
+
 
 def _assert_allowed_upload(file_url: str | None):
+	"""Accept only local File attachments with allowlisted extensions."""
 	if not file_url:
 		frappe.throw(_("Upload a file first"))
-	name = str(file_url).split("?")[0].rsplit("/", 1)[-1].lower()
+	url = str(file_url).strip().split("?")[0]
+	# Reject external / absolute http URLs
+	if url.startswith("http://") or url.startswith("https://"):
+		# Allow only same-site file paths rewritten as absolute
+		site = (frappe.utils.get_url() or "").rstrip("/")
+		if not url.startswith(site + "/files/") and not url.startswith(site + "/private/files/"):
+			frappe.throw(_("Only files uploaded through this portal are allowed"))
+		url = url[len(site) :] if url.startswith(site) else url
+
+	if not (url.startswith("/files/") or url.startswith("/private/files/")):
+		frappe.throw(_("Invalid file path"))
+
+	fname = url.rsplit("/", 1)[-1].lower()
 	ext = ""
-	if "." in name:
-		ext = "." + name.rsplit(".", 1)[-1]
+	if "." in fname:
+		ext = "." + fname.rsplit(".", 1)[-1]
 	if ext not in ALLOWED_UPLOAD_EXTENSIONS:
 		frappe.throw(
 			_(
-				"File type not allowed. Upload PDF, image (PNG/JPG/WEBP), Excel/CSV, or Word documents."
+				"File type not allowed. Upload PDF, image (PNG/JPG/WEBP/GIF/TIFF), Excel/CSV, or Word documents."
 			)
 		)
+
+	# Must exist as a File document on this site
+	exists = frappe.db.exists("File", {"file_url": url}) or frappe.db.exists(
+		"File", {"file_url": file_url}
+	)
+	if not exists:
+		# Try matching by file_name for private uploads
+		exists = frappe.db.exists("File", {"file_name": fname})
+	if not exists:
+		frappe.throw(_("Uploaded file not found. Please upload again from this page."))
+
+
+def _assert_doc_request_open(doc):
+	status = doc.status or "Draft"
+	if status not in OPEN_DOC_STATUSES and status not in (
+		"Sent to Customer",
+		"Partially Uploaded",
+		"Under Review",
+	):
+		frappe.throw(_("This document checklist is closed for uploads"), frappe.PermissionError)
 
 
 def _assert_manager():
@@ -133,16 +176,17 @@ def get_document_request_by_token(token: str):
 		frappe.throw(_("Invalid document link"), frappe.PermissionError)
 	doc = frappe.get_doc("IC Document Request", name)
 	return {
-		"name": doc.name,
 		"title": doc.title,
-		"customer": doc.customer,
-		"project": doc.project,
 		"status": doc.status,
 		"courier_name": doc.get("courier_name"),
 		"tracking_number": doc.get("tracking_number"),
 		"dispatch_date": str(doc.get("dispatch_date") or ""),
 		"pod_attachment": doc.get("pod_attachment"),
 		"sample_dispatch_remarks": doc.get("sample_dispatch_remarks"),
+		"portal_notice": _(
+			"Upload the requested documents and sample dispatch details here. This link does not provide access to Instacertify ERP."
+		),
+		"allowed_types": "PDF, images (PNG/JPG/WEBP/GIF/TIFF), Excel/CSV, Word",
 		"items": [
 			{
 				"idx": row.idx,
@@ -165,8 +209,9 @@ def upload_document_item(token: str, item_name: str, file_url: str, remarks: str
 	parent = frappe.db.get_value("IC Document Request", {"share_token": token}, "name")
 	if not parent:
 		frappe.throw(_("Invalid document link"), frappe.PermissionError)
-	_assert_allowed_upload(file_url)
 	doc = frappe.get_doc("IC Document Request", parent)
+	_assert_doc_request_open(doc)
+	_assert_allowed_upload(file_url)
 	updated_row = None
 	for row in doc.items:
 		if row.name == item_name:
@@ -194,6 +239,7 @@ def save_item_remarks(token: str, item_name: str, remarks: str):
 	if not parent:
 		frappe.throw(_("Invalid document link"), frappe.PermissionError)
 	doc = frappe.get_doc("IC Document Request", parent)
+	_assert_doc_request_open(doc)
 	for row in doc.items:
 		if row.name == item_name:
 			row.customer_remarks = remarks
@@ -215,6 +261,8 @@ def save_sample_dispatch(
 	parent = frappe.db.get_value("IC Document Request", {"share_token": token}, "name")
 	if not parent:
 		frappe.throw(_("Invalid document link"), frappe.PermissionError)
+	doc = frappe.get_doc("IC Document Request", parent)
+	_assert_doc_request_open(doc)
 	values = {
 		"courier_name": courier_name,
 		"tracking_number": tracking_number,

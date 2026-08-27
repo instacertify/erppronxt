@@ -337,20 +337,44 @@ def _set_workflow_state(name: str, state: str):
 		pass
 
 
-@frappe.whitelist(allow_guest=True)
-def customer_accept_quotation(token: str, remarks: str | None = None):
-	"""Guest portal: record acceptance + feedback only. No Desk access / doc creation as Guest."""
+CUSTOMER_DECIDABLE_STATUSES = (
+	"Shared with Customer",
+	"Customer Review",
+	"Ready to Share",
+	"Changes Requested",
+)
+
+
+def _quotation_from_token(token: str):
+	"""Resolve shared quotation; Guest must present a live share token."""
+	if not (token or "").strip():
+		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
 	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
 	if not name:
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
-	doc = frappe.get_doc("Quotation", name)
+	return frappe.get_doc("Quotation", name)
+
+
+def _assert_customer_can_decide(doc):
+	status = doc.ic_workflow_status or "Draft"
+	if status not in CUSTOMER_DECIDABLE_STATUSES:
+		frappe.throw(
+			_("This quotation is not open for customer feedback right now."),
+			frappe.PermissionError,
+		)
+
+
+@frappe.whitelist(allow_guest=True)
+def customer_accept_quotation(token: str, remarks: str | None = None):
+	"""Guest portal: record acceptance + feedback only. No Desk access / doc creation as Guest."""
+	doc = _quotation_from_token(token)
+	name = doc.name
 	if doc.ic_workflow_status in ("Accepted",):
 		return {
 			"status": "Accepted",
 			"message": _("This quotation was already approved. Thank you."),
 		}
-	if doc.ic_workflow_status in ("Rejected / Lost",):
-		frappe.throw(_("This quotation was rejected and can no longer be accepted"))
+	_assert_customer_can_decide(doc)
 
 	values = {"ic_workflow_status": "Accepted", "status": "Open"}
 	if remarks:
@@ -422,30 +446,32 @@ def _resolve_post_accept_action(doc) -> str:
 
 @frappe.whitelist(allow_guest=True)
 def customer_reject_quotation(token: str, remarks: str | None = None):
-	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
-	if not name:
-		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
-	doc = frappe.get_doc("Quotation", name)
-	if doc.ic_workflow_status == "Accepted":
-		frappe.throw(_("Accepted quotations cannot be rejected from the portal"))
-	values = {"ic_workflow_status": "Rejected / Lost"}
-	if remarks:
-		values["ic_customer_remarks"] = remarks
+	doc = _quotation_from_token(token)
+	name = doc.name
+	_assert_customer_can_decide(doc)
+	if not (remarks or "").strip():
+		frappe.throw(_("Please enter a reason for rejecting this quotation"))
+	values = {
+		"ic_workflow_status": "Rejected / Lost",
+		"ic_customer_remarks": remarks,
+	}
 	frappe.db.set_value("Quotation", name, values, update_modified=True)
 	doc.reload()
 	_set_workflow_state(name, "IC Rejected / Lost")
 	_notify_rejection(doc)
-	return {"status": "Rejected / Lost", "quotation": name}
+	return {
+		"status": "Rejected / Lost",
+		"message": _("Rejection recorded. Our team has been notified."),
+	}
 
 
 @frappe.whitelist(allow_guest=True)
 def customer_request_changes(token: str, remarks: str):
-	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
-	if not name:
-		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
+	doc = _quotation_from_token(token)
+	name = doc.name
+	_assert_customer_can_decide(doc)
 	if not (remarks or "").strip():
 		frappe.throw(_("Please enter remarks explaining the revision you need"))
-	doc = frappe.get_doc("Quotation", name)
 	frappe.db.set_value(
 		"Quotation",
 		name,
@@ -456,7 +482,10 @@ def customer_request_changes(token: str, remarks: str):
 	_set_workflow_state(name, "IC Changes Requested")
 	_advance_linked_lead(doc, "Negotiation")
 	_notify_changes(doc)
-	return {"status": "Changes Requested", "quotation": name}
+	return {
+		"status": "Changes Requested",
+		"message": _("Revision request submitted. We will send an updated quote."),
+	}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -494,10 +523,15 @@ def open_quotation_for_revision(quotation: str):
 
 	doc.ic_revision_number = int(doc.ic_revision_number or 0) + 1
 	doc.ic_workflow_status = "Draft"
+	# Invalidate old customer link until staff re-shares
 	frappe.db.set_value(
 		"Quotation",
 		doc.name,
-		{"ic_revision_number": doc.ic_revision_number, "ic_workflow_status": "Draft"},
+		{
+			"ic_revision_number": doc.ic_revision_number,
+			"ic_workflow_status": "Draft",
+			"ic_share_token": "",
+		},
 		update_modified=True,
 	)
 	_set_workflow_state(doc.name, "IC Draft")

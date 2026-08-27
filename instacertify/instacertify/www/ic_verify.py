@@ -5,28 +5,38 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+from frappe.utils import strip_html
 
 no_cache = 1
 
+# Customer-facing verify only — no HR / internal Project browse
 ALLOWED_VERIFY_DOCTYPES = {
 	"Quotation",
 	"Sales Invoice",
 	"IC Sample Tracking",
 	"IC Testing Request",
-	"IC Joining Letter",
 	"IC Document Request",
-	"Project",
+}
+
+FRIENDLY_TYPE = {
+	"Quotation": "Quotation",
+	"Sales Invoice": "Tax Invoice",
+	"IC Sample Tracking": "Sample",
+	"IC Testing Request": "Testing Request",
+	"IC Document Request": "Document Checklist",
 }
 
 
 def get_context(context):
 	doctype = frappe.form_dict.get("doctype")
 	name = frappe.form_dict.get("name")
-	context.doctype = doctype
-	context.docname = name
+	context.doctype = FRIENDLY_TYPE.get(doctype, doctype)
+	context.docname = None
 	context.valid = False
 	context.details = {}
 	context.error = None
+	context.no_header = 1
+	context.no_footer = 1
 
 	if not doctype or not name:
 		context.error = _("Missing document reference")
@@ -45,16 +55,18 @@ def get_context(context):
 
 	doc = frappe.get_doc(doctype, name)
 	context.valid = True
-	context.details = {
-		"name": doc.name,
-		"title": doc.get("title")
-		or doc.get("project_name")
+	title = (
+		doc.get("title")
 		or doc.get("customer_name")
-		or doc.get("employee_name")
 		or doc.get("tracking_number")
 		or doc.get("subject")
-		or doc.name,
-		"status": doc.get("status") or doc.get("ic_workflow_status") or doc.get("ic_project_stage") or "",
+		or doc.name
+	)
+	context.details = {
+		"title": strip_html(str(title or "")),
+		"status": strip_html(
+			str(doc.get("status") or doc.get("ic_workflow_status") or doc.get("ic_project_stage") or "")
+		),
 		"modified": str(doc.modified),
 	}
 	context.no_cache = 1

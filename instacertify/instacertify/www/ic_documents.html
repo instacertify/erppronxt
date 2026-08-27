@@ -39,8 +39,8 @@
         <label>Remarks</label>
         <textarea id="sample_remarks" rows="3" placeholder="Any notes about the sample shipment"></textarea>
         <label>POD / dispatch proof</label>
-        <input id="pod_file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"/>
-        <p style="color:#5b7380;font-size:0.85rem;margin:4px 0 10px;">Allowed: PDF, images, Excel/CSV, Word</p>
+        <input id="pod_file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"/>
+        <p style="color:#5b7380;font-size:0.85rem;margin:4px 0 10px;">Allowed: PDF, images (all common formats), Excel/CSV, Word</p>
         <div id="pod_link" style="margin:6px 0;"></div>
         <button class="ic-btn ic-btn-primary" id="btn-sample">Save sample dispatch</button>
       </div>
@@ -54,7 +54,12 @@
       el.className = 'ic-msg ' + (ok ? 'ok' : 'err');
       el.textContent = t;
     }
-    const ALLOWED_EXT = /\.(pdf|png|jpe?g|webp|gif|xls|xlsx|csv|docx?)$/i;
+    const ALLOWED_EXT = /\.(pdf|png|jpe?g|webp|gif|bmp|tiff?|xls|xlsx|csv|docx?)$/i;
+    function esc(v) {
+      const d = document.createElement('div');
+      d.textContent = v == null ? '' : String(v);
+      return d.innerHTML;
+    }
     function assertAllowedFile(file) {
       if (!file || !ALLOWED_EXT.test(file.name || '')) {
         throw new Error('File type not allowed. Use PDF, image, Excel/CSV, or Word.');
@@ -95,23 +100,24 @@
           const d = r.message;
           if (!d) { document.getElementById('content').innerText = 'Not found'; return; }
           document.getElementById('content').innerHTML =
-            '<p><b>' + (d.title || '') + '</b></p><p>Status: <b>' + (d.status || '') + '</b></p>' +
-            '<p style="color:#5b7380;font-size:0.92rem;">Upload each requested document and add remarks. You can also share sample courier / POD details below.</p>';
+            (d.portal_notice ? ('<p style="color:#5b7380;font-size:0.92rem;">' + esc(d.portal_notice) + '</p>') : '') +
+            '<p><b>' + esc(d.title || '') + '</b></p><p>Status: <b>' + esc(d.status || '') + '</b></p>' +
+            '<p style="color:#5b7380;font-size:0.92rem;">Allowed uploads: ' + esc(d.allowed_types || 'PDF, images, Excel/CSV, Word') + '</p>';
           const list = document.getElementById('list');
           list.innerHTML = '';
           (d.items || []).forEach(item => {
             const div = document.createElement('div');
             div.className = 'ic-doc-item';
             div.innerHTML =
-              '<b>' + (item.document_name || '') + '</b> <span class="ic-badge medium">' + (item.status || '') + '</span>' +
-              '<div class="ic-doc-meta">' + (item.category || '') + (item.is_mandatory ? ' · Mandatory' : '') + '</div>' +
-              (item.review_remarks ? '<div class="ic-doc-meta">Review: ' + item.review_remarks + '</div>' : '') +
-              (item.uploaded_file ? '<div><a href="' + item.uploaded_file + '" target="_blank" rel="noopener">View uploaded file</a></div>' : '') +
+              '<b>' + esc(item.document_name || '') + '</b> <span class="ic-badge medium">' + esc(item.status || '') + '</span>' +
+              '<div class="ic-doc-meta">' + esc(item.category || '') + (item.is_mandatory ? ' · Mandatory' : '') + '</div>' +
+              (item.review_remarks ? '<div class="ic-doc-meta">Review: ' + esc(item.review_remarks) + '</div>' : '') +
+              (item.uploaded_file ? '<div class="ic-doc-meta">File uploaded</div>' : '') +
               '<label class="ic-doc-meta">Your remarks</label>' +
-              '<textarea data-remarks="' + item.name + '" rows="2" placeholder="Remarks for this requirement">' + (item.customer_remarks || '') + '</textarea>' +
+              '<textarea data-remarks="' + esc(item.name) + '" rows="2" placeholder="Remarks for this requirement">' + esc(item.customer_remarks || '') + '</textarea>' +
               '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
-              '<button class="ic-btn ic-btn-ghost" data-save-remarks="' + item.name + '">Save remarks</button>' +
-              '<label class="ic-btn ic-btn-accent" style="cursor:pointer;margin:0;">Upload / Replace<input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*" data-item="' + item.name + '" style="display:none;"/></label>' +
+              '<button class="ic-btn ic-btn-ghost" data-save-remarks="' + esc(item.name) + '">Save remarks</button>' +
+              '<label class="ic-btn ic-btn-accent" style="cursor:pointer;margin:0;">Upload / Replace<input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" data-item="' + esc(item.name) + '" style="display:none;"/></label>' +
               '</div>';
             list.appendChild(div);
             div.querySelector('[data-save-remarks]').onclick = async () => {

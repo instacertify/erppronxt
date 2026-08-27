@@ -5,9 +5,17 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
+from frappe.utils import strip_html
 
 
 no_cache = 1
+
+DECIDABLE = (
+	"Shared with Customer",
+	"Customer Review",
+	"Ready to Share",
+	"Changes Requested",
+)
 
 
 def get_context(context):
@@ -17,10 +25,20 @@ def get_context(context):
 	frappe.db.commit()
 	context.no_cache = 1
 	context.show_sidebar = False
+	# Never render website chrome that could lead guests into Desk
+	context.no_header = 1
+	context.no_footer = 1
+
+
+def _plain(value) -> str:
+	if value in (None, ""):
+		return ""
+	return strip_html(str(value)).strip()
 
 
 @frappe.whitelist(allow_guest=True)
 def get_quotation(token: str):
+	"""Guest-safe quotation payload — no Desk IDs, no raw HTML injection surface."""
 	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
 	if not name:
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
@@ -30,9 +48,9 @@ def get_quotation(token: str):
 	for row in doc.get("ic_cost_items") or []:
 		cost_items.append(
 			{
-				"particulars": row.particulars or row.cost_component or row.description,
+				"particulars": _plain(row.particulars or row.cost_component or row.description),
 				"amount": row.amount,
-				"payment_destination": row.payment_destination,
+				"payment_destination": _plain(row.payment_destination),
 			}
 		)
 
@@ -40,44 +58,43 @@ def get_quotation(token: str):
 	for row in doc.get("ic_test_items") or []:
 		test_items.append(
 			{
-				"product_name": row.product_name,
-				"test_name": row.test_name,
-				"applicable_standard": row.applicable_standard,
+				"product_name": _plain(row.product_name),
+				"test_name": _plain(row.test_name),
+				"applicable_standard": _plain(row.applicable_standard),
 				"testing_charges": row.testing_charges,
 			}
 		)
 
 	status = doc.ic_workflow_status or "Draft"
-	can_decide = status in (
-		"Shared with Customer",
-		"Customer Review",
-		"Ready to Share",
-		"Changes Requested",
-	)
+	can_decide = status in DECIDABLE
 
+	# Prefer customer-facing title over internal Quotation name
+	display_ref = doc.get("customer_name") or doc.get("party_name") or "Quotation"
 	return {
-		"name": doc.name,
-		"party_name": doc.party_name,
-		"customer_name": doc.customer_name,
+		"reference": display_ref,
+		"customer_name": _plain(doc.customer_name or doc.party_name),
 		"ic_revision_number": doc.ic_revision_number,
 		"ic_quotation_type": doc.ic_quotation_type,
 		"ic_workflow_status": status,
-		"ic_service_name": doc.ic_service_name,
-		"ic_estimated_timeline": doc.ic_estimated_timeline,
-		"ic_scope_of_work": doc.ic_scope_of_work,
-		"ic_deliverables": doc.ic_deliverables,
-		"ic_payment_terms": doc.ic_payment_terms,
+		"ic_service_name": _plain(doc.ic_service_name),
+		"ic_estimated_timeline": _plain(doc.ic_estimated_timeline),
+		"ic_scope_of_work": _plain(doc.ic_scope_of_work),
+		"ic_deliverables": _plain(doc.ic_deliverables),
+		"ic_payment_terms": _plain(doc.ic_payment_terms),
 		"ic_commercial_value": doc.ic_commercial_value,
 		"ic_passthrough_value": doc.ic_passthrough_value,
 		"ic_total_quoted_value": doc.ic_total_quoted_value,
-		"ic_customer_remarks": doc.ic_customer_remarks,
+		"ic_customer_remarks": _plain(doc.ic_customer_remarks),
 		"grand_total": doc.grand_total,
 		"currency": doc.currency,
 		"transaction_date": str(doc.transaction_date or ""),
 		"valid_till": str(doc.valid_till or ""),
 		"cost_items": cost_items,
 		"test_items": test_items,
-		"can_decide": 1 if can_decide and status not in ("Accepted", "Rejected / Lost") else 0,
+		"can_decide": 1 if can_decide else 0,
 		"is_final": 1 if status in ("Accepted", "Rejected / Lost") else 0,
 		"pdf_url": f"/api/method/instacertify.quotation.events.download_quotation_pdf?token={token}",
+		"portal_notice": _(
+			"This secure link is for reviewing the quotation only. You can download the PDF and send feedback — it does not provide access to Instacertify ERP."
+		),
 	}

@@ -140,35 +140,47 @@ def make_pdf(html: str, options: dict | None = None) -> bytes:
 
 
 def get_quotation_pdf_bytes(name: str, print_format: str | None = None, no_letterhead: int = 1) -> bytes:
-	"""Build quotation PDF with resilient generators and even print margins."""
+	"""Build quotation PDF with resilient generators and even print margins.
+
+	When called from the guest token portal, temporarily elevate for print
+	rendering only (token already validated by the caller).
+	"""
 	doc = frappe.get_doc("Quotation", name)
 	fmt = print_format or quotation_print_format(doc)
+	original_user = frappe.session.user
+	elevated = False
+	if original_user == "Guest":
+		frappe.set_user("Administrator")
+		elevated = True
 
-	# Prefer HTML → make_pdf so even margins are applied consistently.
 	try:
-		html = frappe.get_print("Quotation", name, print_format=fmt, no_letterhead=no_letterhead)
-		pdf = make_pdf(html)
-		if pdf:
-			return pdf
-	except Exception:
-		frappe.log_error(frappe.get_traceback(), "Quotation make_pdf")
+		# Prefer HTML → make_pdf so even margins are applied consistently.
+		try:
+			html = frappe.get_print("Quotation", name, print_format=fmt, no_letterhead=no_letterhead)
+			pdf = make_pdf(html)
+			if pdf:
+				return pdf
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Quotation make_pdf")
 
-	# Last resort: Frappe chrome get_print pipeline
-	try:
-		pdf = frappe.get_print(
-			"Quotation",
-			name,
-			print_format=fmt,
-			as_pdf=True,
-			no_letterhead=no_letterhead,
-			pdf_generator="chrome",
-		)
-		if pdf:
-			return pdf
-	except Exception:
-		frappe.log_error(frappe.get_traceback(), "Quotation Chrome get_print")
-		raise
-
+		# Last resort: Frappe chrome get_print pipeline
+		try:
+			pdf = frappe.get_print(
+				"Quotation",
+				name,
+				print_format=fmt,
+				as_pdf=True,
+				no_letterhead=no_letterhead,
+				pdf_generator="chrome",
+			)
+			if pdf:
+				return pdf
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Quotation Chrome get_print")
+			raise
+	finally:
+		if elevated:
+			frappe.set_user(original_user)
 
 @frappe.whitelist()
 def download_quotation_pdf(name: str, print_format: str | None = None):
