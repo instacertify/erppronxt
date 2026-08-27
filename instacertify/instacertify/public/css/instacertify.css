@@ -173,6 +173,49 @@
 /* Soft desk accents */
 .navbar { border-bottom: 2px solid rgba(6, 81, 117, 0.12) !important; }
 
+/* App / navbar logo — circular Instacertify mark */
+.navbar .app-logo,
+.navbar .navbar-brand img,
+.navbar img.app-logo,
+.sidebar-logo img,
+.splash img,
+.login-content .app-logo,
+.page-container .app-logo {
+  max-height: 28px !important;
+  width: auto !important;
+  object-fit: contain;
+}
+
+.navbar .navbar-brand {
+  display: flex;
+  align-items: center;
+}
+
+/* Login / website brand wordmark when used full-width */
+.for-login .page-card-head img,
+.login-content img[src*="instacertify_logo"],
+.web-footer img[src*="instacertify_logo"],
+.brand-logo img {
+  max-height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Favicon-sized mark helpers in portal */
+.ic-brand-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+.ic-brand-logo {
+  max-height: 44px;
+  width: auto;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
 .page-container .page-head {
   border-bottom: 1px solid rgba(6, 81, 117, 0.08);
 }

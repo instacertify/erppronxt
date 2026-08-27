@@ -4,7 +4,31 @@ frappe.provide("instacertify");
 instacertify.brand = {
 	primary: "#065175",
 	accent: "#EC6820",
+	logo: "/assets/instacertify/images/instacertify_logo.png",
+	icon: "/assets/instacertify/images/instacertify_icon.png",
+	app_logo: "/assets/instacertify/images/instacertify_app_logo.png",
+	favicon: "/assets/instacertify/images/favicon-32.png",
 };
+
+// Ensure favicon is always the circular Instacertify mark
+(function setInstacertifyFavicon() {
+	const href = instacertify.brand.favicon;
+	let link = document.querySelector("link[rel='icon']");
+	if (!link) {
+		link = document.createElement("link");
+		link.rel = "icon";
+		document.head.appendChild(link);
+	}
+	link.type = "image/png";
+	link.href = href;
+	let apple = document.querySelector("link[rel='apple-touch-icon']");
+	if (!apple) {
+		apple = document.createElement("link");
+		apple.rel = "apple-touch-icon";
+		document.head.appendChild(apple);
+	}
+	apple.href = "/assets/instacertify/images/apple-touch-icon.png";
+})();
 
 instacertify.greeting = function (fullName) {
 	const hour = moment().hour();
@@ -18,6 +42,10 @@ instacertify.render_home_banner = function (wrapper) {
 	if (!wrapper || wrapper.find(".ic-greeting").length) return;
 	const html = `
 		<div class="ic-greeting">
+			<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+				<img src="${instacertify.brand.icon}" alt="Instacertify" style="width:42px;height:42px;object-fit:contain;"/>
+				<span style="font-size:1.15rem;font-weight:700;letter-spacing:0.02em;">Instacertify</span>
+			</div>
 			<h2>${frappe.utils.escape_html(instacertify.greeting())}</h2>
 			<div class="ic-datetime">
 				<span class="ic-date">${moment().format("dddd, D MMMM YYYY")}</span>

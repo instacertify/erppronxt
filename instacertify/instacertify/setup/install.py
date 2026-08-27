@@ -51,6 +51,7 @@ def after_install():
 	setup_project_types()
 	setup_items_and_groups()
 	setup_settings()
+	setup_branding()
 	setup_workflows()
 	setup_print_formats()
 	setup_notifications()
@@ -142,9 +143,16 @@ def after_migrate():
 	ensure_roles()
 	setup_print_formats()
 	setup_settings()
+	setup_branding()
 	setup_quotation_templates()
 	setup_workspace()
 	frappe.db.commit()
+
+
+def setup_branding():
+	from instacertify.setup.branding import ensure_branding
+
+	ensure_branding()
 
 
 def setup_quotation_templates():
@@ -327,8 +335,8 @@ def setup_settings():
 			"<li>Testing will commence upon receipt of the payment and sample.</li>"
 			"<li>Any additional testing or charges, if applicable, shall be communicated separately.</li></ul>"
 		)
-		doc.header_image = doc.header_image or "/assets/instacertify/images/instacertify_letterhead.png"
-		doc.logo = doc.logo or "/assets/instacertify/images/instacertify_letterhead.png"
+		doc.header_image = "/assets/instacertify/images/instacertify_letterhead.png"
+		doc.logo = "/assets/instacertify/images/instacertify_logo.png"
 		doc.stamp_image = doc.stamp_image or "/assets/instacertify/images/instacertify_stamp.png"
 		doc.save(ignore_permissions=True)
 	except Exception:

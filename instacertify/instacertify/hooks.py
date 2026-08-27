@@ -128,3 +128,12 @@ after_migrate = [
 ]
 
 after_install = "instacertify.setup.install.after_install"
+
+# Desk / login logo (circular mark for small navbar spaces)
+app_logo_url = "/assets/instacertify/images/instacertify_app_logo.png"
+
+# Website context extras
+website_context = {
+	"favicon": "/assets/instacertify/images/favicon-32.png",
+	"splash_image": "/assets/instacertify/images/instacertify_logo.png",
+}
