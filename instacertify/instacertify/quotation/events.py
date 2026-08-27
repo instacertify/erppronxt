@@ -11,9 +11,41 @@ from frappe.utils import now_datetime
 
 
 def validate_quotation(doc, method=None):
+	_calculate_test_line_totals(doc)
 	_calculate_revenue_split(doc)
 	if not doc.ic_revision_number and doc.ic_revision_number != 0:
 		doc.ic_revision_number = 0
+	if doc.ic_quotation_type == "Testing" and not doc.ic_subject:
+		doc.ic_subject = "Testing"
+	_apply_testing_defaults(doc)
+
+
+def _calculate_test_line_totals(doc):
+	for row in doc.get("ic_test_items") or []:
+		units = float(row.number_of_samples or 0) or 1
+		if row.per_unit_charges:
+			row.testing_charges = float(row.per_unit_charges) * units
+		elif row.testing_charges and not row.per_unit_charges:
+			row.per_unit_charges = float(row.testing_charges) / units
+
+
+def _apply_testing_defaults(doc):
+	if doc.ic_quotation_type != "Testing":
+		return
+	try:
+		settings = frappe.get_cached_doc("IC Settings")
+	except Exception:
+		return
+	if not doc.ic_payment_terms and settings.get("default_payment_terms"):
+		doc.ic_payment_terms = settings.default_payment_terms
+	if not doc.ic_sample_handling_policy and settings.get("default_sample_handling"):
+		doc.ic_sample_handling_policy = settings.default_sample_handling
+	if not doc.ic_cancellation_policy and settings.get("default_cancellation_policy"):
+		doc.ic_cancellation_policy = settings.default_cancellation_policy
+	if not doc.ic_confidentiality and settings.get("default_confidentiality"):
+		doc.ic_confidentiality = settings.default_confidentiality
+	if not doc.ic_force_majeure and settings.get("default_force_majeure"):
+		doc.ic_force_majeure = settings.default_force_majeure
 
 
 def on_submit_quotation(doc, method=None):

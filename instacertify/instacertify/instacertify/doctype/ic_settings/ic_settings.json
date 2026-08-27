@@ -18,6 +18,13 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "legal_name",
+   "fieldtype": "Data",
+   "label": "Legal Name",
+   "default": "INSTACERTIFY LABS PVT LTD"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "primary_color",
    "fieldtype": "Color",
    "label": "Primary Color",
@@ -45,7 +52,113 @@
    "doctype": "DocField",
    "fieldname": "header_image",
    "fieldtype": "Attach Image",
-   "label": "Header Asset"
+   "label": "Header / Letterhead Asset"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_letterhead",
+   "fieldtype": "Section Break",
+   "label": "Letterhead Contact"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "address_line",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "default": "PK 1 Sector 63 A Noida\nUttar Pradesh, India - 201301"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "default": "+91 9999118039"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "default": "contact@instacertify.com"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website",
+   "default": "www.instacertify.com"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_lh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "cin",
+   "fieldtype": "Data",
+   "label": "CIN",
+   "default": "UP74999UP2022PTC170291"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "gstin",
+   "fieldtype": "Data",
+   "label": "GSTIN",
+   "default": "09AAGCI8396C1Z7"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_bank",
+   "fieldtype": "Section Break",
+   "label": "Bank Details for Payment"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "beneficiary_name",
+   "fieldtype": "Data",
+   "label": "Beneficiary Name",
+   "default": "Instacertify Labs Private Limited"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "bank_name",
+   "fieldtype": "Data",
+   "label": "Bank Name",
+   "default": "YES BANK"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "account_number",
+   "fieldtype": "Data",
+   "label": "Account Number",
+   "default": "026485800001318"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_bank",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "ifsc_code",
+   "fieldtype": "Data",
+   "label": "IFSC Code",
+   "default": "YESB0000264"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "swift_code",
+   "fieldtype": "Data",
+   "label": "SWIFT Code",
+   "default": "YESBINBBDEL (For International USD Transfers)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "bank_branch_address",
+   "fieldtype": "Small Text",
+   "label": "Branch Address",
+   "default": "Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India"
   },
   {
    "doctype": "DocField",
@@ -64,6 +177,30 @@
    "fieldname": "default_force_majeure",
    "fieldtype": "Text Editor",
    "label": "Default Force Majeure"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "default_payment_terms",
+   "fieldtype": "Text Editor",
+   "label": "Default Testing Payment Terms"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "default_sample_handling",
+   "fieldtype": "Text Editor",
+   "label": "Default Sample Handling Policy"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "default_cancellation_policy",
+   "fieldtype": "Text Editor",
+   "label": "Default Cancellation & Refund Policy"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "default_confidentiality",
+   "fieldtype": "Text Editor",
+   "label": "Default Confidentiality Policy"
   },
   {
    "doctype": "DocField",
@@ -94,12 +231,8 @@
    "write": 1,
    "create": 1,
    "delete": 1,
-   "submit": 0,
-   "cancel": 0,
-   "amend": 0,
    "report": 1,
    "export": 1,
-   "import": 0,
    "share": 1,
    "print": 1,
    "email": 1
@@ -111,12 +244,8 @@
    "write": 1,
    "create": 1,
    "delete": 1,
-   "submit": 0,
-   "cancel": 0,
-   "amend": 0,
    "report": 1,
    "export": 1,
-   "import": 0,
    "share": 1,
    "print": 1,
    "email": 1

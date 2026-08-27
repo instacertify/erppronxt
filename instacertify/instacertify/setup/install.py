@@ -275,25 +275,51 @@ def setup_items_and_groups():
 
 
 def setup_settings():
-	if not frappe.db.exists("IC Settings"):
+	if not frappe.db.exists("DocType", "IC Settings"):
 		return
 	try:
 		doc = frappe.get_single("IC Settings")
 		doc.primary_color = "#065175"
 		doc.accent_color = "#EC6820"
+		doc.legal_name = doc.legal_name or "INSTACERTIFY LABS PVT LTD"
+		doc.address_line = doc.address_line or "PK 1 Sector 63 A Noida\nUttar Pradesh, India - 201301"
+		doc.phone = doc.phone or "+91 9999118039"
+		doc.email = doc.email or "contact@instacertify.com"
+		doc.website = doc.website or "www.instacertify.com"
+		doc.cin = doc.cin or "UP74999UP2022PTC170291"
+		doc.gstin = doc.gstin or "09AAGCI8396C1Z7"
+		doc.beneficiary_name = doc.beneficiary_name or "Instacertify Labs Private Limited"
+		doc.bank_name = doc.bank_name or "YES BANK"
+		doc.account_number = doc.account_number or "026485800001318"
+		doc.ifsc_code = doc.ifsc_code or "YESB0000264"
+		doc.swift_code = doc.swift_code or "YESBINBBDEL (For International USD Transfers)"
+		doc.bank_branch_address = (
+			doc.bank_branch_address
+			or "Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India"
+		)
 		if frappe.db.exists("Company", "Instacertify"):
 			doc.company = "Instacertify"
 		doc.default_terms = (
-			"<p>This quotation is valid for 30 days from the date of issue. "
+			doc.default_terms
+			or "<p>This quotation is valid for 30 days from the date of issue. "
 			"Prices are subject to change based on regulatory fee revisions. "
 			"Instacertify will commence work upon written acceptance and receipt of agreed advance.</p>"
 		)
 		doc.default_force_majeure = (
-			"<p>Neither party shall be liable for delays or failures due to circumstances beyond "
-			"reasonable control including acts of God, natural disasters, war, terrorism, riots, "
-			"embargoes, acts of civil or military authorities, fire, floods, accidents, pandemic, "
-			"strikes or shortages of transportation, facilities, fuel, energy, labor or materials.</p>"
+			doc.default_force_majeure
+			or "<p>Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations "
+			"due to circumstances beyond its reasonable control, including but not limited to natural disasters, "
+			"acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, "
+			"laboratory delays, or certification authority actions.</p>"
 		)
+		doc.default_payment_terms = (
+			doc.default_payment_terms
+			or "<ul><li>100% Advance Payment is required to initiate the testing process.</li>"
+			"<li>Testing will commence upon receipt of the payment and sample.</li>"
+			"<li>Any additional testing or charges, if applicable, shall be communicated separately.</li></ul>"
+		)
+		doc.header_image = doc.header_image or "/assets/instacertify/images/instacertify_letterhead.png"
+		doc.logo = doc.logo or "/assets/instacertify/images/instacertify_letterhead.png"
 		doc.save(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "IC Settings Setup")

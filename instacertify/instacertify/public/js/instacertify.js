@@ -184,6 +184,29 @@ instacertify.toggle_quotation_sections = function (frm) {
 	frm.toggle_display("ic_section_service", ["Service", "Other", "Multiple Products / Multiple Services"].includes(t));
 	frm.toggle_display("ic_section_testing", ["Testing", "Multiple Products / Multiple Services"].includes(t));
 	frm.toggle_display("ic_section_products", t === "Multiple Products / Multiple Services");
+	if (t === "Testing") {
+		frm.meta.default_print_format = "Instacertify Testing Quotation";
+		frm.set_df_property("ic_subject", "reqd", 1);
+	} else {
+		frm.meta.default_print_format = "Instacertify Quotation";
+	}
+};
+
+frappe.ui.form.on("IC Quotation Test Item", {
+	number_of_samples(frm, cdt, cdn) {
+		instacertify.recalc_test_row(frm, cdt, cdn);
+	},
+	per_unit_charges(frm, cdt, cdn) {
+		instacertify.recalc_test_row(frm, cdt, cdn);
+	},
+});
+
+instacertify.recalc_test_row = function (frm, cdt, cdn) {
+	const row = locals[cdt][cdn];
+	const units = row.number_of_samples || 1;
+	if (row.per_unit_charges) {
+		frappe.model.set_value(cdt, cdn, "testing_charges", flt(row.per_unit_charges) * units);
+	}
 };
 
 // Prompt for quotation type on new

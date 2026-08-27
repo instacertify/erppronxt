@@ -250,10 +250,285 @@ JOINING_HTML = """
 </div>
 """
 
+# Matches uploaded Instacertify Labs testing quotation template (A4)
+TESTING_QUOTATION_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PVT LTD' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'UP74999UP2022PTC170291' -%}
+{%- set address = (s.address_line or 'PK 1 Sector 63 A Noida\\nUttar Pradesh, India - 201301').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+{%- set curr = doc.currency or 'INR' -%}
+<style>
+  @page { size: A4; margin: 12mm 12mm 18mm 12mm; }
+  .tq { font-family: 'Segoe UI', Arial, Helvetica, sans-serif; color:#222; font-size:10.5px; line-height:1.45; }
+  .tq * { box-sizing: border-box; }
+  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:2px solid #EC6820; margin-bottom:14px; }
+  .tq-logo img { max-height:52px; max-width:260px; }
+  .tq-co { text-align:right; color:#333; font-size:10px; line-height:1.35; }
+  .tq-co .name { color:#EC6820; font-weight:700; font-size:13px; letter-spacing:0.3px; margin-bottom:3px; }
+  .tq-meta { display:flex; justify-content:space-between; margin:10px 0 6px; font-size:11px; }
+  .tq-title { text-align:center; font-size:20px; font-weight:700; margin:8px 0 14px; color:#111; }
+  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:10px; }
+  table.tq-grid > tbody > tr > td { border:1px solid #cfcfcf; vertical-align:top; padding:0; }
+  .tq-label { width:18%; background:#f2f2f2; font-weight:700; padding:10px 8px; color:#222; }
+  .tq-value { width:82%; padding:10px 12px; }
+  .tq-value ul { margin:6px 0 0 18px; padding:0; }
+  .tq-value li { margin-bottom:3px; }
+  .tq-h { font-weight:700; margin:0 0 6px; }
+  table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
+  table.tq-comm th { background:#f7f7f7; border:1px solid #bdbdbd; padding:7px 6px; font-size:10px; text-align:center; }
+  table.tq-comm td { border:1px solid #bdbdbd; padding:7px 6px; font-size:10px; vertical-align:top; }
+  table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
+  table.tq-comm td.amt { text-align:right; white-space:nowrap; }
+  .tq-note { margin-top:8px; font-size:10px; }
+  .tq-section { margin:14px 0 8px; }
+  table.tq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.tq-bank td { border:1px solid #bdbdbd; padding:7px 8px; }
+  table.tq-bank td.k { width:34%; background:#f7f7f7; font-weight:600; }
+  .tq-close { margin-top:22px; }
+  .tq-sign { margin-top:36px; font-weight:600; }
+  .tq-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:7px 10px; margin-top:22px; font-size:11px; position:relative; }
+  .tq-qr { position:absolute; right:8px; bottom:42px; text-align:center; }
+  .tq-qr img { width:68px; height:68px; }
+  .tq-qr .cap { font-size:8px; color:#555; }
+  .print-format { padding:0 !important; }
+</style>
+<div class="tq">
+  <div class="tq-head">
+    <div class="tq-logo">
+      <img src="{{ logo }}" alt="Instacertify"/>
+    </div>
+    <div class="tq-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }}</div>
+      <div>✉ {{ email }}</div>
+      <div>{{ website }}</div>
+      <div>CIN : {{ cin }}</div>
+    </div>
+  </div>
+
+  <div class="tq-meta">
+    <div><b>No:</b> {{ doc.name }}{% if doc.ic_revision_number %} &nbsp;|&nbsp; <b>Rev:</b> {{ doc.ic_revision_number }}{% endif %}</div>
+    <div><b>Date:</b> {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
+  </div>
+  <div class="tq-title">Quotation</div>
+
+  <table class="tq-grid">
+    <tr>
+      <td class="tq-label">Subject</td>
+      <td class="tq-value">{{ doc.ic_subject or 'Testing' }}</td>
+    </tr>
+    <tr>
+      <td class="tq-label">ABOUT</td>
+      <td class="tq-value">
+        {% if doc.ic_about_testing %}
+          {{ doc.ic_about_testing }}
+        {% else %}
+          {{ doc.ic_scope_of_work or '' }}
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">Applicable Standards</td>
+      <td class="tq-value">
+        {% if doc.ic_applicable_standards_text %}
+          {{ doc.ic_applicable_standards_text }}
+        {% else %}
+          <div>The following standards are applicable for the proposed testing:</div>
+          <ul>
+          {% for row in doc.ic_test_items or [] %}
+            <li>{{ row.applicable_standard }}{% if row.test_name %} – {{ row.test_name }}{% endif %}</li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">Samples Requirements</td>
+      <td class="tq-value">
+        <div class="tq-h">Sample Required</div>
+        {% for row in doc.ic_test_items or [] %}
+          <div style="margin-bottom:8px;">
+            <b>{{ row.applicable_standard }}:</b>
+            {{ row.sample_requirement or ((row.number_of_samples or 1)|string + ' complete functional product sample, including all necessary accessories, cables, and power supply components.') }}
+          </div>
+        {% endfor %}
+        <div class="tq-note">{{ doc.ic_samples_note or 'Note: Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.' }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="tq-grid">
+    <tr>
+      <td class="tq-label">Commercials</td>
+      <td class="tq-value">
+        <div class="tq-h">Commercials</div>
+        <table class="tq-comm">
+          <thead>
+            <tr>
+              <th class="num" style="width:8%">S. No.</th>
+              <th style="width:18%">Applicable Standard</th>
+              <th style="width:28%">Testing</th>
+              <th class="num" style="width:10%">Units</th>
+              <th style="width:18%">Per Unit Charges ({{ curr }})</th>
+              <th style="width:18%">Total Charges ({{ curr }})</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in doc.ic_test_items or [] %}
+            {%- set units = row.number_of_samples or 1 -%}
+            {%- set per = row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
+            {%- set total = row.testing_charges or (per * units) -%}
+            <tr>
+              <td class="num">{{ loop.index }}</td>
+              <td>{{ row.applicable_standard or '' }}</td>
+              <td>{{ row.test_name or '' }}</td>
+              <td class="num">{{ units }}</td>
+              <td class="amt">{{ frappe.utils.fmt_money(per, currency=curr) }}/-</td>
+              <td class="amt">{{ frappe.utils.fmt_money(total, currency=curr) }}/-</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        <div class="tq-note">{{ doc.ic_gst_note or 'Note: GST @ 18% shall be charged additionally on the above testing charges.' }}</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">Deliverable</td>
+      <td class="tq-value">
+        <div class="tq-h">Deliverables</div>
+        {% if doc.ic_deliverables %}
+          {{ doc.ic_deliverables }}
+        {% else %}
+          <ul>
+            <li>Test Report covering the applicable standards and tests performed.</li>
+            <li>Test Results with observations and measured parameters.</li>
+            <li>Certificate/Report of Compliance, wherever applicable.</li>
+          </ul>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">Timeline</td>
+      <td class="tq-value">
+        <div class="tq-h">Timeline</div>
+        <ul>
+          <li>Estimated Testing Timeline: {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
+          <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
+          <li>The timeline may vary depending on laboratory scheduling, sample condition, test requirements, and any additional testing, if applicable.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">Payment Term</td>
+      <td class="tq-value">
+        <div class="tq-h">Payment Terms</div>
+        {% if doc.ic_payment_terms %}
+          {{ doc.ic_payment_terms }}
+        {% else %}
+          <ul>
+            <li>100% Advance Payment is required to initiate the testing process.</li>
+            <li>Testing will commence upon receipt of the payment and sample.</li>
+            <li>Any additional testing or charges, if applicable, shall be communicated separately.</li>
+          </ul>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">Sample handling & disposal policy</td>
+      <td class="tq-value">
+        {% if doc.ic_sample_handling_policy %}
+          {{ doc.ic_sample_handling_policy }}
+        {% else %}
+          <ol>
+            <li>Samples may be subjected to destructive and/or non-destructive testing as required by the applicable standard or test protocol.</li>
+            <li>After completion of testing and receipt of the samples from the laboratory, Instacertify Labs Pvt. Ltd. shall retain the remaining samples for a maximum period of 15 days.</li>
+            <li>Clients wishing to recover their samples must arrange collection or request return shipment within the 15-day retention period.</li>
+            <li>All sample shipping, return shipping, handling, storage, customs duties, taxes, and related logistics costs shall be borne solely by the Client.</li>
+            <li>For samples returned within India through a reputed courier service arranged by Instacertify Labs Pvt. Ltd., return shipping charges shall be ₹450 per kg + applicable GST.</li>
+            <li>For samples returned outside India, return shipping charges shall be USD 90 per kg, exclusive of customs duties, taxes, import/export charges, and other applicable logistics costs, which shall be borne by the Client.</li>
+            <li>Samples not claimed, or for which return arrangements are not confirmed within 15 days, shall be considered abandoned and may be disposed of at the sole discretion of Instacertify Labs Pvt. Ltd., without further notice or liability.</li>
+            <li>Instacertify Labs Pvt. Ltd. shall not be responsible for any loss, damage, delay, or deterioration of samples during transit through third-party courier or logistics providers.</li>
+          </ol>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">Our Banking Details</td>
+      <td class="tq-value">
+        <div class="tq-h">Bank Details for Payment</div>
+        <table class="tq-bank">
+          <tr><td class="k">Beneficiary Name</td><td>{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
+          <tr><td class="k">Bank Name</td><td>{{ s.bank_name or 'YES BANK' }}</td></tr>
+          <tr><td class="k">Account Number</td><td>{{ s.account_number or '026485800001318' }}</td></tr>
+          <tr><td class="k">IFSC Code</td><td>{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
+          <tr><td class="k">SWIFT Code</td><td>{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
+          <tr><td class="k">GSTIN</td><td>{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
+          <tr><td class="k">Branch Address</td><td>{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
+        </table>
+        <div class="tq-note" style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">CANCELLATION AND REFUND POLICY</td>
+      <td class="tq-value">
+        {% if doc.ic_cancellation_policy %}
+          {{ doc.ic_cancellation_policy }}
+        {% else %}
+          Testing fees are payable in advance and are non-refundable once samples have been submitted or testing has commenced. Government fees may be refunded only if they have not been deposited with the relevant authority. Consultancy fees are charged based on the work completed and are non-refundable once services have been rendered. Any eligible refund request must be submitted to Instacertify in writing within 7 working days of payment.
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">FORCE MAJEURE</td>
+      <td class="tq-value">
+        {% if doc.ic_force_majeure %}
+          {{ doc.ic_force_majeure }}
+        {% else %}
+          Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events.
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="tq-label">CONFIDENTIALITY & DATA PROTECTION</td>
+      <td class="tq-value">
+        {% if doc.ic_confidentiality %}
+          {{ doc.ic_confidentiality }}
+        {% else %}
+          Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection.
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <div class="tq-close">
+    <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
+    <p>Thanking You,</p>
+    <div class="tq-sign">For Instacertify Labs Private Limited</div>
+  </div>
+
+  <div class="tq-qr">
+    {% if doc.ic_qr_code %}
+      <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+    {% else %}
+      <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+    {% endif %}
+    <div class="cap">Scan to verify</div>
+  </div>
+
+  <div class="tq-footer-bar">{{ website }}</div>
+</div>
+"""
+
 
 def ensure_print_formats():
 	formats = [
 		("Instacertify Quotation", "Quotation", QUOTATION_HTML),
+		("Instacertify Testing Quotation", "Quotation", TESTING_QUOTATION_HTML),
 		("Instacertify Sales Invoice", "Sales Invoice", INVOICE_HTML),
 		("Instacertify Sample Label", "IC Sample Tracking", SAMPLE_HTML),
 		("Instacertify Testing Request", "IC Testing Request", TESTING_HTML),
@@ -261,13 +536,17 @@ def ensure_print_formats():
 	]
 	for name, dt, html in formats:
 		if frappe.db.exists("Print Format", name):
-			frappe.db.set_value("Print Format", name, {
-				"html": html,
-				"module": "Instacertify",
-				"standard": "No",
-				"custom_format": 1,
-				"print_format_type": "Jinja",
-			})
+			frappe.db.set_value(
+				"Print Format",
+				name,
+				{
+					"html": html,
+					"module": "Instacertify",
+					"standard": "No",
+					"custom_format": 1,
+					"print_format_type": "Jinja",
+				},
+			)
 			continue
 		try:
 			frappe.get_doc(

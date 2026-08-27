@@ -9,6 +9,13 @@
    "fieldname": "product_name",
    "fieldtype": "Data",
    "label": "Product Name",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Applicable Standard",
    "in_list_view": 1,
    "reqd": 1
   },
@@ -16,24 +23,40 @@
    "doctype": "DocField",
    "fieldname": "test_name",
    "fieldtype": "Data",
-   "label": "Test Name",
+   "label": "Testing",
    "in_list_view": 1,
    "reqd": 1
   },
   {
    "doctype": "DocField",
-   "fieldname": "applicable_standard",
-   "fieldtype": "Data",
-   "label": "Applicable Standard",
+   "fieldname": "number_of_samples",
+   "fieldtype": "Int",
+   "label": "Units / Samples",
+   "default": 1,
    "in_list_view": 1
   },
   {
    "doctype": "DocField",
-   "fieldname": "number_of_samples",
-   "fieldtype": "Int",
-   "label": "Number of Samples",
-   "default": 1,
-   "in_list_view": 1
+   "fieldname": "per_unit_charges",
+   "fieldtype": "Currency",
+   "label": "Per Unit Charges",
+   "in_list_view": 1,
+   "options": "currency"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_charges",
+   "fieldtype": "Currency",
+   "label": "Total Charges",
+   "in_list_view": 1,
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_requirement",
+   "fieldtype": "Small Text",
+   "label": "Sample Requirement"
   },
   {
    "doctype": "DocField",
@@ -46,8 +69,7 @@
    "fieldname": "laboratory",
    "fieldtype": "Link",
    "options": "IC Laboratory",
-   "label": "Laboratory",
-   "in_list_view": 1
+   "label": "Laboratory"
   },
   {
    "doctype": "DocField",
@@ -67,14 +89,6 @@
    "fieldname": "testing_timeline",
    "fieldtype": "Data",
    "label": "Testing Timeline"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "testing_charges",
-   "fieldtype": "Currency",
-   "label": "Testing Charges",
-   "in_list_view": 1,
-   "options": "currency"
   },
   {
    "doctype": "DocField",
