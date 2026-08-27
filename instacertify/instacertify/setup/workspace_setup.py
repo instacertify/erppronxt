@@ -63,6 +63,8 @@ def _ensure_home_html_block():
         ["Pending Documents", data.pending_documents],
         ["Testing Requests", data.testing_requests],
         ["Upcoming Deadlines", data.upcoming_deadlines, true],
+        ["AMC Due Soon", data.amc_due_soon, true],
+        ["Leads to Contact", data.leads_to_contact, true],
       ];
       const grid = document.getElementById("ic-summary-grid");
       if (!grid) return;
@@ -134,6 +136,8 @@ def _ensure_crm_lead_tracker_block():
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Source</div><div id="ic-crm-source-30"></div></div>
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Status</div><div id="ic-crm-status-30"></div></div>
   </div>
+  <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">Leads to Contact · Call remarks</div><div id="ic-crm-leads-contact"></div></div>
+  <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC Renewals Due (31 days)</div><div id="ic-crm-amc-due"></div></div>
 </div>
 """
 	script = """
@@ -199,6 +203,25 @@ def _ensure_crm_lead_tracker_block():
       makeChart(document.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count));
       const st30 = d.by_status_30d || [];
       makeChart(document.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count));
+      (function renderFollowups(){
+        const el = document.getElementById("ic-crm-leads-contact");
+        const rows = d.leads_to_contact || [];
+        if (el) {
+          if (!rows.length) el.innerHTML = "<div class='text-muted'>No leads due for contact</div>";
+          else el.innerHTML = "<table class='ic-related-table'><thead><tr><th>Lead</th><th>When</th><th>Connected</th><th>Remarks</th></tr></thead><tbody>" +
+            rows.map(r => {
+              const title = r.ic_party_name || r.company_name || r.lead_name || r.name;
+              return "<tr><td><a href='/app/lead/"+encodeURIComponent(r.name)+"'>"+frappe.utils.escape_html(title)+"</a></td><td>"+frappe.utils.escape_html(r.ic_next_contact_date||"—")+"</td><td>"+(r.ic_lead_connected?"Yes":"—")+"</td><td>"+frappe.utils.escape_html(r.ic_call_remarks||"—")+"</td></tr>";
+            }).join("") + "</tbody></table>";
+        }
+        const amc = document.getElementById("ic-crm-amc-due");
+        const arows = d.amc_due || [];
+        if (amc) {
+          if (!arows.length) amc.innerHTML = "<div class='text-muted'>No AMC renewals due</div>";
+          else amc.innerHTML = "<table class='ic-related-table'><thead><tr><th>Project</th><th>Customer</th><th>Contact</th><th>Status</th></tr></thead><tbody>" +
+            arows.map(r => "<tr><td><a href='/app/project/"+encodeURIComponent(r.name)+"'>"+frappe.utils.escape_html(r.project_name||r.name)+"</a></td><td>"+frappe.utils.escape_html(r.customer||"—")+"</td><td>"+frappe.utils.escape_html(r.ic_amc_contact_date||"—")+"</td><td>"+frappe.utils.escape_html(r.ic_amc_status||"—")+"</td></tr>").join("") + "</tbody></table>";
+        }
+      })();
     }
   });
 })();
@@ -244,6 +267,8 @@ def _ensure_home_workspace():
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
 		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
 		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
+		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 3}},
+		{"id": "sc_asset", "type": "shortcut", "data": {"shortcut_name": "Asset", "col": 3}},
 		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 3}},
 		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 3}},
 		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 3}},
@@ -260,6 +285,8 @@ def _ensure_home_workspace():
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
 		{"label": "Document Requests", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Sales Invoice", "link_to": "Sales Invoice", "type": "DocType", "doc_view": "List"},
+		{"label": "Purchase Invoice", "link_to": "Purchase Invoice", "type": "DocType", "doc_view": "List"},
+		{"label": "Asset", "link_to": "Asset", "type": "DocType", "doc_view": "List"},
 		{"label": "GSTR-1", "link_to": "GSTR-1", "type": "DocType", "doc_view": ""},
 		{"label": "GSTR-3B", "link_to": "GSTR 3B Report", "type": "DocType", "doc_view": "List"},
 		{"label": "GST Settings", "link_to": "GST Settings", "type": "DocType", "doc_view": ""},
@@ -281,7 +308,10 @@ def _ensure_home_workspace():
 		{"label": "Quotation Templates", "link_type": "DocType", "link_to": "IC Quotation Template", "type": "Link"},
 		{"label": "New Consulting Template", "link_type": "DocType", "link_to": "IC Quotation Template", "type": "Link"},
 		{"label": "GST & Invoicing", "type": "Card Break"},
-		{"label": "Sales Invoice", "link_type": "DocType", "link_to": "Sales Invoice", "type": "Link"},
+		{"label": "Sales Invoice (sell to customer)", "link_type": "DocType", "link_to": "Sales Invoice", "type": "Link"},
+		{"label": "Purchase Invoice (buy lab services)", "link_type": "DocType", "link_to": "Purchase Invoice", "type": "Link"},
+		{"label": "Supplier (labs / vendors)", "link_type": "DocType", "link_to": "Supplier", "type": "Link"},
+		{"label": "Asset (org purchases)", "link_type": "DocType", "link_to": "Asset", "type": "Link"},
 		{"label": "Payment Entry", "link_type": "DocType", "link_to": "Payment Entry", "type": "Link"},
 		{"label": "GSTR-1 (Generate / File)", "link_type": "DocType", "link_to": "GSTR-1", "type": "Link"},
 		{"label": "GSTR-3B (Generate / File)", "link_type": "DocType", "link_to": "GSTR 3B Report", "type": "Link"},

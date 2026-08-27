@@ -155,6 +155,43 @@ def get_customer_history(customer: str):
 		{"customer": customer},
 		["name", "subject", "record_type", "category", "modified"],
 	)
+	# Files attached to completed projects for this customer
+	project_files = []
+	completed_projects = [
+		p["name"] for p in projects if p.get("status") == "Completed"
+	] or [p["name"] for p in projects]
+	for pname in completed_projects[:20]:
+		files = frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Project",
+				"attached_to_name": pname,
+				"is_folder": 0,
+			},
+			fields=["name", "file_name", "file_url", "creation", "attached_to_name"],
+			order_by="creation desc",
+			limit_page_length=20,
+		)
+		for f in files:
+			f["project"] = pname
+			project_files.append(f)
+	# Also IC Project Record attachments
+	for rec in records[:30]:
+		files = frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "IC Project Record",
+				"attached_to_name": rec["name"],
+				"is_folder": 0,
+			},
+			fields=["name", "file_name", "file_url", "creation", "attached_to_name"],
+			limit_page_length=10,
+		)
+		for f in files:
+			f["project"] = rec["name"]
+			f["record"] = rec["name"]
+			project_files.append(f)
+
 	contacts = frappe.get_list(
 		"Dynamic Link",
 		filters={"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"},
@@ -227,6 +264,7 @@ def get_customer_history(customer: str):
 		"payments": payments,
 		"documents": documents,
 		"records": records,
+		"project_files": project_files,
 		"contacts": contact_details,
 		"amount_billed": billed,
 		"outstanding_amount": outstanding,

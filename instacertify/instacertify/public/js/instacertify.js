@@ -777,6 +777,15 @@ function ic_render_customer_related(d) {
 				ic_table([__("Lead"), __("Status"), __("Category / Source")], lead_rows),
 				__("No matching leads")
 			)}
+			${ic_related_section(
+				__("Project Files (Completed)"),
+				ic_table([__("File"), __("Project / Record"), __("Date")], (d.project_files||[]).map(f => [
+					`<a href="${frappe.utils.escape_html(f.file_url||'#')}" target="_blank">${ic_esc(f.file_name||f.name)}</a>`,
+					ic_esc(f.project || f.attached_to_name || "—"),
+					ic_esc((f.creation||"").toString().slice(0,10) || "—"),
+				])),
+				__("No files attached on this customer's projects yet")
+			)}
 		</div>
 	`;
 }
@@ -1147,5 +1156,86 @@ frappe.ui.form.on("Lead", {
 		if (src !== "Consultant" && src !== "Reference") {
 			frm.set_value("ic_consultant_referral", "");
 		}
+	},
+});
+
+// --- Project AMC on completion ---
+frappe.ui.form.on("Project", {
+	ic_project_stage(frm) {
+		if (frm.doc.ic_project_stage !== "Project Completed") return;
+		if (frm.doc.ic_requires_amc) return;
+		frappe.confirm(
+			__("Does this completed project require AMC / renewal follow-up?"),
+			() => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "contact_date",
+							fieldtype: "Date",
+							label: __("Next AMC Contact Date"),
+							reqd: 1,
+							default: frappe.datetime.add_months(frappe.datetime.get_today(), 12),
+							description: __("Reminders go to Admin & Sales Manager 1 month before this date"),
+						},
+					],
+					(values) => {
+						frappe.call({
+							method: "instacertify.project.events.schedule_project_amc",
+							args: { project: frm.doc.name, contact_date: values.contact_date },
+							freeze: true,
+							callback(r) {
+								frm.reload_doc();
+								frappe.show_alert({
+									message: __("AMC scheduled for {0} (reminder {1})", [
+										r.message.contact_date,
+										r.message.reminder_date,
+									]),
+									indicator: "green",
+								});
+							},
+						});
+					},
+					__("Schedule AMC"),
+					__("Save")
+				);
+			},
+			() => {
+				frm.set_value("ic_requires_amc", 0);
+				frm.set_value("ic_amc_status", "Not Applicable");
+			}
+		);
+	},
+});
+
+// Sample location sync from status shortcuts
+frappe.ui.form.on("IC Sample Tracking", {
+	status(frm) {
+		const map = {
+			"In Transit to Office": "In Transit to Office",
+			"In Transit to Lab": "In Transit to Lab",
+			"At Laboratory": "At Laboratory",
+			"Sample Dispatched to Laboratory": "In Transit to Lab",
+			"At Instacertify Storage": "At Instacertify Storage",
+			Discarded: "Discarded",
+		};
+		if (map[frm.doc.status] && frm.doc.sample_location !== map[frm.doc.status]) {
+			frm.set_value("sample_location", map[frm.doc.status]);
+		}
+	},
+	refresh(frm) {
+		const locs = [
+			["In Transit to Office", "In Transit to Office"],
+			["In Transit to Lab", "In Transit to Lab"],
+			["At Laboratory", "At Laboratory"],
+			["At Instacertify Storage", "At Instacertify Storage"],
+			["Discarded", "Discarded"],
+		];
+		locs.forEach(([label, status]) => {
+			frm.add_custom_button(__(label), () => {
+				frm.set_value("status", status);
+				frm.set_value("sample_location", label);
+				frm.save();
+			}, __("Location"));
+		});
 	},
 });

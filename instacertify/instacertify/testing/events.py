@@ -19,6 +19,19 @@ def before_insert_sample(doc, method=None):
 def validate_sample(doc, method=None):
 	if doc.status == "Sample Received" and not doc.sample_received_date:
 		doc.sample_received_date = frappe.utils.today()
+	# Keep location aligned with custody statuses
+	loc_map = {
+		"In Transit to Office": "In Transit to Office",
+		"In Transit to Lab": "In Transit to Lab",
+		"At Laboratory": "At Laboratory",
+		"Sample Dispatched to Laboratory": "In Transit to Lab",
+		"At Instacertify Storage": "At Instacertify Storage",
+		"Discarded": "Discarded",
+	}
+	if doc.status in loc_map and not doc.get("sample_location"):
+		doc.sample_location = loc_map[doc.status]
+	elif doc.status in loc_map:
+		doc.sample_location = loc_map[doc.status]
 	if not doc.qr_code and doc.tracking_number:
 		_attach_sample_qr(doc)
 

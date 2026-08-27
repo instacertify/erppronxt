@@ -111,7 +111,52 @@ def get_lead_tracker_stats():
 		"by_status_30d": _group_leads("status", day_30_start),
 		"by_size_30d": _group_leads("ic_company_size", day_30_start),
 		"by_country_30d": _group_leads("country", day_30_start),
+		"leads_to_contact": _leads_to_contact(),
+		"amc_due": _amc_due_list(),
 	}
+
+
+def _leads_to_contact(limit=15):
+	if not frappe.get_meta("Lead").has_field("ic_next_contact_date"):
+		return []
+	rows = frappe.get_all(
+		"Lead",
+		filters={
+			"status": ["not in", ["Converted", "Do Not Contact"]],
+			"ic_next_contact_date": ["<=", nowdate()],
+		},
+		fields=[
+			"name",
+			"lead_name",
+			"company_name",
+			"ic_party_name",
+			"ic_next_contact_date",
+			"ic_call_remarks",
+			"ic_lead_connected",
+			"status",
+			"mobile_no",
+			"email_id",
+		],
+		order_by="ic_next_contact_date asc",
+		limit_page_length=limit,
+	)
+	return rows
+
+
+def _amc_due_list(limit=10):
+	if not frappe.get_meta("Project").has_field("ic_requires_amc"):
+		return []
+	return frappe.get_all(
+		"Project",
+		filters={
+			"ic_requires_amc": 1,
+			"ic_amc_status": ["in", ["Scheduled", "Reminded"]],
+			"ic_amc_contact_date": ["<=", add_days(nowdate(), 31)],
+		},
+		fields=["name", "project_name", "customer", "ic_amc_contact_date", "ic_amc_status"],
+		order_by="ic_amc_contact_date asc",
+		limit_page_length=limit,
+	)
 
 
 @frappe.whitelist()

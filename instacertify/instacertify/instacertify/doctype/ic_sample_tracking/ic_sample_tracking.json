@@ -39,7 +39,16 @@
    "label": "Status",
    "in_list_view": 1,
    "default": "Sample Awaited",
-   "options": "Sample Awaited\nSample Received\nSample Dispatched to Laboratory\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer"
+   "options": "Sample Awaited\nSample Received\nIn Transit to Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nSample Dispatched to Laboratory\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer\nDiscarded"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_location",
+   "fieldtype": "Select",
+   "label": "Sample Location",
+   "in_list_view": 1,
+   "options": "\nIn Transit to Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nDiscarded\nWith Customer",
+   "description": "Physical custody of the sample"
   },
   {
    "doctype": "DocField",

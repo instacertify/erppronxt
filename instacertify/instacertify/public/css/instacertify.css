@@ -2,8 +2,8 @@
 :root,
 [data-theme="light"],
 html {
-  --ic-primary: #065175;
-  --ic-accent: #EC6820;
+  --ic-primary: #034a68;
+  --ic-accent: #d4550e;
   --ic-primary-soft: #e8f3f8;
   --ic-accent-soft: #fff1e8;
   --ic-surface: #e6f0f6;
@@ -517,4 +517,40 @@ body.for-login,
 .ic-summary-card.down .value { color: #b42318; }
 @media (max-width: 768px) {
   .ic-crm-charts { grid-template-columns: 1fr; }
+}
+
+
+/* Stronger two-color brand visibility */
+.navbar {
+  border-bottom: 3px solid var(--ic-primary) !important;
+  box-shadow: 0 2px 0 var(--ic-accent);
+}
+.btn-primary, .btn-primary:not(:disabled) {
+  background: var(--ic-primary) !important;
+  border-color: var(--ic-primary) !important;
+}
+.btn-primary:hover {
+  background: #023a52 !important;
+}
+.page-head .page-title .title-text,
+.workspace-sidebar .item-anchor.active,
+.list-row .level-left .ellipsis {
+  color: var(--ic-primary) !important;
+}
+.indicator-pill.blue, .indicator.blue {
+  background: var(--ic-primary-soft);
+  color: var(--ic-primary);
+}
+.indicator-pill.orange, .indicator.orange {
+  background: var(--ic-accent-soft);
+  color: var(--ic-accent);
+}
+.form-tabs .nav-link.active {
+  border-bottom-color: var(--ic-accent) !important;
+  color: var(--ic-primary) !important;
+  font-weight: 700;
+}
+.ic-crm-tracker {
+  border-top: 4px solid var(--ic-primary);
+  border-bottom: 3px solid var(--ic-accent);
 }

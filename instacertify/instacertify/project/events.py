@@ -31,6 +31,21 @@ def validate_project(doc, method=None):
 		if suggested is not None:
 			doc.ic_progress_percentage = suggested
 
+	_sync_amc_dates(doc)
+	if doc.ic_project_stage == "Project Completed" and doc.status != "Completed":
+		doc.status = "Completed"
+
+
+def _sync_amc_dates(doc):
+	if not doc.get("ic_requires_amc"):
+		if doc.get("ic_amc_status") not in (None, "", "Not Applicable"):
+			doc.ic_amc_status = "Not Applicable"
+		return
+	if doc.ic_amc_contact_date:
+		doc.ic_amc_reminder_date = frappe.utils.add_months(doc.ic_amc_contact_date, -1)
+		if doc.ic_amc_status in (None, "", "Not Applicable"):
+			doc.ic_amc_status = "Scheduled"
+
 
 def on_update_project(doc, method=None):
 	if doc.has_value_changed("ic_project_stage"):
@@ -51,6 +66,9 @@ def on_update_project(doc, method=None):
 			).insert(ignore_permissions=True)
 		except Exception:
 			pass
+
+	if doc.get("ic_requires_amc") and doc.get("ic_amc_contact_date"):
+		_ensure_amc_event(doc)
 
 
 def _notify_stage_change(doc):
@@ -73,6 +91,98 @@ def _notify_stage_change(doc):
 			).insert(ignore_permissions=True)
 		except Exception:
 			pass
+
+
+def _amc_notify_users(doc):
+	users = set(filter(None, [doc.owner, doc.ic_assigned_employee, "Administrator"]))
+	try:
+		from frappe.utils.user import get_users_with_role
+
+		for role in ("IC Admin", "Sales Manager", "IC Sales Person"):
+			users.update(get_users_with_role(role) or [])
+	except Exception:
+		pass
+	return [u for u in users if frappe.db.exists("User", u) and u != "Guest"]
+
+
+def _ensure_amc_event(doc):
+	"""Create / refresh calendar Event for AMC contact date."""
+	if not doc.ic_amc_contact_date:
+		return
+	subject = f"AMC Contact: {doc.project_name or doc.name}"
+	starts = f"{doc.ic_amc_contact_date} 10:00:00"
+	ends = f"{doc.ic_amc_contact_date} 11:00:00"
+	try:
+		if doc.ic_amc_event and frappe.db.exists("Event", doc.ic_amc_event):
+			ev = frappe.get_doc("Event", doc.ic_amc_event)
+			ev.subject = subject
+			ev.starts_on = starts
+			ev.ends_on = ends
+			ev.save(ignore_permissions=True)
+			return
+		ev = frappe.get_doc(
+			{
+				"doctype": "Event",
+				"subject": subject,
+				"event_type": "Public",
+				"starts_on": starts,
+				"ends_on": ends,
+				"all_day": 0,
+				"send_reminder": 1,
+				"description": (
+					f"AMC / renewal contact for project <b>{doc.name}</b>"
+					f"<br>Customer: {doc.customer or '-'}"
+					f"<br>Reminder fires 1 month prior ({doc.ic_amc_reminder_date or '-'})"
+				),
+				"reference_doctype": "Project",
+				"reference_docname": doc.name,
+			}
+		)
+		for user in _amc_notify_users(doc)[:10]:
+			ev.append("event_participants", {"reference_doctype": "User", "reference_docname": user})
+		ev.insert(ignore_permissions=True)
+		frappe.db.set_value("Project", doc.name, "ic_amc_event", ev.name, update_modified=False)
+		doc.ic_amc_event = ev.name
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "AMC Event create")
+
+
+@frappe.whitelist()
+def schedule_project_amc(project: str, contact_date: str = None):
+	"""Mark project as requiring AMC and schedule calendar + reminders."""
+	doc = frappe.get_doc("Project", project)
+	doc.ic_requires_amc = 1
+	doc.ic_amc_contact_date = contact_date or frappe.utils.add_years(frappe.utils.today(), 1)
+	doc.ic_amc_status = "Scheduled"
+	_sync_amc_dates(doc)
+	doc.save(ignore_permissions=True)
+	_ensure_amc_event(doc)
+	# Immediate highlight to Admin / Sales
+	for user in _amc_notify_users(doc):
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "Notification Log",
+					"subject": f"AMC scheduled: {doc.project_name or doc.name}",
+					"email_content": (
+						f"Contact on {doc.ic_amc_contact_date}. "
+						f"Reminder on {doc.ic_amc_reminder_date}."
+					),
+					"document_type": "Project",
+					"document_name": doc.name,
+					"for_user": user,
+					"type": "Alert",
+					"from_user": frappe.session.user,
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			pass
+	return {
+		"project": doc.name,
+		"contact_date": str(doc.ic_amc_contact_date),
+		"reminder_date": str(doc.ic_amc_reminder_date),
+		"event": doc.ic_amc_event,
+	}
 
 
 @frappe.whitelist()
@@ -140,6 +250,24 @@ def get_dashboard_counts():
 			{
 				"status": ["not in", ["Completed", "Cancelled"]],
 				"ic_deadline": ["<=", frappe.utils.add_days(frappe.utils.today(), 14)],
+			},
+		),
+		"amc_due_soon": count(
+			"Project",
+			{
+				"ic_requires_amc": 1,
+				"ic_amc_status": ["in", ["Scheduled", "Reminded"]],
+				"ic_amc_contact_date": [
+					"<=",
+					frappe.utils.add_days(frappe.utils.today(), 31),
+				],
+			},
+		),
+		"leads_to_contact": count(
+			"Lead",
+			{
+				"status": ["not in", ["Converted", "Do Not Contact"]],
+				"ic_next_contact_date": ["<=", frappe.utils.today()],
 			},
 		),
 	}
