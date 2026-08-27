@@ -11,6 +11,29 @@ instacertify.brand = {
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
+/** Find a node in the light DOM or inside open shadow roots (Custom HTML Blocks). */
+instacertify.query_deep = function (selector, root) {
+	const scope = root || document;
+	try {
+		const hit = scope.querySelector(selector);
+		if (hit) return hit;
+	} catch (e) {
+		/* ignore */
+	}
+	const walk = scope.querySelectorAll ? scope.querySelectorAll("*") : [];
+	for (let i = 0; i < walk.length; i++) {
+		const sr = walk[i].shadowRoot;
+		if (!sr) continue;
+		const nested = instacertify.query_deep(selector, sr);
+		if (nested) return nested;
+	}
+	return null;
+};
+
+instacertify.has_home_root = function () {
+	return !!instacertify.query_deep("#ic-home-root");
+};
+
 /** Land every user on Instacertify Home dashboard after login / desk boot. */
 $(document).on("app_ready", function () {
 	try {
@@ -106,8 +129,8 @@ instacertify.greeting = function (fullName) {
 };
 
 instacertify.render_home_banner = function (wrapper) {
-	// Prefer the Custom HTML Block home dashboard when present.
-	if (!wrapper || wrapper.find("#ic-home-root, .ic-greeting").length) {
+	// Prefer the Custom HTML Block home dashboard when present (incl. shadow DOM).
+	if (!wrapper || wrapper.find("#ic-home-root, .ic-greeting").length || instacertify.has_home_root()) {
 		instacertify.bind_summary_card_clicks(document);
 		return;
 	}
@@ -271,15 +294,25 @@ instacertify.open_kpi = function (label) {
 };
 
 instacertify.bind_summary_card_clicks = function (root) {
-	const $root = root ? $(root) : $(document);
-	$root.find(".ic-summary-card[data-kpi]").off("click.icKpi").on("click.icKpi", function (e) {
-		e.preventDefault();
-		const label = $(this).attr("data-kpi");
-		if (label) instacertify.open_kpi(label);
-	});
+	const bindIn = (scope) => {
+		if (!scope || !scope.querySelectorAll) return;
+		scope.querySelectorAll(".ic-summary-card[data-kpi]").forEach((el) => {
+			el.style.cursor = "pointer";
+			el.onclick = function (e) {
+				if (e.target && e.target.closest && e.target.closest("a")) return;
+				e.preventDefault();
+				const label = el.getAttribute("data-kpi");
+				if (label) instacertify.open_kpi(label);
+			};
+		});
+		scope.querySelectorAll("*").forEach((node) => {
+			if (node.shadowRoot) bindIn(node.shadowRoot);
+		});
+	};
+	bindIn(root && root.nodeType ? root : document);
 };
 
-// Global delegation so workspace HTML blocks work even after partial re-renders
+// Global delegation (light DOM). Shadow blocks bind via onclick in their own script.
 $(document).on("click.icKpiGlobal", ".ic-summary-card[data-kpi]", function (e) {
 	if ($(e.target).closest("a").length) return;
 	e.preventDefault();
@@ -425,7 +458,7 @@ $(document).on("page-change", function () {
 	if (route[0] === "Workspaces" && (route[1] || "").includes("Instacertify")) {
 		const bindOrInject = (attempt) => {
 			// Home Dashboard custom block owns KPI tiles — only bind clicks.
-			if (document.getElementById("ic-home-root")) {
+			if (instacertify.has_home_root() || document.getElementById("ic-home-root")) {
 				instacertify.bind_summary_card_clicks(document);
 				return;
 			}
@@ -2160,7 +2193,7 @@ $(document).ready(function () {
 	const tryInject = () => {
 		const route = frappe.get_route_str ? frappe.get_route_str() : (frappe.get_route() || []).join("/");
 		if (!(route || "").includes("Instacertify")) return;
-		if (document.getElementById("ic-home-root")) {
+		if (instacertify.has_home_root()) {
 			instacertify.bind_summary_card_clicks(document);
 			return;
 		}

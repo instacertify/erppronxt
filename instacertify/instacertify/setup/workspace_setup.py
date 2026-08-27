@@ -179,15 +179,15 @@ def _ensure_home_html_block():
     frappe.set_route("List", hit[0]);
   }
   function bindKpiClicks(root) {
-    (root || document).querySelectorAll(".ic-summary-card[data-kpi]").forEach((el) => {
+    (root || root_element).querySelectorAll(".ic-summary-card[data-kpi]").forEach((el) => {
       el.style.cursor = "pointer";
       el.onclick = function () { openKpi(el.getAttribute("data-kpi")); };
     });
   }
   function refreshClock() {
-    const t = document.getElementById("ic-greet-title");
-    const d = document.getElementById("ic-date");
-    const tm = document.getElementById("ic-time");
+    const t = root_element.getElementById("ic-greet-title");
+    const d = root_element.getElementById("ic-date");
+    const tm = root_element.getElementById("ic-time");
     if (t) t.textContent = greet();
     if (d) d.textContent = moment().format("dddd, D MMMM YYYY");
     if (tm) tm.textContent = moment().format("h:mm A");
@@ -229,7 +229,7 @@ def _ensure_home_html_block():
         ["Testing Requests", data.testing_requests],
         ["AMC Due Soon", data.amc_due_soon, true],
       ];
-      const grid = document.getElementById("ic-summary-grid");
+      const grid = root_element.getElementById("ic-summary-grid");
       if (!grid) return;
       grid.innerHTML = items.map(([label, value, accent]) =>
         `<div class="ic-summary-card is-clickable ${accent ? "accent" : ""}" data-kpi="${frappe.utils.escape_html(label)}" title="Click to open list"><div class="label">${frappe.utils.escape_html(label)}</div><div class="value">${value ?? 0}</div></div>`
@@ -243,9 +243,9 @@ def _ensure_home_html_block():
     args: { limit: 8 },
     callback(r) {
       const d = r.message || {};
-      const tasksEl = document.getElementById("ic-my-tasks");
-      const calEl = document.getElementById("ic-my-calendar");
-      const leadsEl = document.getElementById("ic-my-leads");
+      const tasksEl = root_element.getElementById("ic-my-tasks");
+      const calEl = root_element.getElementById("ic-my-calendar");
+      const leadsEl = root_element.getElementById("ic-my-leads");
       if (tasksEl) {
         const rows = d.tasks || [];
         tasksEl.innerHTML = rows.length ? rows.map(t =>
@@ -263,7 +263,7 @@ def _ensure_home_html_block():
             <div class="ic-workdesk-row-meta"><span>${esc(e.when_label)}</span><span>${esc(e.time_label)}</span></div>
           </a>`
         ).join("") : empty("No upcoming events in the next 14 days.");
-        document.querySelectorAll("a.ic-schedule-session").forEach((el) => {
+        root_element.querySelectorAll("a.ic-schedule-session").forEach((el) => {
           el.onclick = function (ev) {
             ev.preventDefault();
             if (window.instacertify && typeof instacertify.schedule_team_session === "function") {
@@ -291,7 +291,7 @@ def _ensure_home_html_block():
     method: "instacertify.crm.dashboard.get_lead_contact_prompts",
     args: { limit: 8 },
     callback(r) {
-      const el = document.getElementById("ic-lead-prompts");
+      const el = root_element.getElementById("ic-lead-prompts");
       if (!el) return;
       const d = r.message || {};
       const rows = d.prompts || [];
@@ -326,7 +326,7 @@ def _ensure_home_html_block():
     method: "instacertify.helpdesk.api.get_open_ticket_summary",
     args: { limit: 8 },
     callback(r) {
-      const el = document.getElementById("ic-helpdesk-tickets");
+      const el = root_element.getElementById("ic-helpdesk-tickets");
       if (!el) return;
       const d = r.message || {};
       const rows = d.tickets || [];
@@ -355,7 +355,7 @@ def _ensure_home_html_block():
     method: "instacertify.collaboration.api.get_recent_chat_activity",
     args: { limit: 8 },
     callback(r) {
-      const el = document.getElementById("ic-collab-recent");
+      const el = root_element.getElementById("ic-collab-recent");
       if (!el) return;
       const rows = (r.message && r.message.items) || [];
       if (!rows.length) {
@@ -390,11 +390,11 @@ def _ensure_home_html_block():
     method: "instacertify.hr.dashboard.get_my_hr_panel",
     callback(r) {
       const d = r.message || {};
-      const profile = document.getElementById("ic-hr-profile");
-      const joining = document.getElementById("ic-hr-joining");
-      const slips = document.getElementById("ic-hr-slips");
-      const docs = document.getElementById("ic-hr-docs");
-      const links = document.getElementById("ic-hr-links");
+      const profile = root_element.getElementById("ic-hr-profile");
+      const joining = root_element.getElementById("ic-hr-joining");
+      const slips = root_element.getElementById("ic-hr-slips");
+      const docs = root_element.getElementById("ic-hr-docs");
+      const links = root_element.getElementById("ic-hr-links");
       if (profile) {
         if (!d.employee) {
           profile.innerHTML = empty(esc(d.message || "Link your user to an Employee record to see HR documents."));
@@ -432,7 +432,7 @@ def _ensure_home_html_block():
     method: "instacertify.project.events.get_ongoing_project_cards",
     args: {limit: 12},
     callback(r) {
-      const grid = document.getElementById("ic-project-grid");
+      const grid = root_element.getElementById("ic-project-grid");
       if (!grid) return;
       const rows = r.message || [];
       if (!rows.length) {
@@ -451,7 +451,7 @@ def _ensure_home_html_block():
 	_ensure_crm_lead_tracker_block()
 
 
-def _upsert_html_block(name, html, script):
+def _upsert_html_block(name, html, script, style=None):
 	legacy = f"IC {name}" if not name.startswith("IC ") else None
 	if legacy and frappe.db.exists("Custom HTML Block", legacy) and not frappe.db.exists("Custom HTML Block", name):
 		try:
@@ -459,10 +459,14 @@ def _upsert_html_block(name, html, script):
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"Rename HTML block {legacy}")
 
+	# Shadow DOM blocks only see desk.bundle.css unless style is set here.
+	block_style = style if style is not None else _SHADOW_THEME_CSS
+
 	if frappe.db.exists("Custom HTML Block", name):
 		doc = frappe.get_doc("Custom HTML Block", name)
 		doc.html = html
 		doc.script = script
+		doc.style = block_style
 		doc.private = 0
 		doc.save(ignore_permissions=True)
 	else:
@@ -472,9 +476,47 @@ def _upsert_html_block(name, html, script):
 				"name": name,
 				"html": html,
 				"script": script,
+				"style": block_style,
 				"private": 0,
 			}
 		).insert(ignore_permissions=True)
+
+
+# Injected into each Custom HTML Block shadow root (global app CSS does not pierce shadow DOM).
+_SHADOW_THEME_CSS = """
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+@import url("/assets/instacertify/css/instacertify.css");
+:host, * {
+  font-family: "Poppins", "Segoe UI", sans-serif !important;
+  box-sizing: border-box;
+}
+.ic-greeting {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
+}
+.ic-greeting-brand {
+  font-size: clamp(1.85rem, 3.2vw, 2.45rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: #fff;
+  margin: 0 0 8px;
+}
+.ic-greeting-brand span { color: #ffd7b8; }
+.ic-greeting h2 {
+  margin: 0 0 6px;
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.92) !important;
+}
+.ic-greeting .ic-datetime { opacity: 0.88; font-size: 0.88rem; color: #fff; }
+"""
 
 
 def _ensure_crm_lead_tracker_block():
@@ -530,7 +572,7 @@ def _ensure_crm_lead_tracker_block():
     method: "instacertify.crm.dashboard.get_lead_tracker_stats",
     callback(r) {
       const d = r.message || {};
-      const kpi = document.getElementById("ic-crm-kpi");
+      const kpi = root_element.getElementById("ic-crm-kpi");
       if (kpi) {
         const weekCls = (d.week_change_pct || 0) >= 0 ? "up" : "down";
         const monthCls = (d.month_change_pct || 0) >= 0 ? "up" : "down";
@@ -562,19 +604,19 @@ def _ensure_crm_lead_tracker_block():
         }
       }
       const week = d.week_compare || [];
-      makeChart(document.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#065175", "#8fb6c9"]);
+      makeChart(root_element.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#065175", "#8fb6c9"]);
       const month = d.month_compare || [];
-      makeChart(document.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#EC6820", "#f3b48d"]);
+      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#EC6820", "#f3b48d"]);
       const s7 = d.by_source_7d || [];
-      makeChart(document.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count));
       const p30 = d.by_project_type_30d || [];
-      makeChart(document.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count));
       const s30 = d.by_source_30d || [];
-      makeChart(document.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count));
       const st30 = d.by_status_30d || [];
-      makeChart(document.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count));
       (function renderFollowups(){
-        const el = document.getElementById("ic-crm-leads-contact");
+        const el = root_element.getElementById("ic-crm-leads-contact");
         const rows = d.leads_to_contact || [];
         if (el) {
           if (!rows.length) {
@@ -589,7 +631,7 @@ def _ensure_crm_lead_tracker_block():
               }).join("") + "</tbody></table>";
           }
         }
-        const amc = document.getElementById("ic-crm-amc-due");
+        const amc = root_element.getElementById("ic-crm-amc-due");
         const arows = d.amc_due || [];
         if (amc) {
           if (!arows.length) amc.innerHTML = "<div class='text-muted'>No AMC renewals due</div>";
