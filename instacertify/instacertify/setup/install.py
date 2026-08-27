@@ -299,7 +299,7 @@ def setup_settings():
 		doc.primary_color = "#065175"
 		doc.accent_color = "#EC6820"
 		doc.legal_name = "INSTACERTIFY LABS PRIVATE LIMITED"
-		doc.address_line = "PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301"
+		doc.address_line = "PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA"
 		doc.phone = doc.phone or "+91 9999118039"
 		doc.email = doc.email or "contact@instacertify.com"
 		doc.website = doc.website or "www.instacertify.com"

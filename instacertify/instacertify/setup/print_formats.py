@@ -13,7 +13,7 @@ QUOTATION_HTML = """
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
   .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: #1a1a1a; font-size: 11px; }
@@ -186,7 +186,7 @@ INVOICE_HTML = """
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
   .ic-inv { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size: 11px; }
@@ -246,7 +246,7 @@ SAMPLE_HTML = """
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
@@ -289,7 +289,7 @@ TESTING_HTML = """
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
@@ -329,7 +329,7 @@ JOINING_HTML = """
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
   .ic { font-family: Georgia, 'Times New Roman', serif; font-size:12px; }
@@ -383,7 +383,7 @@ TESTING_QUOTATION_HTML = """
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
@@ -674,7 +674,7 @@ CONSULTING_QUOTATION_HTML = """
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301').replace('\\n', '<br>') -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}

@@ -71,7 +71,7 @@
    "fieldname": "address_line",
    "fieldtype": "Small Text",
    "label": "Address",
-   "default": "PK 01 SECTOR 63A NOIDA, GAUTAM BUDDH NAGAR, UTTAR PRADESH-201301"
+   "default": "PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA"
   },
   {
    "doctype": "DocField",
