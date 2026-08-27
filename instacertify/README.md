@@ -15,3 +15,7 @@ Custom Frappe app for Instacertify on ERPNext 16.33 — certification, complianc
 - India customers default to **INR** with GST templates (CGST+SGST in-state / IGST out-state).
 - Customers with country other than India default to **USD** and GST category **Overseas**.
 - Users can manually change currency (INR or any other) anytime; set **Currency Manually Set** to keep the choice when country changes.
+
+## POS billing
+
+POS billing is **disabled**. Use standard Sales Invoice only. The Include Payment (POS) option and all POS menu entries are removed on migrate.

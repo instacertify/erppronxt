@@ -21,4 +21,8 @@ def validate_quotation(doc, method=None):
 
 
 def validate_sales_invoice(doc, method=None):
+	# Instacertify does not use POS billing
+	if getattr(doc, "is_pos", 0):
+		doc.is_pos = 0
+		doc.pos_profile = None
 	apply_transaction_billing_defaults(doc, customer_field="customer")

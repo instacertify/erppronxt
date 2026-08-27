@@ -629,6 +629,12 @@ frappe.ui.form.on("Quotation", {
 });
 
 frappe.ui.form.on("Sales Invoice", {
+	setup(frm) {
+		instacertify.hide_pos_on_sales_invoice(frm);
+	},
+	refresh(frm) {
+		instacertify.hide_pos_on_sales_invoice(frm);
+	},
 	customer(frm) {
 		if (!frm.doc.customer) return;
 		instacertify.apply_billing_currency(frm, frm.doc.customer);
@@ -644,7 +650,29 @@ frappe.ui.form.on("Sales Invoice", {
 			frm.set_value("ic_tax_manual", 1);
 		}
 	},
+	is_pos(frm) {
+		// POS billing is disabled for Instacertify
+		if (frm.doc.is_pos) {
+			frm.set_value("is_pos", 0);
+			frappe.show_alert({
+				message: __("POS billing is disabled. Use standard Sales Invoice."),
+				indicator: "orange",
+			});
+		}
+	},
 });
+
+instacertify.hide_pos_on_sales_invoice = function (frm) {
+	["is_pos", "pos_profile"].forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.set_df_property(f, "hidden", 1);
+			frm.set_df_property(f, "read_only", 1);
+		}
+	});
+	if (frm.doc.is_pos) {
+		frm.set_value("is_pos", 0);
+	}
+};
 
 // Also inject when workspace page is shown via frappe.pages
 $(document).ready(function () {

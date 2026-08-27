@@ -60,6 +60,7 @@ def after_install():
 	setup_number_cards()
 	setup_permissions()
 	setup_gst()
+	setup_disable_pos()
 	frappe.db.commit()
 
 
@@ -148,6 +149,7 @@ def after_migrate():
 	setup_quotation_templates()
 	setup_workspace()
 	setup_gst()
+	setup_disable_pos()
 	frappe.db.commit()
 
 
@@ -155,6 +157,12 @@ def setup_gst():
 	from instacertify.setup.gst import ensure_gst_setup
 
 	ensure_gst_setup()
+
+
+def setup_disable_pos():
+	from instacertify.setup.pos import disable_pos_billing
+
+	disable_pos_billing()
 
 
 def setup_branding():
