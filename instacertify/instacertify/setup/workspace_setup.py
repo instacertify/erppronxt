@@ -229,9 +229,37 @@ def _ensure_home_html_block():
     if (card.action === "new_expense") {
       if (window.instacertify && typeof instacertify.open_expense_file === "function") {
         instacertify.open_expense_file();
-      } else {
-        frappe.set_route("List", "IC Expense Claim");
+        return;
       }
+      // Self-contained fallback dialog (shadow Home may load before app JS)
+      const ed = new frappe.ui.Dialog({
+        title: "File an Expense",
+        fields: [
+          {fieldname:"title", fieldtype:"Data", label:"Title", reqd:1},
+          {fieldname:"category", fieldtype:"Select", label:"Category",
+            options:"Travel\\nPetty Cash\\nOffice\\nConveyance\\nLodging\\nMeals\\nCommunication\\nOther",
+            reqd:1, default:"Travel"},
+          {fieldname:"expense_date", fieldtype:"Date", label:"Expense Date", reqd:1, default: frappe.datetime.get_today()},
+          {fieldname:"amount", fieldtype:"Currency", label:"Amount", reqd:1},
+          {fieldname:"description", fieldtype:"Small Text", label:"Description", reqd:1},
+          {fieldname:"receipt", fieldtype:"Attach", label:"Receipt / Bill"},
+        ],
+        primary_action_label: "Save Expense",
+        primary_action(values) {
+          frappe.call({
+            method: "instacertify.expenses.api.create_expense_claim",
+            args: values,
+            freeze: true,
+            callback(r) {
+              ed.hide();
+              const name = r.message && r.message.name;
+              frappe.show_alert({message: "Expense saved: " + (name||""), indicator:"green"});
+              if (name) frappe.set_route("Form", "IC Expense Claim", name);
+            }
+          });
+        }
+      });
+      ed.show();
       return;
     }
     const route = card.route || [];
