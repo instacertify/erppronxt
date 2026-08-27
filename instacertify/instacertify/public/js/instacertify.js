@@ -403,10 +403,20 @@ instacertify.project_tile_html = function (p) {
 $(document).on("page-change", function () {
 	const route = frappe.get_route();
 	if (route[0] === "Workspaces" && (route[1] || "").includes("Instacertify")) {
-		setTimeout(() => {
+		const bindOrInject = (attempt) => {
+			// Home Dashboard custom block owns KPI tiles — only bind clicks.
+			if (document.getElementById("ic-home-root")) {
+				instacertify.bind_summary_card_clicks(document);
+				return;
+			}
+			if (attempt < 6) {
+				setTimeout(() => bindOrInject(attempt + 1), 250);
+				return;
+			}
 			const $page = $(".workspace-body, .workspace-page, .page-body").first();
 			instacertify.render_home_banner($page);
-		}, 400);
+		};
+		setTimeout(() => bindOrInject(0), 200);
 	}
 });
 
@@ -1951,11 +1961,14 @@ instacertify.hide_pos_on_sales_invoice = function (frm) {
 $(document).ready(function () {
 	const tryInject = () => {
 		const route = frappe.get_route_str ? frappe.get_route_str() : (frappe.get_route() || []).join("/");
-		if ((route || "").includes("Instacertify")) {
-			const $page = $(".workspace-body, .workspace-sidebar + .layout-main-section, .page-body, .workspace-page").first();
-			if ($page.length && !$page.find(".ic-greeting").length) {
-				instacertify.render_home_banner($page);
-			}
+		if (!(route || "").includes("Instacertify")) return;
+		if (document.getElementById("ic-home-root")) {
+			instacertify.bind_summary_card_clicks(document);
+			return;
+		}
+		const $page = $(".workspace-body, .workspace-sidebar + .layout-main-section, .page-body, .workspace-page").first();
+		if ($page.length && !$page.find(".ic-greeting").length) {
+			instacertify.render_home_banner($page);
 		}
 	};
 	setTimeout(tryInject, 800);
