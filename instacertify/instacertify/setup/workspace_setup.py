@@ -25,6 +25,40 @@ def _ensure_home_html_block():
     <div class="ic-datetime"><span id="ic-date"></span> · <span id="ic-time"></span></div>
   </div>
   <div class="ic-summary-grid" id="ic-summary-grid"></div>
+
+  <div class="ic-workdesk-grid">
+    <section class="ic-workdesk-panel">
+      <div class="ic-workdesk-head">
+        <div>
+          <div class="ic-workdesk-title">My tasks</div>
+          <div class="ic-workdesk-sub">Open work assigned to you</div>
+        </div>
+        <a class="ic-view-all" href="/app/task">All tasks</a>
+      </div>
+      <div id="ic-my-tasks"></div>
+    </section>
+    <section class="ic-workdesk-panel">
+      <div class="ic-workdesk-head">
+        <div>
+          <div class="ic-workdesk-title">Calendar</div>
+          <div class="ic-workdesk-sub">Upcoming 14 days</div>
+        </div>
+        <a class="ic-view-all" href="/app/event">Open calendar</a>
+      </div>
+      <div id="ic-my-calendar"></div>
+    </section>
+    <section class="ic-workdesk-panel">
+      <div class="ic-workdesk-head">
+        <div>
+          <div class="ic-workdesk-title">My leads</div>
+          <div class="ic-workdesk-sub">Owned by you</div>
+        </div>
+        <a class="ic-view-all" href="/app/lead">All leads</a>
+      </div>
+      <div id="ic-my-leads"></div>
+    </section>
+  </div>
+
   <div class="ic-lead-prompt-panel">
     <div class="ic-lead-prompt-header">
       <div>
@@ -35,12 +69,40 @@ def _ensure_home_html_block():
     </div>
     <div id="ic-lead-prompts" class="ic-lead-prompt-list"></div>
   </div>
-  <div style="margin:8px 0 10px;color:#065175;font-weight:600;">Ongoing Projects</div>
+
+  <div class="ic-hr-panel">
+    <div class="ic-workdesk-head">
+      <div>
+        <div class="ic-workdesk-title">My HR</div>
+        <div class="ic-workdesk-sub">Employment · joining letter · salary slips · documents</div>
+      </div>
+      <a class="ic-view-all" href="/app/employee">HR profile</a>
+    </div>
+    <div id="ic-hr-profile" class="ic-hr-profile"></div>
+    <div class="ic-hr-columns">
+      <div>
+        <div class="ic-hr-col-title">Joining letters</div>
+        <div id="ic-hr-joining"></div>
+      </div>
+      <div>
+        <div class="ic-hr-col-title">Salary slips</div>
+        <div id="ic-hr-slips"></div>
+      </div>
+      <div>
+        <div class="ic-hr-col-title">Employment documents</div>
+        <div id="ic-hr-docs"></div>
+      </div>
+    </div>
+    <div id="ic-hr-links" class="ic-hr-links"></div>
+  </div>
+
+  <div style="margin:14px 0 10px;color:#065175;font-weight:600;">Ongoing Projects</div>
   <div class="ic-project-grid" id="ic-project-grid"></div>
 </div>
 """
 	script = """
 (function() {
+  function esc(v){ return frappe.utils.escape_html(v == null ? "" : String(v)); }
   function greet() {
     const hour = moment().hour();
     let g = "Good Evening";
@@ -58,6 +120,9 @@ def _ensure_home_html_block():
   }
   refreshClock();
   setInterval(refreshClock, 30000);
+
+  function empty(msg){ return "<div class='ic-lead-prompt-empty'>"+msg+"</div>"; }
+
   frappe.call({
     method: "instacertify.project.events.get_dashboard_counts",
     callback(r) {
@@ -66,14 +131,13 @@ def _ensure_home_html_block():
         ["New Leads", data.new_leads],
         ["Active Leads", data.active_leads],
         ["Leads to Contact", data.leads_to_contact, true],
+        ["Pending Tasks", data.pending_tasks, true],
         ["Quotations Sent", data.quotations_sent],
-        ["Awaiting Response", data.quotations_awaiting],
         ["Quotations Accepted", data.quotations_accepted, true],
         ["Active Projects", data.active_projects],
-        ["Pending Tasks", data.pending_tasks],
+        ["Upcoming Deadlines", data.upcoming_deadlines, true],
         ["Pending Documents", data.pending_documents],
         ["Testing Requests", data.testing_requests],
-        ["Upcoming Deadlines", data.upcoming_deadlines, true],
         ["AMC Due Soon", data.amc_due_soon, true],
       ];
       const grid = document.getElementById("ic-summary-grid");
@@ -83,6 +147,45 @@ def _ensure_home_html_block():
       ).join("");
     }
   });
+
+  frappe.call({
+    method: "instacertify.hr.dashboard.get_workdesk_insights",
+    args: { limit: 8 },
+    callback(r) {
+      const d = r.message || {};
+      const tasksEl = document.getElementById("ic-my-tasks");
+      const calEl = document.getElementById("ic-my-calendar");
+      const leadsEl = document.getElementById("ic-my-leads");
+      if (tasksEl) {
+        const rows = d.tasks || [];
+        tasksEl.innerHTML = rows.length ? rows.map(t =>
+          `<a class="ic-workdesk-row ${esc(t.urgency)}" href="/app/task/${encodeURIComponent(t.name)}">
+            <div class="ic-workdesk-row-main">${esc(t.subject || t.name)}</div>
+            <div class="ic-workdesk-row-meta"><span>${esc(t.status||"")}</span><span class="ic-lead-prompt-when ${esc(t.urgency)}">${esc(t.due_label)}</span></div>
+          </a>`
+        ).join("") : empty("No open tasks for you.");
+      }
+      if (calEl) {
+        const rows = d.events || [];
+        calEl.innerHTML = rows.length ? rows.map(e =>
+          `<a class="ic-workdesk-row" href="/app/event/${encodeURIComponent(e.name)}">
+            <div class="ic-workdesk-row-main">${esc(e.subject || e.name)}</div>
+            <div class="ic-workdesk-row-meta"><span>${esc(e.when_label)}</span><span>${esc(e.time_label)}</span></div>
+          </a>`
+        ).join("") : empty("No upcoming events in the next 14 days.");
+      }
+      if (leadsEl) {
+        const rows = d.my_leads || [];
+        leadsEl.innerHTML = rows.length ? rows.map(l =>
+          `<a class="ic-workdesk-row" href="/app/lead/${encodeURIComponent(l.name)}">
+            <div class="ic-workdesk-row-main">${esc(l.title || l.name)}</div>
+            <div class="ic-workdesk-row-meta"><span>${esc(l.status||"")}</span><span>${esc(l.ic_next_contact_date||"No contact date")}</span></div>
+          </a>`
+        ).join("") : empty("No active leads owned by you.");
+      }
+    }
+  });
+
   frappe.call({
     method: "instacertify.crm.dashboard.get_lead_contact_prompts",
     args: { limit: 8 },
@@ -92,17 +195,17 @@ def _ensure_home_html_block():
       const d = r.message || {};
       const rows = d.prompts || [];
       if (!rows.length) {
-        el.innerHTML = "<div class='ic-lead-prompt-empty'>No contact prompts yet. Set <b>Next Contact Date</b>, <b>Call Remarks</b>, and <b>Lead Connected</b> on a Lead.</div>";
+        el.innerHTML = empty("No contact prompts yet. Set <b>Next Contact Date</b>, <b>Call Remarks</b>, and <b>Lead Connected</b> on a Lead.");
         return;
       }
       el.innerHTML = rows.map(row => {
-        const title = frappe.utils.escape_html(row.title || row.name);
-        const when = frappe.utils.escape_html(row.due_label || row.ic_next_contact_date || "—");
-        const remarks = frappe.utils.escape_html(row.ic_call_remarks || "No call remarks yet");
-        const phone = frappe.utils.escape_html(row.phone || "—");
+        const title = esc(row.title || row.name);
+        const when = esc(row.due_label || row.ic_next_contact_date || "—");
+        const remarks = esc(row.ic_call_remarks || "No call remarks yet");
+        const phone = esc(row.phone || "—");
         const connected = row.ic_lead_connected ? "Connected" : "Not connected";
         const connCls = row.ic_lead_connected ? "connected" : "not-connected";
-        const urg = frappe.utils.escape_html(row.urgency || "upcoming");
+        const urg = esc(row.urgency || "upcoming");
         return `<a class="ic-lead-prompt ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
           <div class="ic-lead-prompt-top">
             <div class="ic-lead-prompt-name">${title}</div>
@@ -117,6 +220,49 @@ def _ensure_home_html_block():
       }).join("");
     }
   });
+
+  frappe.call({
+    method: "instacertify.hr.dashboard.get_my_hr_panel",
+    callback(r) {
+      const d = r.message || {};
+      const profile = document.getElementById("ic-hr-profile");
+      const joining = document.getElementById("ic-hr-joining");
+      const slips = document.getElementById("ic-hr-slips");
+      const docs = document.getElementById("ic-hr-docs");
+      const links = document.getElementById("ic-hr-links");
+      if (profile) {
+        if (!d.employee) {
+          profile.innerHTML = empty(esc(d.message || "Link your user to an Employee record to see HR documents."));
+        } else {
+          const e = d.employee;
+          profile.innerHTML = `<div class="ic-hr-profile-card">
+            <div class="ic-hr-name">${esc(e.employee_name)}</div>
+            <div class="ic-hr-meta">${esc(e.designation || "—")} · ${esc(e.department || "—")}</div>
+            <div class="ic-hr-meta">Joined ${esc(e.date_of_joining || "—")} · ${esc(e.status || "")}</div>
+          </div>`;
+        }
+      }
+      function docList(rows, emptyMsg, doctype) {
+        if (!rows || !rows.length) return empty(emptyMsg);
+        return rows.map(row => {
+          const title = esc(row.document_title || row.employee_name || row.name);
+          const meta = esc(row.issue_date || row.joining_date || row.document_type || "");
+          const href = `/app/${frappe.router.slug(doctype)}/${encodeURIComponent(row.name)}`;
+          const attach = row.attachment ? ` · <a href="${esc(row.attachment)}" target="_blank">Download</a>` : "";
+          return `<a class="ic-workdesk-row" href="${href}"><div class="ic-workdesk-row-main">${title}</div><div class="ic-workdesk-row-meta"><span>${meta}</span>${attach}</div></a>`;
+        }).join("");
+      }
+      if (joining) joining.innerHTML = docList(d.joining_letters, "No joining letter on file.", "IC Joining Letter");
+      if (slips) slips.innerHTML = docList(d.salary_slips, "No salary slips uploaded yet.", "IC Employee Document");
+      if (docs) docs.innerHTML = docList(d.documents, "No other employment documents.", "IC Employee Document");
+      if (links) {
+        links.innerHTML = (d.links || []).map(l =>
+          `<a class="ic-hr-link" href="${esc(l.route)}">${esc(l.label)}</a>`
+        ).join("");
+      }
+    }
+  });
+
   frappe.call({
     method: "instacertify.project.events.get_ongoing_project_cards",
     args: {limit: 8},
@@ -127,15 +273,15 @@ def _ensure_home_html_block():
         const priority = p.ic_priority || "Medium";
         const progress = Math.round(p.progress || 0);
         const deadline = p.deadline ? frappe.datetime.str_to_user(p.deadline) : "-";
-        return `<div class="ic-project-card priority-${frappe.utils.escape_html(priority)}" onclick="frappe.set_route('Form','Project','${p.name}')">
-          <h4>${frappe.utils.escape_html(p.project_name || p.name)}</h4>
-          <div class="meta"><b>Customer:</b> ${frappe.utils.escape_html(p.customer_name || p.customer || "-")}</div>
-          <div class="meta"><b>Priority:</b> <span class="ic-badge ${priority.toLowerCase()}">${frappe.utils.escape_html(priority)}</span></div>
-          <div class="meta"><b>Status:</b> ${frappe.utils.escape_html(p.ic_project_stage || p.status || "-")}</div>
+        return `<div class="ic-project-card priority-${esc(priority)}" onclick="frappe.set_route('Form','Project','${p.name}')">
+          <h4>${esc(p.project_name || p.name)}</h4>
+          <div class="meta"><b>Customer:</b> ${esc(p.customer_name || p.customer || "-")}</div>
+          <div class="meta"><b>Priority:</b> <span class="ic-badge ${priority.toLowerCase()}">${esc(priority)}</span></div>
+          <div class="meta"><b>Status:</b> ${esc(p.ic_project_stage || p.status || "-")}</div>
           <div class="ic-progress"><span style="width:${progress}%"></span></div>
           <div class="meta"><b>Progress:</b> ${progress}%</div>
-          <div class="meta"><b>Pending:</b> ${frappe.utils.escape_html(p.ic_pending_action || "-")}</div>
-          <div class="meta"><b>Assigned:</b> ${frappe.utils.escape_html(p.ic_assigned_employee || "-")}</div>
+          <div class="meta"><b>Pending:</b> ${esc(p.ic_pending_action || "-")}</div>
+          <div class="meta"><b>Assigned:</b> ${esc(p.ic_assigned_employee || "-")}</div>
           <div class="meta"><b>Deadline:</b> ${deadline}</div>
         </div>`;
       }).join("");
@@ -397,12 +543,13 @@ def _ensure_home_workspace():
 		{"label": "Calendar & Planner", "type": "Card Break"},
 		{"label": "Event", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
-		{"label": "HR & Profile", "type": "Card Break"},
-		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "My HR & Employment", "type": "Card Break"},
+		{"label": "My Employee Profile", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "Joining Letters", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
+		{"label": "Salary Slips & Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
 		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
-		{"label": "IC Joining Letter", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
-		{"label": "IC Employee Document", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
 		{"label": "Holiday List", "link_type": "DocType", "link_to": "Holiday List", "type": "Link"},
+		{"label": "Event Calendar", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Assets", "type": "Card Break"},
 		{"label": "Asset", "link_type": "DocType", "link_to": "Asset", "type": "Link"},
 		{"label": "Asset Category", "link_type": "DocType", "link_to": "Asset Category", "type": "Link"},

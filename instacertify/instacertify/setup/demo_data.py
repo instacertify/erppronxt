@@ -24,6 +24,7 @@ def execute():
 	_create_testing(customers, projects, labs, users)
 	_create_document_requests(customers, projects, users)
 	_create_employees_and_assets(users)
+	_seed_workdesk_and_hr(users, projects)
 	frappe.db.commit()
 	return {"ok": True, "customers": len(customers), "projects": len(projects)}
 
@@ -799,3 +800,166 @@ def _create_employees_and_assets(users):
 				).insert(ignore_permissions=True)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Asset demo")
+
+
+def _seed_workdesk_and_hr(users, projects=None):
+	"""Tasks, calendar events, salary slips & employment docs for the home workdesk."""
+	from frappe.utils import get_datetime
+
+	# Link Administrator to a preview employee so Home HR panel works in desk
+	emp_name = frappe.db.get_value("Employee", {"user_id": "Administrator", "status": "Active"}, "name")
+	if not emp_name:
+		try:
+			if not frappe.db.exists("Employee", {"employee_name": "Admin Preview"}):
+				company = frappe.flags.ic_company
+				preview = frappe.get_doc(
+					{
+						"doctype": "Employee",
+						"first_name": "Admin",
+						"last_name": "Preview",
+						"employee_name": "Admin Preview",
+						"status": "Active",
+						"company": company,
+						"date_of_joining": add_days(today(), -400),
+						"user_id": "Administrator",
+						"gender": "Male",
+						"date_of_birth": "1990-05-01",
+						"designation": "Operations Manager"
+						if frappe.db.exists("Designation", "Operations Manager")
+						else None,
+					}
+				)
+				preview.insert(ignore_permissions=True)
+				emp_name = preview.name
+			else:
+				emp_name = frappe.db.get_value("Employee", {"employee_name": "Admin Preview"}, "name")
+				frappe.db.set_value("Employee", emp_name, "user_id", "Administrator")
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "link Administrator employee")
+			emp_name = frappe.db.get_value("Employee", {"status": "Active"}, "name")
+	if not emp_name:
+		return
+
+	# Ensure joining letter for the preview employee
+	if frappe.db.exists("DocType", "IC Joining Letter") and not frappe.db.exists(
+		"IC Joining Letter", {"employee": emp_name}
+	):
+		try:
+			e = frappe.get_doc("Employee", emp_name)
+			frappe.get_doc(
+				{
+					"doctype": "IC Joining Letter",
+					"employee": emp_name,
+					"joining_date": e.date_of_joining or today(),
+					"designation": e.designation,
+					"department": e.department,
+					"letter_content": f"<p>Dear {e.employee_name},</p><p>Welcome to Instacertify.</p>",
+					"verification_code": secrets.token_hex(4).upper(),
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "joining letter seed")
+
+	# Salary slips + employment documents
+	if frappe.db.exists("DocType", "IC Employee Document"):
+		doc_defs = [
+			("Salary Slip", "Salary Slip – July 2026", add_days(today(), -30)),
+			("Salary Slip", "Salary Slip – August 2026", today()),
+			("Offer Letter", "Offer Letter", add_days(today(), -400)),
+			("Contract", "Employment Contract", add_days(today(), -400)),
+			("ID Proof", "Aadhaar / ID copy", add_days(today(), -390)),
+		]
+		for dtype, title, issue in doc_defs:
+			if frappe.db.exists("IC Employee Document", {"employee": emp_name, "document_title": title}):
+				continue
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "IC Employee Document",
+						"employee": emp_name,
+						"document_title": title,
+						"document_type": dtype,
+						"issue_date": issue,
+					}
+				).insert(ignore_permissions=True)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), f"employee doc {title}")
+
+	owner = "Administrator"
+
+	# Open tasks for workdesk
+	task_defs = [
+		("Follow up lead contact calls", "High", add_days(today(), -1), "Open"),
+		("Prepare quotation revision for customer", "Medium", today(), "Working"),
+		("Upload pending project documents", "Medium", add_days(today(), 3), "Open"),
+		("Review lab testing turnaround", "Low", add_days(today(), 7), "Open"),
+	]
+	for subject, priority, due, status in task_defs:
+		if frappe.db.exists("Task", {"subject": subject}):
+			continue
+		try:
+			doc = frappe.get_doc(
+				{
+					"doctype": "Task",
+					"subject": subject,
+					"status": status,
+					"priority": priority,
+					"exp_end_date": due,
+				}
+			)
+			doc.insert(ignore_permissions=True)
+			frappe.db.set_value("Task", doc.name, "owner", owner)
+			# Assign so _assign filter matches
+			try:
+				from frappe.desk.form.assign_to import add as assign_add
+
+				assign_add({"assign_to": [owner], "doctype": "Task", "name": doc.name, "description": subject})
+			except Exception:
+				pass
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"task seed {subject}")
+
+	# Calendar events (next 14 days)
+	event_defs = [
+		("Weekly sales stand-up", 1, 10),
+		("Customer site visit – BIS consult", 2, 14),
+		("Lab handover review", 5, 11),
+		("HR document verification", 8, 15),
+	]
+	for subject, day_offset, hour in event_defs:
+		if frappe.db.exists("Event", {"subject": subject}):
+			continue
+		try:
+			starts = get_datetime(f"{add_days(today(), day_offset)} {hour:02d}:00:00")
+			ends = get_datetime(f"{add_days(today(), day_offset)} {hour+1:02d}:00:00")
+			ev = frappe.get_doc(
+				{
+					"doctype": "Event",
+					"subject": subject,
+					"event_type": "Public",
+					"starts_on": starts,
+					"ends_on": ends,
+					"status": "Open",
+					"send_reminder": 0,
+					"event_participants": [
+						{"reference_doctype": "User", "reference_docname": owner},
+					],
+				}
+			)
+			ev.insert(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"event seed {subject}")
+
+	# Ensure a few leads are owned by Administrator for My Leads panel
+	try:
+		leads = frappe.get_all(
+			"Lead",
+			filters={"status": ["not in", ["Converted", "Do Not Contact"]]},
+			fields=["name"],
+			limit_page_length=3,
+			order_by="modified desc",
+		)
+		for lead in leads:
+			frappe.db.set_value("Lead", lead.name, "lead_owner", owner, update_modified=False)
+	except Exception:
+		pass

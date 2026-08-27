@@ -15,6 +15,16 @@ SERVICE_ITEM_DEFAULTS = {
 }
 
 
+def _default_service_hsn() -> str | None:
+	if not frappe.db.exists("DocType", "GST HSN Code"):
+		return None
+	return (
+		frappe.db.get_value("GST HSN Code", {"hsn_code": "999900"}, "name")
+		or frappe.db.get_value("GST HSN Code", {"hsn_code": ["like", "99%"]}, "name")
+		or frappe.db.get_value("GST HSN Code", {}, "name")
+	)
+
+
 def setup_consulting_billing():
 	"""Seed service/asset masters and enforce non-stock consulting billing."""
 	_ensure_item_groups()
@@ -22,6 +32,20 @@ def setup_consulting_billing():
 	_ensure_asset_category()
 	_configure_stock_for_services()
 	_ensure_supplier_group()
+	# Ensure PI / Asset custom fields exist
+	try:
+		from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+		from instacertify.setup.custom_fields import CUSTOM_FIELDS
+
+		subset = {
+			k: CUSTOM_FIELDS[k]
+			for k in ("Purchase Invoice", "Sales Invoice", "Asset")
+			if k in CUSTOM_FIELDS
+		}
+		if subset:
+			create_custom_fields(subset, update=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "consulting billing custom fields")
 
 
 def _ensure_item_groups():

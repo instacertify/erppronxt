@@ -43,7 +43,7 @@
    "fieldtype": "Select",
    "label": "Document Type",
    "in_list_view": 1,
-   "options": "Joining Letter\nSalary Slip\nID Proof\nContract\nOther"
+   "options": "Joining Letter\nSalary Slip\nOffer Letter\nID Proof\nContract\nAppraisal\nOther"
   },
   {
    "doctype": "DocField",
