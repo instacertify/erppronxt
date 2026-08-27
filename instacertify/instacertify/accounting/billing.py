@@ -224,19 +224,28 @@ def _ensure_company_address_on_transaction(doc):
 		doc.get("party_name") if doc.doctype == "Quotation" and doc.get("quotation_to") == "Customer" else None
 	)
 	if customer and doc.meta.has_field("customer_address") and not doc.get("customer_address"):
-		caddr = frappe.db.sql(
-			"""
-			select a.name
-			from `tabAddress` a
-			inner join `tabDynamic Link` dl on dl.parent = a.name
-			where dl.link_doctype = 'Customer' and dl.link_name = %s
-			order by a.is_primary_address desc
-			limit 1
-			""",
-			customer,
-		)
+		caddr = None
+		try:
+			from frappe.contacts.doctype.address.address import get_default_address
+
+			caddr = get_default_address("Customer", customer)
+		except Exception:
+			caddr = None
+		if not caddr:
+			row = frappe.db.sql(
+				"""
+				select a.name
+				from `tabAddress` a
+				inner join `tabDynamic Link` dl on dl.parent = a.name
+				where dl.link_doctype = 'Customer' and dl.link_name = %s
+				order by a.is_primary_address desc
+				limit 1
+				""",
+				customer,
+			)
+			caddr = row[0][0] if row else None
 		if caddr:
-			doc.customer_address = caddr[0][0]
+			doc.customer_address = caddr
 
 
 def mark_currency_manual(doc):
