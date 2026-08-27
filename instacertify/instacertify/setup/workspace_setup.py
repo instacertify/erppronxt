@@ -227,8 +227,11 @@ def _ensure_home_html_block():
       return;
     }
     if (card.action === "new_expense") {
-      // Open expense list so user can file travel / petty / office claims
-      frappe.set_route("List", "IC Expense Claim");
+      if (window.instacertify && typeof instacertify.open_expense_file === "function") {
+        instacertify.open_expense_file();
+      } else {
+        frappe.set_route("List", "IC Expense Claim");
+      }
       return;
     }
     const route = card.route || [];

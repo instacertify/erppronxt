@@ -63,6 +63,96 @@ instacertify.raise_helpdesk_ticket = function (defaults) {
 	frappe.new_doc("Helpdesk Ticket", defaults);
 };
 
+/** Quick expense filing dialog — travel / petty / office for every user. */
+instacertify.open_expense_file = function (opts) {
+	opts = opts || {};
+	const d = new frappe.ui.Dialog({
+		title: __("File an Expense"),
+		fields: [
+			{
+				fieldname: "title",
+				fieldtype: "Data",
+				label: __("Title"),
+				reqd: 1,
+				default: opts.title || "",
+			},
+			{
+				fieldname: "category",
+				fieldtype: "Select",
+				label: __("Category"),
+				options: "Travel\nPetty Cash\nOffice\nConveyance\nLodging\nMeals\nCommunication\nOther",
+				reqd: 1,
+				default: opts.category || "Travel",
+			},
+			{
+				fieldname: "expense_date",
+				fieldtype: "Date",
+				label: __("Expense Date"),
+				reqd: 1,
+				default: frappe.datetime.get_today(),
+			},
+			{
+				fieldname: "amount",
+				fieldtype: "Currency",
+				label: __("Amount"),
+				reqd: 1,
+			},
+			{
+				fieldname: "payment_mode",
+				fieldtype: "Select",
+				label: __("Paid By"),
+				options: "Self\nCompany Card\nAdvance\nOther",
+				default: "Self",
+			},
+			{
+				fieldname: "description",
+				fieldtype: "Small Text",
+				label: __("Description"),
+				reqd: 1,
+			},
+			{
+				fieldname: "receipt",
+				fieldtype: "Attach",
+				label: __("Receipt / Bill"),
+				description: __("PDF, image, or Excel of the bill"),
+			},
+			{
+				fieldname: "project",
+				fieldtype: "Link",
+				label: __("Project (optional)"),
+				options: "Project",
+			},
+		],
+		primary_action_label: __("Save Expense"),
+		primary_action(values) {
+			frappe.call({
+				method: "instacertify.expenses.api.create_expense_claim",
+				args: values,
+				freeze: true,
+				freeze_message: __("Saving expense…"),
+				callback(r) {
+					d.hide();
+					const name = r.message && r.message.name;
+					frappe.show_alert({
+						message: __("Expense saved: {0}", [name || ""]),
+						indicator: "green",
+					});
+					if (opts.on_done) opts.on_done(name);
+					else if (name) frappe.set_route("Form", "IC Expense Claim", name);
+				},
+			});
+		},
+	});
+	d.$wrapper.find(".modal-footer").prepend(
+		`<button type="button" class="btn btn-default btn-sm ic-open-expense-list" style="margin-right:auto;">${__("My Expenses")}</button>`
+	);
+	d.$wrapper.find(".ic-open-expense-list").on("click", () => {
+		d.hide();
+		frappe.set_route("List", "IC Expense Claim");
+	});
+	d.show();
+};
+
 /** Upload dialog → create/update IC Quotation Template with format file. */
 instacertify.open_quote_format_upload = function (opts) {
 	opts = opts || {};
@@ -2653,7 +2743,11 @@ frappe.listview_settings["IC Expense Claim"] = {
 	},
 	onload(listview) {
 		listview.page.add_inner_button(__("File New Expense"), () => {
-			frappe.new_doc("IC Expense Claim");
+			if (window.instacertify && instacertify.open_expense_file) {
+				instacertify.open_expense_file();
+			} else {
+				frappe.new_doc("IC Expense Claim");
+			}
 		});
 	},
 };
