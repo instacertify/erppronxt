@@ -1,11 +1,93 @@
-/* Instacertify branding for ERPNext Desk */
-:root {
+/* Instacertify branding + light hue desk theme */
+:root,
+[data-theme="light"],
+html {
   --ic-primary: #065175;
   --ic-accent: #EC6820;
   --ic-primary-soft: #e8f3f8;
   --ic-accent-soft: #fff1e8;
-  --ic-surface: #f5f9fb;
+  --ic-surface: #f3f8fb;
+  --ic-surface-2: #eaf3f8;
+  --ic-mist: #dceaf2;
   --ic-radius: 14px;
+
+  /* Soft cool-teal light hue (overrides flat white desk) */
+  --bg-color: #f3f8fb;
+  --subtle-fg: #f7fafc;
+  --fg-color: #ffffff;
+  --card-bg: #ffffff;
+  --control-bg: #ffffff;
+  --surface-gray-1: #f7fafc;
+  --surface-gray-2: #f0f6fa;
+  --surface-gray-3: #e8f1f6;
+  --surface-menu-bar: #eef5f9;
+  --surface-modal: #ffffff;
+  --surface-white: #ffffff;
+  --border-color: #d5e4ee;
+  --navbar-bg: rgba(243, 248, 251, 0.92);
+}
+
+/* Force light atmosphere on desk chrome */
+html,
+body,
+body.full-width,
+.desk-page,
+#body_div,
+.main-section,
+.content.page-container,
+.layout-main-section,
+.page-container,
+.workspace-page,
+.workspace-body,
+.list-row-container,
+.form-layout,
+.layout-side-section,
+.sidebar-left,
+.desk-sidebar,
+.std-form-layout {
+  background-color: var(--ic-surface) !important;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 120% 80% at 0% 0%, rgba(6, 81, 117, 0.07), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 100% 0%, rgba(236, 104, 32, 0.05), transparent 50%),
+    linear-gradient(180deg, #eaf3f8 0%, #f5f9fb 42%, #f8fafb 100%) !important;
+  background-attachment: fixed !important;
+  min-height: 100vh;
+}
+
+/* Keep cards / forms readable on the tinted canvas */
+.frappe-card,
+.form-page,
+.layout-main-section-wrapper .form-layout,
+.widget,
+.widget.number-widget-box,
+.widget.dashboard-widget-box,
+.list-paging-area,
+.page-form,
+.modal-content,
+.dropdown-menu {
+  background-color: #ffffff !important;
+}
+
+.navbar {
+  background: linear-gradient(180deg, #f7fbfd 0%, #eef5f9 100%) !important;
+  border-bottom: 2px solid rgba(6, 81, 117, 0.12) !important;
+  backdrop-filter: blur(8px);
+}
+
+.sidebar-left,
+.desk-sidebar,
+.layout-side-section {
+  background: linear-gradient(180deg, #eef5f9 0%, #f3f8fb 100%) !important;
+  border-right: 1px solid rgba(6, 81, 117, 0.08);
+}
+
+.page-head,
+.page-head .container,
+.form-tabs-list {
+  background: rgba(247, 251, 253, 0.9) !important;
 }
 
 .ic-greeting {
@@ -170,9 +252,6 @@
   color: #1e7a4c;
 }
 
-/* Soft desk accents */
-.navbar { border-bottom: 2px solid rgba(6, 81, 117, 0.12) !important; }
-
 /* App / navbar logo — circular Instacertify mark */
 .navbar .app-logo,
 .navbar .navbar-brand img,
@@ -201,7 +280,16 @@
   object-fit: contain;
 }
 
-/* Favicon-sized mark helpers in portal */
+/* Login page — same light hue */
+body.for-login,
+.for-login {
+  background:
+    radial-gradient(ellipse 100% 80% at 10% 0%, rgba(6, 81, 117, 0.1), transparent 55%),
+    radial-gradient(ellipse 80% 60% at 90% 10%, rgba(236, 104, 32, 0.08), transparent 45%),
+    linear-gradient(165deg, #e8f3f8 0%, #f5f9fb 50%, #fff8f3 100%) !important;
+  background-attachment: fixed !important;
+}
+
 .ic-brand-icon {
   width: 36px;
   height: 36px;
@@ -234,7 +322,9 @@
 /* Customer portal */
 .ic-portal-body {
   margin: 0;
-  background: linear-gradient(180deg, #e8f3f8 0%, #fff 40%);
+  background:
+    radial-gradient(ellipse 100% 70% at 0% 0%, rgba(6, 81, 117, 0.08), transparent 50%),
+    linear-gradient(180deg, #e8f3f8 0%, #fff 45%);
   min-height: 100vh;
   font-family: "Segoe UI", Tahoma, sans-serif;
 }

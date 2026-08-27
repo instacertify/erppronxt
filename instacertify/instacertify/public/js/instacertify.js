@@ -4,11 +4,26 @@ frappe.provide("instacertify");
 instacertify.brand = {
 	primary: "#065175",
 	accent: "#EC6820",
+	surface: "#f3f8fb",
 	logo: "/assets/instacertify/images/instacertify_logo.png",
 	icon: "/assets/instacertify/images/instacertify_icon.png",
 	app_logo: "/assets/instacertify/images/instacertify_app_logo.png",
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
+
+// Prefer light theme with Instacertify soft hue (never force dark)
+(function applyInstacertifyLightTheme() {
+	try {
+		document.documentElement.setAttribute("data-theme", "light");
+		document.documentElement.setAttribute("data-ic-theme", "light-hue");
+		if (window.localStorage) {
+			localStorage.setItem("theme", "light");
+			localStorage.setItem("desk_theme", "light");
+		}
+	} catch (e) {
+		/* ignore */
+	}
+})();
 
 // Ensure favicon is always the circular Instacertify mark
 (function setInstacertifyFavicon() {

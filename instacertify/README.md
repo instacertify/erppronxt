@@ -19,3 +19,7 @@ Custom Frappe app for Instacertify on ERPNext 16.33 — certification, complianc
 ## POS billing
 
 POS billing is **disabled**. Use standard Sales Invoice only. The Include Payment (POS) option and all POS menu entries are removed on migrate.
+
+## Theme
+
+Desk uses a **light cool-teal hue** background (Instacertify brand soft blues), not flat white or dark mode. Cards and forms stay white for readability.
