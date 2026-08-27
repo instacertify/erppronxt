@@ -178,6 +178,8 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 	if not customer:
 		return
 
+	_ensure_company_address_on_transaction(doc)
+
 	country = get_customer_country(customer)
 	suggested = default_currency_for_country(country)
 	manual = cint_flag(getattr(doc, "ic_currency_manual", 0))
@@ -190,6 +192,51 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 				_set_conversion_rate(doc)
 
 	_apply_gst_tax_template(doc, customer, country)
+
+
+def _ensure_company_address_on_transaction(doc):
+	"""india_compliance requires company address to fetch Company GSTIN."""
+	company = doc.get("company") or "Instacertify"
+	if doc.meta.has_field("company_address") and not doc.get("company_address"):
+		addr = frappe.db.sql(
+			"""
+			select a.name
+			from `tabAddress` a
+			inner join `tabDynamic Link` dl on dl.parent = a.name
+			where dl.link_doctype = 'Company' and dl.link_name = %s
+			order by a.is_your_company_address desc, a.is_primary_address desc
+			limit 1
+			""",
+			company,
+		)
+		if addr:
+			doc.company_address = addr[0][0]
+
+	if doc.get("company_address") and doc.meta.has_field("company_gstin") and not doc.get("company_gstin"):
+		gstin = frappe.db.get_value("Address", doc.company_address, "gstin") or frappe.db.get_value(
+			"Company", company, "gstin"
+		)
+		if gstin:
+			doc.company_gstin = gstin
+
+	# Customer / party billing address for place of supply
+	customer = doc.get("customer") or (
+		doc.get("party_name") if doc.doctype == "Quotation" and doc.get("quotation_to") == "Customer" else None
+	)
+	if customer and doc.meta.has_field("customer_address") and not doc.get("customer_address"):
+		caddr = frappe.db.sql(
+			"""
+			select a.name
+			from `tabAddress` a
+			inner join `tabDynamic Link` dl on dl.parent = a.name
+			where dl.link_doctype = 'Customer' and dl.link_name = %s
+			order by a.is_primary_address desc
+			limit 1
+			""",
+			customer,
+		)
+		if caddr:
+			doc.customer_address = caddr[0][0]
 
 
 def mark_currency_manual(doc):

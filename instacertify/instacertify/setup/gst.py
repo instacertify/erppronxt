@@ -142,34 +142,89 @@ def _ensure_global_defaults_inr():
 
 
 def _assign_default_item_tax_template():
-	"""Service items default to GST 18% (standard rate for consulting/testing)."""
+	"""Service items: SAC code + GST 18% item tax template."""
 	template = "GST 18% - IC"
-	if not frappe.db.exists("Item Tax Template", template):
-		return
+	# SAC for other professional / technical / business services
+	default_sac = "998399"
+	if frappe.db.exists("GST HSN Code", "998314"):
+		default_sac = "998314"  # Other professional, technical and business services
 
-	service_codes = frappe.get_all(
+	codes = frappe.get_all(
 		"Item",
-		filters={"is_sales_item": 1, "disabled": 0},
+		filters={
+			"is_sales_item": 1,
+			"disabled": 0,
+			"item_code": [
+				"in",
+				[
+					"CONSULTING-SVC",
+					"TESTING-SVC",
+					"BIS Certification",
+					"BIS Renewal",
+					"IEC Testing",
+					"Product Testing",
+					"Consulting Services",
+					"CE Compliance",
+					"Factory Inspection",
+				],
+			],
+		},
 		pluck="name",
-		limit=200,
 	)
-	for item_code in service_codes:
-		item = frappe.get_doc("Item", item_code)
-		has = any(row.item_tax_template == template for row in (item.taxes or []))
+	codes += frappe.get_all(
+		"Item",
+		filters={
+			"is_sales_item": 1,
+			"disabled": 0,
+			"item_group": [
+				"in",
+				[
+					"Certification Services",
+					"Testing Services",
+					"Consulting Services",
+					"Instacertify Services",
+					"Services",
+				],
+			],
+		},
+		pluck="name",
+		limit=50,
+	)
+
+	for item_code in sorted(set(codes)):
+		updates = {}
+		if frappe.get_meta("Item").has_field("gst_hsn_code"):
+			if not frappe.db.get_value("Item", item_code, "gst_hsn_code"):
+				updates["gst_hsn_code"] = default_sac
+		if updates:
+			frappe.db.set_value("Item", item_code, updates, update_modified=False)
+
+		if not frappe.db.exists("Item Tax Template", template):
+			continue
+		has = frappe.db.exists(
+			"Item Tax", {"parent": item_code, "item_tax_template": template}
+		)
 		if has:
 			continue
-		# Clear conflicting company templates then add GST 18%
-		item.append(
-			"taxes",
-			{
-				"item_tax_template": template,
-				"tax_category": "",
-			},
-		)
 		try:
+			item = frappe.get_doc("Item", item_code)
+			item.append("taxes", {"item_tax_template": template, "tax_category": ""})
+			item.flags.ignore_validate = True
 			item.save(ignore_permissions=True)
 		except Exception:
-			frappe.log_error(frappe.get_traceback(), f"Item tax template {item_code}")
+			# Direct child insert if Item validate (HSN) still blocks
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "Item Tax",
+						"parent": item_code,
+						"parenttype": "Item",
+						"parentfield": "taxes",
+						"item_tax_template": template,
+					}
+				).insert(ignore_permissions=True)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), f"Item tax template {item_code}")
 
 
 def _sync_customer_gst_fields():
