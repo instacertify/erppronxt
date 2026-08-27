@@ -262,6 +262,17 @@ def _ensure_home_html_block():
             <div class="ic-workdesk-row-meta"><span>${esc(e.when_label)}</span><span>${esc(e.time_label)}</span></div>
           </a>`
         ).join("") : empty("No upcoming events in the next 14 days.");
+        document.querySelectorAll("a.ic-schedule-session").forEach((el) => {
+          el.onclick = function (ev) {
+            ev.preventDefault();
+            if (window.instacertify && typeof instacertify.schedule_team_session === "function") {
+              instacertify.schedule_team_session();
+            } else {
+              frappe.set_route("Form", "Event", "new");
+            }
+            return false;
+          };
+        });
       }
       if (leadsEl) {
         const rows = d.my_leads || [];
