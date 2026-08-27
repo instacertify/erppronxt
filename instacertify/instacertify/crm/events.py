@@ -15,6 +15,8 @@ def before_validate_lead(doc, method=None):
 def validate_lead(doc, method=None):
 	_sync_party_name(doc)
 	_ensure_mandatory_name(doc)
+	if not doc.get("ic_pipeline_stage"):
+		doc.ic_pipeline_stage = "Lead"
 
 	# Keep UTM source aligned for analytics when available
 	if doc.get("ic_lead_source_detail") and hasattr(doc, "utm_source") and not doc.utm_source:

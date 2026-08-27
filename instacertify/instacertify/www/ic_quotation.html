@@ -7,6 +7,20 @@
   <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
   <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+  <style>
+    .ic-portal-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    .ic-portal-muted { color:#5b7380; font-size:0.92rem; }
+    .ic-portal-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:0.95rem; }
+    .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #e2eef4; padding:8px 6px; text-align:left; }
+    .ic-portal-table th { color:#065175; font-weight:600; }
+    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#e8f3f8; color:#065175; font-size:0.85rem; }
+    .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
+    .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
+    .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
+    #msg { margin-top:12px; padding:10px 12px; border-radius:10px; display:none; }
+    #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
+    #msg.err { display:block; background:#fdecea; color:#b42318; }
+  </style>
 </head>
 <body class="ic-portal-body">
   <div class="ic-portal-wrap">
@@ -14,58 +28,154 @@
       <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
     </div>
     <div class="ic-portal-card" id="app">
-      <h2 style="color:#065175;margin-top:0;">Instacertify Quotation</h2>
+      <h2 style="color:#065175;margin-top:0;">Your Quotation</h2>
       <div id="content">Loading…</div>
+      <div id="msg"></div>
       <div class="ic-portal-actions" id="actions" style="display:none;">
-        <button class="ic-btn ic-btn-primary" id="btn-accept">Accept Quotation</button>
-        <button class="ic-btn ic-btn-accent" id="btn-changes">Request Changes</button>
-        <a class="ic-btn ic-btn-ghost" id="btn-download" href="#" target="_blank">Download PDF</a>
+        <button class="ic-btn ic-btn-primary" id="btn-accept">Approve Quotation</button>
+        <button class="ic-btn ic-btn-ghost" id="btn-reject">Reject</button>
+        <button class="ic-btn ic-btn-accent" id="btn-changes">Ask for Revision</button>
+        <a class="ic-btn ic-btn-ghost" id="btn-download" href="#" target="_blank" rel="noopener">Download PDF</a>
       </div>
       <div id="remarks-box" style="display:none;margin-top:12px;">
-        <textarea id="remarks" rows="4" style="width:100%;border-radius:10px;border:1px solid #cfe0ea;padding:10px;" placeholder="Enter remarks / change requests"></textarea>
-        <button class="ic-btn ic-btn-accent" id="btn-submit-changes" style="margin-top:8px;">Submit Change Request</button>
+        <label class="ic-portal-muted" id="remarks-label">Remarks</label>
+        <textarea id="remarks" rows="4" style="width:100%;border-radius:10px;border:1px solid #cfe0ea;padding:10px;margin-top:6px;" placeholder="Enter remarks"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="ic-btn ic-btn-accent" id="btn-submit-action">Submit</button>
+          <button class="ic-btn ic-btn-ghost" id="btn-cancel-remarks">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
   <script>
     const token = {{ token|tojson }};
     const csrf = {{ csrf_token|tojson }};
+    let pendingAction = null;
+
+    function esc(v) {
+      const d = document.createElement('div');
+      d.textContent = v == null ? '' : String(v);
+      return d.innerHTML;
+    }
+    function money(v, c) {
+      const n = Number(v || 0);
+      return n.toLocaleString(undefined, {maximumFractionDigits: 2}) + (c ? (' ' + c) : '');
+    }
+    function statusClass(s) {
+      if (s === 'Accepted') return 'accepted';
+      if (s === 'Rejected / Lost') return 'rejected';
+      if (s === 'Changes Requested') return 'changes';
+      return '';
+    }
+    function showMsg(text, ok) {
+      const el = document.getElementById('msg');
+      el.className = ok ? 'ok' : 'err';
+      el.textContent = text;
+    }
+    function post(method, body) {
+      return fetch('/api/method/' + method, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
+        body: JSON.stringify(body || {})
+      }).then(async (r) => {
+        const data = await r.json();
+        if (data.exc || data._server_messages) {
+          let msg = 'Something went wrong.';
+          try {
+            const sm = JSON.parse(data._server_messages || '[]');
+            if (sm[0]) msg = JSON.parse(sm[0]).message || msg;
+          } catch (e) {}
+          throw new Error(msg);
+        }
+        return data.message;
+      });
+    }
+    function openRemarks(action, label, placeholder) {
+      pendingAction = action;
+      document.getElementById('remarks-label').textContent = label;
+      document.getElementById('remarks').placeholder = placeholder;
+      document.getElementById('remarks').value = '';
+      document.getElementById('remarks-box').style.display = 'block';
+    }
+    function costTable(rows, currency) {
+      if (!rows || !rows.length) return '';
+      return '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Amount</th></tr></thead><tbody>' +
+        rows.map(r => '<tr><td>' + esc(r.particulars || '') +
+          (r.payment_destination ? '<div class="ic-portal-muted">' + esc(r.payment_destination) + '</div>' : '') +
+          '</td><td>' + esc(money(r.amount, currency)) + '</td></tr>').join('') +
+        '</tbody></table>';
+    }
     function load() {
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
           document.getElementById('content').innerHTML =
-            '<p><b>' + d.name + '</b> · Rev ' + (d.ic_revision_number || 0) + '</p>' +
-            '<p>Customer: <b>' + (d.customer_name || d.party_name || '') + '</b></p>' +
-            '<p>Type: ' + (d.ic_quotation_type || '') + ' · Status: <b>' + (d.ic_workflow_status || '') + '</b></p>' +
-            '<p>Service: ' + (d.ic_service_name || '') + '</p>' +
-            '<p>Timeline: ' + (d.ic_estimated_timeline || '') + '</p>' +
-            '<div>' + (d.ic_scope_of_work || '') + '</div>' +
-            '<p style="margin-top:12px;"><b>Commercial Value:</b> ' + (d.ic_commercial_value || 0) + ' ' + (d.currency || '') + '</p>' +
-            '<p><b>Pass-through:</b> ' + (d.ic_passthrough_value || 0) + ' ' + (d.currency || '') + '</p>' +
-            '<p><b>Total:</b> ' + (d.ic_total_quoted_value || d.grand_total || 0) + ' ' + (d.currency || '') + '</p>';
+            '<p><b>' + esc(d.name) + '</b> · Revision ' + esc(d.ic_revision_number || 0) +
+            ' · <span class="ic-status-pill ' + statusClass(d.ic_workflow_status) + '">' + esc(d.ic_workflow_status || '') + '</span></p>' +
+            '<p>Customer: <b>' + esc(d.customer_name || d.party_name || '') + '</b></p>' +
+            '<p>Service: <b>' + esc(d.ic_service_name || d.ic_quotation_type || '') + '</b></p>' +
+            '<p class="ic-portal-muted">Date: ' + esc(d.transaction_date || '') +
+              (d.valid_till ? (' · Valid till ' + esc(d.valid_till)) : '') +
+              (d.ic_estimated_timeline ? (' · Timeline: ' + esc(d.ic_estimated_timeline)) : '') + '</p>' +
+            '<div style="margin-top:10px;">' + (d.ic_scope_of_work || '') + '</div>' +
+            (d.ic_deliverables ? ('<h4 style="color:#065175;">Deliverables</h4><div>' + d.ic_deliverables + '</div>') : '') +
+            '<h4 style="color:#065175;margin-bottom:4px;">Commercials</h4>' +
+            costTable(d.cost_items, d.currency) +
+            '<p><b>Commercial:</b> ' + esc(money(d.ic_commercial_value, d.currency)) + '</p>' +
+            '<p><b>Pass-through:</b> ' + esc(money(d.ic_passthrough_value, d.currency)) + '</p>' +
+            '<p><b>Total:</b> ' + esc(money(d.ic_total_quoted_value || d.grand_total, d.currency)) + '</p>' +
+            (d.ic_payment_terms ? ('<h4 style="color:#065175;">Payment Terms</h4><div>' + d.ic_payment_terms + '</div>') : '') +
+            (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
+
+          document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));
+          const show = !!d.can_decide;
           document.getElementById('actions').style.display = 'flex';
-          document.getElementById('btn-download').href = '/printview?doctype=Quotation&name=' + encodeURIComponent(d.name) + '&format=Instacertify%20Quotation';
+          document.getElementById('btn-accept').style.display = show ? '' : 'none';
+          document.getElementById('btn-reject').style.display = show ? '' : 'none';
+          document.getElementById('btn-changes').style.display = show ? '' : 'none';
+          document.getElementById('remarks-box').style.display = 'none';
+        }).catch(() => {
+          document.getElementById('content').innerHTML = 'Unable to load quotation.';
         });
     }
     document.getElementById('btn-accept').onclick = function () {
-      fetch('/api/method/instacertify.quotation.events.customer_accept_quotation', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
-        body: JSON.stringify({token: token})
-      }).then(function () { alert('Quotation accepted. Thank you!'); load(); });
+      openRemarks('accept', 'Optional remarks (approve)', 'Any note for Instacertify (optional)');
+    };
+    document.getElementById('btn-reject').onclick = function () {
+      openRemarks('reject', 'Reason for rejection', 'Please tell us why you are rejecting');
     };
     document.getElementById('btn-changes').onclick = function () {
-      document.getElementById('remarks-box').style.display = 'block';
+      openRemarks('changes', 'Revision request', 'What should we change in the quotation?');
     };
-    document.getElementById('btn-submit-changes').onclick = function () {
-      var remarks = document.getElementById('remarks').value;
-      fetch('/api/method/instacertify.quotation.events.customer_request_changes', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
-        body: JSON.stringify({token: token, remarks: remarks})
-      }).then(function () { alert('Change request submitted.'); load(); });
+    document.getElementById('btn-cancel-remarks').onclick = function () {
+      pendingAction = null;
+      document.getElementById('remarks-box').style.display = 'none';
+    };
+    document.getElementById('btn-submit-action').onclick = function () {
+      const remarks = document.getElementById('remarks').value || '';
+      if (pendingAction === 'changes' && !remarks.trim()) {
+        showMsg('Please enter revision remarks.', false);
+        return;
+      }
+      let method = 'instacertify.quotation.events.customer_accept_quotation';
+      let body = {token: token, remarks: remarks};
+      let okText = 'Quotation approved. Thank you!';
+      if (pendingAction === 'reject') {
+        method = 'instacertify.quotation.events.customer_reject_quotation';
+        okText = 'Quotation rejected. Our team has been notified.';
+      } else if (pendingAction === 'changes') {
+        method = 'instacertify.quotation.events.customer_request_changes';
+        okText = 'Revision request submitted. We will send an updated quote.';
+      }
+      post(method, body).then((res) => {
+        let extra = '';
+        if (res && res.invoice) extra += ' Invoice: ' + res.invoice + '.';
+        if (res && res.project) extra += ' Project: ' + res.project + '.';
+        showMsg(okText + extra, true);
+        pendingAction = null;
+        load();
+      }).catch((e) => showMsg(e.message || 'Request failed', false));
     };
     load();
   </script>

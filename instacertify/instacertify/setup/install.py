@@ -229,6 +229,7 @@ def setup_custom_fields():
 	_ensure_lead_source_link_field()
 	_ensure_lead_project_type_field()
 	_ensure_lead_party_name_field()
+	_ensure_pipeline_and_quote_accept_fields()
 
 
 def _ensure_lead_party_name_field():
@@ -259,6 +260,79 @@ def _ensure_lead_party_name_field():
 			).insert(ignore_permissions=True)
 		except Exception:
 			pass
+
+
+def _ensure_pipeline_and_quote_accept_fields():
+	"""Lead pipeline stage + quotation post-accept action (with DB columns)."""
+	lead_cf = "Lead-ic_pipeline_stage"
+	lead_meta = {
+		"fieldname": "ic_pipeline_stage",
+		"label": "Pipeline Stage",
+		"fieldtype": "Select",
+		"options": "Lead\nRequirement Analysis\nTechnical Review\nQuote\nNegotiation\nOrder\nProject / Case\nCertification\nRenewal",
+		"default": "Lead",
+		"insert_after": "ic_section_pipeline",
+		"in_list_view": 1,
+		"in_standard_filter": 1,
+	}
+	if not frappe.db.exists("Custom Field", "Lead-ic_section_pipeline"):
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "Custom Field",
+					"dt": "Lead",
+					"module": "Instacertify",
+					"fieldname": "ic_section_pipeline",
+					"label": "Sales Pipeline",
+					"fieldtype": "Section Break",
+					"insert_after": "ic_lead_connected",
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			pass
+	_upsert_lead_custom_field(lead_cf, lead_meta)
+	if not frappe.db.has_column("Lead", "ic_pipeline_stage"):
+		try:
+			from frappe.database.schema import add_column
+
+			add_column("Lead", "ic_pipeline_stage", "Select")
+		except Exception:
+			pass
+
+	qt_cf = "Quotation-ic_post_accept_action"
+	if not frappe.db.exists("Custom Field", qt_cf):
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "Custom Field",
+					"dt": "Quotation",
+					"module": "Instacertify",
+					"fieldname": "ic_post_accept_action",
+					"label": "After Customer Accepts",
+					"fieldtype": "Select",
+					"options": "\nUse Company Default\nCreate Invoice\nCreate Project\nCreate Invoice and Project\nManual",
+					"default": "Use Company Default",
+					"insert_after": "ic_customer_remarks",
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			pass
+	if not frappe.db.has_column("Quotation", "ic_post_accept_action"):
+		try:
+			from frappe.database.schema import add_column
+
+			add_column("Quotation", "ic_post_accept_action", "Select")
+		except Exception:
+			pass
+
+	# Settings default
+	try:
+		if frappe.db.exists("DocType", "IC Settings") and not frappe.db.get_single_value(
+			"IC Settings", "on_quote_accept"
+		):
+			frappe.db.set_single_value("IC Settings", "on_quote_accept", "Create Invoice and Project")
+	except Exception:
+		pass
 
 
 def _ensure_lead_source_link_field():

@@ -55,6 +55,9 @@ doc_events = {
 	"IC Testing Request": {
 		"on_update": "instacertify.testing.events.on_update_testing_request",
 	},
+	"Payment Entry": {
+		"on_submit": "instacertify.accounting.payments.on_submit_payment_entry",
+	},
 }
 
 # Scheduled Tasks

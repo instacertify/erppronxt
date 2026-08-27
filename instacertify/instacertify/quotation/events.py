@@ -25,6 +25,12 @@ def validate_quotation(doc, method=None):
 	from instacertify.accounting.consulting_billing import strip_warehouse_from_service_items
 
 	strip_warehouse_from_service_items(doc)
+	# Pipeline: preparing a quote moves the lead to Quote stage
+	if doc.ic_workflow_status in (None, "", "Draft", "Internal Review", "Ready to Share"):
+		try:
+			_advance_linked_lead(doc, "Quote")
+		except Exception:
+			pass
 
 
 def _calculate_test_line_totals(doc):
@@ -283,20 +289,52 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 @frappe.whitelist()
 def share_with_customer(quotation: str):
 	doc = frappe.get_doc("Quotation", quotation)
-	if not doc.ic_share_token:
-		doc.ic_share_token = secrets.token_urlsafe(24)
+	token = doc.ic_share_token or secrets.token_urlsafe(24)
+	now = now_datetime()
+	frappe.db.set_value(
+		"Quotation",
+		doc.name,
+		{
+			"ic_share_token": token,
+			"ic_workflow_status": "Shared with Customer",
+			"ic_shared_on": now,
+		},
+		update_modified=True,
+	)
+	doc.ic_share_token = token
 	doc.ic_workflow_status = "Shared with Customer"
-	doc.ic_shared_on = now_datetime()
-	_ensure_qr(doc)
-	doc.save(ignore_permissions=True)
-	if hasattr(doc, "workflow_state"):
-		try:
-			frappe.db.set_value("Quotation", doc.name, "workflow_state", "IC Shared with Customer")
-		except Exception:
-			pass
+	doc.ic_shared_on = now
+	try:
+		_ensure_qr(doc)
+		if doc.get("ic_qr_code"):
+			frappe.db.set_value("Quotation", doc.name, "ic_qr_code", doc.ic_qr_code, update_modified=False)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation QR on share")
+	_set_workflow_state(doc.name, "IC Shared with Customer")
+	_advance_linked_lead(doc, "Negotiation")
 	_notify_share(doc)
-	url = frappe.utils.get_url(f"/ic-quotation/{doc.ic_share_token}")
-	return {"url": url, "token": doc.ic_share_token}
+	url = _portal_url(token)
+	return {"url": url, "token": token}
+
+
+def _portal_url(token: str) -> str:
+	base = None
+	try:
+		base = frappe.db.get_single_value("IC Settings", "portal_base_url")
+	except Exception:
+		base = None
+	base = (base or "").rstrip("/")
+	if base:
+		return f"{base}/ic-quotation/{token}"
+	return frappe.utils.get_url(f"/ic-quotation/{token}")
+
+
+def _set_workflow_state(name: str, state: str):
+	try:
+		if frappe.db.has_column("Quotation", "workflow_state"):
+			frappe.db.set_value("Quotation", name, "workflow_state", state, update_modified=False)
+	except Exception:
+		pass
 
 
 @frappe.whitelist(allow_guest=True)
@@ -305,14 +343,82 @@ def customer_accept_quotation(token: str, remarks: str | None = None):
 	if not name:
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
 	doc = frappe.get_doc("Quotation", name)
-	doc.ic_workflow_status = "Accepted"
+	if doc.ic_workflow_status in ("Accepted",):
+		return _acceptance_payload(doc)
+	if doc.ic_workflow_status in ("Rejected / Lost",):
+		frappe.throw(_("This quotation was rejected and can no longer be accepted"))
+
+	values = {"ic_workflow_status": "Accepted", "status": "Open"}
 	if remarks:
-		doc.ic_customer_remarks = remarks
-	doc.status = "Open"
-	doc.save(ignore_permissions=True)
-	frappe.db.set_value("Quotation", name, "workflow_state", "IC Accepted", update_modified=False)
+		values["ic_customer_remarks"] = remarks
+	frappe.db.set_value("Quotation", name, values, update_modified=True)
+	doc.reload()
+	_set_workflow_state(name, "IC Accepted")
+	_advance_linked_lead(doc, "Order")
 	_notify_acceptance(doc)
-	return {"status": "Accepted", "quotation": name}
+
+	result = _acceptance_payload(doc)
+	action = _resolve_post_accept_action(doc)
+	result["action"] = action
+
+	if action in ("Create Invoice", "Create Invoice and Project"):
+		try:
+			inv = create_invoice_from_quotation(name, submit=0)
+			result["invoice"] = inv.get("invoice")
+			result["invoice_created"] = inv.get("created")
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Auto invoice on quote accept")
+			result["invoice_error"] = _("Invoice could not be created automatically. Please create it from Desk.")
+
+	if action in ("Create Project", "Create Invoice and Project"):
+		try:
+			proj = start_project_from_quotation(name)
+			result["project"] = proj.get("project")
+			result["testing_requests"] = proj.get("testing_requests") or []
+			_advance_linked_lead(doc, "Project / Case")
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Auto project on quote accept")
+			result["project_error"] = _("Project could not be created automatically. Please start it from Desk.")
+
+	return result
+
+
+def _acceptance_payload(doc):
+	return {
+		"status": "Accepted",
+		"quotation": doc.name,
+		"invoice": frappe.db.get_value("Sales Invoice", {"ic_quotation": doc.name, "docstatus": ["<", 2]}, "name"),
+		"project": frappe.db.get_value("Project", {"ic_quotation": doc.name}, "name"),
+	}
+
+
+def _resolve_post_accept_action(doc) -> str:
+	choice = (doc.get("ic_post_accept_action") or "Use Company Default").strip()
+	if choice and choice not in ("Use Company Default", ""):
+		return choice
+	try:
+		setting = frappe.db.get_single_value("IC Settings", "on_quote_accept")
+	except Exception:
+		setting = None
+	return setting or "Create Invoice and Project"
+
+
+@frappe.whitelist(allow_guest=True)
+def customer_reject_quotation(token: str, remarks: str | None = None):
+	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
+	if not name:
+		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
+	doc = frappe.get_doc("Quotation", name)
+	if doc.ic_workflow_status == "Accepted":
+		frappe.throw(_("Accepted quotations cannot be rejected from the portal"))
+	values = {"ic_workflow_status": "Rejected / Lost"}
+	if remarks:
+		values["ic_customer_remarks"] = remarks
+	frappe.db.set_value("Quotation", name, values, update_modified=True)
+	doc.reload()
+	_set_workflow_state(name, "IC Rejected / Lost")
+	_notify_rejection(doc)
+	return {"status": "Rejected / Lost", "quotation": name}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -320,15 +426,138 @@ def customer_request_changes(token: str, remarks: str):
 	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
 	if not name:
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
+	if not (remarks or "").strip():
+		frappe.throw(_("Please enter remarks explaining the revision you need"))
 	doc = frappe.get_doc("Quotation", name)
-	doc.ic_workflow_status = "Changes Requested"
-	doc.ic_customer_remarks = remarks
-	doc.save(ignore_permissions=True)
 	frappe.db.set_value(
-		"Quotation", name, "workflow_state", "IC Changes Requested", update_modified=False
+		"Quotation",
+		name,
+		{"ic_workflow_status": "Changes Requested", "ic_customer_remarks": remarks},
+		update_modified=True,
 	)
+	doc.reload()
+	_set_workflow_state(name, "IC Changes Requested")
+	_advance_linked_lead(doc, "Negotiation")
 	_notify_changes(doc)
 	return {"status": "Changes Requested", "quotation": name}
+
+
+@frappe.whitelist(allow_guest=True)
+def download_quotation_pdf(token: str):
+	"""Guest-safe PDF download for a shared quotation link."""
+	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
+	if not name:
+		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
+
+	print_format = "Instacertify Quotation"
+	if not frappe.db.exists("Print Format", print_format):
+		print_format = None
+
+	try:
+		html = frappe.get_print("Quotation", name, print_format=print_format, no_letterhead=0)
+		# Guest PDF: avoid remote asset fetches that break wkhtmltopdf in locked-down envs
+		html = (html or "").replace('src="/assets/', 'data-src="/assets/')
+		from frappe.utils.pdf import get_pdf
+
+		pdf = get_pdf(html, options={"disable-javascript": "", "load-error-handling": "ignore"})
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation portal PDF")
+		frappe.throw(
+			_("PDF could not be generated right now. Please try again or contact Instacertify."),
+			frappe.ValidationError,
+		)
+
+	frappe.local.response.filename = f"{name}.pdf"
+	frappe.local.response.filecontent = pdf
+	frappe.local.response.type = "pdf"
+
+
+@frappe.whitelist()
+def open_quotation_for_revision(quotation: str):
+	"""Re-open a Changes Requested / rejected quote for editing (owner, managers, admin)."""
+	doc = frappe.get_doc("Quotation", quotation)
+	_assert_can_revise(doc)
+	if doc.docstatus == 1:
+		frappe.throw(_("Submitted quotations must be amended / cancelled before revising"))
+	if doc.docstatus == 2:
+		frappe.throw(_("Cancelled quotations cannot be revised"))
+
+	doc.ic_revision_number = int(doc.ic_revision_number or 0) + 1
+	doc.ic_workflow_status = "Draft"
+	frappe.db.set_value(
+		"Quotation",
+		doc.name,
+		{"ic_revision_number": doc.ic_revision_number, "ic_workflow_status": "Draft"},
+		update_modified=True,
+	)
+	_set_workflow_state(doc.name, "IC Draft")
+	_advance_linked_lead(doc, "Quote")
+	_notify_revision_opened(doc)
+	return {
+		"quotation": doc.name,
+		"ic_revision_number": doc.ic_revision_number,
+		"ic_workflow_status": "Draft",
+		"customer_remarks": doc.ic_customer_remarks,
+	}
+
+
+def _assert_can_revise(doc):
+	user = frappe.session.user
+	roles = set(frappe.get_roles(user))
+	if user in ("Administrator", doc.owner):
+		return
+	if roles.intersection({"System Manager", "IC Admin", "Sales Manager", "IC Senior Operations"}):
+		return
+	frappe.throw(_("Only the quote owner, sales managers, or admin can revise this quotation"))
+
+
+def _advance_linked_lead(doc, stage: str):
+	"""Move linked Lead pipeline stage forward when quote progresses."""
+	try:
+		if not frappe.db.has_column("Lead", "ic_pipeline_stage"):
+			return
+	except Exception:
+		return
+
+	lead_name = None
+	if doc.quotation_to == "Lead":
+		lead_name = doc.party_name
+	elif doc.get("opportunity"):
+		opp = frappe.db.get_value(
+			"Opportunity", doc.opportunity, ["opportunity_from", "party_name"], as_dict=True
+		)
+		if opp and opp.opportunity_from == "Lead":
+			lead_name = opp.party_name
+	if not lead_name and doc.quotation_to == "Customer" and doc.party_name:
+		# Prefer lead that converted to this customer
+		lead_name = frappe.db.get_value(
+			"Lead", {"status": "Converted", "company_name": doc.customer_name}, "name"
+		)
+		if not lead_name:
+			lead_name = frappe.db.get_value("Customer", doc.party_name, "lead_name")
+
+	if not lead_name or not frappe.db.exists("Lead", lead_name):
+		return
+
+	order = [
+		"Lead",
+		"Requirement Analysis",
+		"Technical Review",
+		"Quote",
+		"Negotiation",
+		"Order",
+		"Project / Case",
+		"Certification",
+		"Renewal",
+	]
+	current = frappe.db.get_value("Lead", lead_name, "ic_pipeline_stage") or "Lead"
+	try:
+		if order.index(stage) >= order.index(current if current in order else "Lead"):
+			frappe.db.set_value("Lead", lead_name, "ic_pipeline_stage", stage, update_modified=False)
+	except ValueError:
+		frappe.db.set_value("Lead", lead_name, "ic_pipeline_stage", stage, update_modified=False)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "advance lead pipeline")
 
 
 @frappe.whitelist()
@@ -398,6 +627,7 @@ def start_project_from_quotation(quotation: str):
 		).insert(ignore_permissions=True)
 
 	_notify_project_assigned(project)
+	_advance_linked_lead(qt, "Project / Case")
 
 	# Auto-create testing requests from lab-scoped quotation lines
 	testing_result = {"created": [], "existing": []}
@@ -753,6 +983,18 @@ def _notify_acceptance(doc):
 
 def _notify_changes(doc):
 	_send_notification("Quotation Changes Requested", doc, [doc.owner, "Administrator"])
+
+
+def _notify_rejection(doc):
+	_send_notification("Quotation Rejected by Customer", doc, [doc.owner, "Administrator"])
+
+
+def _notify_revision_opened(doc):
+	_send_notification(
+		f"Quotation opened for revision (Rev {doc.ic_revision_number})",
+		doc,
+		[doc.owner, "Administrator"],
+	)
 
 
 def _notify_project_assigned(project):

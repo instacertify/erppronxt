@@ -217,6 +217,15 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "on_quote_accept",
+   "fieldtype": "Select",
+   "label": "When Customer Accepts Quote",
+   "options": "Create Invoice and Project\nCreate Invoice\nCreate Project\nManual",
+   "default": "Create Invoice and Project",
+   "description": "Automatic follow-up after customer accepts via the share link"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_portal",
    "fieldtype": "Section Break",
    "label": "Customer Portal"

@@ -206,11 +206,21 @@ frappe.ui.form.on("Quotation", {
 					freeze: true,
 					callback(r) {
 						frm.reload_doc();
+						const url = r.message && r.message.url;
 						frappe.msgprint({
-							title: __("Customer Link"),
-							message: `__("Secure link"): <a href="${r.message.url}" target="_blank">${r.message.url}</a>`,
+							title: __("Customer Share Link"),
+							message: `
+								<p>${__("Customer can open this link to read, download PDF, approve, reject, or ask for revision:")}</p>
+								<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+								<p class="text-muted">${__("Copy and send this open link to the customer (email / WhatsApp).")}</p>
+							`,
 							indicator: "green",
 						});
+						if (url && navigator.clipboard) {
+							navigator.clipboard.writeText(url).then(() => {
+								frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+							}).catch(() => {});
+						}
 					},
 				});
 			}, __("Instacertify"));
@@ -275,6 +285,38 @@ frappe.ui.form.on("Quotation", {
 					service_name: frm.doc.ic_service_name,
 				});
 			}, __("Instacertify"));
+
+			if (["Changes Requested", "Rejected / Lost"].includes(frm.doc.ic_workflow_status)) {
+				if (frm.doc.ic_customer_remarks) {
+					frm.set_intro(
+						__("Customer remarks: {0}", [frm.doc.ic_customer_remarks]),
+						"orange"
+					);
+				}
+				frm.add_custom_button(__("Open for Revision"), () => {
+					frappe.confirm(
+						__(
+							"Bump revision number and reopen this quotation for editing? Only the owner, managers, or admin can revise."
+						),
+						() => {
+							frappe.call({
+								method: "instacertify.quotation.events.open_quotation_for_revision",
+								args: { quotation: frm.doc.name },
+								freeze: true,
+								callback(r) {
+									frm.reload_doc();
+									frappe.show_alert({
+										message: __("Revision {0} ready to edit — then Share with Customer again", [
+											r.message.ic_revision_number,
+										]),
+										indicator: "green",
+									});
+								},
+							});
+						}
+					);
+				}, __("Instacertify"));
+			}
 
 			if (frm.doc.ic_workflow_status === "Accepted") {
 				frm.add_custom_button(__("Create Invoice"), () => {
