@@ -21,6 +21,7 @@ def _ensure_home_html_block():
 	html = """
 <div id="ic-home-root">
   <div class="ic-greeting">
+    <div class="ic-greeting-brand">Insta<span>certify</span></div>
     <h2 id="ic-greet-title">Welcome</h2>
     <div class="ic-datetime"><span id="ic-date"></span> · <span id="ic-time"></span></div>
   </div>

@@ -113,10 +113,7 @@ instacertify.render_home_banner = function (wrapper) {
 	}
 	const html = `
 		<div class="ic-greeting">
-			<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-				<img src="${instacertify.brand.icon}" alt="Instacertify" style="width:42px;height:42px;object-fit:contain;"/>
-				<span style="font-size:1.15rem;font-weight:700;letter-spacing:0.02em;">Instacertify</span>
-			</div>
+			<div class="ic-greeting-brand">Insta<span>certify</span></div>
 			<h2>${frappe.utils.escape_html(instacertify.greeting())}</h2>
 			<div class="ic-datetime">
 				<span class="ic-date">${moment().format("dddd, D MMMM YYYY")}</span>
