@@ -226,6 +226,32 @@ frappe.ui.form.on("Quotation", {
 			}, __("Instacertify"));
 
 			if (frm.doc.ic_workflow_status === "Accepted") {
+				frm.add_custom_button(__("Create Invoice"), () => {
+					frappe.confirm(
+						__(
+							"Create Sales Invoice from this confirmed quotation as per payment terms? (No Sales Order will be created.)"
+						),
+						() => {
+							frappe.call({
+								method: "instacertify.quotation.events.create_invoice_from_quotation",
+								args: { quotation: frm.doc.name, submit: 0 },
+								freeze: true,
+								freeze_message: __("Creating Invoice..."),
+								callback(r) {
+									if (!r.message || !r.message.invoice) return;
+									frappe.show_alert({
+										message: r.message.created
+											? __("Invoice {0} created", [r.message.invoice])
+											: __("Invoice {0} already exists", [r.message.invoice]),
+										indicator: "green",
+									});
+									frappe.set_route("Form", "Sales Invoice", r.message.invoice);
+								},
+							});
+						}
+					);
+				}, __("Instacertify"));
+
 				frm.add_custom_button(__("Start Project"), () => {
 					frappe.call({
 						method: "instacertify.quotation.events.start_project_from_quotation",
@@ -236,7 +262,13 @@ frappe.ui.form.on("Quotation", {
 						},
 					});
 				}, __("Instacertify"));
+
+				// Make Invoice the primary action after acceptance
+				frm.page.set_inner_btn_group_as_primary(__("Instacertify"));
 			}
+
+			// Hide Sales Order — Instacertify bills from Quotation directly
+			instacertify.hide_sales_order_button(frm);
 		}
 
 		if (frm.doc.ic_quotation_type) {
@@ -284,6 +316,19 @@ instacertify.setup_quotation_template_filter = function (frm) {
 		}
 		return { filters };
 	});
+};
+
+instacertify.hide_sales_order_button = function (frm) {
+	const hide = () => {
+		frm.remove_custom_button(__("Sales Order"), __("Create"));
+		// Also remove from inner button group if present
+		frm.page &&
+			frm.page.btn_secondary &&
+			frm.page.btn_secondary.find('.inner-group-button:contains("Sales Order")').remove();
+	};
+	hide();
+	setTimeout(hide, 300);
+	setTimeout(hide, 800);
 };
 
 instacertify.toggle_quotation_sections = function (frm) {

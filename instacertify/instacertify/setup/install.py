@@ -187,6 +187,7 @@ def setup_custom_fields():
 		frappe.flags.ignore_version = False
 	_apply_quotation_type_options()
 	_ensure_service_family_field()
+	_ensure_sales_invoice_quotation_link()
 
 
 def _apply_quotation_type_options():
@@ -221,6 +222,27 @@ def _ensure_service_family_field():
 		frappe.log_error(frappe.get_traceback(), "ic_service_family field")
 
 
+def _ensure_sales_invoice_quotation_link():
+	if frappe.db.exists("Custom Field", "Sales Invoice-ic_quotation"):
+		return
+	try:
+		frappe.get_doc(
+			{
+				"doctype": "Custom Field",
+				"dt": "Sales Invoice",
+				"fieldname": "ic_quotation",
+				"label": "Source Quotation",
+				"fieldtype": "Link",
+				"options": "Quotation",
+				"insert_after": "customer_name",
+				"read_only": 1,
+				"module": "Instacertify",
+			}
+		).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Sales Invoice ic_quotation field")
+
+
 def setup_company():
 	company_name = "Instacertify"
 	if frappe.db.exists("Company", company_name):
@@ -249,6 +271,26 @@ def setup_company():
 	if not frappe.db.exists("Currency", "USD"):
 		pass  # ERPNext ships currencies
 	frappe.db.set_value("Company", company_name, "default_currency", "INR", update_modified=False)
+	_ensure_company_invoice_defaults(company_name)
+
+
+def _ensure_company_invoice_defaults(company_name: str):
+	"""Ensure cost center + income account so Quotation → Invoice works without Sales Order."""
+	try:
+		from instacertify.quotation.events import _ensure_company_accounting_defaults
+
+		_ensure_company_accounting_defaults(company_name)
+		# Export / USD quotations are common; allow invoicing against INR Debtors
+		if not frappe.db.get_single_value(
+			"Accounts Settings", "allow_multi_currency_invoices_against_single_party_account"
+		):
+			frappe.db.set_single_value(
+				"Accounts Settings",
+				"allow_multi_currency_invoices_against_single_party_account",
+				1,
+			)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Company invoice defaults")
 
 
 def setup_lead_sources():

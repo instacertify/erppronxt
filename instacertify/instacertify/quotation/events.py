@@ -394,6 +394,330 @@ def start_project_from_quotation(quotation: str):
 	return {"project": project.name}
 
 
+@frappe.whitelist()
+def create_invoice_from_quotation(quotation: str, submit: int = 0):
+	"""Create Sales Invoice directly from an accepted Quotation (no Sales Order).
+
+	Uses quotation line items when present; otherwise builds invoice lines from
+	Instacertify cost/commercial rows per payment terms (advance billing).
+	"""
+	qt = frappe.get_doc("Quotation", quotation)
+	if qt.ic_workflow_status != "Accepted" and qt.get("workflow_state") != "IC Accepted":
+		frappe.throw(_("Invoice can be created only after the customer confirms / Accepts the quotation"))
+
+	existing = frappe.db.get_value(
+		"Sales Invoice",
+		{"ic_quotation": qt.name, "docstatus": ["<", 2]},
+		"name",
+	)
+	if existing:
+		return {"invoice": existing, "created": 0}
+
+	# Prepare billable items on draft quotations, then submit
+	if qt.docstatus == 0:
+		_ensure_quotation_items(qt)
+		qt.reload()
+		qt.submit()
+		qt.reload()
+	elif qt.docstatus == 2:
+		frappe.throw(_("Cancelled quotations cannot be invoiced"))
+
+	has_items = any(not getattr(row, "is_alternative", 0) for row in (qt.items or []))
+	if has_items:
+		from erpnext.selling.doctype.quotation.quotation import make_sales_invoice
+
+		si = make_sales_invoice(qt.name)
+	else:
+		si = _build_invoice_from_cost_items(qt)
+
+	if isinstance(si, str):
+		si = frappe.get_doc("Sales Invoice", si)
+
+	si.ic_quotation = qt.name
+	payment_terms_text = frappe.utils.strip_html(qt.ic_payment_terms or "") or (
+		qt.payment_terms_template or "As per quotation"
+	)
+	si.remarks = (
+		(si.remarks or "").strip()
+		+ f"\nInvoice against Quotation {qt.name} (customer confirmed)."
+		+ f"\nPayment Terms: {payment_terms_text}"
+	).strip()
+	if qt.get("payment_terms_template") and not si.get("payment_terms_template"):
+		si.payment_terms_template = qt.payment_terms_template
+	if qt.get("payment_schedule") and not si.get("payment_schedule"):
+		si.set("payment_schedule", [])
+		for row in qt.payment_schedule:
+			si.append(
+				"payment_schedule",
+				{
+					"payment_term": row.payment_term,
+					"due_date": row.due_date,
+					"invoice_portion": row.invoice_portion,
+					"payment_amount": row.payment_amount,
+					"description": row.description,
+				},
+			)
+
+	_set_invoice_defaults(si)
+	si.run_method("set_missing_values")
+	si.run_method("calculate_taxes_and_totals")
+	_set_invoice_defaults(si)  # re-apply after set_missing_values may clear cost centers
+
+	si.flags.ignore_permissions = True
+	if si.is_new():
+		si.insert(ignore_permissions=True)
+	else:
+		si.save(ignore_permissions=True)
+
+	if int(submit or 0):
+		si.submit()
+
+	try:
+		frappe.db.set_value("Quotation", qt.name, "status", "Ordered")
+	except Exception:
+		pass
+
+	return {"invoice": si.name, "created": 1}
+
+
+def _build_invoice_from_cost_items(qt):
+	"""Manual Sales Invoice when Quotation has commercials but no standard items."""
+	customer = qt.party_name if qt.quotation_to == "Customer" else None
+	if not customer:
+		from erpnext.selling.doctype.quotation.quotation import _make_customer
+
+		cust = _make_customer(qt.name, ignore_permissions=True)
+		customer = cust.name if cust else None
+	if not customer:
+		frappe.throw(_("Customer is required to create an invoice"))
+
+	item_code = _default_service_item(qt.company)
+	si = frappe.new_doc("Sales Invoice")
+	si.customer = customer
+	si.company = qt.company
+	si.currency = qt.currency
+	si.conversion_rate = qt.conversion_rate or 1
+	si.selling_price_list = qt.selling_price_list
+	si.ic_quotation = qt.name
+	si.posting_date = frappe.utils.today()
+	si.due_date = frappe.utils.today()
+
+	for row in qt.get("ic_cost_items") or []:
+		amount = float(row.amount or 0)
+		if amount <= 0:
+			continue
+		label = row.particulars or row.description or row.cost_component or "Service Charges"
+		si.append(
+			"items",
+			{
+				"item_code": item_code,
+				"item_name": label[:140],
+				"description": label,
+				"qty": 1,
+				"rate": amount,
+				"uom": frappe.db.get_value("Item", item_code, "stock_uom") or "Nos",
+			},
+		)
+
+	if not si.items:
+		frappe.throw(_("No billable commercial amounts found on this quotation"))
+
+	_set_invoice_defaults(si)
+	si.run_method("set_missing_values")
+	si.run_method("calculate_taxes_and_totals")
+	return si
+
+
+def _set_invoice_defaults(si):
+	"""Fill cost center / income account so invoice validates without Sales Order.
+
+	ERPNext's Quotation → Sales Invoice mapper clears item cost_center; SI
+	validation then fails with 'Cost Center None does not belong to company'.
+	"""
+	if not si.get("items"):
+		frappe.throw(_("Quotation has no items to invoice. Add items or cost breakdown first."))
+
+	company = si.company
+	cost_center, income_account = _ensure_company_accounting_defaults(company)
+	_ensure_party_account_currency(si)
+
+	for item in si.items:
+		if not item.cost_center and cost_center:
+			item.cost_center = cost_center
+		if not item.income_account and income_account:
+			item.income_account = income_account
+
+
+def _ensure_party_account_currency(si):
+	"""Allow Quotation currency (e.g. USD) to invoice when only INR Debtors exist."""
+	if not si.customer or not si.currency:
+		return
+	company_currency = frappe.get_cached_value("Company", si.company, "default_currency")
+	if si.currency == company_currency:
+		return
+	# Prefer enabling multi-currency against single party account (common for export invoices)
+	if not frappe.db.get_single_value(
+		"Accounts Settings", "allow_multi_currency_invoices_against_single_party_account"
+	):
+		frappe.db.set_single_value(
+			"Accounts Settings",
+			"allow_multi_currency_invoices_against_single_party_account",
+			1,
+		)
+
+
+def _ensure_company_accounting_defaults(company: str) -> tuple[str | None, str | None]:
+	"""Ensure Company has a leaf cost center and default income account for invoicing."""
+	if not company:
+		return None, None
+
+	cost_center = frappe.get_cached_value("Company", company, "cost_center")
+	if cost_center and not frappe.db.exists("Cost Center", cost_center):
+		cost_center = None
+	if not cost_center:
+		cost_center = frappe.db.get_value("Cost Center", {"company": company, "is_group": 0}, "name")
+	if not cost_center:
+		abbr = frappe.get_cached_value("Company", company, "abbr") or "IC"
+		parent_name = f"{company} - {abbr}"
+		if not frappe.db.exists("Cost Center", parent_name):
+			parent = frappe.get_doc(
+				{
+					"doctype": "Cost Center",
+					"cost_center_name": company,
+					"company": company,
+					"is_group": 1,
+					"parent_cost_center": None,
+				}
+			)
+			parent.flags.ignore_permissions = True
+			parent.flags.ignore_mandatory = True
+			parent.insert()
+		main_name = f"Main - {abbr}"
+		if not frappe.db.exists("Cost Center", main_name):
+			main = frappe.get_doc(
+				{
+					"doctype": "Cost Center",
+					"cost_center_name": "Main",
+					"company": company,
+					"is_group": 0,
+					"parent_cost_center": parent_name,
+				}
+			)
+			main.flags.ignore_permissions = True
+			main.insert()
+		cost_center = main_name
+		frappe.db.set_value(
+			"Company",
+			company,
+			{
+				"cost_center": cost_center,
+				"round_off_cost_center": cost_center,
+				"depreciation_cost_center": cost_center,
+			},
+			update_modified=False,
+		)
+
+	income_account = frappe.get_cached_value("Company", company, "default_income_account")
+	if income_account and not frappe.db.exists("Account", income_account):
+		income_account = None
+	if not income_account:
+		abbr = frappe.get_cached_value("Company", company, "abbr") or "IC"
+		for label in ("Service", "Sales"):
+			candidate = f"{label} - {abbr}"
+			if frappe.db.exists("Account", candidate):
+				income_account = candidate
+				break
+		if not income_account:
+			income_account = frappe.db.get_value(
+				"Account",
+				{"company": company, "root_type": "Income", "is_group": 0},
+				"name",
+			)
+		if income_account:
+			frappe.db.set_value(
+				"Company",
+				company,
+				"default_income_account",
+				income_account,
+				update_modified=False,
+			)
+
+	return cost_center, income_account
+
+
+def _ensure_quotation_items(qt):
+	"""Ensure Quotation has sellable items so invoice mapping works.
+
+	If standard items are empty, create them from ic_cost_items.
+	"""
+	qt = frappe.get_doc("Quotation", qt.name)
+	if qt.docstatus != 0:
+		return
+	has_items = any(not getattr(row, "is_alternative", 0) for row in (qt.items or []))
+	if has_items:
+		return
+
+	cost_rows = qt.get("ic_cost_items") or []
+	if not cost_rows:
+		frappe.throw(
+			_("Add Quotation Items or Cost / Commercial lines before creating an invoice")
+		)
+
+	item_code = _default_service_item(qt.company)
+	changed = False
+	for row in cost_rows:
+		amount = float(row.amount or 0)
+		if amount <= 0:
+			continue
+		label = row.particulars or row.description or row.cost_component or "Service Charges"
+		qt.append(
+			"items",
+			{
+				"item_code": item_code,
+				"item_name": label[:140],
+				"description": label,
+				"qty": 1,
+				"rate": amount,
+				"uom": frappe.db.get_value("Item", item_code, "stock_uom") or "Nos",
+			},
+		)
+		changed = True
+
+	if not changed:
+		frappe.throw(_("No billable commercial amounts found on this quotation"))
+
+	qt.save(ignore_permissions=True)
+
+
+def _default_service_item(company: str | None = None) -> str:
+	for code in ("CONSULTING-SVC", "TESTING-SVC", "SERVICES"):
+		if frappe.db.exists("Item", code):
+			return code
+	name = frappe.db.get_value("Item", {"is_sales_item": 1, "disabled": 0}, "name")
+	if name:
+		return name
+	group = (
+		"Services"
+		if frappe.db.exists("Item Group", "Services")
+		else frappe.db.get_value("Item Group", {"is_group": 0}, "name")
+		or "All Item Groups"
+	)
+	doc = frappe.get_doc(
+		{
+			"doctype": "Item",
+			"item_code": "CONSULTING-SVC",
+			"item_name": "Consulting / Certification Service",
+			"item_group": group,
+			"stock_uom": "Nos",
+			"is_stock_item": 0,
+			"is_sales_item": 1,
+			"is_purchase_item": 0,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
 def _notify_share(doc):
 	recipients = list({doc.owner, frappe.db.get_value("User", {"role_profile_name": "IC Admin"}, "name") or "Administrator"})
 	_send_notification("Quotation Shared", doc, recipients)

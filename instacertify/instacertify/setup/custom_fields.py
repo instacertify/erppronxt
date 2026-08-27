@@ -651,6 +651,14 @@ SALES_INVOICE_FIELDS = [
 		"insert_after": "customer_name",
 	},
 	{
+		"fieldname": "ic_quotation",
+		"fieldtype": "Link",
+		"label": "Source Quotation",
+		"options": "Quotation",
+		"insert_after": "ic_qr_code",
+		"read_only": 1,
+	},
+	{
 		"fieldname": "ic_project",
 		"fieldtype": "Link",
 		"label": "Project",
