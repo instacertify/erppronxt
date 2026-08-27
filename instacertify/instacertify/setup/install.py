@@ -61,6 +61,7 @@ def after_install():
 	setup_permissions()
 	setup_gst()
 	setup_disable_pos()
+	setup_gst_returns()
 	frappe.db.commit()
 
 
@@ -150,6 +151,7 @@ def after_migrate():
 	setup_workspace()
 	setup_gst()
 	setup_disable_pos()
+	setup_gst_returns()
 	frappe.db.commit()
 
 
@@ -163,6 +165,12 @@ def setup_disable_pos():
 	from instacertify.setup.pos import disable_pos_billing
 
 	disable_pos_billing()
+
+
+def setup_gst_returns():
+	from instacertify.setup.gst_returns import ensure_gst_returns_access
+
+	ensure_gst_returns_access()
 
 
 def setup_branding():

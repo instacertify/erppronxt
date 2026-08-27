@@ -11,6 +11,9 @@ import frappe
 def ensure_workspaces():
 	_ensure_home_html_block()
 	_ensure_home_workspace()
+	from instacertify.setup.gst_returns import ensure_gst_returns_access
+
+	ensure_gst_returns_access()
 
 
 def _ensure_home_html_block():
@@ -141,6 +144,10 @@ def _ensure_home_workspace():
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
 		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
+		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
+		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 3}},
+		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 3}},
+		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 3}},
 	]
 
 	shortcuts = [
@@ -152,6 +159,10 @@ def _ensure_home_workspace():
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
 		{"label": "Document Requests", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
+		{"label": "Sales Invoice", "link_to": "Sales Invoice", "type": "DocType", "doc_view": "List"},
+		{"label": "GSTR-1", "link_to": "GSTR-1", "type": "DocType", "doc_view": ""},
+		{"label": "GSTR-3B", "link_to": "GSTR 3B Report", "type": "DocType", "doc_view": "List"},
+		{"label": "GST Settings", "link_to": "GST Settings", "type": "DocType", "doc_view": ""},
 	]
 
 	links = [
@@ -167,7 +178,14 @@ def _ensure_home_workspace():
 		{"label": "Quotation", "link_type": "DocType", "link_to": "Quotation", "type": "Link"},
 		{"label": "Quotation Templates", "link_type": "DocType", "link_to": "IC Quotation Template", "type": "Link"},
 		{"label": "New Consulting Template", "link_type": "DocType", "link_to": "IC Quotation Template", "type": "Link"},
+		{"label": "GST & Invoicing", "type": "Card Break"},
 		{"label": "Sales Invoice", "link_type": "DocType", "link_to": "Sales Invoice", "type": "Link"},
+		{"label": "Payment Entry", "link_type": "DocType", "link_to": "Payment Entry", "type": "Link"},
+		{"label": "GSTR-1 (Generate / File)", "link_type": "DocType", "link_to": "GSTR-1", "type": "Link"},
+		{"label": "GSTR-3B (Generate / File)", "link_type": "DocType", "link_to": "GSTR 3B Report", "type": "Link"},
+		{"label": "GST Return Log", "link_type": "DocType", "link_to": "GST Return Log", "type": "Link"},
+		{"label": "GST Settings", "link_type": "DocType", "link_to": "GST Settings", "type": "Link"},
+		{"label": "GSTR-3B Details", "link_type": "Report", "link_to": "GSTR-3B Details", "type": "Link", "is_query_report": 1},
 		{"label": "Projects", "type": "Card Break"},
 		{"label": "Project", "link_type": "DocType", "link_to": "Project", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
@@ -200,16 +218,27 @@ def _ensure_home_workspace():
 		{"label": "IC Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
 	]
 
-	# Filter Attendance if DocType missing (no HRMS)
+	# Filter missing DocTypes / Reports
 	safe_links = []
 	for link in links:
 		if link.get("type") == "Card Break":
 			safe_links.append(link)
 			continue
 		dt = link.get("link_to")
-		if dt and not frappe.db.exists("DocType", dt):
+		link_type = link.get("link_type") or "DocType"
+		if link_type == "Report":
+			if dt and not frappe.db.exists("Report", dt):
+				continue
+		elif dt and not frappe.db.exists("DocType", dt):
 			continue
 		safe_links.append(link)
+
+	safe_shortcuts = []
+	for s in shortcuts:
+		dt = s.get("link_to")
+		if dt and not frappe.db.exists("DocType", dt):
+			continue
+		safe_shortcuts.append(s)
 
 	payload = {
 		"doctype": "Workspace",
@@ -220,7 +249,7 @@ def _ensure_home_workspace():
 		"public": 1,
 		"is_hidden": 0,
 		"content": json.dumps(content),
-		"shortcuts": shortcuts,
+		"shortcuts": safe_shortcuts,
 		"links": safe_links,
 	}
 
@@ -231,7 +260,7 @@ def _ensure_home_workspace():
 		ws.shortcuts = []
 		ws.links = []
 		ws.custom_blocks = []
-		for s in shortcuts:
+		for s in safe_shortcuts:
 			ws.append("shortcuts", s)
 		for l in safe_links:
 			ws.append("links", l)

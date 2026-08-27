@@ -16,6 +16,16 @@ Custom Frappe app for Instacertify on ERPNext 16.33 — certification, complianc
 - Customers with country other than India default to **USD** and GST category **Overseas**.
 - Users can manually change currency (INR or any other) anytime; set **Currency Manually Set** to keep the choice when country changes.
 
+## GST returns (GSTR-1 / GSTR-3B)
+
+Instacertify Home → **GST & Invoicing** includes:
+- Sales Invoice / Payment Entry
+- **GSTR-1** (generate / upload / file)
+- **GSTR-3B** (generate JSON/Excel/PDF and mark filed)
+- GST Return Log, GST Settings, GSTR-3B Details report
+
+Also available under the **GST India** workspace from india_compliance. Portal filing needs an India Compliance API secret in GST Settings.
+
 ## POS billing
 
 POS billing is **disabled**. Use standard Sales Invoice only. The Include Payment (POS) option and all POS menu entries are removed on migrate.
