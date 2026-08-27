@@ -142,8 +142,15 @@ def after_migrate():
 	ensure_roles()
 	setup_print_formats()
 	setup_settings()
+	setup_quotation_templates()
 	setup_workspace()
 	frappe.db.commit()
+
+
+def setup_quotation_templates():
+	from instacertify.setup.quotation_templates import ensure_quotation_templates
+
+	ensure_quotation_templates()
 
 
 def create_roles():

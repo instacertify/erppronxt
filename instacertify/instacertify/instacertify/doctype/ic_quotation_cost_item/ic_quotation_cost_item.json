@@ -15,6 +15,14 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "particulars",
+   "fieldtype": "Data",
+   "label": "Particulars (Print)",
+   "in_list_view": 1,
+   "description": "Printed Particulars column. Falls back to Cost Component / Description."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "description",
    "fieldtype": "Data",
    "label": "Description",
@@ -28,6 +36,14 @@
    "in_list_view": 1,
    "reqd": 1,
    "options": "currency"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "charges_display",
+   "fieldtype": "Data",
+   "label": "Charges Display (Print)",
+   "in_list_view": 1,
+   "description": "Optional print text e.g. ₹ 25,000/- per Test Report"
   },
   {
    "doctype": "DocField",

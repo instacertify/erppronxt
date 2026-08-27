@@ -17,7 +17,7 @@ def validate_quotation(doc, method=None):
 		doc.ic_revision_number = 0
 	if doc.ic_quotation_type == "Testing" and not doc.ic_subject:
 		doc.ic_subject = "Testing"
-	_apply_testing_defaults(doc)
+	_apply_quotation_defaults(doc)
 
 
 def _calculate_test_line_totals(doc):
@@ -29,17 +29,16 @@ def _calculate_test_line_totals(doc):
 			row.per_unit_charges = float(row.testing_charges) / units
 
 
-def _apply_testing_defaults(doc):
-	if doc.ic_quotation_type != "Testing":
-		return
+def _apply_quotation_defaults(doc):
 	try:
 		settings = frappe.get_cached_doc("IC Settings")
 	except Exception:
 		return
 	if not doc.ic_payment_terms and settings.get("default_payment_terms"):
 		doc.ic_payment_terms = settings.default_payment_terms
-	if not doc.ic_sample_handling_policy and settings.get("default_sample_handling"):
-		doc.ic_sample_handling_policy = settings.default_sample_handling
+	if doc.ic_quotation_type == "Testing":
+		if not doc.ic_sample_handling_policy and settings.get("default_sample_handling"):
+			doc.ic_sample_handling_policy = settings.default_sample_handling
 	if not doc.ic_cancellation_policy and settings.get("default_cancellation_policy"):
 		doc.ic_cancellation_policy = settings.default_cancellation_policy
 	if not doc.ic_confidentiality and settings.get("default_confidentiality"):
@@ -47,6 +46,10 @@ def _apply_testing_defaults(doc):
 	if not doc.ic_force_majeure and settings.get("default_force_majeure"):
 		doc.ic_force_majeure = settings.default_force_majeure
 
+
+# Keep old name for any external callers
+def _apply_testing_defaults(doc):
+	_apply_quotation_defaults(doc)
 
 def on_submit_quotation(doc, method=None):
 	_ensure_qr(doc)
@@ -100,18 +103,38 @@ def apply_quotation_template(quotation: str, template: str):
 	qt.ic_certification_type = tmpl.certification_type
 	qt.ic_applicable_standard = tmpl.applicable_standard
 	qt.ic_estimated_timeline = tmpl.estimated_timeline
+	qt.ic_validity_days = tmpl.validity_days
+	qt.ic_about_service = tmpl.get("about_service")
+	qt.ic_standard_narrative = tmpl.get("standard_narrative")
+	qt.ic_process_steps = tmpl.get("process_steps")
+	qt.ic_validity_text = tmpl.get("validity_text")
+	qt.ic_timeline_details = tmpl.get("timeline_details")
+	qt.ic_sample_required = tmpl.get("sample_required")
+	qt.ic_documents_required = tmpl.get("documents_required")
+	qt.ic_commercials_notes = tmpl.get("commercials_notes")
 	qt.ic_scope_of_work = tmpl.scope_of_work
 	qt.ic_deliverables = tmpl.deliverables
+	qt.ic_payment_terms = tmpl.get("payment_terms")
+	qt.ic_cancellation_policy = tmpl.get("cancellation_policy")
+	qt.ic_confidentiality = tmpl.get("confidentiality")
 	qt.ic_terms_and_conditions = tmpl.terms_and_conditions
 	qt.ic_force_majeure = tmpl.force_majeure
+	qt.ic_subject = tmpl.get("subject") or qt.ic_subject
+	qt.ic_about_testing = tmpl.get("about_testing")
+	qt.ic_applicable_standards_text = tmpl.get("applicable_standards_text")
+	qt.ic_samples_note = tmpl.get("samples_note")
+	qt.ic_gst_note = tmpl.get("gst_note")
+	qt.ic_sample_handling_policy = tmpl.get("sample_handling_policy")
 	qt.set("ic_cost_items", [])
 	for row in tmpl.cost_items or []:
 		qt.append(
 			"ic_cost_items",
 			{
 				"cost_component": row.cost_component,
+				"particulars": row.get("particulars"),
 				"description": row.description,
 				"amount": row.amount,
+				"charges_display": row.get("charges_display"),
 				"payment_destination": row.payment_destination,
 				"is_passthrough": row.is_passthrough,
 			},
@@ -125,6 +148,8 @@ def apply_quotation_template(quotation: str, template: str):
 				"test_name": row.test_name,
 				"applicable_standard": row.applicable_standard,
 				"number_of_samples": row.number_of_samples,
+				"per_unit_charges": row.get("per_unit_charges"),
+				"sample_requirement": row.get("sample_requirement"),
 				"sample_type": row.sample_type,
 				"laboratory": row.laboratory,
 				"laboratory_location": row.laboratory_location,
@@ -136,6 +161,94 @@ def apply_quotation_template(quotation: str, template: str):
 	qt.save(ignore_permissions=True)
 	return qt.as_dict()
 
+
+@frappe.whitelist()
+def save_quotation_as_template(quotation: str, template_name: str | None = None, overwrite: int = 0):
+	"""Save any quotation (Service/Testing/Other) as an editable IC Quotation Template."""
+	qt = frappe.get_doc("Quotation", quotation)
+	name = (template_name or qt.ic_service_name or qt.ic_subject or qt.name or "Quotation Template").strip()
+	exists = frappe.db.exists("IC Quotation Template", name)
+	if exists and not int(overwrite or 0):
+		frappe.throw(
+			_("Template {0} already exists. Pass overwrite=1 to replace it.").format(name),
+			frappe.DuplicateEntryError,
+		)
+	if exists:
+		tmpl = frappe.get_doc("IC Quotation Template", name)
+	else:
+		tmpl = frappe.new_doc("IC Quotation Template")
+		tmpl.template_name = name
+
+	tmpl.quotation_type = qt.ic_quotation_type or "Service"
+	tmpl.is_active = 1
+	tmpl.service_name = qt.ic_service_name
+	tmpl.certification_type = qt.ic_certification_type
+	tmpl.applicable_standard = qt.ic_applicable_standard
+	tmpl.estimated_timeline = qt.ic_estimated_timeline
+	tmpl.validity_days = qt.ic_validity_days or 90
+	tmpl.about_service = qt.ic_about_service
+	tmpl.standard_narrative = qt.ic_standard_narrative
+	tmpl.process_steps = qt.ic_process_steps
+	tmpl.validity_text = qt.ic_validity_text
+	tmpl.timeline_details = qt.ic_timeline_details
+	tmpl.sample_required = qt.ic_sample_required
+	tmpl.documents_required = qt.ic_documents_required
+	tmpl.commercials_notes = qt.ic_commercials_notes
+	tmpl.scope_of_work = qt.ic_scope_of_work
+	tmpl.deliverables = qt.ic_deliverables
+	tmpl.payment_terms = qt.ic_payment_terms
+	tmpl.cancellation_policy = qt.ic_cancellation_policy
+	tmpl.confidentiality = qt.ic_confidentiality
+	tmpl.terms_and_conditions = qt.ic_terms_and_conditions
+	tmpl.force_majeure = qt.ic_force_majeure
+	tmpl.subject = qt.ic_subject
+	tmpl.about_testing = qt.ic_about_testing
+	tmpl.applicable_standards_text = qt.ic_applicable_standards_text
+	tmpl.samples_note = qt.ic_samples_note
+	tmpl.gst_note = qt.ic_gst_note
+	tmpl.sample_handling_policy = qt.ic_sample_handling_policy
+
+	tmpl.set("cost_items", [])
+	for row in qt.get("ic_cost_items") or []:
+		tmpl.append(
+			"cost_items",
+			{
+				"cost_component": row.cost_component,
+				"particulars": row.get("particulars"),
+				"description": row.description,
+				"amount": row.amount,
+				"charges_display": row.get("charges_display"),
+				"payment_destination": row.payment_destination,
+				"is_passthrough": row.is_passthrough,
+			},
+		)
+	tmpl.set("test_items", [])
+	for row in qt.get("ic_test_items") or []:
+		tmpl.append(
+			"test_items",
+			{
+				"product_name": row.product_name,
+				"test_name": row.test_name,
+				"applicable_standard": row.applicable_standard,
+				"number_of_samples": row.number_of_samples,
+				"per_unit_charges": row.get("per_unit_charges"),
+				"sample_requirement": row.get("sample_requirement"),
+				"sample_type": row.sample_type,
+				"laboratory": row.laboratory,
+				"laboratory_location": row.laboratory_location,
+				"laboratory_accreditation": row.laboratory_accreditation,
+				"testing_timeline": row.testing_timeline,
+				"testing_charges": row.testing_charges,
+			},
+		)
+
+	if exists:
+		tmpl.save(ignore_permissions=True)
+	else:
+		tmpl.insert(ignore_permissions=True)
+
+	qt.db_set("ic_quotation_template", tmpl.name, update_modified=False)
+	return {"template": tmpl.name}
 
 @frappe.whitelist()
 def share_with_customer(quotation: str):

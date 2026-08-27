@@ -44,13 +44,13 @@
    "doctype": "DocField",
    "fieldname": "section_service",
    "fieldtype": "Section Break",
-   "label": "Service / Certification"
+   "label": "Service / Consulting"
   },
   {
    "doctype": "DocField",
    "fieldname": "service_name",
    "fieldtype": "Data",
-   "label": "Service Name"
+   "label": "Service / Consultancy Title"
   },
   {
    "doctype": "DocField",
@@ -80,7 +80,61 @@
    "fieldname": "validity_days",
    "fieldtype": "Int",
    "label": "Validity (Days)",
-   "default": 30
+   "default": 90
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_consulting_narrative",
+   "fieldtype": "Section Break",
+   "label": "Consulting Narrative (Editable)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "about_service",
+   "fieldtype": "Text Editor",
+   "label": "ABOUT"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "standard_narrative",
+   "fieldtype": "Text Editor",
+   "label": "Standard Applicable (Narrative)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "process_steps",
+   "fieldtype": "Text Editor",
+   "label": "Process Steps"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "validity_text",
+   "fieldtype": "Text Editor",
+   "label": "Validity of Registration / Service"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "timeline_details",
+   "fieldtype": "Text Editor",
+   "label": "Timelines (Detailed)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_required",
+   "fieldtype": "Text Editor",
+   "label": "Sample Required"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "documents_required",
+   "fieldtype": "Text Editor",
+   "label": "Documents Required"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "commercials_notes",
+   "fieldtype": "Text Editor",
+   "label": "Commercials Notes"
   },
   {
    "doctype": "DocField",
@@ -102,6 +156,30 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_policies",
+   "fieldtype": "Section Break",
+   "label": "Policies"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "payment_terms",
+   "fieldtype": "Text Editor",
+   "label": "Payment Terms"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "cancellation_policy",
+   "fieldtype": "Text Editor",
+   "label": "Cancellation & Refund Policy"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "confidentiality",
+   "fieldtype": "Text Editor",
+   "label": "Confidentiality & Data Protection"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "terms_and_conditions",
    "fieldtype": "Text Editor",
    "label": "Terms and Conditions"
@@ -114,9 +192,53 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_testing_narrative",
+   "fieldtype": "Section Break",
+   "label": "Testing Narrative",
+   "depends_on": "eval:doc.quotation_type=='Testing' || doc.quotation_type=='Multiple Products / Multiple Services'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject",
+   "default": "Testing"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "about_testing",
+   "fieldtype": "Text Editor",
+   "label": "ABOUT (Testing)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standards_text",
+   "fieldtype": "Text Editor",
+   "label": "Applicable Standards (Narrative)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "samples_note",
+   "fieldtype": "Small Text",
+   "label": "Samples Note"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "gst_note",
+   "fieldtype": "Data",
+   "label": "GST Note"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_handling_policy",
+   "fieldtype": "Text Editor",
+   "label": "Sample Handling & Disposal Policy"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_cost",
    "fieldtype": "Section Break",
-   "label": "Default Cost Structure"
+   "label": "Default Cost / Commercials"
   },
   {
    "doctype": "DocField",

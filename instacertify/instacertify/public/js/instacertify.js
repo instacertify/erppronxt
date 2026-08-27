@@ -136,6 +136,50 @@ frappe.ui.form.on("Quotation", {
 				});
 			}, __("Instacertify"));
 
+			frm.add_custom_button(__("Save as Template"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "template_name",
+							fieldtype: "Data",
+							label: "Template Name",
+							reqd: 1,
+							default:
+								frm.doc.ic_quotation_template ||
+								frm.doc.ic_service_name ||
+								frm.doc.ic_subject ||
+								frm.doc.name,
+						},
+						{
+							fieldname: "overwrite",
+							fieldtype: "Check",
+							label: "Overwrite if exists",
+							default: 0,
+						},
+					],
+					(values) => {
+						frappe.call({
+							method: "instacertify.quotation.events.save_quotation_as_template",
+							args: {
+								quotation: frm.doc.name,
+								template_name: values.template_name,
+								overwrite: values.overwrite ? 1 : 0,
+							},
+							freeze: true,
+							callback(r) {
+								frm.reload_doc();
+								frappe.show_alert({
+									message: __("Saved template: {0}", [r.message.template]),
+									indicator: "green",
+								});
+							},
+						});
+					},
+					__("Save Quotation as Template"),
+					__("Save")
+				);
+			}, __("Instacertify"));
+
 			if (frm.doc.ic_workflow_status === "Accepted") {
 				frm.add_custom_button(__("Start Project"), () => {
 					frappe.call({
@@ -187,8 +231,12 @@ instacertify.toggle_quotation_sections = function (frm) {
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 		frm.set_df_property("ic_subject", "reqd", 1);
+	} else if (["Service", "Other"].includes(t)) {
+		frm.meta.default_print_format = "Instacertify Consulting Quotation";
+		frm.set_df_property("ic_subject", "reqd", 0);
 	} else {
 		frm.meta.default_print_format = "Instacertify Quotation";
+		frm.set_df_property("ic_subject", "reqd", 0);
 	}
 };
 

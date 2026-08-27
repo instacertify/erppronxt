@@ -539,9 +539,263 @@ TESTING_QUOTATION_HTML = """
 """
 
 
+# Matches uploaded Instacertify Labs consulting quotation template (A4)
+# Source: public/templates/consulting_quotation_template.pdf
+CONSULTING_QUOTATION_HTML = """
+{%- macro inr(amount) -%}
+{%- if (doc.currency or 'INR') == 'INR' -%}₹ {{ '{:,.0f}'.format(amount or 0) }}/-
+{%- else -%}{{ frappe.utils.fmt_money(amount or 0, currency=doc.currency) }}/-
+{%- endif -%}
+{%- endmacro -%}
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PVT LTD' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'UP74999UP2022PTC170291' -%}
+{%- set address = (s.address_line or 'PK 1 Sector 63 A Noida\\nUttar Pradesh, India - 201301').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+{%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
+{%- set quote_no = doc.ic_quote_number or doc.name -%}
+{%- set title = doc.ic_service_name or 'Consultancy' -%}
+{%- set short = (doc.ic_certification_type or title) -%}
+<style>
+  @page { size: A4; margin: 14mm 12mm 16mm 12mm; }
+  .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.5; }
+  .cq * { box-sizing: border-box; }
+  .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .cq-logo img { max-height:58px; max-width:280px; }
+  .cq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
+  .cq-co .name { color:#EC6820; font-weight:700; font-size:13px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
+  .cq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 14px; color:#111; }
+  .cq-service { text-align:center; font-size:14px; font-weight:700; margin:0 0 14px; }
+  .cq-box { border:1px solid #333; margin-bottom:0; }
+  .cq-sec { border-top:1px solid #333; }
+  .cq-sec:first-child { border-top:none; }
+  .cq-bar { background:#efefef; font-weight:700; padding:8px 12px; border-bottom:1px solid #333; font-size:11px; text-transform:uppercase; letter-spacing:0.2px; }
+  .cq-body { padding:12px 14px; }
+  .cq-body ul, .cq-body ol { margin:6px 0 0 18px; padding:0; }
+  .cq-body li { margin-bottom:4px; }
+  .cq-h { font-weight:700; margin:0 0 6px; }
+  table.cq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.cq-comm th { background:#f5f5f5; border:1px solid #555; padding:8px; text-align:left; }
+  table.cq-comm td { border:1px solid #555; padding:8px; vertical-align:top; }
+  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-weight:600; width:32%; }
+  table.cq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.cq-bank td { border:1px solid #555; padding:7px 8px; }
+  table.cq-bank td.k { width:34%; background:#f5f5f5; font-weight:600; }
+  .cq-close { margin-top:28px; page-break-inside:avoid; }
+  .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
+  .cq-sign { margin-top:8px; font-weight:700; }
+  .cq-footer-bar { background:#EC6820; color:#fff; text-align:center; padding:8px 10px; margin-top:28px; font-size:11px; }
+  .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
+  .cq-qr img { width:72px; height:72px; }
+  .cq-qr .cap { font-size:8px; color:#555; }
+  .print-format { padding:0 !important; }
+</style>
+<div class="cq">
+  <div class="cq-head">
+    <div class="cq-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div class="cq-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }}</div>
+      <div>✉ {{ email }}</div>
+      <div>{{ website }}</div>
+      <div><b>CIN : {{ cin }}</b></div>
+    </div>
+  </div>
+
+  <div class="cq-meta">
+    <div>No: {{ quote_no }}</div>
+    <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
+  </div>
+  <div class="cq-title">Quotation</div>
+  <div class="cq-service">{{ title }}</div>
+
+  <div class="cq-box">
+    <div class="cq-sec">
+      <div class="cq-bar">ABOUT {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_about_service %}{{ doc.ic_about_service }}
+        {% else %}{{ doc.ic_scope_of_work or '' }}{% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">STANDARD APPLICABLE FOR {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_standard_narrative %}
+          {{ doc.ic_standard_narrative }}
+        {% else %}
+          <p><b>Standard Applicable:</b> {{ doc.ic_applicable_standard or '' }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">Process for {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_process_steps %}{{ doc.ic_process_steps }}
+        {% else %}<p></p>{% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">Validity of {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_validity_text %}{{ doc.ic_validity_text }}
+        {% else %}<p></p>{% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">Commercials for {{ short }}</div>
+      <div class="cq-body">
+        <div class="cq-h">Commercials – {{ title }}</div>
+        {% if doc.ic_applicable_standard %}
+          <div style="margin-bottom:8px;"><b>Applicable Standard:</b> {{ doc.ic_applicable_standard }}</div>
+        {% endif %}
+        <table class="cq-comm">
+          <thead><tr><th>Particulars</th><th style="text-align:right;">Charges ({{ doc.currency or 'INR' }})</th></tr></thead>
+          <tbody>
+          {% for row in doc.ic_cost_items or [] %}
+            <tr>
+              <td>{{ row.particulars or row.description or row.cost_component }}</td>
+              <td class="amt">
+                {% if row.charges_display %}{{ row.charges_display }}
+                {% else %}{{ inr(row.amount) }}{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% if doc.ic_commercials_notes %}
+          <div style="margin-top:10px;">{{ doc.ic_commercials_notes }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">PAYMENT TERMS FOR {{ short }}</div>
+      <div class="cq-body">
+        <div class="cq-h">Payment Terms &amp; Conditions</div>
+        {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms }}
+        {% else %}
+          <ul>
+            <li>Professional Consultancy Charges shall be payable upon confirmation of the project and commencement of consultancy services.</li>
+            <li>Government Fees and Product Testing Charges shall be payable in advance.</li>
+            <li>GST @ 18% shall be applicable on Professional Consultancy Charges as per prevailing Government taxation regulations.</li>
+            <li>This quotation is valid for {{ doc.ic_validity_days or 90 }} days from the date of issuance unless otherwise specified.</li>
+          </ul>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">Timelines for {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_timeline_details %}{{ doc.ic_timeline_details }}
+        {% elif doc.ic_estimated_timeline %}
+          <p><b>Estimated Timeline:</b> {{ doc.ic_estimated_timeline }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">SAMPLE REQUIRED FOR {{ short }}</div>
+      <div class="cq-body">
+        <div class="cq-h">Sample Required</div>
+        {% if doc.ic_sample_required %}{{ doc.ic_sample_required }}
+        {% else %}
+          <p>One (01) product sample with complete accessories, packaging, technical specifications, and user manual shall be required for testing at a BIS-recognized laboratory. Additional samples, if required, shall be provided by the applicant.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">DOCUMENTS REQUIRED FOR {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_documents_required %}{{ doc.ic_documents_required }}
+        {% else %}<p></p>{% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">OUR BANKING DETAILS FOR {{ short }}</div>
+      <div class="cq-body">
+        <div class="cq-h">Bank Details for Payment</div>
+        <table class="cq-bank">
+          <tr><td class="k">Particulars</td><td><b>Details</b></td></tr>
+          <tr><td class="k">Beneficiary Name</td><td>{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
+          <tr><td class="k">Bank Name</td><td>{{ s.bank_name or 'YES BANK' }}</td></tr>
+          <tr><td class="k">Account Number</td><td>{{ s.account_number or '026485800001318' }}</td></tr>
+          <tr><td class="k">IFSC Code</td><td>{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
+          <tr><td class="k">SWIFT Code</td><td>{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
+          <tr><td class="k">GSTIN</td><td>{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
+          <tr><td class="k">Branch Address</td><td>{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
+        </table>
+        <div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">CANCELLATION &amp; REFUND POLICY FOR {{ short }}</div>
+      <div class="cq-body">
+        <div class="cq-h">Cancellation &amp; Refund Policy</div>
+        {% if doc.ic_cancellation_policy %}{{ doc.ic_cancellation_policy }}
+        {% else %}
+          Testing fees are payable in advance and are non-refundable once samples have been submitted or testing has commenced. Government fees may be refunded only if they have not been deposited with the relevant authority. Consultancy fees are charged based on the work completed and are non-refundable once services have been rendered. Any eligible refund request must be submitted to Instacertify in writing within 7 working days of payment.
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">FORCE MAJEURE FOR {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_force_majeure %}{{ doc.ic_force_majeure }}
+        {% else %}
+          Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cq-sec">
+      <div class="cq-bar">CONFIDENTIALITY &amp; DATA PROTECTION FOR {{ short }}</div>
+      <div class="cq-body">
+        {% if doc.ic_confidentiality %}{{ doc.ic_confidentiality }}
+        {% else %}
+          Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="cq-close">
+    <div class="cq-qr">
+      {% if doc.ic_qr_code %}
+        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+      {% else %}
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+      {% endif %}
+      <div class="cap">Scan to verify</div>
+    </div>
+    <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
+    <p><b>Thanking You,</b></p>
+    <div class="cq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
+    <div class="cq-sign">For Instacertify Labs Private Limited</div>
+  </div>
+  <div style="clear:both;"></div>
+  <div class="cq-footer-bar">{{ website }}</div>
+</div>
+"""
+
+
 def ensure_print_formats():
 	formats = [
 		("Instacertify Quotation", "Quotation", QUOTATION_HTML),
+		("Instacertify Consulting Quotation", "Quotation", CONSULTING_QUOTATION_HTML),
 		("Instacertify Testing Quotation", "Quotation", TESTING_QUOTATION_HTML),
 		("Instacertify Sales Invoice", "Sales Invoice", INVOICE_HTML),
 		("Instacertify Sample Label", "IC Sample Tracking", SAMPLE_HTML),
