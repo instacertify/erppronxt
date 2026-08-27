@@ -335,3 +335,18 @@ frappe.ui.form.on("IC Laboratory Test Scope", {
 		frm.refresh_field("test_scopes");
 	},
 });
+
+// Also inject when workspace page is shown via frappe.pages
+$(document).ready(function () {
+	const tryInject = () => {
+		const route = frappe.get_route_str ? frappe.get_route_str() : (frappe.get_route() || []).join("/");
+		if ((route || "").includes("Instacertify")) {
+			const $page = $(".workspace-body, .workspace-sidebar + .layout-main-section, .page-body, .workspace-page").first();
+			if ($page.length && !$page.find(".ic-greeting").length) {
+				instacertify.render_home_banner($page);
+			}
+		}
+	};
+	setTimeout(tryInject, 800);
+	setTimeout(tryInject, 2000);
+});
