@@ -1,4 +1,6 @@
 /* Instacertify branding + light hue desk theme */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
 :root,
 [data-theme="light"],
 html {
@@ -10,6 +12,7 @@ html {
   --ic-surface-2: #dceaf2;
   --ic-mist: #cfe0eb;
   --ic-radius: 14px;
+  --ic-font: "Poppins", "Segoe UI", sans-serif;
 
   /* Soft cool-teal light hue (clearly tinted, not flat white) */
   --bg-color: #e6f0f6;
@@ -25,6 +28,57 @@ html {
   --surface-white: #ffffff;
   --border-color: #c5d8e6;
   --navbar-bg: rgba(230, 240, 246, 0.94);
+  --text-color: #1a3340;
+  --heading-color: #034a68;
+  --font-stack: "Poppins", "Segoe UI", sans-serif;
+}
+
+html,
+body,
+.desk-page,
+.page-container,
+.form-layout,
+.list-row,
+.modal,
+.btn,
+input,
+textarea,
+select,
+.awesomplete,
+.navbar,
+.sidebar,
+.workspace-sidebar {
+  font-family: var(--ic-font) !important;
+}
+
+h1, h2, h3, h4, h5, .page-title .title-text, .ic-crm-tracker-title, .ic-greeting h2 {
+  font-family: var(--ic-font) !important;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+/* Subtle premium selection / focus */
+.form-control:focus,
+input:focus,
+textarea:focus,
+select:focus,
+.awesomplete > ul > li[aria-selected="true"],
+.awesomplete > ul > li:hover,
+.list-row:hover,
+.list-row.list-row-highlight,
+.grid-row:hover .data-row {
+  border-color: var(--ic-primary) !important;
+  box-shadow: 0 0 0 2px rgba(3, 74, 104, 0.12) !important;
+}
+
+.grid-row > .data-row.highlight,
+.grid-body .data-row:hover {
+  background: linear-gradient(90deg, var(--ic-primary-soft), #fff) !important;
+}
+
+.checkbox input:checked,
+input[type="checkbox"]:checked {
+  accent-color: var(--ic-accent);
 }
 
 /* Force light atmosphere on desk chrome */
