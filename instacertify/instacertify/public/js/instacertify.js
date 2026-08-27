@@ -273,10 +273,44 @@ frappe.ui.form.on("Quotation", {
 						args: { quotation: frm.doc.name },
 						freeze: true,
 						callback(r) {
+							const created = (r.message && r.message.testing_requests) || [];
+							if (created.length) {
+								frappe.show_alert({
+									message: __("Created {0} testing request(s) from lab library lines", [
+										created.length,
+									]),
+									indicator: "green",
+								});
+							}
 							frappe.set_route("Form", "Project", r.message.project);
 						},
 					});
 				}, __("Instacertify"));
+
+				if ((frm.doc.ic_test_items || []).length) {
+					frm.add_custom_button(__("Create Testing Requests"), () => {
+						frappe.call({
+							method: "instacertify.testing.events.create_testing_requests_from_quotation",
+							args: { quotation: frm.doc.name },
+							freeze: true,
+							callback(r) {
+								const created = (r.message && r.message.created) || [];
+								const existing = (r.message && r.message.existing) || [];
+								frappe.msgprint({
+									title: __("Testing Requests"),
+									message: __(
+										"Created: {0}<br>Already linked: {1}",
+										[created.join(", ") || "—", existing.join(", ") || "—"]
+									),
+									indicator: "green",
+								});
+								if (created[0]) {
+									frappe.set_route("Form", "IC Testing Request", created[0]);
+								}
+							},
+						});
+					}, __("Instacertify"));
+				}
 
 				// Make Invoice the primary action after acceptance
 				frm.page.set_inner_btn_group_as_primary(__("Instacertify"));
@@ -285,6 +319,8 @@ frappe.ui.form.on("Quotation", {
 			// Hide Sales Order — Instacertify bills from Quotation directly
 			instacertify.hide_sales_order_button(frm);
 		}
+
+		instacertify.setup_quotation_lab_queries(frm);
 
 		if (frm.doc.ic_quotation_type) {
 			instacertify.toggle_quotation_sections(frm);
@@ -298,13 +334,10 @@ frappe.ui.form.on("Quotation", {
 		if (frm.doc.ic_quotation_template) {
 			frm.set_value("ic_quotation_template", "");
 		}
-		if (frm.is_new() && !frm.doc.ic_quotation_type) return;
 	},
 
 	ic_quotation_template(frm) {
-		if (!frm.doc.ic_quotation_template || (frm.is_new() && !frm.doc.name)) {
-			if (!frm.doc.ic_quotation_template) return;
-		}
+		if (!frm.doc.ic_quotation_template) return;
 		if (!frm.doc.name) {
 			frappe.show_alert(__("Save the quotation first to apply a template"));
 			return;
@@ -319,6 +352,12 @@ frappe.ui.form.on("Quotation", {
 		});
 	},
 });
+
+instacertify.setup_quotation_lab_queries = function (frm) {
+	frm.set_query("laboratory", "ic_test_items", () => ({
+		filters: { status: "Active" },
+	}));
+};
 
 instacertify.setup_quotation_template_filter = function (frm) {
 	frm.set_query("ic_quotation_template", () => {
@@ -365,6 +404,34 @@ instacertify.toggle_quotation_sections = function (frm) {
 };
 
 frappe.ui.form.on("IC Quotation Test Item", {
+	form_render(frm, cdt, cdn) {
+		instacertify.load_lab_scope_options(frm, cdt, cdn);
+	},
+	laboratory(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		frappe.model.set_value(cdt, cdn, "lab_test_scope", "");
+		frappe.model.set_value(cdt, cdn, "lab_scope_row", "");
+		frappe.model.set_value(cdt, cdn, "suggested_selling_price", 0);
+		frappe.model.set_value(cdt, cdn, "laboratory_accreditation", "");
+		if (!row.laboratory) {
+			instacertify.set_lab_scope_autocomplete(frm, []);
+			return;
+		}
+		frappe.call({
+			method: "instacertify.laboratory.api.get_laboratory_summary",
+			args: { laboratory: row.laboratory },
+			callback(r) {
+				const d = r.message || {};
+				if (d.accreditation_summary) {
+					frappe.model.set_value(cdt, cdn, "laboratory_accreditation", d.accreditation_summary);
+				}
+			},
+		});
+		instacertify.load_lab_scope_options(frm, cdt, cdn);
+	},
+	lab_test_scope(frm, cdt, cdn) {
+		instacertify.apply_lab_test_scope(frm, cdt, cdn);
+	},
 	number_of_samples(frm, cdt, cdn) {
 		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
@@ -376,9 +443,73 @@ frappe.ui.form.on("IC Quotation Test Item", {
 instacertify.recalc_test_row = function (frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
 	const units = row.number_of_samples || 1;
-	if (row.per_unit_charges) {
+	if (row.per_unit_charges != null && row.per_unit_charges !== "") {
 		frappe.model.set_value(cdt, cdn, "testing_charges", flt(row.per_unit_charges) * units);
 	}
+};
+
+instacertify.set_lab_scope_autocomplete = function (frm, options) {
+	const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+	if (!grid) return;
+	const opt_str = (options || []).map((o) => o.value || o).join("\n");
+	grid.update_docfield_property("lab_test_scope", "options", opt_str);
+};
+
+instacertify.load_lab_scope_options = function (frm, cdt, cdn) {
+	const row = locals[cdt][cdn];
+	if (!row || !row.laboratory) {
+		instacertify.set_lab_scope_autocomplete(frm, []);
+		return;
+	}
+	frappe.call({
+		method: "instacertify.laboratory.api.get_lab_test_scope_options",
+		args: { laboratory: row.laboratory },
+		callback(r) {
+			const opts = r.message || [];
+			frm._ic_lab_scopes = frm._ic_lab_scopes || {};
+			frm._ic_lab_scopes[row.laboratory] = opts;
+			instacertify.set_lab_scope_autocomplete(frm, opts);
+		},
+	});
+};
+
+instacertify.apply_lab_test_scope = function (frm, cdt, cdn) {
+	const row = locals[cdt][cdn];
+	if (!row.laboratory || !row.lab_test_scope) return;
+	frappe.call({
+		method: "instacertify.laboratory.api.get_lab_test_scope_details",
+		args: {
+			laboratory: row.laboratory,
+			scope_key: row.lab_test_scope,
+			scope_row: row.lab_scope_row,
+		},
+		callback(r) {
+			const s = r.message;
+			if (!s) {
+				frappe.show_alert({
+					message: __("No matching test in this lab library. Check Lab Test / Pricing."),
+					indicator: "orange",
+				});
+				return;
+			}
+			frappe.model.set_value(cdt, cdn, "lab_scope_row", s.name);
+			frappe.model.set_value(cdt, cdn, "test_name", s.test_name);
+			if (s.applicable_standard) {
+				frappe.model.set_value(cdt, cdn, "applicable_standard", s.applicable_standard);
+			}
+			frappe.model.set_value(cdt, cdn, "suggested_selling_price", s.selling_price);
+			// Prefill editable selling price from library (user may change)
+			frappe.model.set_value(cdt, cdn, "per_unit_charges", s.selling_price).then(() => {
+				instacertify.recalc_test_row(frm, cdt, cdn);
+			});
+			if (s.currency) {
+				frappe.model.set_value(cdt, cdn, "currency", s.currency);
+			}
+			if (s.label && row.lab_test_scope !== s.label) {
+				frappe.model.set_value(cdt, cdn, "lab_test_scope", s.label);
+			}
+		},
+	});
 };
 
 // Prompt for quotation type on new
@@ -680,6 +811,10 @@ frappe.ui.form.on("Project", {
 
 frappe.ui.form.on("IC Testing Request", {
 	refresh(frm) {
+		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
+		if (frm.doc.laboratory) {
+			instacertify.load_testing_request_scope_options(frm);
+		}
 		if (!frm.is_new() && frm.doc.test_report) {
 			frm.add_custom_button(__("Share with Customer"), () => {
 				frappe.call({
@@ -693,7 +828,52 @@ frappe.ui.form.on("IC Testing Request", {
 			}, __("Instacertify"));
 		}
 	},
+	laboratory(frm) {
+		frm.set_value("lab_test_scope", "");
+		frm.set_value("lab_scope_row", "");
+		frm.set_value("suggested_selling_price", 0);
+		instacertify.load_testing_request_scope_options(frm);
+	},
+	lab_test_scope(frm) {
+		if (!frm.doc.laboratory || !frm.doc.lab_test_scope) return;
+		frappe.call({
+			method: "instacertify.laboratory.api.get_lab_test_scope_details",
+			args: {
+				laboratory: frm.doc.laboratory,
+				scope_key: frm.doc.lab_test_scope,
+				scope_row: frm.doc.lab_scope_row,
+			},
+			callback(r) {
+				const s = r.message;
+				if (!s) return;
+				frm.set_value("lab_scope_row", s.name);
+				frm.set_value("test_name", s.test_name);
+				if (s.applicable_standard) {
+					frm.set_value("applicable_standard", s.applicable_standard);
+				}
+				frm.set_value("suggested_selling_price", s.selling_price);
+				if (s.label && frm.doc.lab_test_scope !== s.label) {
+					frm.set_value("lab_test_scope", s.label);
+				}
+			},
+		});
+	},
 });
+
+instacertify.load_testing_request_scope_options = function (frm) {
+	if (!frm.doc.laboratory) {
+		frm.set_df_property("lab_test_scope", "options", "");
+		return;
+	}
+	frappe.call({
+		method: "instacertify.laboratory.api.get_lab_test_scope_options",
+		args: { laboratory: frm.doc.laboratory },
+		callback(r) {
+			const opt_str = (r.message || []).map((o) => o.value).join("\n");
+			frm.set_df_property("lab_test_scope", "options", opt_str);
+		},
+	});
+};
 
 frappe.ui.form.on("IC Document Request", {
 	refresh(frm) {
@@ -722,7 +902,27 @@ frappe.ui.form.on("IC Document Request", {
 
 frappe.ui.form.on("IC Laboratory", {
 	refresh(frm) {
-		// Margin calculation hint for admin
+		if (frm.is_new()) {
+			frm.set_intro(
+				__(
+					"Register the lab, attach accreditation documents, and add each accredited test with Buying Price and Suggested Selling Price. These prices appear as a dropdown on Testing quotations."
+				),
+				"blue"
+			);
+		} else {
+			frm.set_intro(
+				__(
+					"Laboratory Library — Active labs and their scope pricing are available when assigning tests on Quotations and Testing Requests."
+				),
+				"blue"
+			);
+		}
+		frm.add_custom_button(__("New Testing Quotation"), () => {
+			frappe.new_doc("Quotation", {
+				ic_quotation_type: "Testing",
+				quotation_to: "Customer",
+			});
+		}, __("Instacertify"));
 	},
 });
 

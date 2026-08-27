@@ -6,6 +6,7 @@ from __future__ import annotations
 import secrets
 
 import frappe
+from frappe import _
 from frappe.model.naming import make_autoname
 from frappe.utils import now_datetime
 
@@ -124,3 +125,62 @@ def mark_sample_received(sample: str, quantity=None, condition=None, description
 		except Exception:
 			pass
 	return doc.as_dict()
+
+
+@frappe.whitelist()
+def create_testing_requests_from_quotation(quotation: str, project: str | None = None):
+	"""Create IC Testing Request rows from Testing Quotation lab/test lines.
+
+	Uses Laboratory Library assignments so ops can execute per lab scope.
+	"""
+	qt = frappe.get_doc("Quotation", quotation)
+	if qt.quotation_to != "Customer" or not qt.party_name:
+		frappe.throw(_("Quotation must be for a Customer"))
+
+	if not project:
+		project = frappe.db.get_value("Project", {"ic_quotation": qt.name}, "name")
+
+	created = []
+	existing = []
+	for row in qt.get("ic_test_items") or []:
+		if not row.test_name:
+			continue
+		filters = {
+			"quotation": qt.name,
+			"test_name": row.test_name,
+			"customer": qt.party_name,
+		}
+		if row.laboratory:
+			filters["laboratory"] = row.laboratory
+		found = frappe.db.exists("IC Testing Request", filters)
+		if found:
+			existing.append(found)
+			continue
+
+		title = f"{row.test_name} – {row.product_name or qt.party_name}"
+		doc = frappe.get_doc(
+			{
+				"doctype": "IC Testing Request",
+				"title": title[:140],
+				"customer": qt.party_name,
+				"project": project,
+				"quotation": qt.name,
+				"product": row.product_name or qt.ic_service_name or "Product",
+				"test_name": row.test_name,
+				"applicable_standard": row.applicable_standard,
+				"number_of_samples": row.number_of_samples or 1,
+				"laboratory": row.laboratory,
+				"lab_test_scope": row.get("lab_test_scope"),
+				"lab_scope_row": row.get("lab_scope_row"),
+				"suggested_selling_price": row.get("suggested_selling_price")
+				or row.get("per_unit_charges"),
+				"testing_timeline": row.testing_timeline,
+				"assigned_person": qt.get("ic_assigned_salesperson") or qt.owner,
+				"status": "Testing Request Created",
+				"priority": "Medium",
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		created.append(doc.name)
+
+	return {"created": created, "existing": existing, "project": project}

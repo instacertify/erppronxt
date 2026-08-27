@@ -29,17 +29,18 @@
    "doctype": "DocField",
    "fieldname": "purchase_price",
    "fieldtype": "Currency",
-   "label": "Purchase Price",
+   "label": "Buying Price",
    "in_list_view": 1,
    "permlevel": 1,
-   "description": "Admin only"
+   "description": "Lab buy / cost price — Admin only. Not shown on customer quotations."
   },
   {
    "doctype": "DocField",
    "fieldname": "selling_price",
    "fieldtype": "Currency",
-   "label": "Selling Price",
-   "in_list_view": 1
+   "label": "Suggested Selling Price",
+   "in_list_view": 1,
+   "description": "Default selling price offered on Testing quotations (editable per quote)"
   },
   {
    "doctype": "DocField",
@@ -49,7 +50,7 @@
    "in_list_view": 1,
    "permlevel": 1,
    "read_only": 1,
-   "description": "Admin only"
+   "description": "Suggested Selling − Buying (Admin only)"
   },
   {
    "doctype": "DocField",

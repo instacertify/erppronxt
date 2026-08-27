@@ -13,17 +13,42 @@
   },
   {
    "doctype": "DocField",
-   "fieldname": "applicable_standard",
-   "fieldtype": "Data",
-   "label": "Applicable Standard",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Laboratory",
    "in_list_view": 1,
-   "reqd": 1
+   "description": "Pick a registered lab from the Laboratory Library"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_test_scope",
+   "fieldtype": "Autocomplete",
+   "label": "Lab Test / Pricing",
+   "in_list_view": 1,
+   "description": "Accreditation scope tests with suggested selling price from the lab library"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_scope_row",
+   "fieldtype": "Data",
+   "label": "Lab Scope Row",
+   "read_only": 1,
+   "hidden": 1
   },
   {
    "doctype": "DocField",
    "fieldname": "test_name",
    "fieldtype": "Data",
    "label": "Testing",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Applicable Standard",
    "in_list_view": 1,
    "reqd": 1
   },
@@ -37,11 +62,21 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "suggested_selling_price",
+   "fieldtype": "Currency",
+   "label": "Suggested Selling",
+   "options": "currency",
+   "read_only": 1,
+   "description": "From lab library — copy into Per Unit Charges (editable)"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "per_unit_charges",
    "fieldtype": "Currency",
-   "label": "Per Unit Charges",
+   "label": "Selling Price / Unit",
    "in_list_view": 1,
-   "options": "currency"
+   "options": "currency",
+   "description": "Editable selling price used on this quotation"
   },
   {
    "doctype": "DocField",
@@ -66,23 +101,18 @@
   },
   {
    "doctype": "DocField",
-   "fieldname": "laboratory",
-   "fieldtype": "Link",
-   "options": "IC Laboratory",
-   "label": "Laboratory"
-  },
-  {
-   "doctype": "DocField",
    "fieldname": "laboratory_location",
    "fieldtype": "Data",
    "label": "Laboratory Location",
-   "fetch_from": "laboratory.location"
+   "fetch_from": "laboratory.location",
+   "read_only": 1
   },
   {
    "doctype": "DocField",
    "fieldname": "laboratory_accreditation",
-   "fieldtype": "Data",
-   "label": "Laboratory Accreditation"
+   "fieldtype": "Small Text",
+   "label": "Laboratory Accreditation",
+   "read_only": 1
   },
   {
    "doctype": "DocField",

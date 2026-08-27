@@ -162,13 +162,14 @@
    "doctype": "DocField",
    "fieldname": "section_tests",
    "fieldtype": "Section Break",
-   "label": "Available Tests & Scope"
+   "label": "Accreditation Scope & Pricing Library",
+   "description": "Register each accredited test with buying price and suggested selling. These drive the Testing Quotation dropdown."
   },
   {
    "doctype": "DocField",
    "fieldname": "test_scopes",
    "fieldtype": "Table",
-   "label": "Test Scopes",
+   "label": "Scope of Accreditation & Pricing",
    "options": "IC Laboratory Test Scope"
   },
   {

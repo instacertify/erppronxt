@@ -395,7 +395,22 @@ def start_project_from_quotation(quotation: str):
 		).insert(ignore_permissions=True)
 
 	_notify_project_assigned(project)
-	return {"project": project.name}
+
+	# Auto-create testing requests from lab-scoped quotation lines
+	testing_result = {"created": [], "existing": []}
+	if qt.get("ic_test_items"):
+		try:
+			from instacertify.testing.events import create_testing_requests_from_quotation
+
+			testing_result = create_testing_requests_from_quotation(qt.name, project.name)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Create testing requests from quotation")
+
+	return {
+		"project": project.name,
+		"testing_requests": testing_result.get("created") or [],
+		"existing_testing_requests": testing_result.get("existing") or [],
+	}
 
 
 @frappe.whitelist()

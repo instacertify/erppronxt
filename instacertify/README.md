@@ -30,6 +30,19 @@ Also available under the **GST India** workspace from india_compliance. Portal f
 
 POS billing is **disabled**. Use standard Sales Invoice only. The Include Payment (POS) option and all POS menu entries are removed on migrate.
 
+## Laboratory Library (Testing pricing)
+
+1. **Instacertify Home → Laboratory Library → Register / Manage Labs** (`IC Laboratory`)
+2. Save accreditation details/scope PDFs and add **Scope of Accreditation & Pricing** rows:
+   - Test name + standard
+   - **Buying Price** (admin)
+   - **Suggested Selling Price** (used on quotations)
+3. On a **Testing** Quotation → Testing Items:
+   - Choose **Laboratory** (Active labs)
+   - Pick **Lab Test / Pricing** from the dropdown
+   - **Selling Price / Unit** is prefilled from the library and remains editable
+4. After Accept → **Start Project** (or **Create Testing Requests**) assigns lab-scoped testing projects.
+
 ## Customer Related Data
 
 Open any **Customer** → **Related Data** tab to view that customer’s:
