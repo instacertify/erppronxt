@@ -180,12 +180,21 @@ CUSTOMER_FIELDS = [
 		"label": "Preferred Currency",
 		"options": "Currency",
 		"insert_after": "ic_company_size",
+		"description": "Auto USD when Country is not India; change anytime to INR or another currency.",
+	},
+	{
+		"fieldname": "ic_currency_manual",
+		"fieldtype": "Check",
+		"label": "Currency Manually Set",
+		"insert_after": "ic_primary_currency",
+		"description": "When checked, country changes will not overwrite billing currency.",
+		"default": "0",
 	},
 	{
 		"fieldname": "ic_section_history",
 		"fieldtype": "Section Break",
 		"label": "Customer History Overview",
-		"insert_after": "ic_primary_currency",
+		"insert_after": "ic_currency_manual",
 	},
 	{
 		"fieldname": "ic_history_html",
@@ -196,6 +205,22 @@ CUSTOMER_FIELDS = [
 ]
 
 QUOTATION_FIELDS = [
+	{
+		"fieldname": "ic_currency_manual",
+		"fieldtype": "Check",
+		"label": "Currency Manually Set",
+		"insert_after": "currency",
+		"description": "Stops auto USD/INR switch from customer country. Clear to re-enable auto billing currency.",
+		"default": "0",
+	},
+	{
+		"fieldname": "ic_tax_manual",
+		"fieldtype": "Check",
+		"label": "Tax Template Manually Set",
+		"insert_after": "taxes_and_charges",
+		"description": "Stops auto GST In-state / Out-state / Export tax template selection.",
+		"default": "0",
+	},
 	{
 		"fieldname": "ic_section_type",
 		"fieldtype": "Section Break",
@@ -465,7 +490,7 @@ QUOTATION_FIELDS = [
 		"fieldname": "ic_gst_note",
 		"fieldtype": "Data",
 		"label": "GST Note",
-		"default": "Note: GST @ 18% shall be charged additionally on the above testing charges.",
+		"default": "Note: GST @ 18% (CGST+SGST / IGST as applicable under Indian GST) shall be charged additionally.",
 		"insert_after": "ic_samples_note",
 		"depends_on": "eval:doc.ic_quotation_type=='Testing'",
 	},
@@ -657,6 +682,22 @@ SALES_INVOICE_FIELDS = [
 		"options": "Quotation",
 		"insert_after": "ic_qr_code",
 		"read_only": 1,
+	},
+	{
+		"fieldname": "ic_currency_manual",
+		"fieldtype": "Check",
+		"label": "Currency Manually Set",
+		"insert_after": "currency",
+		"description": "Stops auto USD/INR switch from customer country. Clear to re-enable auto billing currency.",
+		"default": "0",
+	},
+	{
+		"fieldname": "ic_tax_manual",
+		"fieldtype": "Check",
+		"label": "Tax Template Manually Set",
+		"insert_after": "taxes_and_charges",
+		"description": "Stops auto GST In-state / Out-state / Export tax template selection.",
+		"default": "0",
 	},
 	{
 		"fieldname": "ic_project",

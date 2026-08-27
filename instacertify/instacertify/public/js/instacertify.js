@@ -522,6 +522,130 @@ frappe.ui.form.on("IC Laboratory Test Scope", {
 	},
 });
 
+// --- Indian GST billing currency: India → INR, other country → USD (overridable) ---
+instacertify.apply_billing_currency = function (frm, customer, opts) {
+	opts = opts || {};
+	if (!customer) return;
+	if (frm.doc.ic_currency_manual && !opts.force) return;
+
+	frappe.call({
+		method: "instacertify.accounting.billing.get_billing_defaults",
+		args: { customer },
+		callback(r) {
+			const d = r.message || {};
+			if (!d.currency) return;
+			const currencyField = opts.currency_field || "currency";
+			if (frm.doc[currencyField] !== d.currency) {
+				instacertify._auto_setting_currency = true;
+				frm.set_value(currencyField, d.currency).then(() => {
+					instacertify._auto_setting_currency = false;
+				});
+				frappe.show_alert({
+					message: d.is_export
+						? __("Export customer ({0}) — billing currency set to {1}. Change anytime if needed.", [
+								d.country || __("Overseas"),
+								d.currency,
+							])
+						: __("India customer — billing currency set to {0}.", [d.currency]),
+					indicator: "blue",
+				});
+			}
+			if (opts.on_defaults) opts.on_defaults(d);
+		},
+	});
+};
+
+frappe.ui.form.on("Customer", {
+	ic_country(frm) {
+		if (!frm.doc.ic_country) return;
+		if (frm.doc.ic_currency_manual) return;
+		const isIndia = frm.doc.ic_country === "India";
+		const currency = isIndia ? "INR" : "USD";
+		instacertify._auto_setting_currency = true;
+		frm.set_value("default_currency", currency);
+		frm.set_value("ic_primary_currency", currency).then(() => {
+			instacertify._auto_setting_currency = false;
+		});
+		if (frm.doc.gst_category !== undefined) {
+			if (!isIndia) {
+				frm.set_value("gst_category", "Overseas");
+			} else if (frm.doc.gst_category === "Overseas") {
+				frm.set_value(
+					"gst_category",
+					frm.doc.gstin || frm.doc.ic_gst_number ? "Registered Regular" : "Unregistered"
+				);
+			}
+		}
+		frappe.show_alert({
+			message: isIndia
+				? __("Country India — default billing currency INR (GST as per Indian rules).")
+				: __(
+						"Country outside India — default billing currency USD. You can change to INR or another currency."
+					),
+			indicator: "blue",
+		});
+	},
+	default_currency(frm) {
+		if (instacertify._auto_setting_currency) return;
+		if (frm.doc.default_currency) {
+			frm.set_value("ic_currency_manual", 1);
+		}
+	},
+	ic_primary_currency(frm) {
+		if (instacertify._auto_setting_currency) return;
+		if (frm.doc.ic_primary_currency && frm.doc.default_currency !== frm.doc.ic_primary_currency) {
+			frm.set_value("default_currency", frm.doc.ic_primary_currency);
+		}
+	},
+	ic_gst_number(frm) {
+		if (frm.doc.ic_gst_number && frm.fields_dict.gstin) {
+			frm.set_value("gstin", (frm.doc.ic_gst_number || "").toUpperCase());
+		}
+	},
+	gstin(frm) {
+		if (frm.doc.gstin && frm.fields_dict.ic_gst_number) {
+			frm.set_value("ic_gst_number", (frm.doc.gstin || "").toUpperCase());
+		}
+	},
+});
+
+frappe.ui.form.on("Quotation", {
+	party_name(frm) {
+		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) return;
+		instacertify.apply_billing_currency(frm, frm.doc.party_name);
+	},
+	currency(frm) {
+		if (!frm.doc.currency || instacertify._auto_setting_currency) return;
+		if (!frm.doc.ic_currency_manual) {
+			frm.set_value("ic_currency_manual", 1);
+		}
+	},
+	taxes_and_charges(frm) {
+		if (instacertify._auto_setting_currency) return;
+		if (frm.doc.taxes_and_charges && !frm.doc.ic_tax_manual) {
+			frm.set_value("ic_tax_manual", 1);
+		}
+	},
+});
+
+frappe.ui.form.on("Sales Invoice", {
+	customer(frm) {
+		if (!frm.doc.customer) return;
+		instacertify.apply_billing_currency(frm, frm.doc.customer);
+	},
+	currency(frm) {
+		if (!frm.doc.currency || instacertify._auto_setting_currency) return;
+		if (!frm.doc.ic_currency_manual) {
+			frm.set_value("ic_currency_manual", 1);
+		}
+	},
+	taxes_and_charges(frm) {
+		if (frm.doc.taxes_and_charges && !frm.doc.ic_tax_manual) {
+			frm.set_value("ic_tax_manual", 1);
+		}
+	},
+});
+
 // Also inject when workspace page is shown via frappe.pages
 $(document).ready(function () {
 	const tryInject = () => {

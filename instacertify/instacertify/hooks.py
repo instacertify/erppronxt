@@ -7,7 +7,7 @@ app_license = "mit"
 app_version = "1.0.0"
 
 # Apps
-required_apps = ["erpnext"]
+required_apps = ["erpnext", "india_compliance"]
 
 # Includes in <head>
 app_include_css = "/assets/instacertify/css/instacertify.css"
@@ -27,6 +27,12 @@ doc_events = {
 		"validate": "instacertify.quotation.events.validate_quotation",
 		"on_update_after_submit": "instacertify.quotation.events.on_update_after_submit",
 		"on_submit": "instacertify.quotation.events.on_submit_quotation",
+	},
+	"Sales Invoice": {
+		"validate": "instacertify.accounting.events.validate_sales_invoice",
+	},
+	"Customer": {
+		"validate": "instacertify.accounting.events.validate_customer",
 	},
 	"Project": {
 		"validate": "instacertify.project.events.validate_project",

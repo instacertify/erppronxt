@@ -18,6 +18,10 @@ def validate_quotation(doc, method=None):
 	if doc.ic_quotation_type == "Testing" and not doc.ic_subject:
 		doc.ic_subject = "Testing"
 	_apply_quotation_defaults(doc)
+	if doc.quotation_to == "Customer" and doc.party_name:
+		from instacertify.accounting.billing import apply_transaction_billing_defaults
+
+		apply_transaction_billing_defaults(doc, customer_field="party_name")
 
 
 def _calculate_test_line_totals(doc):

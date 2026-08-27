@@ -59,6 +59,7 @@ def after_install():
 	setup_dashboard_charts()
 	setup_number_cards()
 	setup_permissions()
+	setup_gst()
 	frappe.db.commit()
 
 
@@ -146,7 +147,14 @@ def after_migrate():
 	setup_branding()
 	setup_quotation_templates()
 	setup_workspace()
+	setup_gst()
 	frappe.db.commit()
+
+
+def setup_gst():
+	from instacertify.setup.gst import ensure_gst_setup
+
+	ensure_gst_setup()
 
 
 def setup_branding():
