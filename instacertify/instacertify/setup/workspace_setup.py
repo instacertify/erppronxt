@@ -11,6 +11,7 @@ import frappe
 def ensure_workspaces():
 	_ensure_home_html_block()
 	_ensure_home_workspace()
+	ensure_hrms_expenses_workspace()
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
@@ -30,7 +31,7 @@ def _ensure_home_html_block():
     <div class="ic-explore-head">
       <div>
         <div class="ic-explore-title">Explore Instacertify</div>
-        <div class="ic-explore-sub" id="ic-explore-hint">Relevant options for you — tap any card to open</div>
+        <div class="ic-explore-sub" id="ic-explore-hint">Organised in tiles — tap any square to open</div>
       </div>
     </div>
     <div class="ic-explore-grid" id="ic-explore-grid"></div>
@@ -242,7 +243,9 @@ def _ensure_home_html_block():
           {fieldname:"expense_date", fieldtype:"Date", label:"Expense Date", reqd:1, default: frappe.datetime.get_today()},
           {fieldname:"amount", fieldtype:"Currency", label:"Amount", reqd:1},
           {fieldname:"description", fieldtype:"Small Text", label:"Description", reqd:1},
-          {fieldname:"receipt", fieldtype:"Attach", label:"Receipt / Bill"},
+          {fieldname:"receipt", fieldtype:"Attach", label:"Receipt / Bill",
+            description:"Select from My Device or File Library (internal drive).",
+            options:{allow_web_link:false, allow_google_drive:false}},
         ],
         primary_action_label: "Save Expense",
         primary_action(values) {
@@ -696,11 +699,38 @@ _SHADOW_THEME_CSS = """
   margin-top: 8px;
 }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
-.ic-summary-card:nth-child(3n+1) { border-left: 4px solid #065175 !important; }
-.ic-summary-card:nth-child(3n+2) { border-left: 4px solid #EC6820 !important; }
-.ic-summary-card:nth-child(3n) { border-left: 4px solid #0a8fb5 !important; }
+.ic-summary-grid, .ic-explore-grid, .ic-project-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  gap: 12px !important;
+}
+.ic-explore-card, .ic-summary-card {
+  aspect-ratio: 1 / 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  min-height: 0 !important;
+}
+.ic-summary-card {
+  justify-content: space-between !important;
+  padding: 14px 12px !important;
+  border: 1px solid rgba(6,81,117,0.1) !important;
+  border-top: 4px solid #065175 !important;
+  border-left: 1px solid rgba(6,81,117,0.1) !important;
+}
+.ic-summary-card:nth-child(3n+1) { border-top-color: #065175 !important; }
+.ic-summary-card:nth-child(3n+2) { border-top-color: #EC6820 !important; }
+.ic-summary-card:nth-child(3n) { border-top-color: #0a8fb5 !important; }
 .ic-summary-card:nth-child(3n) .value { color: #0a8fb5 !important; }
 .ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC6820 !important; }
+.ic-summary-card .label {
+  font-size: 0.68rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5a6f7a;
+}
+.ic-summary-card .value { margin-top: auto !important; font-size: 1.6rem !important; }
 .ic-explore-panel { margin-bottom: 20px; }
 .ic-explore-title {
   font-family: "Poppins", sans-serif !important;
@@ -710,16 +740,10 @@ _SHADOW_THEME_CSS = """
   letter-spacing: -0.02em;
 }
 .ic-explore-sub { color: #5a6f7a; font-size: 0.86rem; margin-top: 2px; margin-bottom: 12px; }
-.ic-explore-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  gap: 10px;
-}
 .ic-explore-card {
   text-align: left;
   border: 1px solid rgba(6,81,117,0.12);
-  border-radius: 12px;
-  padding: 14px 14px 16px;
+  padding: 12px;
   background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -727,20 +751,42 @@ _SHADOW_THEME_CSS = """
   font-family: "Poppins", sans-serif !important;
 }
 .ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,81,117,0.1); }
-.ic-explore-card.accent-coral { border-left: 4px solid #c0392b; }
-.ic-explore-card.accent-citrus { border-left: 4px solid #EC6820; }
-.ic-explore-card.accent-teal { border-left: 4px solid #065175; }
-.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; }
+.ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
+.ic-explore-card.accent-citrus { border-top: 4px solid #EC6820; }
+.ic-explore-card.accent-teal { border-top: 4px solid #065175; }
+.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; flex-shrink: 0; }
 .ic-explore-count {
   background: #065175; color: #fff; font-size: 0.72rem; font-weight: 700;
-  border-radius: 999px; padding: 2px 8px;
+  border-radius: 8px; padding: 2px 8px;
 }
 .ic-explore-action {
   background: #fff4ec; color: #c44710; font-size: 0.7rem; font-weight: 700;
   border-radius: 6px; padding: 2px 7px; text-transform: uppercase; letter-spacing: 0.04em;
 }
-.ic-explore-card-title { font-weight: 700; color: #033447; font-size: 0.95rem; }
-.ic-explore-card-sub { color: #5a6f7a; font-size: 0.78rem; margin-top: 4px; line-height: 1.35; }
+.ic-explore-card-title { font-weight: 700; color: #033447; font-size: 0.9rem; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ic-explore-card-sub { color: #5a6f7a; font-size: 0.74rem; margin-top: auto; padding-top: 8px; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ic-project-tile {
+  aspect-ratio: 1 / 1 !important;
+  min-height: 0 !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+}
+.ic-lead-prompt-list {
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  gap: 12px !important;
+}
+.ic-lead-prompt, .ic-lead-hub-card {
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.ic-workdesk-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
+  gap: 12px !important;
+}
 """
 
 
@@ -883,21 +929,21 @@ def _ensure_home_workspace():
 		{"id": "ic_spacer1", "type": "spacer", "data": {"col": 12}},
 		{"id": "ic_crm_header", "type": "header", "data": {"text": "<span class=\"h5\">CRM Lead Tracker</span>", "col": 12}},
 		{"id": "ic_crm_block", "type": "custom_block", "data": {"custom_block_name": "CRM Lead Tracker", "col": 12}},
-		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "Leads This Week", "col": 3}},
-		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "Leads This Month", "col": 3}},
-		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "New Leads", "col": 3}},
-		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "Active Leads", "col": 3}},
+		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "Leads This Week", "col": 2}},
+		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "Leads This Month", "col": 2}},
+		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "New Leads", "col": 2}},
+		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "Active Leads", "col": 2}},
 		{"id": "ic_cards_header", "type": "header", "data": {"text": "<span class=\"h5\">Operations Snapshot</span>", "col": 12}},
-		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "Quotations Sent", "col": 3}},
-		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "Quotations Accepted", "col": 3}},
-		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "Active Projects", "col": 3}},
-		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "Pending Tasks", "col": 3}},
-		{"id": "nc_open_tickets", "type": "number_card", "data": {"number_card_name": "Open Tickets", "col": 3}},
-		{"id": "nc_pending_docs", "type": "number_card", "data": {"number_card_name": "Pending Documents", "col": 3}},
-		{"id": "nc_leads_contact", "type": "number_card", "data": {"number_card_name": "Leads to Contact", "col": 3}},
-		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "Testing Requests", "col": 3}},
-		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "Upcoming Deadlines", "col": 3}},
-		{"id": "nc_amc", "type": "number_card", "data": {"number_card_name": "AMC Due Soon", "col": 3}},
+		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "Quotations Sent", "col": 2}},
+		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "Quotations Accepted", "col": 2}},
+		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "Active Projects", "col": 2}},
+		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "Pending Tasks", "col": 2}},
+		{"id": "nc_open_tickets", "type": "number_card", "data": {"number_card_name": "Open Tickets", "col": 2}},
+		{"id": "nc_pending_docs", "type": "number_card", "data": {"number_card_name": "Pending Documents", "col": 2}},
+		{"id": "nc_leads_contact", "type": "number_card", "data": {"number_card_name": "Leads to Contact", "col": 2}},
+		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "Testing Requests", "col": 2}},
+		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "Upcoming Deadlines", "col": 2}},
+		{"id": "nc_amc", "type": "number_card", "data": {"number_card_name": "AMC Due Soon", "col": 2}},
 		{"id": "ic_samples_header", "type": "header", "data": {"text": "<span class=\"h5\">Sample Custody</span>", "col": 12}},
 		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "Samples Transit to Office", "col": 2}},
 		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "Samples At Office", "col": 2}},
@@ -916,26 +962,30 @@ def _ensure_home_workspace():
 		{"id": "chart_projects_priority", "type": "chart", "data": {"chart_name": "Projects by Priority", "col": 6}},
 		{"id": "chart_samples_location", "type": "chart", "data": {"chart_name": "Samples by Location", "col": 6}},
 		{"id": "ic_shortcuts_header", "type": "header", "data": {"text": "<span class=\"h5\">Quick Links</span>", "col": 12}},
-		{"id": "sc_leads", "type": "shortcut", "data": {"shortcut_name": "Leads", "col": 3}},
-		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 3}},
-		{"id": "sc_quotations", "type": "shortcut", "data": {"shortcut_name": "Quotations", "col": 3}},
-		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 3}},
-		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 3}},
-		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 3}},
-		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 3}},
-		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 3}},
-		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
-		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 3}},
-		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
-		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
-		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
-		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 3}},
-		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
-		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 3}},
-		{"id": "sc_asset", "type": "shortcut", "data": {"shortcut_name": "Asset", "col": 3}},
-		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 3}},
-		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 3}},
-		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 3}},
+		{"id": "sc_leads", "type": "shortcut", "data": {"shortcut_name": "Leads", "col": 2}},
+		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 2}},
+		{"id": "sc_quotations", "type": "shortcut", "data": {"shortcut_name": "Quotations", "col": 2}},
+		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 2}},
+		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
+		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
+		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
+		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 2}},
+		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
+		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 2}},
+		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 2}},
+		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Documents Collection Sheets", "col": 2}},
+		{"id": "sc_dispatch", "type": "shortcut", "data": {"shortcut_name": "Sample Dispatch Sheets", "col": 2}},
+		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 2}},
+		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 2}},
+		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 2}},
+		{"id": "sc_asset", "type": "shortcut", "data": {"shortcut_name": "Asset", "col": 2}},
+		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 2}},
+		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 2}},
+		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 2}},
+		# Expenses & HRMS — always last (square tiles)
+		{"id": "sc_hrms", "type": "shortcut", "data": {"shortcut_name": "HRMS Lifecycle", "col": 2}},
+		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 2}},
+
 	]
 
 
@@ -950,7 +1000,6 @@ def _ensure_home_workspace():
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Quote Format Library", "link_to": "IC Quotation Template", "type": "DocType", "doc_view": "List"},
-		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
 		{"label": "Documents Collection Sheets", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Sample Dispatch Sheets", "link_to": "IC Sample Dispatch Collection", "type": "DocType", "doc_view": "List"},
@@ -961,6 +1010,9 @@ def _ensure_home_workspace():
 		{"label": "GSTR-1", "link_to": "GSTR-1", "type": "DocType", "doc_view": ""},
 		{"label": "GSTR-3B", "link_to": "GSTR 3B Report", "type": "DocType", "doc_view": "List"},
 		{"label": "GST Settings", "link_to": "GST Settings", "type": "DocType", "doc_view": ""},
+		# Expenses & HRMS last
+		{"label": "HRMS Lifecycle", "link_to": "Employee", "type": "DocType", "doc_view": "List"},
+		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
 	]
 
 	links = [
@@ -1018,15 +1070,6 @@ def _ensure_home_workspace():
 		{"label": "Calendar & Planner", "type": "Card Break"},
 		{"label": "Event", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
-		{"label": "My HR & Employment", "type": "Card Break"},
-		{"label": "File an Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
-		{"label": "My Expense Claims", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
-		{"label": "My Employee Profile", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
-		{"label": "Joining Letters", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
-		{"label": "Salary Slips & Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
-		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
-		{"label": "Holiday List", "link_type": "DocType", "link_to": "Holiday List", "type": "Link"},
-		{"label": "Event Calendar", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Assets", "type": "Card Break"},
 		{"label": "Asset", "link_type": "DocType", "link_to": "Asset", "type": "Link"},
 		{"label": "Asset Category", "link_type": "DocType", "link_to": "Asset Category", "type": "Link"},
@@ -1034,6 +1077,22 @@ def _ensure_home_workspace():
 		{"label": "User", "link_type": "DocType", "link_to": "User", "type": "Link"},
 		{"label": "Role", "link_type": "DocType", "link_to": "Role", "type": "Link"},
 		{"label": "Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
+		# Expenses & HRMS — always last on Instacertify Home
+		{"label": "Expenses & HRMS (Hiring → FnF)", "type": "Card Break"},
+		{"label": "File an Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "My Expense Claims", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "Job Applicant", "link_type": "DocType", "link_to": "Job Applicant", "type": "Link"},
+		{"label": "Job Offer", "link_type": "DocType", "link_to": "Job Offer", "type": "Link"},
+		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "Employee Onboarding", "link_type": "DocType", "link_to": "Employee Onboarding", "type": "Link"},
+		{"label": "Joining Letters", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
+		{"label": "Employee Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
+		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
+		{"label": "Leave Application", "link_type": "DocType", "link_to": "Leave Application", "type": "Link"},
+		{"label": "Salary Slip", "link_type": "DocType", "link_to": "Salary Slip", "type": "Link"},
+		{"label": "Payroll Entry", "link_type": "DocType", "link_to": "Payroll Entry", "type": "Link"},
+		{"label": "Employee Separation", "link_type": "DocType", "link_to": "Employee Separation", "type": "Link"},
+		{"label": "Full and Final Statement", "link_type": "DocType", "link_to": "Full and Final Statement", "type": "Link"},
 	]
 
 	# Filter missing DocTypes / Reports / Pages
@@ -1061,9 +1120,27 @@ def _ensure_home_workspace():
 		if stype == "Page":
 			if dt and not frappe.db.exists("Page", dt):
 				continue
+		elif stype == "URL":
+			safe_shortcuts.append(s)
+			continue
 		elif dt and not frappe.db.exists("DocType", dt):
 			continue
+		# Single DocTypes must open Form — List view 500s / Not Found
+		if stype == "DocType" and dt and frappe.get_meta(dt).issingle:
+			s = dict(s)
+			s["doc_view"] = ""
 		safe_shortcuts.append(s)
+
+	# Keep Quick Link tiles in sync with shortcuts that actually resolve (no dead tiles)
+	safe_shortcut_labels = {s["label"] for s in safe_shortcuts}
+	content = [
+		block
+		for block in content
+		if not (
+			block.get("type") == "shortcut"
+			and (block.get("data") or {}).get("shortcut_name") not in safe_shortcut_labels
+		)
+	]
 
 	payload = {
 		"doctype": "Workspace",
@@ -1125,3 +1202,146 @@ def _ensure_home_workspace():
 				if frappe.db.exists("Dashboard Chart", ch):
 					ws.append("charts", {"chart_name": ch, "label": ch})
 		ws.insert(ignore_permissions=True)
+
+
+def ensure_hrms_expenses_workspace():
+	"""Dedicated workspace — Expenses & HRMS last in navigation (Hiring → FnF)."""
+	name = "HRMS & Expenses"
+	# High sequence so it sits after core Instacertify / GST / ops workspaces
+	sequence_id = 80
+
+	content = [
+		{
+			"id": "hrms_header",
+			"type": "header",
+			"data": {
+				"text": "<span class=\"h5\">Employee lifecycle — Hiring to Full &amp; Final</span>",
+				"col": 12,
+			},
+		},
+		{"id": "sc_job_applicant", "type": "shortcut", "data": {"shortcut_name": "Job Applicant", "col": 3}},
+		{"id": "sc_job_offer", "type": "shortcut", "data": {"shortcut_name": "Job Offer", "col": 3}},
+		{"id": "sc_employee", "type": "shortcut", "data": {"shortcut_name": "Employee", "col": 3}},
+		{"id": "sc_onboarding", "type": "shortcut", "data": {"shortcut_name": "Employee Onboarding", "col": 3}},
+		{"id": "sc_joining", "type": "shortcut", "data": {"shortcut_name": "Joining Letters", "col": 3}},
+		{"id": "sc_attendance", "type": "shortcut", "data": {"shortcut_name": "Attendance", "col": 3}},
+		{"id": "sc_leave", "type": "shortcut", "data": {"shortcut_name": "Leave Application", "col": 3}},
+		{"id": "sc_salary", "type": "shortcut", "data": {"shortcut_name": "Salary Slip", "col": 3}},
+		{"id": "sc_payroll", "type": "shortcut", "data": {"shortcut_name": "Payroll Entry", "col": 3}},
+		{"id": "sc_file_expense", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
+		{"id": "sc_expense_hrms", "type": "shortcut", "data": {"shortcut_name": "Expense Claim", "col": 3}},
+		{"id": "sc_separation", "type": "shortcut", "data": {"shortcut_name": "Employee Separation", "col": 3}},
+		{"id": "sc_fnf", "type": "shortcut", "data": {"shortcut_name": "Full and Final", "col": 3}},
+	]
+
+	shortcuts = [
+		{"label": "Job Applicant", "link_to": "Job Applicant", "type": "DocType", "doc_view": "List"},
+		{"label": "Job Offer", "link_to": "Job Offer", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee", "link_to": "Employee", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee Onboarding", "link_to": "Employee Onboarding", "type": "DocType", "doc_view": "List"},
+		{"label": "Joining Letters", "link_to": "IC Joining Letter", "type": "DocType", "doc_view": "List"},
+		{"label": "Attendance", "link_to": "Attendance", "type": "DocType", "doc_view": "List"},
+		{"label": "Leave Application", "link_to": "Leave Application", "type": "DocType", "doc_view": "List"},
+		{"label": "Salary Slip", "link_to": "Salary Slip", "type": "DocType", "doc_view": "List"},
+		{"label": "Payroll Entry", "link_to": "Payroll Entry", "type": "DocType", "doc_view": "List"},
+		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
+		{"label": "Expense Claim", "link_to": "Expense Claim", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee Separation", "link_to": "Employee Separation", "type": "DocType", "doc_view": "List"},
+		{"label": "Full and Final", "link_to": "Full and Final Statement", "type": "DocType", "doc_view": "List"},
+	]
+
+	links = [
+		{"label": "1. Hiring", "type": "Card Break"},
+		{"label": "Job Applicant", "link_type": "DocType", "link_to": "Job Applicant", "type": "Link"},
+		{"label": "Job Offer", "link_type": "DocType", "link_to": "Job Offer", "type": "Link"},
+		{"label": "Interview", "link_type": "DocType", "link_to": "Interview", "type": "Link"},
+		{"label": "2. Onboarding", "type": "Card Break"},
+		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "Employee Onboarding", "link_type": "DocType", "link_to": "Employee Onboarding", "type": "Link"},
+		{"label": "Joining Letter (Instacertify)", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
+		{"label": "Employee Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
+		{"label": "3. Attendance & Leave", "type": "Card Break"},
+		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
+		{"label": "Attendance Request", "link_type": "DocType", "link_to": "Attendance Request", "type": "Link"},
+		{"label": "Leave Application", "link_type": "DocType", "link_to": "Leave Application", "type": "Link"},
+		{"label": "Holiday List", "link_type": "DocType", "link_to": "Holiday List", "type": "Link"},
+		{"label": "4. Payroll", "type": "Card Break"},
+		{"label": "Salary Structure", "link_type": "DocType", "link_to": "Salary Structure", "type": "Link"},
+		{"label": "Salary Structure Assignment", "link_type": "DocType", "link_to": "Salary Structure Assignment", "type": "Link"},
+		{"label": "Payroll Entry", "link_type": "DocType", "link_to": "Payroll Entry", "type": "Link"},
+		{"label": "Salary Slip", "link_type": "DocType", "link_to": "Salary Slip", "type": "Link"},
+		{"label": "5. Expenses", "type": "Card Break"},
+		{"label": "File Expense (Instacertify)", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "Expense Claim (HRMS)", "link_type": "DocType", "link_to": "Expense Claim", "type": "Link"},
+		{"label": "Expense Claim Type", "link_type": "DocType", "link_to": "Expense Claim Type", "type": "Link"},
+		{"label": "6. Performance", "type": "Card Break"},
+		{"label": "Appraisal", "link_type": "DocType", "link_to": "Appraisal", "type": "Link"},
+		{"label": "Goal", "link_type": "DocType", "link_to": "Goal", "type": "Link"},
+		{"label": "7. Exit & Full and Final", "type": "Card Break"},
+		{"label": "Employee Separation", "link_type": "DocType", "link_to": "Employee Separation", "type": "Link"},
+		{"label": "Full and Final Statement", "link_type": "DocType", "link_to": "Full and Final Statement", "type": "Link"},
+	]
+
+	safe_links = []
+	for link in links:
+		if link.get("type") == "Card Break":
+			safe_links.append(link)
+			continue
+		dt = link.get("link_to")
+		if dt and not frappe.db.exists("DocType", dt):
+			continue
+		safe_links.append(link)
+
+	safe_shortcuts = []
+	for s in shortcuts:
+		dt = s.get("link_to")
+		if dt and not frappe.db.exists("DocType", dt):
+			continue
+		safe_shortcuts.append(s)
+
+	# Drop content shortcuts that were filtered out
+	labels = {s["label"] for s in safe_shortcuts}
+	safe_content = []
+	for block in content:
+		if block.get("type") == "shortcut":
+			name_sc = (block.get("data") or {}).get("shortcut_name")
+			if name_sc and name_sc not in labels:
+				continue
+		safe_content.append(block)
+
+	payload = {
+		"doctype": "Workspace",
+		"name": name,
+		"label": name,
+		"title": name,
+		"module": "Instacertify",
+		"public": 1,
+		"is_hidden": 0,
+		"sequence_id": sequence_id,
+		"content": json.dumps(safe_content),
+		"shortcuts": safe_shortcuts,
+		"links": safe_links,
+	}
+
+	if frappe.db.exists("Workspace", name):
+		ws = frappe.get_doc("Workspace", name)
+		ws.update(payload)
+		ws.shortcuts = []
+		ws.links = []
+		for s in safe_shortcuts:
+			ws.append("shortcuts", s)
+		for l in safe_links:
+			ws.append("links", l)
+		ws.content = json.dumps(safe_content)
+		ws.sequence_id = sequence_id
+		ws.save(ignore_permissions=True)
+	else:
+		ws = frappe.get_doc(payload)
+		ws.insert(ignore_permissions=True)
+
+	frappe.db.set_value(
+		"Workspace",
+		name,
+		{"public": 1, "is_hidden": 0, "sequence_id": sequence_id},
+		update_modified=False,
+	)

@@ -184,14 +184,25 @@ def get_explore_prompts() -> dict:
 	)
 	add(
 		"documents",
-		_("Document Requests"),
-		_("Customer upload checklists"),
+		_("Documents Collection"),
+		_("Customer upload checklists & share links"),
 		["List", "IC Document Request"],
 		doctype="IC Document Request",
 		count=_count("IC Document Request", {"status": ["in", ["Sent to Customer", "Partially Uploaded"]]}),
 		accent="coral",
 		priority=65,
 		show=is_ops or is_sales or is_admin,
+	)
+	add(
+		"sample_dispatch",
+		_("Sample Dispatch Sheets"),
+		_("Customer sample dispatch data collection"),
+		["List", "IC Sample Dispatch Collection"],
+		doctype="IC Sample Dispatch Collection",
+		count=_count("IC Sample Dispatch Collection"),
+		accent="teal",
+		priority=66,
+		show=is_ops or is_admin,
 	)
 	add(
 		"helpdesk",
@@ -205,18 +216,6 @@ def get_explore_prompts() -> dict:
 		),
 		accent="coral",
 		priority=70,
-	)
-	add(
-		"expenses",
-		_("File an Expense"),
-		_("Travel · petty · office expenses"),
-		["List", "IC Expense Claim"],
-		doctype="IC Expense Claim",
-		count=_count("IC Expense Claim", {"owner": frappe.session.user, "status": ["in", ["Draft", "Submitted"]]}),
-		accent="citrus",
-		action="new_expense",
-		priority=15,
-		show=_can_create("IC Expense Claim") or _can_read("IC Expense Claim"),
 	)
 	add(
 		"calendar",
@@ -236,22 +235,13 @@ def get_explore_prompts() -> dict:
 		priority=85,
 	)
 	add(
-		"hr",
-		_("My HR"),
-		_("Joining letter · salary slips · docs"),
-		["List", "Employee"],
-		doctype="Employee",
-		accent="teal",
-		priority=90,
-	)
-	add(
 		"invoices",
 		_("Sales Invoice"),
 		_("Bill consulting services"),
 		["List", "Sales Invoice"],
 		doctype="Sales Invoice",
 		accent="citrus",
-		priority=95,
+		priority=90,
 		show=is_sales or is_admin,
 	)
 	add(
@@ -261,8 +251,31 @@ def get_explore_prompts() -> dict:
 		["List", "Purchase Invoice"],
 		doctype="Purchase Invoice",
 		accent="citrus",
-		priority=96,
+		priority=91,
 		show=is_ops or is_admin,
+	)
+	# Expenses & HRMS — always last in Explore
+	add(
+		"hr_lifecycle",
+		_("HRMS (Hiring → FnF)"),
+		_("Applicant · onboarding · payroll · exit"),
+		["List", "Employee"],
+		doctype="Employee",
+		accent="teal",
+		priority=98,
+		show=_can_read("Employee") or is_admin,
+	)
+	add(
+		"expenses",
+		_("File an Expense"),
+		_("Travel · petty · office expenses"),
+		["List", "IC Expense Claim"],
+		doctype="IC Expense Claim",
+		count=_count("IC Expense Claim", {"owner": frappe.session.user, "status": ["in", ["Draft", "Submitted"]]}),
+		accent="citrus",
+		action="new_expense",
+		priority=99,
+		show=_can_create("IC Expense Claim") or _can_read("IC Expense Claim"),
 	)
 
 	cards.sort(key=lambda c: (c.get("priority", 99), c.get("title") or ""))
