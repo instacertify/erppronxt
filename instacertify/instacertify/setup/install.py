@@ -168,8 +168,8 @@ def after_migrate():
 	setup_disable_pos()
 	setup_gst_returns()
 	setup_consulting_billing()
-<<<<<<< HEAD
 	setup_quotation_naming_series()
+	setup_hrms_alignment()
 	frappe.db.commit()
 
 
@@ -178,9 +178,6 @@ def setup_quotation_naming_series():
 	from instacertify.setup.naming_series import ensure_quotation_naming_series
 
 	ensure_quotation_naming_series()
-=======
-	setup_hrms_alignment()
-	frappe.db.commit()
 
 
 def setup_hrms_alignment():
@@ -191,7 +188,6 @@ def setup_hrms_alignment():
 		ensure_hrms_alignment()
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "setup_hrms_alignment")
->>>>>>> origin/main
 
 
 def setup_default_dashboard():
