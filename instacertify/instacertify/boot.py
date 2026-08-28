@@ -38,13 +38,18 @@ def boot_session(bootinfo):
 	except Exception:
 		pass
 
-	# Prefer Instacertify Home as the desk landing workspace
+	# Frappe 16: boot.home_page must be a real Desk *Page* (e.g. "desktop").
+	# Legacy value "workspace" is not a Page anymore → "Page workspace not found".
+	# Landing on Instacertify Home is handled by User.default_workspace + client go_home().
 	try:
-		bootinfo["home_page"] = "workspace"
-		# Surfaced for client redirect if user has no default_workspace yet
-		if not bootinfo.get("user", {}).get("default_workspace"):
-			bootinfo.setdefault("user", {})
-			# user may be a string in some boots — keep workspace hint on instacertify map
-			pass
+		if bootinfo.get("home_page") in (None, "", "workspace", "Workspace", "workspaces"):
+			bootinfo["home_page"] = "desktop"
+		user = bootinfo.get("user")
+		if isinstance(user, dict) and not user.get("default_workspace"):
+			user["default_workspace"] = {
+				"name": "Instacertify Home",
+				"title": "Instacertify Home",
+				"public": 1,
+			}
 	except Exception:
 		pass

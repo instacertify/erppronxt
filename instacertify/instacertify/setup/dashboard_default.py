@@ -67,11 +67,69 @@ def ensure_default_dashboard():
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"default_workspace {user}")
 
-	# Global desk home preference
+	# Global desk home preference — must be a real Page name on Frappe 16.
+	# "workspace" is legacy and causes "Page workspace not found".
 	try:
-		frappe.db.set_default("desktop:home_page", "workspace")
+		frappe.db.set_default("desktop:home_page", "desktop")
 	except Exception:
 		pass
 
+	# Cursor / legacy bookmarks often open /desktop — that path 404s on Frappe 16.
+	# Always send it (and bare /app leftovers) to Instacertify Home on Desk.
+	_ensure_desk_entry_redirects()
+
 	# Soft-hide unused ERPNext module workspaces from cluttering new users?
 	# Keep visible but later in sequence — already done above for Welcome/Home.
+
+
+def _ensure_desk_entry_redirects():
+	"""Map common dead entry URLs to Desk Instacertify Home."""
+	home = "/desk/instacertify-home"
+	wanted = (
+		("/desktop", home),
+		("/desktop/", home),
+		("/Desktop", home),
+		("/workspace", home),
+		("/workspace/", home),
+		("/workspaces", home),
+		("/app/home", home),
+		("/app/workspace", home),
+		("/app/instacertify-home", home),
+	)
+
+	# Prefer Website Settings child table (what PathResolver reads)
+	try:
+		ws = frappe.get_single("Website Settings")
+		existing = {(row.source or "").rstrip("/"): row for row in (ws.route_redirects or [])}
+		changed = False
+		for source, target in wanted:
+			key = source.rstrip("/")
+			row = existing.get(key)
+			if row:
+				if row.target != target:
+					row.target = target
+					row.redirect_http_status = "302"
+					changed = True
+				continue
+			ws.append(
+				"route_redirects",
+				{
+					"source": source,
+					"target": target,
+					"redirect_http_status": "302",
+				},
+			)
+			changed = True
+		if changed:
+			ws.save(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "desk entry redirects")
+
+	# Bust redirect cache so /desktop resolves immediately
+	try:
+		for source, _target in wanted:
+			frappe.cache.hdel("website_redirects", source.strip("/") or "/")
+			frappe.cache.hdel("website_redirects", source.lstrip("/") or "/")
+			frappe.cache.hdel("website_redirects", source)
+	except Exception:
+		pass
