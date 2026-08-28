@@ -184,14 +184,25 @@ def get_explore_prompts() -> dict:
 	)
 	add(
 		"documents",
-		_("Document Requests"),
-		_("Customer upload checklists"),
+		_("Documents Collection"),
+		_("Customer upload checklists & share links"),
 		["List", "IC Document Request"],
 		doctype="IC Document Request",
 		count=_count("IC Document Request", {"status": ["in", ["Sent to Customer", "Partially Uploaded"]]}),
 		accent="coral",
 		priority=65,
 		show=is_ops or is_sales or is_admin,
+	)
+	add(
+		"sample_dispatch",
+		_("Sample Dispatch Sheets"),
+		_("Customer sample dispatch data collection"),
+		["List", "IC Sample Dispatch Collection"],
+		doctype="IC Sample Dispatch Collection",
+		count=_count("IC Sample Dispatch Collection"),
+		accent="teal",
+		priority=66,
+		show=is_ops or is_admin,
 	)
 	add(
 		"helpdesk",

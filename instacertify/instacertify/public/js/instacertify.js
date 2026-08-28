@@ -45,12 +45,30 @@ $(document).on("app_ready", function () {
 			route === "workspace" ||
 			route === "desktop" ||
 			route === "Home" ||
-			route === "Welcome Workspace";
+			route === "Workspaces/Home" ||
+			route === "Welcome Workspace" ||
+			route === "Workspaces/Welcome Workspace";
 		if (isDeskRoot) {
 			localStorage.setItem("current_page", home);
 			frappe.set_route("Workspaces", home);
 		} else if (!localStorage.getItem("current_page")) {
 			localStorage.setItem("current_page", home);
+		}
+	} catch (e) {
+		/* ignore */
+	}
+});
+
+/** Never leave users on the generic ERPNext Home workspace (wrong landing / empty). */
+$(document).on("page-change", function () {
+	try {
+		const route = frappe.get_route ? frappe.get_route() : [];
+		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+		if (
+			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
+			(route[0] === "workspace" && (!route[1] || route[1] === "Home"))
+		) {
+			frappe.set_route("Workspaces", home);
 		}
 	} catch (e) {
 		/* ignore */

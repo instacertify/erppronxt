@@ -928,7 +928,8 @@ def _ensure_home_workspace():
 		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 3}},
 		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
-		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
+		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Documents Collection Sheets", "col": 3}},
+		{"id": "sc_dispatch", "type": "shortcut", "data": {"shortcut_name": "Sample Dispatch Sheets", "col": 3}},
 		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 3}},
 		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
 		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 3}},
@@ -1063,7 +1064,22 @@ def _ensure_home_workspace():
 				continue
 		elif dt and not frappe.db.exists("DocType", dt):
 			continue
+		# Single DocTypes must open Form — List view 500s / Not Found
+		if stype == "DocType" and dt and frappe.get_meta(dt).issingle:
+			s = dict(s)
+			s["doc_view"] = ""
 		safe_shortcuts.append(s)
+
+	# Keep Quick Link tiles in sync with shortcuts that actually resolve (no dead tiles)
+	safe_shortcut_labels = {s["label"] for s in safe_shortcuts}
+	content = [
+		block
+		for block in content
+		if not (
+			block.get("type") == "shortcut"
+			and (block.get("data") or {}).get("shortcut_name") not in safe_shortcut_labels
+		)
+	]
 
 	payload = {
 		"doctype": "Workspace",
