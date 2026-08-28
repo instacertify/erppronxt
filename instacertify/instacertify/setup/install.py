@@ -168,7 +168,15 @@ def after_migrate():
 	setup_disable_pos()
 	setup_gst_returns()
 	setup_consulting_billing()
+	setup_quotation_naming_series()
 	frappe.db.commit()
+
+
+def setup_quotation_naming_series():
+	"""Service / Testing / Others quotation series: QTN-SRV / QTN-TST / QTN-OTH."""
+	from instacertify.setup.naming_series import ensure_quotation_naming_series
+
+	ensure_quotation_naming_series()
 
 
 def setup_default_dashboard():
