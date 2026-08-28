@@ -11,6 +11,8 @@ import frappe
 from frappe import _
 from frappe.utils.file_manager import get_file
 
+from instacertify.utils.files import assert_internal_file
+
 
 def _guess_file_type(filename: str | None) -> str:
 	name = (filename or "").lower()
@@ -66,6 +68,7 @@ def create_quote_format_from_upload(
 	doc.is_active = 1 if int(is_active or 1) else 0
 
 	if file_url:
+		file_url = assert_internal_file(file_url, "Quote format file")
 		doc.uploaded_format = file_url
 		label = Path(str(file_url).split("/")[-1] or "Quote Format").name
 		# Avoid duplicate rows for same file
@@ -115,6 +118,7 @@ def create_laboratory_from_upload(
 	if accreditation_scope:
 		doc.accreditation_scope = accreditation_scope
 	if scope_file:
+		scope_file = assert_internal_file(scope_file, "Laboratory scope file")
 		# Prefer scope_sheet; also keep PDF field when file is PDF
 		doc.scope_sheet = scope_file
 		if str(scope_file).lower().endswith(".pdf"):
@@ -137,8 +141,9 @@ def import_laboratory_scopes_csv(laboratory: str, file_url: str):
 	if not laboratory or not frappe.db.exists("IC Laboratory", laboratory):
 		frappe.throw(_("Laboratory not found"))
 	if not file_url:
-		frappe.throw(_("Upload a CSV file first"))
+		frappe.throw(_("Select a CSV from My Device or File Library first"))
 
+	file_url = assert_internal_file(file_url, "CSV file")
 	_fname, content = get_file(file_url)
 	if isinstance(content, bytes):
 		text = content.decode("utf-8-sig", errors="ignore")

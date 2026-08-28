@@ -8,6 +8,23 @@ Custom Frappe app for Instacertify on ERPNext 16.33 — certification, complianc
 - `india_compliance` (Indian GST / GSTR) — install with:
   `bench get-app https://github.com/resilient-tech/india-compliance --branch version-16`
   `bench --site <site> install-app india_compliance`
+- `hrms` (Frappe HR — hiring → FnF) — install with:
+  `bench get-app hrms --branch version-16`
+  `bench --site <site> install-app hrms`
+
+## Expenses & HRMS (last in navigation)
+
+Expenses and HRMS are intentionally placed **last** on Instacertify Home and Explore.
+Open workspace **HRMS & Expenses** for the full employee lifecycle:
+
+1. Hiring — Job Applicant / Job Offer  
+2. Onboarding — Employee / Employee Onboarding / Joining Letter  
+3. Attendance & Leave  
+4. Payroll — Salary Structure / Payroll Entry / Salary Slip  
+5. Expenses — Instacertify expense claims + HRMS Expense Claim  
+6. Performance — Appraisal / Goal  
+7. Exit & Full and Final — Employee Separation / Full and Final Statement  
+
 
 ## GST & billing currency
 
