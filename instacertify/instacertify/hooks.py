@@ -26,6 +26,7 @@ website_route_rules = [
 # Document Events
 doc_events = {
 	"Sales Invoice": {
+		"before_insert": "instacertify.accounting.events.before_insert_sales_invoice",
 		"validate": "instacertify.accounting.events.validate_sales_invoice",
 	},
 	"Purchase Invoice": {

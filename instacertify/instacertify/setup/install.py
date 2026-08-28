@@ -168,7 +168,15 @@ def after_migrate():
 	setup_disable_pos()
 	setup_gst_returns()
 	setup_consulting_billing()
+	setup_invoice_naming_series()
 	frappe.db.commit()
+
+
+def setup_invoice_naming_series():
+	"""One Sales Invoice series across the ERP: INV-00001, INV-00002, …"""
+	from instacertify.setup.naming_series import ensure_invoice_naming_series
+
+	ensure_invoice_naming_series()
 
 
 def setup_default_dashboard():
