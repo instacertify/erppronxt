@@ -115,6 +115,23 @@ instacertify.has_home_root = function () {
 	return !!instacertify.query_deep("#ic-home-root");
 };
 
+/** Frappe 16 desk URL for Instacertify Home (slug path, not /Workspaces/...). */
+instacertify.home_desk_path = function () {
+	const home =
+		(frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+	const slug = frappe.router && frappe.router.slug ? frappe.router.slug(home) : "instacertify-home";
+	return "/desk/" + slug;
+};
+
+instacertify.go_home = function () {
+	const home =
+		(frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+	localStorage.setItem("current_page", home);
+	localStorage.setItem("is_current_page_public", "true");
+	// Prefer slug URL so router resolves via frappe.workspaces[slug]
+	frappe.set_route(frappe.router.slug(home));
+};
+
 /** Land every user on Instacertify Home dashboard after login / desk boot. */
 $(document).on("app_ready", function () {
 	try {
@@ -123,7 +140,8 @@ $(document).on("app_ready", function () {
 		/* ignore */
 	}
 	try {
-		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+		const home =
+			(frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
 		const route = frappe.get_route_str ? frappe.get_route_str() : "";
 		const isDeskRoot =
 			!route ||
@@ -135,8 +153,7 @@ $(document).on("app_ready", function () {
 			route === "Welcome Workspace" ||
 			route === "Workspaces/Welcome Workspace";
 		if (isDeskRoot) {
-			localStorage.setItem("current_page", home);
-			frappe.set_route("Workspaces", home);
+			instacertify.go_home();
 		} else if (!localStorage.getItem("current_page")) {
 			localStorage.setItem("current_page", home);
 		}
@@ -149,12 +166,12 @@ $(document).on("app_ready", function () {
 $(document).on("page-change", function () {
 	try {
 		const route = frappe.get_route ? frappe.get_route() : [];
-		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
 		if (
 			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
-			(route[0] === "workspace" && (!route[1] || route[1] === "Home"))
+			(route[0] === "workspace" && (!route[1] || route[1] === "Home")) ||
+			route[0] === "desktop"
 		) {
-			frappe.set_route("Workspaces", home);
+			instacertify.go_home();
 		}
 	} catch (e) {
 		/* ignore */
@@ -2809,10 +2826,10 @@ frappe.ui.form.on("Lead", {
 				});
 			}, __("Create"));
 			frm.add_custom_button(__("Open Dashboard"), () => {
-				frappe.set_route("Workspaces", "Instacertify Home");
+				instacertify.go_home();
 			}, __("View"));
 			frm.add_custom_button(__("Lead Reminder Hub"), () => {
-				frappe.set_route("Workspaces", "Instacertify Home");
+				instacertify.go_home();
 			}, __("View"));
 		}
 	},

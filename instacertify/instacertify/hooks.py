@@ -24,6 +24,14 @@ website_route_rules = [
 	{"from_route": "/ic-verify/<path:doctype>/<path:name>", "to_route": "ic_verify"},
 ]
 
+# Frappe 16 Desk is /desk — legacy /desktop bookmarks must not 404
+website_redirects = [
+	{"source": r"/desktop/?$", "target": "/desk/instacertify-home", "redirect_http_status": 302},
+	{"source": r"/Desktop/?$", "target": "/desk/instacertify-home", "redirect_http_status": 302},
+	{"source": r"/app/home/?$", "target": "/desk/instacertify-home", "redirect_http_status": 302},
+	{"source": r"/app/instacertify-home/?$", "target": "/desk/instacertify-home", "redirect_http_status": 302},
+]
+
 # Document Events
 doc_events = {
 	"Sales Invoice": {
