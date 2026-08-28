@@ -2455,8 +2455,14 @@ frappe.ui.form.on("Sales Invoice", {
 	refresh(frm) {
 		instacertify.hide_pos_on_sales_invoice(frm);
 		instacertify.apply_consulting_no_warehouse(frm);
+		if (frm.is_new()) {
+			const wanted = cint(frm.doc.is_return) ? "INV-RET-.#####" : "INV-.#####";
+			if (!frm.doc.naming_series || String(frm.doc.naming_series).indexOf("SINV") >= 0) {
+				frm.set_value("naming_series", wanted);
+			}
+		}
 		frm.set_intro(
-			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required."),
+			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required. Series: INV-00001 …"),
 			"blue"
 		);
 		if (!frm.is_new()) {

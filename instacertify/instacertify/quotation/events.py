@@ -748,6 +748,9 @@ def create_invoice_from_quotation(quotation: str, submit: int = 0):
 		si = frappe.get_doc("Sales Invoice", si)
 
 	si.ic_quotation = qt.name
+	from instacertify.setup.naming_series import apply_sales_invoice_series
+
+	apply_sales_invoice_series(si)
 	payment_terms_text = frappe.utils.strip_html(qt.ic_payment_terms or "") or (
 		qt.payment_terms_template or "As per quotation"
 	)
@@ -848,6 +851,9 @@ def _set_invoice_defaults(si):
 	ERPNext's Quotation → Sales Invoice mapper clears item cost_center; SI
 	validation then fails with 'Cost Center None does not belong to company'.
 	"""
+	from instacertify.setup.naming_series import apply_sales_invoice_series
+
+	apply_sales_invoice_series(si)
 	if not si.get("items"):
 		frappe.throw(_("Quotation has no items to invoice. Add items or cost breakdown first."))
 

@@ -27,9 +27,18 @@ def validate_sales_invoice(doc, method=None):
 	if getattr(doc, "is_pos", 0):
 		doc.is_pos = 0
 		doc.pos_profile = None
+	from instacertify.setup.naming_series import apply_sales_invoice_series
+
+	apply_sales_invoice_series(doc)
 	apply_transaction_billing_defaults(doc, customer_field="customer")
 	# Consulting: sell services without warehouse / stock update
 	strip_warehouse_from_service_items(doc)
+
+
+def before_insert_sales_invoice(doc, method=None):
+	from instacertify.setup.naming_series import apply_sales_invoice_series
+
+	apply_sales_invoice_series(doc)
 
 
 def validate_purchase_invoice(doc, method=None):
