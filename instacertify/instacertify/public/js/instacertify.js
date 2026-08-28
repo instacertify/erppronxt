@@ -11,6 +11,22 @@ instacertify.brand = {
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
+/** Quotation naming: Service/Consulting → QTN-SRV, Testing → QTN-TST, else QTN-OTH */
+instacertify.quotation_series_for_type = function (quotation_type) {
+	const t = (quotation_type || "").trim();
+	if (t === "Testing") return "QTN-TST-.#####";
+	if (t === "Service" || t === "Consulting") return "QTN-SRV-.#####";
+	return "QTN-OTH-.#####";
+};
+
+instacertify.apply_quotation_naming_series = function (frm) {
+	if (!frm || !frm.is_new || !frm.is_new()) return;
+	const wanted = instacertify.quotation_series_for_type(frm.doc.ic_quotation_type);
+	if (frm.doc.naming_series !== wanted) {
+		frm.set_value("naming_series", wanted);
+	}
+};
+
 /** Find a node in the light DOM or inside open shadow roots (Custom HTML Blocks). */
 instacertify.query_deep = function (selector, root) {
 	const scope = root || document;
@@ -771,6 +787,7 @@ $(document).on("page-change", function () {
 // Quotation form enhancements
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
+		instacertify.apply_quotation_naming_series(frm);
 		frm.add_custom_button(__("Upload Quote Format"), () => {
 			instacertify.open_quote_format_upload({
 				quotation_type: frm.doc.ic_quotation_type || "Consulting",
@@ -1023,6 +1040,7 @@ frappe.ui.form.on("Quotation", {
 		instacertify.toggle_quotation_sections(frm);
 		instacertify.setup_quotation_template_filter(frm);
 		instacertify.render_quotation_entry_guide(frm);
+		instacertify.apply_quotation_naming_series(frm);
 		if (frm.doc.ic_quotation_template) {
 			frm.set_value("ic_quotation_template", "");
 		}
@@ -1363,6 +1381,7 @@ frappe.ui.form.on("Quotation", {
 				primary_action_label: __("Continue to form"),
 				primary_action(values) {
 					frm.set_value("ic_quotation_type", values.ic_quotation_type);
+					instacertify.apply_quotation_naming_series(frm);
 					if (values.ic_quotation_template) {
 						frm.set_value("ic_quotation_template", values.ic_quotation_template);
 					}

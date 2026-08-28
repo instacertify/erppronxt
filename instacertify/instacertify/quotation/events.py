@@ -17,6 +17,9 @@ def validate_quotation(doc, method=None):
 		doc.ic_revision_number = 0
 	if doc.ic_quotation_type == "Testing" and not doc.ic_subject:
 		doc.ic_subject = "Testing"
+	from instacertify.setup.naming_series import apply_quotation_series
+
+	apply_quotation_series(doc)
 	_apply_quotation_defaults(doc)
 	if doc.quotation_to == "Customer" and doc.party_name:
 		from instacertify.accounting.billing import apply_transaction_billing_defaults
@@ -31,6 +34,12 @@ def validate_quotation(doc, method=None):
 			_advance_linked_lead(doc, "Quote")
 		except Exception:
 			pass
+
+
+def before_insert_quotation(doc, method=None):
+	from instacertify.setup.naming_series import apply_quotation_series
+
+	apply_quotation_series(doc)
 
 
 def _calculate_test_line_totals(doc):

@@ -1,5 +1,5 @@
 # Copyright (c) Instacertify
-"""Unified document naming series — one Sales Invoice series: INV-00001, INV-00002, …"""
+"""Document naming series — Sales Invoice INV-##### and Quotation by type."""
 
 from __future__ import annotations
 
@@ -14,6 +14,23 @@ SALES_INVOICE_SERIES_OPTIONS = "INV-.#####"
 SALES_INVOICE_RETURN_SERIES = "INV-RET-.#####"
 SALES_INVOICE_RETURN_OPTIONS = "INV-.#####\nINV-RET-.#####"
 
+# Quotation series by business type (user-facing: Service, Testing, Others)
+QUOTE_SERIES_SERVICE = "QTN-SRV-.#####"
+QUOTE_SERIES_TESTING = "QTN-TST-.#####"
+QUOTE_SERIES_OTHERS = "QTN-OTH-.#####"
+
+QUOTE_SERIES_OPTIONS = "\n".join(
+	[
+		QUOTE_SERIES_SERVICE,
+		QUOTE_SERIES_TESTING,
+		QUOTE_SERIES_OTHERS,
+	]
+)
+
+# ic_quotation_type values that map to Service series
+_SERVICE_TYPES = {"Service", "Consulting"}
+_TESTING_TYPES = {"Testing"}
+
 
 def ensure_invoice_naming_series():
 	"""Force one shared Sales Invoice naming series: INV-00001 … INV-99999."""
@@ -22,8 +39,8 @@ def ensure_invoice_naming_series():
 		options=SALES_INVOICE_RETURN_OPTIONS,
 		default=SALES_INVOICE_SERIES,
 	)
-	_seed_series_counter("INV-", digits=5)
-	_seed_series_counter("INV-RET-", digits=5)
+	_seed_series_counter("Sales Invoice", "INV-", digits=5)
+	_seed_series_counter("Sales Invoice", "INV-RET-", digits=5)
 	frappe.clear_cache(doctype="Sales Invoice")
 	return {
 		"sales_invoice_series": SALES_INVOICE_SERIES,
@@ -52,6 +69,55 @@ def _is_legacy_sales_invoice_series(series: str) -> bool:
 		or re.match(r"^SRET", s, flags=re.I)
 		or re.match(r"^ACC-SINV", s, flags=re.I)
 	)
+
+
+def ensure_quotation_naming_series():
+	"""Install distinct Quotation series for Service, Testing, and Others."""
+	_set_naming_series_options(
+		"Quotation",
+		options=QUOTE_SERIES_OPTIONS,
+		default=QUOTE_SERIES_SERVICE,
+	)
+	for prefix in ("QTN-SRV-", "QTN-TST-", "QTN-OTH-"):
+		_seed_series_counter("Quotation", prefix, digits=5)
+	frappe.clear_cache(doctype="Quotation")
+	return {
+		"service": QUOTE_SERIES_SERVICE,
+		"testing": QUOTE_SERIES_TESTING,
+		"others": QUOTE_SERIES_OTHERS,
+		"examples": ["QTN-SRV-00001", "QTN-TST-00001", "QTN-OTH-00001"],
+	}
+
+
+def quotation_series_for_type(quotation_type: str | None) -> str:
+	"""Map ic_quotation_type → naming series."""
+	t = (quotation_type or "").strip()
+	if t in _TESTING_TYPES:
+		return QUOTE_SERIES_TESTING
+	if t in _SERVICE_TYPES:
+		return QUOTE_SERIES_SERVICE
+	# Renewal, Other, Multiple Products / Multiple Services, blank → Others
+	return QUOTE_SERIES_OTHERS
+
+
+def apply_quotation_series(doc):
+	"""Set Quotation naming_series from type before insert / on validate (new docs)."""
+	if getattr(doc, "flags", None) and doc.flags.get("ignore_ic_naming_series"):
+		return
+	# Never rename an already-saved document
+	if not doc.is_new():
+		return
+	wanted = quotation_series_for_type(doc.get("ic_quotation_type"))
+	current = (doc.get("naming_series") or "").strip()
+	if not current or _is_legacy_quotation_series(current) or current != wanted:
+		doc.naming_series = wanted
+
+
+def _is_legacy_quotation_series(series: str) -> bool:
+	s = (series or "").strip()
+	if s in (QUOTE_SERIES_SERVICE, QUOTE_SERIES_TESTING, QUOTE_SERIES_OTHERS):
+		return False
+	return bool(re.match(r"^(SAL-)?QTN", s, flags=re.I) or re.match(r"^QTN-\.YYYY", s, flags=re.I))
 
 
 def _set_naming_series_options(doctype: str, options: str, default: str):
@@ -113,16 +179,13 @@ def _upsert_property_setter(
 	).insert(ignore_permissions=True)
 
 
-def _seed_series_counter(prefix: str, digits: int = 5):
-	"""Ensure tabSeries row exists; bump current to max(existing INV-##### names)."""
+def _seed_series_counter(doctype: str, prefix: str, digits: int = 5):
+	"""Ensure tabSeries row exists; bump current to max existing ##### names."""
 	like = f"{prefix}%"
 	max_n = 0
 	try:
 		names = frappe.db.sql(
-			"""
-			select name from `tabSales Invoice`
-			where name like %s
-			""",
+			f"select name from `tab{doctype}` where name like %s",
 			(like,),
 			as_dict=True,
 		)

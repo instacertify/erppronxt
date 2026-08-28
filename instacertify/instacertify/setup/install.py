@@ -169,6 +169,7 @@ def after_migrate():
 	setup_gst_returns()
 	setup_consulting_billing()
 	setup_invoice_naming_series()
+	setup_quotation_naming_series()
 	setup_hrms_alignment()
 	frappe.db.commit()
 
@@ -180,6 +181,13 @@ def setup_invoice_naming_series():
 	ensure_invoice_naming_series()
 
 
+def setup_quotation_naming_series():
+	"""Service / Testing / Others quotation series: QTN-SRV / QTN-TST / QTN-OTH."""
+	from instacertify.setup.naming_series import ensure_quotation_naming_series
+
+	ensure_quotation_naming_series()
+
+
 def setup_hrms_alignment():
 	"""Pin Expenses & HRMS last; align hiring → FnF DocTypes when hrms is installed."""
 	try:
@@ -188,6 +196,7 @@ def setup_hrms_alignment():
 		ensure_hrms_alignment()
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "setup_hrms_alignment")
+
 
 
 
