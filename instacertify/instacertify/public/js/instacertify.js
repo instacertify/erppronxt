@@ -131,12 +131,30 @@ $(document).on("app_ready", function () {
 			route === "workspace" ||
 			route === "desktop" ||
 			route === "Home" ||
-			route === "Welcome Workspace";
+			route === "Workspaces/Home" ||
+			route === "Welcome Workspace" ||
+			route === "Workspaces/Welcome Workspace";
 		if (isDeskRoot) {
 			localStorage.setItem("current_page", home);
 			frappe.set_route("Workspaces", home);
 		} else if (!localStorage.getItem("current_page")) {
 			localStorage.setItem("current_page", home);
+		}
+	} catch (e) {
+		/* ignore */
+	}
+});
+
+/** Never leave users on the generic ERPNext Home workspace (wrong landing / empty). */
+$(document).on("page-change", function () {
+	try {
+		const route = frappe.get_route ? frappe.get_route() : [];
+		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+		if (
+			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
+			(route[0] === "workspace" && (!route[1] || route[1] === "Home"))
+		) {
+			frappe.set_route("Workspaces", home);
 		}
 	} catch (e) {
 		/* ignore */
@@ -2117,6 +2135,30 @@ frappe.ui.form.on("Project", {
 		frm.add_custom_button(__("Generate / Share Document List"), () => {
 			instacertify.open_project_document_share_dialog(frm);
 		}, __("Actions"));
+		frm.add_custom_button(__("Share Sample Dispatch Sheet"), () => {
+			frappe.call({
+				method: "instacertify.sample_dispatch.api.create_sample_dispatch_for_project",
+				args: { project: frm.doc.name },
+				freeze: true,
+				callback(r) {
+					const url = r.message && r.message.url;
+					frappe.msgprint({
+						title: __("Sample Dispatch Data Collection — customer link"),
+						message: `
+							<p>${__("Share this link so the customer can submit courier, AWB, POD, and sample dispatch details:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+						`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+					}
+					if (r.message && r.message.name) {
+						frappe.set_route("Form", "IC Sample Dispatch Collection", r.message.name);
+					}
+				},
+			});
+		}, __("Actions"));
 		frm.add_custom_button(__("Open Team Chat"), () => {
 			instacertify.open_project_chat(frm);
 		}, __("Actions"));
@@ -2261,11 +2303,14 @@ frappe.ui.form.on("IC Document Request", {
 					callback(r) {
 						const url = r.message && r.message.url;
 						frappe.msgprint({
-							title: __("Customer link"),
+							title: __("Documents Collection Sheet — customer link"),
 							message: `<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-								<p class="text-muted">${__("Customer can upload docs, remarks, and sample POD / tracking.")}</p>`,
+								<p class="text-muted">${__("Customer can upload the document list and fill the Data Collection Sheet.")}</p>`,
 							indicator: "green",
 						});
+						if (url && navigator.clipboard) {
+							navigator.clipboard.writeText(url).catch(() => {});
+						}
 						frm.reload_doc();
 					},
 				});
@@ -2322,6 +2367,32 @@ frappe.ui.form.on("IC Document Request", {
 			args: { document_request: frm.doc.name, template: frm.doc.checklist_template },
 			callback() { frm.reload_doc(); },
 		});
+	},
+});
+
+frappe.ui.form.on("IC Sample Dispatch Collection", {
+	refresh(frm) {
+		if (frm.is_new()) return;
+		frm.add_custom_button(__("Generate / Share Customer Link"), () => {
+			frappe.call({
+				method: "instacertify.sample_dispatch.api.share_sample_dispatch_collection",
+				args: { name: frm.doc.name },
+				freeze: true,
+				callback(r) {
+					const url = r.message && r.message.url;
+					frappe.msgprint({
+						title: __("Sample Dispatch Data Collection — customer link"),
+						message: `<p>${__("Share this link with the customer to collect courier, AWB, POD, and sample details:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+					}
+					frm.reload_doc();
+				},
+			});
+		}, __("Actions"));
 	},
 });
 

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sample Dispatch Data Collection</title>
+  <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
+  <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+  <style>
+    .ic-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+    @media (max-width:720px){ .ic-form-grid { grid-template-columns:1fr; } }
+    .ic-form-grid label { display:block; font-size:12px; color:#5b7380; margin-bottom:4px; }
+    .ic-form-grid input, .ic-form-grid textarea, .ic-full textarea, .ic-full input {
+      width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; box-sizing:border-box;
+    }
+    .ic-full { margin-top:12px; }
+    .ic-section { margin-top:18px; padding-top:12px; border-top:1px solid #d7e6ef; }
+    .ic-section h3 { color:#065175; margin:0 0 10px; font-size:1rem; }
+    .ic-msg { margin-top:10px; padding:10px 12px; border-radius:10px; display:none; }
+    .ic-msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
+    .ic-msg.err { display:block; background:#fdecea; color:#b42318; }
+    .ic-hint { color:#5b7380; font-size:0.92rem; }
+  </style>
+</head>
+<body class="ic-portal-body">
+  <div class="ic-portal-wrap">
+    <div class="ic-portal-brand" style="margin-bottom:14px;">
+      <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+    </div>
+    <div class="ic-portal-card">
+      <h2 style="color:#065175;margin-top:0;">Sample Dispatch Data Collection Sheet</h2>
+      <div id="content">Loading…</div>
+      <div id="msg" class="ic-msg"></div>
+      <div id="form" style="display:none;">
+        <div class="ic-section">
+          <h3>Contact</h3>
+          <div class="ic-form-grid">
+            <div><label>Contact person</label><input id="contact_person" type="text"/></div>
+            <div><label>Phone</label><input id="contact_phone" type="text"/></div>
+            <div><label>Email</label><input id="contact_email" type="email"/></div>
+            <div><label>Dispatch from address</label><textarea id="dispatch_from_address" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="ic-section">
+          <h3>Sample details</h3>
+          <div class="ic-form-grid">
+            <div><label>Sample description</label><textarea id="sample_description" rows="2"></textarea></div>
+            <div><label>Quantity</label><input id="sample_quantity" type="text"/></div>
+            <div><label>Condition</label><input id="sample_condition" type="text" placeholder="e.g. Good / Sealed"/></div>
+            <div><label>Packaging</label><textarea id="packaging_details" rows="2"></textarea></div>
+          </div>
+        </div>
+        <div class="ic-section">
+          <h3>Courier / dispatch</h3>
+          <div class="ic-form-grid">
+            <div><label>Courier name</label><input id="courier_name" type="text" placeholder="e.g. BlueDart / DTDC"/></div>
+            <div><label>Tracking / AWB number</label><input id="tracking_number" type="text"/></div>
+            <div><label>Dispatch date</label><input id="dispatch_date" type="date"/></div>
+            <div><label>Expected delivery</label><input id="expected_delivery" type="date"/></div>
+          </div>
+          <div class="ic-full">
+            <label>POD / dispatch proof</label>
+            <input id="pod_file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*"/>
+            <p class="ic-hint">Allowed: PDF, images, Excel/CSV, Word</p>
+            <div id="pod_link"></div>
+          </div>
+          <div class="ic-full">
+            <label>Remarks</label>
+            <textarea id="customer_remarks" rows="3"></textarea>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="ic-btn ic-btn-primary" id="btn-save">Submit dispatch sheet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const token = {{ token|tojson }};
+    const csrf = {{ csrf_token|tojson }};
+    function showMsg(t, ok) {
+      const el = document.getElementById('msg');
+      el.className = 'ic-msg ' + (ok ? 'ok' : 'err');
+      el.textContent = t;
+    }
+    function esc(v) {
+      const d = document.createElement('div');
+      d.textContent = v == null ? '' : String(v);
+      return d.innerHTML;
+    }
+    const ALLOWED_EXT = /\.(pdf|png|jpe?g|webp|gif|bmp|tiff?|xls|xlsx|csv|docx?)$/i;
+    async function uploadFile(file) {
+      if (!file || !ALLOWED_EXT.test(file.name || '')) throw new Error('File type not allowed.');
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('is_private', 1);
+      const up = await fetch('/api/method/upload_file', {
+        method: 'POST', body: fd, headers: {'X-Frappe-CSRF-Token': csrf}
+      });
+      const uj = await up.json();
+      if (!uj.message || !uj.message.file_url) throw new Error('Upload failed');
+      return uj.message.file_url;
+    }
+    async function post(method, body) {
+      const r = await fetch('/api/method/' + method, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
+        body: JSON.stringify(body || {})
+      });
+      const data = await r.json();
+      if (data.exc || data._server_messages) {
+        let msg = 'Request failed';
+        try {
+          const sm = JSON.parse(data._server_messages || '[]');
+          if (sm[0]) msg = JSON.parse(sm[0]).message || msg;
+        } catch (e) {}
+        throw new Error(msg);
+      }
+      return data.message;
+    }
+    function fill(id, v) { const el = document.getElementById(id); if (el) el.value = v || ''; }
+    function load() {
+      fetch('/api/method/instacertify.sample_dispatch.api.get_sample_dispatch_by_token?token=' + encodeURIComponent(token))
+        .then(r => r.json()).then(r => {
+          const d = r.message;
+          if (!d) { document.getElementById('content').innerText = 'Not found'; return; }
+          let html = (d.portal_notice ? '<p class="ic-hint">' + esc(d.portal_notice) + '</p>' : '');
+          html += '<p><b>' + esc(d.title || '') + '</b></p><p>Status: <b>' + esc(d.status || '') + '</b></p>';
+          if (d.laboratory_name) html += '<p class="ic-hint">Destination lab: ' + esc(d.laboratory_name) + '</p>';
+          if (d.customer_instructions) html += '<div class="ic-hint">' + d.customer_instructions + '</div>';
+          document.getElementById('content').innerHTML = html;
+          if (d.read_only) {
+            document.getElementById('form').style.display = 'none';
+            showMsg('This sheet is closed. Contact your Instacertify coordinator if you need changes.', false);
+            return;
+          }
+          document.getElementById('form').style.display = 'block';
+          ['contact_person','contact_phone','contact_email','dispatch_from_address','sample_description',
+           'sample_quantity','sample_condition','packaging_details','courier_name','tracking_number',
+           'dispatch_date','expected_delivery','customer_remarks'].forEach(k => fill(k, d[k]));
+          document.getElementById('pod_link').innerHTML = d.pod_attachment
+            ? '<a href="' + esc(d.pod_attachment) + '" target="_blank" rel="noopener">Current POD</a>' : '';
+        }).catch(() => { document.getElementById('content').innerText = 'Could not load sheet.'; });
+    }
+    document.getElementById('btn-save').onclick = async () => {
+      try {
+        let pod = null;
+        const f = document.getElementById('pod_file').files[0];
+        if (f) pod = await uploadFile(f);
+        await post('instacertify.sample_dispatch.api.save_sample_dispatch_collection', {
+          token,
+          contact_person: document.getElementById('contact_person').value,
+          contact_phone: document.getElementById('contact_phone').value,
+          contact_email: document.getElementById('contact_email').value,
+          dispatch_from_address: document.getElementById('dispatch_from_address').value,
+          sample_description: document.getElementById('sample_description').value,
+          sample_quantity: document.getElementById('sample_quantity').value,
+          sample_condition: document.getElementById('sample_condition').value,
+          packaging_details: document.getElementById('packaging_details').value,
+          courier_name: document.getElementById('courier_name').value,
+          tracking_number: document.getElementById('tracking_number').value,
+          dispatch_date: document.getElementById('dispatch_date').value,
+          expected_delivery: document.getElementById('expected_delivery').value,
+          pod_attachment: pod,
+          customer_remarks: document.getElementById('customer_remarks').value
+        });
+        showMsg('Sample dispatch sheet submitted. Thank you.', true);
+        setTimeout(load, 700);
+      } catch (e) { showMsg(e.message || 'Could not save', false); }
+    };
+    load();
+  </script>
+</body>
+</html>

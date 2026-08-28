@@ -198,18 +198,19 @@ def create_document_request_for_project(
 				)
 				doc.checklist_template = template
 	elif not doc.items:
-		# Sensible default checklist
+		# Sensible default checklist (documents only — sample dispatch is a separate sheet)
 		for name, cat in (
 			("Company Registration / GST", "Customer Documents"),
 			("Product Datasheet / Specs", "Technical Documents"),
 			("Authorization Letter", "Applications"),
-			("Sample Dispatch POD", "Other"),
 		):
 			doc.append(
 				"items",
 				{"document_name": name, "category": cat, "is_mandatory": 1, "status": "Pending"},
 			)
 		doc.save(ignore_permissions=True)
+
+	_ensure_default_data_fields(doc)
 
 	doc.reload()
 	share = share_document_request(doc.name)
@@ -228,6 +229,27 @@ def create_document_request_for_project(
 			for row in (doc.items or [])
 		],
 	}
+
+
+def _ensure_default_data_fields(doc):
+	"""Seed Data Collection Sheet rows when empty."""
+	doc.reload()
+	if doc.get("data_fields"):
+		return
+	if not frappe.get_meta("IC Document Request").has_field("data_fields"):
+		return
+	for label, mandatory in (
+		("Application / Scheme Name", 1),
+		("Factory / Manufacturing Address", 1),
+		("Authorized Signatory Name & Designation", 1),
+		("Product Technical Specs Summary", 0),
+		("Any Other Information", 0),
+	):
+		doc.append(
+			"data_fields",
+			{"field_label": label, "is_mandatory": mandatory, "field_value": ""},
+		)
+	doc.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -263,8 +285,32 @@ def get_document_request_by_token(token: str):
 		"dispatch_date": str(doc.get("dispatch_date") or ""),
 		"pod_attachment": doc.get("pod_attachment"),
 		"sample_dispatch_remarks": doc.get("sample_dispatch_remarks"),
+		"company_legal_name": doc.get("company_legal_name"),
+		"gstin": doc.get("gstin"),
+		"company_address": doc.get("company_address"),
+		"data_contact_person": doc.get("data_contact_person"),
+		"data_contact_phone": doc.get("data_contact_phone"),
+		"data_contact_email": doc.get("data_contact_email"),
+		"product_name": doc.get("product_name"),
+		"product_model": doc.get("product_model"),
+		"product_brand": doc.get("product_brand"),
+		"data_collection_remarks": doc.get("data_collection_remarks"),
+		"data_fields": [
+			{
+				"name": row.name,
+				"idx": row.idx,
+				"field_label": row.field_label,
+				"field_value": row.field_value,
+				"is_mandatory": row.is_mandatory,
+				"help_text": row.get("help_text"),
+			}
+			for row in (doc.get("data_fields") or [])
+		],
 		"portal_notice": _(
-			"Upload the requested documents and sample dispatch details here. This link does not provide access to Instacertify ERP."
+			"This is your Documents Collection Sheet and Data Collection Sheet. "
+			"Upload requested documents and fill the data fields. "
+			"For sample courier / AWB details use the separate Sample Dispatch link from your coordinator. "
+			"This link does not provide access to Instacertify ERP."
 		),
 		"allowed_types": "PDF, images (PNG/JPG/WEBP/GIF/TIFF), Excel/CSV, Word",
 		"items": [
@@ -326,6 +372,62 @@ def save_item_remarks(token: str, item_name: str, remarks: str):
 			doc.save(ignore_permissions=True)
 			return {"ok": 1}
 	frappe.throw(_("Document item not found"))
+
+
+@frappe.whitelist(allow_guest=True)
+def save_data_collection(
+	token: str,
+	company_legal_name: str | None = None,
+	gstin: str | None = None,
+	company_address: str | None = None,
+	data_contact_person: str | None = None,
+	data_contact_phone: str | None = None,
+	data_contact_email: str | None = None,
+	product_name: str | None = None,
+	product_model: str | None = None,
+	product_brand: str | None = None,
+	data_collection_remarks: str | None = None,
+	data_fields: str | list | None = None,
+):
+	"""Customer submits Documents Collection Sheet — Data Collection section."""
+	import json
+
+	parent = frappe.db.get_value("IC Document Request", {"share_token": token}, "name")
+	if not parent:
+		frappe.throw(_("Invalid document link"), frappe.PermissionError)
+	doc = frappe.get_doc("IC Document Request", parent)
+	_assert_doc_request_open(doc)
+
+	if frappe.get_meta("IC Document Request").has_field("company_legal_name"):
+		doc.company_legal_name = company_legal_name or doc.company_legal_name
+		doc.gstin = gstin or doc.gstin
+		doc.company_address = company_address or doc.company_address
+		doc.data_contact_person = data_contact_person or doc.data_contact_person
+		doc.data_contact_phone = data_contact_phone or doc.data_contact_phone
+		doc.data_contact_email = data_contact_email or doc.data_contact_email
+		doc.product_name = product_name or doc.product_name
+		doc.product_model = product_model or doc.product_model
+		doc.product_brand = product_brand or doc.product_brand
+		if data_collection_remarks is not None:
+			doc.data_collection_remarks = data_collection_remarks
+
+	if data_fields is not None and frappe.get_meta("IC Document Request").has_field("data_fields"):
+		if isinstance(data_fields, str):
+			try:
+				data_fields = json.loads(data_fields)
+			except Exception:
+				data_fields = []
+		by_name = {str(r.get("name")): r for r in (data_fields or []) if r.get("name")}
+		for row in doc.get("data_fields") or []:
+			payload = by_name.get(row.name)
+			if payload is not None:
+				row.field_value = payload.get("field_value") or ""
+
+	if doc.status == "Sent to Customer":
+		doc.status = "Partially Uploaded"
+	doc.save(ignore_permissions=True)
+	_notify_upload(doc, subject_prefix="Data collection updated")
+	return {"ok": 1, "status": doc.status}
 
 
 @frappe.whitelist(allow_guest=True)

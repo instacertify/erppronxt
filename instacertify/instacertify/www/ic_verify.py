@@ -16,6 +16,7 @@ ALLOWED_VERIFY_DOCTYPES = {
 	"IC Sample Tracking",
 	"IC Testing Request",
 	"IC Document Request",
+	"IC Sample Dispatch Collection",
 }
 
 FRIENDLY_TYPE = {
@@ -23,7 +24,8 @@ FRIENDLY_TYPE = {
 	"Sales Invoice": "Tax Invoice",
 	"IC Sample Tracking": "Sample",
 	"IC Testing Request": "Testing Request",
-	"IC Document Request": "Document Checklist",
+	"IC Document Request": "Documents Collection Sheet",
+	"IC Sample Dispatch Collection": "Sample Dispatch Collection",
 }
 
 

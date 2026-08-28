@@ -960,6 +960,154 @@ CONSULTING_QUOTATION_HTML = """
 """
 
 
+DOCUMENTS_COLLECTION_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
+<style>
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding: 0 !important; margin: 0 !important; }
+  .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh-logo img { max-height:58px; max-width:320px; }
+  .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
+  .ic-sub { color:#555; margin-bottom:12px; }
+  .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
+  table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.ic-table th { background:#065175; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
+  table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; }
+  .ic-meta { margin-bottom:10px; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+</style>
+<div class="ic-sheet">
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div style="text-align:right;font-size:10px;line-height:1.4;">{{ legal }}</div>
+  </div>
+  <div class="ic-title">Documents Collection Sheet</div>
+  <div class="ic-sub">List of Documents + Data Collection Sheet</div>
+  <div class="ic-meta">
+    <b>Sheet:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Title:</b> {{ doc.title }} &nbsp;|&nbsp; <b>Status:</b> {{ doc.status }}<br/>
+    <b>Customer:</b> {{ doc.customer }} &nbsp;|&nbsp; <b>Project:</b> {{ doc.project or '—' }}
+  </div>
+  <div class="ic-box">
+    <h3>1. List of Documents</h3>
+    <table class="ic-table">
+      <thead><tr><th>#</th><th>Document</th><th>Category</th><th>Mandatory</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for row in doc.items %}
+        <tr>
+          <td>{{ row.idx }}</td>
+          <td>{{ row.document_name }}</td>
+          <td>{{ row.category or '' }}</td>
+          <td>{{ 'Yes' if row.is_mandatory else 'No' }}</td>
+          <td>{{ row.status }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="ic-box">
+    <h3>2. Data Collection Sheet</h3>
+    <table class="ic-table">
+      <tbody>
+        <tr><td><b>Company Legal Name</b></td><td>{{ doc.company_legal_name or '' }}</td></tr>
+        <tr><td><b>GSTIN</b></td><td>{{ doc.gstin or '' }}</td></tr>
+        <tr><td><b>Company Address</b></td><td>{{ doc.company_address or '' }}</td></tr>
+        <tr><td><b>Contact Person</b></td><td>{{ doc.data_contact_person or '' }}</td></tr>
+        <tr><td><b>Phone</b></td><td>{{ doc.data_contact_phone or '' }}</td></tr>
+        <tr><td><b>Email</b></td><td>{{ doc.data_contact_email or '' }}</td></tr>
+        <tr><td><b>Product</b></td><td>{{ doc.product_name or '' }} / {{ doc.product_model or '' }} / {{ doc.product_brand or '' }}</td></tr>
+        <tr><td><b>Remarks</b></td><td>{{ doc.data_collection_remarks or '' }}</td></tr>
+      </tbody>
+    </table>
+    {% if doc.data_fields %}
+    <table class="ic-table" style="margin-top:10px;">
+      <thead><tr><th>#</th><th>Field</th><th>Value</th><th>Mandatory</th></tr></thead>
+      <tbody>
+      {% for row in doc.data_fields %}
+        <tr>
+          <td>{{ row.idx }}</td>
+          <td>{{ row.field_label }}</td>
+          <td>{{ row.field_value or '' }}</td>
+          <td>{{ 'Yes' if row.is_mandatory else 'No' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  <div class="ic-footer-bar">instacertify · documents collection sheet</div>
+</div>
+"""
+
+
+SAMPLE_DISPATCH_COLLECTION_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
+<style>
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding: 0 !important; margin: 0 !important; }
+  .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh-logo img { max-height:58px; max-width:320px; }
+  .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
+  .ic-sub { color:#555; margin-bottom:12px; }
+  .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
+  table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; vertical-align:top; }
+  table.ic-table td:first-child { width:32%; color:#065175; font-weight:600; }
+  .ic-meta { margin-bottom:10px; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+</style>
+<div class="ic-sheet">
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div style="text-align:right;font-size:10px;line-height:1.4;">{{ legal }}</div>
+  </div>
+  <div class="ic-title">Sample Dispatch Data Collection Sheet</div>
+  <div class="ic-sub">Customer courier / AWB / POD collection</div>
+  <div class="ic-meta">
+    <b>Sheet:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Title:</b> {{ doc.title }} &nbsp;|&nbsp; <b>Status:</b> {{ doc.status }}<br/>
+    <b>Customer:</b> {{ doc.customer }} &nbsp;|&nbsp; <b>Project:</b> {{ doc.project or '—' }}
+  </div>
+  <div class="ic-box">
+    <h3>Contact</h3>
+    <table class="ic-table">
+      <tr><td>Contact Person</td><td>{{ doc.contact_person or '' }}</td></tr>
+      <tr><td>Phone</td><td>{{ doc.contact_phone or '' }}</td></tr>
+      <tr><td>Email</td><td>{{ doc.contact_email or '' }}</td></tr>
+      <tr><td>Dispatch From Address</td><td>{{ doc.dispatch_from_address or '' }}</td></tr>
+    </table>
+  </div>
+  <div class="ic-box">
+    <h3>Sample Details</h3>
+    <table class="ic-table">
+      <tr><td>Description</td><td>{{ doc.sample_description or '' }}</td></tr>
+      <tr><td>Quantity</td><td>{{ doc.sample_quantity or '' }}</td></tr>
+      <tr><td>Condition</td><td>{{ doc.sample_condition or '' }}</td></tr>
+      <tr><td>Packaging</td><td>{{ doc.packaging_details or '' }}</td></tr>
+    </table>
+  </div>
+  <div class="ic-box">
+    <h3>Courier / Dispatch</h3>
+    <table class="ic-table">
+      <tr><td>Courier</td><td>{{ doc.courier_name or '' }}</td></tr>
+      <tr><td>Tracking / AWB</td><td>{{ doc.tracking_number or '' }}</td></tr>
+      <tr><td>Dispatch Date</td><td>{{ doc.dispatch_date or '' }}</td></tr>
+      <tr><td>Expected Delivery</td><td>{{ doc.expected_delivery or '' }}</td></tr>
+      <tr><td>POD Attached</td><td>{{ 'Yes' if doc.pod_attachment else 'No' }}</td></tr>
+      <tr><td>Customer Remarks</td><td>{{ doc.customer_remarks or '' }}</td></tr>
+    </table>
+  </div>
+  <div class="ic-footer-bar">instacertify · sample dispatch data collection</div>
+</div>
+"""
+
+
 def ensure_print_formats():
 	formats = [
 		("Instacertify Quotation", "Quotation", QUOTATION_HTML),
@@ -969,6 +1117,8 @@ def ensure_print_formats():
 		("Instacertify Sample Label", "IC Sample Tracking", SAMPLE_HTML),
 		("Instacertify Testing Request", "IC Testing Request", TESTING_HTML),
 		("Instacertify Joining Letter", "IC Joining Letter", JOINING_HTML),
+		("Instacertify Documents Collection Sheet", "IC Document Request", DOCUMENTS_COLLECTION_HTML),
+		("Instacertify Sample Dispatch Collection", "IC Sample Dispatch Collection", SAMPLE_DISPATCH_COLLECTION_HTML),
 	]
 	for name, dt, html in formats:
 		values = {
@@ -998,6 +1148,8 @@ def ensure_print_formats():
 	_ensure_default_print_format("IC Sample Tracking", "Instacertify Sample Label")
 	_ensure_default_print_format("IC Testing Request", "Instacertify Testing Request")
 	_ensure_default_print_format("IC Joining Letter", "Instacertify Joining Letter")
+	_ensure_default_print_format("IC Document Request", "Instacertify Documents Collection Sheet")
+	_ensure_default_print_format("IC Sample Dispatch Collection", "Instacertify Sample Dispatch Collection")
 
 	# Prefer Chrome system-wide when Print Settings supports it
 	try:

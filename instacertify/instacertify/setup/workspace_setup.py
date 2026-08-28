@@ -930,7 +930,8 @@ def _ensure_home_workspace():
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
 		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
-		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
+		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Documents Collection Sheets", "col": 3}},
+		{"id": "sc_dispatch", "type": "shortcut", "data": {"shortcut_name": "Sample Dispatch Sheets", "col": 3}},
 		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 3}},
 		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
 		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 3}},
@@ -956,7 +957,8 @@ def _ensure_home_workspace():
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Quote Format Library", "link_to": "IC Quotation Template", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
-		{"label": "Document Requests", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
+		{"label": "Documents Collection Sheets", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
+		{"label": "Sample Dispatch Sheets", "link_to": "IC Sample Dispatch Collection", "type": "DocType", "doc_view": "List"},
 		{"label": "Helpdesk", "link_to": "Helpdesk Ticket", "type": "DocType", "doc_view": "List"},
 		{"label": "Sales Invoice", "link_to": "Sales Invoice", "type": "DocType", "doc_view": "List"},
 		{"label": "Purchase Invoice", "link_to": "Purchase Invoice", "type": "DocType", "doc_view": "List"},
@@ -1017,7 +1019,8 @@ def _ensure_home_workspace():
 		{"label": "Upload Laboratory / Scope", "link_type": "DocType", "link_to": "IC Laboratory", "type": "Link"},
 		{"label": "Testing Requests", "link_type": "DocType", "link_to": "IC Testing Request", "type": "Link"},
 		{"label": "Documents", "type": "Card Break"},
-		{"label": "Document Requests (customer uploads)", "link_type": "DocType", "link_to": "IC Document Request", "type": "Link"},
+		{"label": "Documents Collection Sheets", "link_type": "DocType", "link_to": "IC Document Request", "type": "Link"},
+		{"label": "Sample Dispatch Collection Sheets", "link_type": "DocType", "link_to": "IC Sample Dispatch Collection", "type": "Link"},
 		{"label": "Document Checklist Templates", "link_type": "DocType", "link_to": "IC Document Checklist Template", "type": "Link"},
 		{"label": "Project Records", "link_type": "DocType", "link_to": "IC Project Record", "type": "Link"},
 		{"label": "Calendar & Planner", "type": "Card Break"},
@@ -1078,7 +1081,22 @@ def _ensure_home_workspace():
 			continue
 		elif dt and not frappe.db.exists("DocType", dt):
 			continue
+		# Single DocTypes must open Form — List view 500s / Not Found
+		if stype == "DocType" and dt and frappe.get_meta(dt).issingle:
+			s = dict(s)
+			s["doc_view"] = ""
 		safe_shortcuts.append(s)
+
+	# Keep Quick Link tiles in sync with shortcuts that actually resolve (no dead tiles)
+	safe_shortcut_labels = {s["label"] for s in safe_shortcuts}
+	content = [
+		block
+		for block in content
+		if not (
+			block.get("type") == "shortcut"
+			and (block.get("data") or {}).get("shortcut_name") not in safe_shortcut_labels
+		)
+	]
 
 	payload = {
 		"doctype": "Workspace",

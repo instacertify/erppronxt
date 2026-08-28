@@ -6,8 +6,8 @@ frappe.pages["team-collaboration"].on_page_load = function (wrapper) {
 	});
 
 	frappe.breadcrumbs.add({
-		label: __("Home"),
-		route: "/app/home",
+		label: __("Instacertify Home"),
+		route: "/app/workspaces/Instacertify%20Home",
 	});
 
 	page.set_title(__("Team Collaboration"));
