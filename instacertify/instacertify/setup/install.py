@@ -168,7 +168,18 @@ def after_migrate():
 	setup_disable_pos()
 	setup_gst_returns()
 	setup_consulting_billing()
+	setup_hrms_alignment()
 	frappe.db.commit()
+
+
+def setup_hrms_alignment():
+	"""Pin Expenses & HRMS last; align hiring → FnF DocTypes when hrms is installed."""
+	try:
+		from instacertify.hr.lifecycle import ensure_hrms_alignment
+
+		ensure_hrms_alignment()
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "setup_hrms_alignment")
 
 
 def setup_default_dashboard():
