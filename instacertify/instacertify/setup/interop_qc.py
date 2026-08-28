@@ -32,6 +32,7 @@ def run():
 		"Helpdesk Ticket",
 		"IC Testing Request",
 		"IC Document Request",
+		"IC Sample Dispatch Collection",
 		"IC Sample Tracking",
 		"IC Expense Claim",
 		"IC Quotation Template",

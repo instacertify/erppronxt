@@ -1,0 +1,302 @@
+{
+ "name": "IC Sample Dispatch Collection",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "module": "Instacertify",
+ "track_changes": 1,
+ "title_field": "title",
+ "search_fields": "customer,project,tracking_number,status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "SDC-.YYYY.-.####",
+   "default": "SDC-.YYYY.-.####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_top",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSent to Customer\nSubmitted by Customer\nUnder Review\nCompleted\nCancelled",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "share_token",
+   "fieldtype": "Data",
+   "label": "Share Token",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "label": "Sent On",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "submitted_on",
+   "fieldtype": "Datetime",
+   "label": "Customer Submitted On",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "label": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "options": "Project",
+   "label": "Project",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_links",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "options": "Quotation",
+   "label": "Quotation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_tracking",
+   "fieldtype": "Link",
+   "options": "IC Sample Tracking",
+   "label": "Sample Tracking"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Destination Laboratory"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Handled By"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_instructions",
+   "fieldtype": "Section Break",
+   "label": "Instructions for Customer"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "customer_instructions",
+   "fieldtype": "Text Editor",
+   "label": "Instructions"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_contact",
+   "fieldtype": "Section Break",
+   "label": "Dispatch Data Collection — Contact"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Contact Phone"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_contact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Contact Email"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "dispatch_from_address",
+   "fieldtype": "Small Text",
+   "label": "Dispatch From Address"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_sample",
+   "fieldtype": "Section Break",
+   "label": "Sample Details"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_description",
+   "fieldtype": "Small Text",
+   "label": "Sample Description"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_quantity",
+   "fieldtype": "Data",
+   "label": "Quantity"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_sample",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_condition",
+   "fieldtype": "Data",
+   "label": "Sample Condition"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "packaging_details",
+   "fieldtype": "Small Text",
+   "label": "Packaging Details"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_courier",
+   "fieldtype": "Section Break",
+   "label": "Courier / Dispatch"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "courier_name",
+   "fieldtype": "Data",
+   "label": "Courier Name",
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "tracking_number",
+   "fieldtype": "Data",
+   "label": "Tracking / AWB Number",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_courier",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "label": "Dispatch Date"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "expected_delivery",
+   "fieldtype": "Date",
+   "label": "Expected Delivery"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "pod_attachment",
+   "fieldtype": "Attach",
+   "label": "POD / Dispatch Proof"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Remarks"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "customer_remarks",
+   "fieldtype": "Small Text",
+   "label": "Customer Remarks"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "internal_remarks",
+   "fieldtype": "Text Editor",
+   "label": "Internal Remarks"
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 1,
+   "report": 1, "export": 1, "share": 1, "print": 1, "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1, "write": 1, "create": 1, "delete": 1,
+   "report": 1, "export": 1, "share": 1, "print": 1, "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Senior Operations",
+   "read": 1, "write": 1, "create": 1, "delete": 0,
+   "report": 1, "export": 1, "share": 1, "print": 1, "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Operations Manager",
+   "read": 1, "write": 1, "create": 1, "delete": 0,
+   "report": 1, "export": 1, "share": 1, "print": 1, "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Sales Person",
+   "read": 1, "write": 1, "create": 1, "delete": 0,
+   "report": 1, "export": 0, "share": 1, "print": 1, "email": 1
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}
