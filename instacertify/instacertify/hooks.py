@@ -7,7 +7,7 @@ app_license = "mit"
 app_version = "1.0.0"
 
 # Apps
-required_apps = ["erpnext", "india_compliance"]
+required_apps = ["erpnext", "india_compliance", "hrms"]
 
 # Includes in <head>
 app_include_css = "/assets/instacertify/css/instacertify.css"

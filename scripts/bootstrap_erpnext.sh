@@ -36,6 +36,16 @@ if [ ! -d apps/erpnext ]; then
   bench get-app erpnext --branch v16.33.0
 fi
 
+if [ ! -d apps/hrms ]; then
+  echo "==> Getting HRMS version-16 (hiring → FnF)"
+  bench get-app hrms --branch version-16
+fi
+
+if [ ! -d apps/india_compliance ]; then
+  echo "==> Getting india_compliance version-16"
+  bench get-app https://github.com/resilient-tech/india-compliance --branch version-16 || true
+fi
+
 if [ ! -d "sites/$SITE" ]; then
   echo "==> Creating site $SITE"
   bench new-site "$SITE" \
@@ -54,6 +64,13 @@ fi
 grep -q '^instacertify$' sites/apps.txt || echo instacertify >> sites/apps.txt
 ./env/bin/pip install -e apps/instacertify -q
 ./env/bin/pip install 'qrcode[pil]' -q
+
+if ! bench --site "$SITE" list-apps | grep -q hrms; then
+  bench --site "$SITE" install-app hrms || true
+fi
+if [ -d apps/india_compliance ] && ! bench --site "$SITE" list-apps | grep -q india_compliance; then
+  bench --site "$SITE" install-app india_compliance || true
+fi
 
 if ! bench --site "$SITE" list-apps | grep -q instacertify; then
   bench --site "$SITE" install-app instacertify

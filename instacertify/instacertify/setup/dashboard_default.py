@@ -32,6 +32,20 @@ def ensure_default_dashboard():
 		if frappe.db.exists("Workspace", name):
 			frappe.db.set_value("Workspace", name, "sequence_id", seq, update_modified=False)
 
+	# Expenses & HRMS workspace — after core ops, before generic Welcome clutter
+	if frappe.db.exists("Workspace", "HRMS & Expenses"):
+		frappe.db.set_value(
+			"Workspace",
+			"HRMS & Expenses",
+			{"public": 1, "is_hidden": 0, "sequence_id": 80},
+			update_modified=False,
+		)
+
+	# Push stock HRMS workspaces slightly after ours if present
+	for name, seq in (("HR", 81), ("Payroll", 82), ("Leaves", 83), ("Shift & Attendance", 84)):
+		if frappe.db.exists("Workspace", name):
+			frappe.db.set_value("Workspace", name, "sequence_id", seq, update_modified=False)
+
 	# Explicit per-user default (Frappe login redirects here)
 	users = frappe.get_all(
 		"User",
