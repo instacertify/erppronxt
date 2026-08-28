@@ -9,9 +9,10 @@ Instacertify certification, compliance, consulting and testing operations — im
 | ERPNext | **16.33.0** |
 | Frappe | version-16 (compatible) |
 | Custom app | `instacertify` |
+| HRMS | **hrms** version-16 (hiring → FnF) |
 | Primary currency | INR (multi-currency via native ERPNext) |
 
-No separate frontend, CRM, HRMS app, or alternate ERP platform is used. HR features reuse ERPNext native **Employee**, **Holiday List**, **Asset**, plus Instacertify DocTypes for joining letters / employee documents.
+HRMS provides Job Applicant → Offer → Employee Onboarding → Attendance/Leave → Payroll → Expense Claim → Employee Separation → **Full and Final Statement**. Instacertify adds Joining Letters, employee document uploads, and one-click expense filing; Expenses & HRMS sit **last** in home navigation.
 
 ## Repository layout
 
