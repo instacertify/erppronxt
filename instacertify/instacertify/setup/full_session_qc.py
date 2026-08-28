@@ -105,6 +105,43 @@ def run_full_session_qc(session_target: int = 50, save_print_samples: int = 0) -
 		out["suites"]["guest_portal"] = {"passed": False, "error": traceback.format_exc()}
 		out["suite_fails"].append("guest_portal")
 
+	# --- Suite: link / page health (no 404 nav targets) ---
+	try:
+		from instacertify.setup.link_health_qc import run_link_health_qc
+
+		links = run_link_health_qc()
+		out["suites"]["link_health"] = {
+			"ok": links.get("passed"),
+			"passed": links.get("passed"),
+			"passed_count": links.get("passed"),
+			"failed": links.get("failed"),
+			"failures": links.get("failures") or [],
+		}
+		if not links.get("ok"):
+			out["suite_fails"].append("link_health")
+	except Exception:
+		out["suites"]["link_health"] = {"passed": False, "error": traceback.format_exc()}
+		out["suite_fails"].append("link_health")
+
+	# --- Suite: collection sheets (documents + sample dispatch) ---
+	try:
+		from instacertify.setup.collection_sheets_qc import run_collection_sheets_qc
+
+		sheets = run_collection_sheets_qc()
+		summary = sheets.get("summary") or {}
+		out["suites"]["collection_sheets"] = {
+			"ok": summary.get("ok", len(sheets.get("ok") or [])),
+			"fail": summary.get("fail", len(sheets.get("fail") or [])),
+			"passed": summary.get("passed", len(sheets.get("fail") or []) == 0),
+			"urls": sheets.get("urls") or {},
+			"failures": list(sheets.get("fail") or [])[:20],
+		}
+		if not out["suites"]["collection_sheets"]["passed"]:
+			out["suite_fails"].append("collection_sheets")
+	except Exception:
+		out["suites"]["collection_sheets"] = {"ok": False, "error": traceback.format_exc()}
+		out["suite_fails"].append("collection_sheets")
+
 	# --- Spot checks ---
 	_spot_libraries(spot_ok, spot_warn, spot_fail)
 	_spot_explore(spot_ok, spot_warn, spot_fail)
@@ -230,9 +267,11 @@ def _spot_assets(ok, warn, fail):
 		"public/css/instacertify.css",
 		"www/ic_quotation.py",
 		"www/ic_documents.py",
+		"www/ic_dispatch.py",
 		"www/ic_verify.py",
 		"www/ic_report.py",
 		"setup/library_upload.py",
+		"setup/link_health_qc.py",
 		"explore/dashboard.py",
 		"expenses/api.py",
 	):
@@ -242,7 +281,7 @@ def _spot_assets(ok, warn, fail):
 
 def _spot_portals(ok, warn, fail):
 	try:
-		for route in ("ic_quotation", "ic_documents", "ic_verify", "ic_report"):
+		for route in ("ic_quotation", "ic_documents", "ic_dispatch", "ic_verify", "ic_report"):
 			mod = f"instacertify.www.{route}"
 			try:
 				frappe.get_module(mod)

@@ -11,6 +11,87 @@ instacertify.brand = {
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
+/** Prefer ERPNext File Library (internal drive) over pasted URLs / Google Drive. */
+instacertify.attach_options = {
+	allow_web_link: false,
+	allow_google_drive: false,
+};
+
+instacertify.get_attach_upload_notes = function () {
+	return __(
+		"Use My Device or Library (internal drive). Web links and Google Drive are disabled."
+	);
+};
+
+instacertify.open_file_manager = function () {
+	frappe.set_route("List", "File");
+};
+
+/** Append a File Manager shortcut under Attach fields in dialogs. */
+instacertify.add_file_manager_hint = function (dialog, fieldname) {
+	try {
+		const field = dialog.fields_dict && dialog.fields_dict[fieldname];
+		if (!field || !field.$wrapper) return;
+		if (field.$wrapper.find(".ic-open-file-manager").length) return;
+		const $hint = $(
+			`<div class="ic-open-file-manager text-muted" style="margin-top:6px;font-size:12px;">
+				<a href="#" class="ic-file-mgr-link">${__("Open File Manager")}</a>
+				— ${__("browse or upload once, then pick from Library")}
+			</div>`
+		);
+		field.$wrapper.append($hint);
+		$hint.find(".ic-file-mgr-link").on("click", (e) => {
+			e.preventDefault();
+			dialog.hide();
+			instacertify.open_file_manager();
+		});
+	} catch (e) {
+		/* ignore */
+	}
+};
+
+instacertify.patch_file_uploader_for_internal_drive = function () {
+	if (frappe.ui.form.ControlAttach && !frappe.ui.form.ControlAttach.prototype.__ic_internal_drive) {
+		const orig = frappe.ui.form.ControlAttach.prototype.set_upload_options;
+		frappe.ui.form.ControlAttach.prototype.set_upload_options = function () {
+			orig.apply(this, arguments);
+			this.upload_options = this.upload_options || {};
+			this.upload_options.allow_web_link = false;
+			this.upload_options.allow_google_drive = false;
+			if (!this.upload_options.upload_notes) {
+				this.upload_options.upload_notes = instacertify.get_attach_upload_notes();
+			}
+		};
+		frappe.ui.form.ControlAttach.prototype.__ic_internal_drive = true;
+	}
+	if (frappe.ui.form.ControlAttachImage && !frappe.ui.form.ControlAttachImage.prototype.__ic_internal_drive) {
+		const origImg = frappe.ui.form.ControlAttachImage.prototype.set_upload_options;
+		frappe.ui.form.ControlAttachImage.prototype.set_upload_options = function () {
+			origImg.apply(this, arguments);
+			this.upload_options = this.upload_options || {};
+			this.upload_options.allow_web_link = false;
+			this.upload_options.allow_google_drive = false;
+		};
+		frappe.ui.form.ControlAttachImage.prototype.__ic_internal_drive = true;
+	}
+};
+
+/** Quotation naming: Service/Consulting → QTN-SRV, Testing → QTN-TST, else QTN-OTH */
+instacertify.quotation_series_for_type = function (quotation_type) {
+	const t = (quotation_type || "").trim();
+	if (t === "Testing") return "QTN-TST-.#####";
+	if (t === "Service" || t === "Consulting") return "QTN-SRV-.#####";
+	return "QTN-OTH-.#####";
+};
+
+instacertify.apply_quotation_naming_series = function (frm) {
+	if (!frm || !frm.is_new || !frm.is_new()) return;
+	const wanted = instacertify.quotation_series_for_type(frm.doc.ic_quotation_type);
+	if (frm.doc.naming_series !== wanted) {
+		frm.set_value("naming_series", wanted);
+	}
+};
+
 /** Find a node in the light DOM or inside open shadow roots (Custom HTML Blocks). */
 instacertify.query_deep = function (selector, root) {
 	const scope = root || document;
@@ -37,6 +118,11 @@ instacertify.has_home_root = function () {
 /** Land every user on Instacertify Home dashboard after login / desk boot. */
 $(document).on("app_ready", function () {
 	try {
+		instacertify.patch_file_uploader_for_internal_drive();
+	} catch (e) {
+		/* ignore */
+	}
+	try {
 		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
 		const route = frappe.get_route_str ? frappe.get_route_str() : "";
 		const isDeskRoot =
@@ -45,12 +131,30 @@ $(document).on("app_ready", function () {
 			route === "workspace" ||
 			route === "desktop" ||
 			route === "Home" ||
-			route === "Welcome Workspace";
+			route === "Workspaces/Home" ||
+			route === "Welcome Workspace" ||
+			route === "Workspaces/Welcome Workspace";
 		if (isDeskRoot) {
 			localStorage.setItem("current_page", home);
 			frappe.set_route("Workspaces", home);
 		} else if (!localStorage.getItem("current_page")) {
 			localStorage.setItem("current_page", home);
+		}
+	} catch (e) {
+		/* ignore */
+	}
+});
+
+/** Never leave users on the generic ERPNext Home workspace (wrong landing / empty). */
+$(document).on("page-change", function () {
+	try {
+		const route = frappe.get_route ? frappe.get_route() : [];
+		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+		if (
+			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
+			(route[0] === "workspace" && (!route[1] || route[1] === "Home"))
+		) {
+			frappe.set_route("Workspaces", home);
 		}
 	} catch (e) {
 		/* ignore */
@@ -114,7 +218,10 @@ instacertify.open_expense_file = function (opts) {
 				fieldname: "receipt",
 				fieldtype: "Attach",
 				label: __("Receipt / Bill"),
-				description: __("PDF, image, or Excel of the bill"),
+				description: __(
+					"Select from My Device or File Library (internal drive). No web / Drive URLs."
+				),
+				options: instacertify.attach_options,
 			},
 			{
 				fieldname: "project",
@@ -151,6 +258,7 @@ instacertify.open_expense_file = function (opts) {
 		frappe.set_route("List", "IC Expense Claim");
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "receipt");
 };
 
 /** Upload dialog → create/update IC Quotation Template with format file. */
@@ -183,9 +291,12 @@ instacertify.open_quote_format_upload = function (opts) {
 			{
 				fieldname: "file",
 				fieldtype: "Attach",
-				label: __("Upload Quote Format File"),
+				label: __("Quote Format File"),
 				reqd: 1,
-				description: __("PDF, DOCX, HTML, or image"),
+				description: __(
+					"Select PDF/DOCX/HTML from My Device or File Library (internal drive)."
+				),
+				options: instacertify.attach_options,
 			},
 			{
 				fieldname: "template_notes",
@@ -231,6 +342,7 @@ instacertify.open_quote_format_upload = function (opts) {
 		});
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "file");
 };
 
 /** Upload dialog → create/update IC Laboratory with name + scope file. */
@@ -261,8 +373,11 @@ instacertify.open_laboratory_upload = function (opts) {
 			{
 				fieldname: "scope_file",
 				fieldtype: "Attach",
-				label: __("Upload Scope Sheet / PDF"),
-				description: __("PDF or sheet of laboratory scope"),
+				label: __("Scope Sheet / PDF"),
+				description: __(
+					"Select from My Device or File Library (internal drive). No web / Drive URLs."
+				),
+				options: instacertify.attach_options,
 			},
 			{
 				fieldname: "contact_person",
@@ -306,6 +421,7 @@ instacertify.open_laboratory_upload = function (opts) {
 		},
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "scope_file");
 };
 
 instacertify.open_lab_scope_csv_import = function (frm) {
@@ -324,6 +440,10 @@ instacertify.open_lab_scope_csv_import = function (frm) {
 				fieldtype: "Attach",
 				label: __("CSV File"),
 				reqd: 1,
+				description: __(
+					"Select CSV from My Device or File Library (internal drive)."
+				),
+				options: instacertify.attach_options,
 			},
 		],
 		primary_action_label: __("Import"),
@@ -356,6 +476,7 @@ instacertify.open_lab_scope_csv_import = function (frm) {
 		});
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "file");
 };
 
 /** Add Raise Ticket / Raise Complaint buttons on CRM forms. */
@@ -771,6 +892,7 @@ $(document).on("page-change", function () {
 // Quotation form enhancements
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
+		instacertify.apply_quotation_naming_series(frm);
 		frm.add_custom_button(__("Upload Quote Format"), () => {
 			instacertify.open_quote_format_upload({
 				quotation_type: frm.doc.ic_quotation_type || "Consulting",
@@ -1023,6 +1145,7 @@ frappe.ui.form.on("Quotation", {
 		instacertify.toggle_quotation_sections(frm);
 		instacertify.setup_quotation_template_filter(frm);
 		instacertify.render_quotation_entry_guide(frm);
+		instacertify.apply_quotation_naming_series(frm);
 		if (frm.doc.ic_quotation_template) {
 			frm.set_value("ic_quotation_template", "");
 		}
@@ -1363,6 +1486,7 @@ frappe.ui.form.on("Quotation", {
 				primary_action_label: __("Continue to form"),
 				primary_action(values) {
 					frm.set_value("ic_quotation_type", values.ic_quotation_type);
+					instacertify.apply_quotation_naming_series(frm);
 					if (values.ic_quotation_template) {
 						frm.set_value("ic_quotation_template", values.ic_quotation_template);
 					}
@@ -1733,6 +1857,9 @@ function ic_bind_customer_file_actions(frm) {
 			docname: frm.doc.name,
 			frm: frm,
 			folder: "Home/Attachments",
+			allow_web_link: false,
+			allow_google_drive: false,
+			upload_notes: instacertify.get_attach_upload_notes(),
 			on_success() {
 				frappe.show_alert({ message: __("File uploaded"), indicator: "green" });
 				instacertify.load_customer_related(frm);
@@ -2005,17 +2132,20 @@ frappe.ui.form.on("Project", {
 		frm.add_custom_button(__("Add Project Update"), () => {
 			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
 		}, __("Actions"));
-		frm.add_custom_button(__("Request Documents from Customer"), () => {
+		frm.add_custom_button(__("Generate / Share Document List"), () => {
+			instacertify.open_project_document_share_dialog(frm);
+		}, __("Actions"));
+		frm.add_custom_button(__("Share Sample Dispatch Sheet"), () => {
 			frappe.call({
-				method: "instacertify.documents.api.create_document_request_for_project",
+				method: "instacertify.sample_dispatch.api.create_sample_dispatch_for_project",
 				args: { project: frm.doc.name },
 				freeze: true,
 				callback(r) {
 					const url = r.message && r.message.url;
 					frappe.msgprint({
-						title: __("Customer document link"),
+						title: __("Sample Dispatch Data Collection — customer link"),
 						message: `
-							<p>${__("Share this link so the customer can upload documents, remarks, and sample POD / tracking:")}</p>
+							<p>${__("Share this link so the customer can submit courier, AWB, POD, and sample dispatch details:")}</p>
 							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
 						`,
 						indicator: "green",
@@ -2023,8 +2153,8 @@ frappe.ui.form.on("Project", {
 					if (url && navigator.clipboard) {
 						navigator.clipboard.writeText(url).catch(() => {});
 					}
-					if (r.message && r.message.document_request) {
-						frappe.set_route("Form", "IC Document Request", r.message.document_request);
+					if (r.message && r.message.name) {
+						frappe.set_route("Form", "IC Sample Dispatch Collection", r.message.name);
 					}
 				},
 			});
@@ -2173,11 +2303,14 @@ frappe.ui.form.on("IC Document Request", {
 					callback(r) {
 						const url = r.message && r.message.url;
 						frappe.msgprint({
-							title: __("Customer link"),
+							title: __("Documents Collection Sheet — customer link"),
 							message: `<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-								<p class="text-muted">${__("Customer can upload docs, remarks, and sample POD / tracking.")}</p>`,
+								<p class="text-muted">${__("Customer can upload the document list and fill the Data Collection Sheet.")}</p>`,
 							indicator: "green",
 						});
+						if (url && navigator.clipboard) {
+							navigator.clipboard.writeText(url).catch(() => {});
+						}
 						frm.reload_doc();
 					},
 				});
@@ -2234,6 +2367,32 @@ frappe.ui.form.on("IC Document Request", {
 			args: { document_request: frm.doc.name, template: frm.doc.checklist_template },
 			callback() { frm.reload_doc(); },
 		});
+	},
+});
+
+frappe.ui.form.on("IC Sample Dispatch Collection", {
+	refresh(frm) {
+		if (frm.is_new()) return;
+		frm.add_custom_button(__("Generate / Share Customer Link"), () => {
+			frappe.call({
+				method: "instacertify.sample_dispatch.api.share_sample_dispatch_collection",
+				args: { name: frm.doc.name },
+				freeze: true,
+				callback(r) {
+					const url = r.message && r.message.url;
+					frappe.msgprint({
+						title: __("Sample Dispatch Data Collection — customer link"),
+						message: `<p>${__("Share this link with the customer to collect courier, AWB, POD, and sample details:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+					}
+					frm.reload_doc();
+				},
+			});
+		}, __("Actions"));
 	},
 });
 
@@ -2455,8 +2614,14 @@ frappe.ui.form.on("Sales Invoice", {
 	refresh(frm) {
 		instacertify.hide_pos_on_sales_invoice(frm);
 		instacertify.apply_consulting_no_warehouse(frm);
+		if (frm.is_new()) {
+			const wanted = cint(frm.doc.is_return) ? "INV-RET-.#####" : "INV-.#####";
+			if (!frm.doc.naming_series || String(frm.doc.naming_series).indexOf("SINV") >= 0) {
+				frm.set_value("naming_series", wanted);
+			}
+		}
 		frm.set_intro(
-			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required."),
+			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required. Series: INV-00001 …"),
 			"blue"
 		);
 		if (!frm.is_new()) {
@@ -3017,6 +3182,167 @@ instacertify.load_project_chat = function (frm) {
 			$log.scrollTop($log[0].scrollHeight);
 		},
 	});
+};
+
+instacertify.open_project_document_share_dialog = function (frm) {
+	if (!frm.doc.customer) {
+		frappe.msgprint({
+			title: __("Customer required"),
+			message: __("Set a Customer on this project before sharing a document list."),
+			indicator: "orange",
+		});
+		return;
+	}
+
+	const d = new frappe.ui.Dialog({
+		title: __("Generate / Share Document List with Customer"),
+		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "intro",
+				options: `<p class="text-muted">${__(
+					"Pick a document checklist from the dropdown (or leave blank for the default list). This generates the share link for the customer."
+				)}</p>`,
+			},
+			{
+				fieldname: "title",
+				fieldtype: "Data",
+				label: __("List title"),
+				default: __("Documents for {0}", [frm.doc.project_name || frm.doc.name]),
+			},
+			{
+				fieldname: "template",
+				fieldtype: "Link",
+				label: __("Document checklist (dropdown)"),
+				options: "IC Document Checklist Template",
+				get_query() {
+					return { filters: { is_active: 1 } };
+				},
+				description: __("Select from saved document lists — e.g. BIS Certification Documents"),
+			},
+			{
+				fieldname: "preview_html",
+				fieldtype: "HTML",
+				label: __("Documents in selected list"),
+			},
+			{
+				fieldname: "force_new",
+				fieldtype: "Check",
+				label: __("Always create a new document request"),
+				default: 0,
+			},
+			{
+				fieldname: "replace_items",
+				fieldtype: "Check",
+				label: __("Replace document list with selected checklist"),
+				default: 1,
+			},
+		],
+		primary_action_label: __("Generate & Share Link"),
+		primary_action(values) {
+			frappe.call({
+				method: "instacertify.documents.api.create_document_request_for_project",
+				args: {
+					project: frm.doc.name,
+					title: values.title,
+					template: values.template || null,
+					force_new: values.force_new ? 1 : 0,
+					replace_items: values.replace_items ? 1 : 0,
+				},
+				freeze: true,
+				freeze_message: __("Generating document list…"),
+				callback(r) {
+					const m = r.message || {};
+					const url = m.url;
+					const docs = m.documents || [];
+					const rows = docs
+						.map(
+							(x, i) =>
+								`<tr><td>${i + 1}</td><td>${frappe.utils.escape_html(
+									x.document_name || ""
+								)}</td><td>${frappe.utils.escape_html(
+									x.category || ""
+								)}</td><td>${x.is_mandatory ? __("Yes") : __("No")}</td></tr>`
+						)
+						.join("");
+					d.hide();
+					frappe.msgprint({
+						title: __("Document list shared with customer"),
+						message: `
+							<p>${__("Share this link so the customer can upload the documents:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener"><b>${frappe.utils.escape_html(
+							url
+						)}</b></a></p>
+							<p class="text-muted">${__("Request")}: ${frappe.utils.escape_html(m.document_request || "")}</p>
+							<table class="table table-bordered" style="margin-top:12px;">
+								<thead><tr><th>#</th><th>${__("Document")}</th><th>${__("Category")}</th><th>${__(
+							"Mandatory"
+						)}</th></tr></thead>
+								<tbody>${rows || `<tr><td colspan="4">${__("No documents")}</td></tr>`}</tbody>
+							</table>
+						`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+						frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+					}
+					if (m.document_request) {
+						frappe.set_route("Form", "IC Document Request", m.document_request);
+					}
+				},
+			});
+		},
+	});
+
+	const render_preview = (template) => {
+		const $wrap = $(d.fields_dict.preview_html.wrapper);
+		if (!template) {
+			$wrap.html(
+				`<p class="text-muted">${__(
+					"No checklist selected — a default document list will be used."
+				)}</p>`
+			);
+			return;
+		}
+		$wrap.html(`<p class="text-muted">${__("Loading…")}</p>`);
+		frappe.call({
+			method: "instacertify.documents.api.preview_checklist_template",
+			args: { template },
+			callback(r) {
+				const items = (r.message && r.message.items) || [];
+				if (!items.length) {
+					$wrap.html(`<p class="text-muted">${__("This checklist has no documents.")}</p>`);
+					return;
+				}
+				const rows = items
+					.map(
+						(x, i) =>
+							`<tr><td>${i + 1}</td><td>${frappe.utils.escape_html(
+								x.document_name || ""
+							)}</td><td>${frappe.utils.escape_html(x.category || "")}</td><td>${
+								x.is_mandatory ? __("Yes") : __("No")
+							}</td></tr>`
+					)
+					.join("");
+				$wrap.html(`
+					<table class="table table-bordered table-condensed" style="margin:0;">
+						<thead><tr><th>#</th><th>${__("Document")}</th><th>${__("Category")}</th><th>${__(
+					"Mandatory"
+				)}</th></tr></thead>
+						<tbody>${rows}</tbody>
+					</table>
+				`);
+			},
+		});
+	};
+
+	d.fields_dict.template.df.onchange = () => {
+		render_preview(d.get_value("template"));
+	};
+	d.show();
+	render_preview(null);
 };
 
 instacertify.open_project_chat = function (frm) {

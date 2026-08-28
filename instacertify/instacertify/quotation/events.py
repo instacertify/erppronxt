@@ -17,6 +17,9 @@ def validate_quotation(doc, method=None):
 		doc.ic_revision_number = 0
 	if doc.ic_quotation_type == "Testing" and not doc.ic_subject:
 		doc.ic_subject = "Testing"
+	from instacertify.setup.naming_series import apply_quotation_series
+
+	apply_quotation_series(doc)
 	_apply_quotation_defaults(doc)
 	if doc.quotation_to == "Customer" and doc.party_name:
 		from instacertify.accounting.billing import apply_transaction_billing_defaults
@@ -31,6 +34,12 @@ def validate_quotation(doc, method=None):
 			_advance_linked_lead(doc, "Quote")
 		except Exception:
 			pass
+
+
+def before_insert_quotation(doc, method=None):
+	from instacertify.setup.naming_series import apply_quotation_series
+
+	apply_quotation_series(doc)
 
 
 def _calculate_test_line_totals(doc):
@@ -748,6 +757,9 @@ def create_invoice_from_quotation(quotation: str, submit: int = 0):
 		si = frappe.get_doc("Sales Invoice", si)
 
 	si.ic_quotation = qt.name
+	from instacertify.setup.naming_series import apply_sales_invoice_series
+
+	apply_sales_invoice_series(si)
 	payment_terms_text = frappe.utils.strip_html(qt.ic_payment_terms or "") or (
 		qt.payment_terms_template or "As per quotation"
 	)
@@ -848,6 +860,9 @@ def _set_invoice_defaults(si):
 	ERPNext's Quotation → Sales Invoice mapper clears item cost_center; SI
 	validation then fails with 'Cost Center None does not belong to company'.
 	"""
+	from instacertify.setup.naming_series import apply_sales_invoice_series
+
+	apply_sales_invoice_series(si)
 	if not si.get("items"):
 		frappe.throw(_("Quotation has no items to invoice. Add items or cost breakdown first."))
 

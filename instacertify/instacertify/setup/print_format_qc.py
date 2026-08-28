@@ -25,6 +25,8 @@ PRINT_MATRIX = [
 	("Instacertify Sample Label", "IC Sample Tracking", None),
 	("Instacertify Testing Request", "IC Testing Request", None),
 	("Instacertify Joining Letter", "IC Joining Letter", None),
+	("Instacertify Documents Collection Sheet", "IC Document Request", None),
+	("Instacertify Sample Dispatch Collection", "IC Sample Dispatch Collection", None),
 ]
 
 

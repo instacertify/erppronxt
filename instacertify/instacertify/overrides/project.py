@@ -14,6 +14,7 @@ def get_dashboard_data(data):
 		{
 			"IC Testing Request": "project",
 			"IC Document Request": "project",
+			"IC Sample Dispatch Collection": "project",
 			"IC Sample Tracking": "project",
 			"Helpdesk Ticket": "project",
 			"IC Project Record": "project",
@@ -48,6 +49,7 @@ def get_dashboard_data(data):
 		[
 			"IC Testing Request",
 			"IC Document Request",
+			"IC Sample Dispatch Collection",
 			"IC Sample Tracking",
 			"IC Project Record",
 			"Helpdesk Ticket",

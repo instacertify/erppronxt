@@ -19,6 +19,7 @@ website_include_css = "/assets/instacertify/css/instacertify.css"
 website_route_rules = [
 	{"from_route": "/ic-quotation/<path:name>", "to_route": "ic_quotation"},
 	{"from_route": "/ic-documents/<path:name>", "to_route": "ic_documents"},
+	{"from_route": "/ic-dispatch/<path:name>", "to_route": "ic_dispatch"},
 	{"from_route": "/ic-report/<path:name>", "to_route": "ic_report"},
 	{"from_route": "/ic-verify/<path:doctype>/<path:name>", "to_route": "ic_verify"},
 ]
@@ -26,12 +27,14 @@ website_route_rules = [
 # Document Events
 doc_events = {
 	"Sales Invoice": {
+		"before_insert": "instacertify.accounting.events.before_insert_sales_invoice",
 		"validate": "instacertify.accounting.events.validate_sales_invoice",
 	},
 	"Purchase Invoice": {
 		"validate": "instacertify.accounting.events.validate_purchase_invoice",
 	},
 	"Quotation": {
+		"before_insert": "instacertify.quotation.events.before_insert_quotation",
 		"validate": "instacertify.quotation.events.validate_quotation",
 		"on_update_after_submit": "instacertify.quotation.events.on_update_after_submit",
 		"on_submit": "instacertify.quotation.events.on_submit_quotation",

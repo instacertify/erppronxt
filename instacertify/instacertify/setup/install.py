@@ -168,8 +168,24 @@ def after_migrate():
 	setup_disable_pos()
 	setup_gst_returns()
 	setup_consulting_billing()
+	setup_invoice_naming_series()
+	setup_quotation_naming_series()
 	setup_hrms_alignment()
 	frappe.db.commit()
+
+
+def setup_invoice_naming_series():
+	"""One Sales Invoice series across the ERP: INV-00001, INV-00002, …"""
+	from instacertify.setup.naming_series import ensure_invoice_naming_series
+
+	ensure_invoice_naming_series()
+
+
+def setup_quotation_naming_series():
+	"""Service / Testing / Others quotation series: QTN-SRV / QTN-TST / QTN-OTH."""
+	from instacertify.setup.naming_series import ensure_quotation_naming_series
+
+	ensure_quotation_naming_series()
 
 
 def setup_hrms_alignment():
@@ -180,6 +196,8 @@ def setup_hrms_alignment():
 		ensure_hrms_alignment()
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "setup_hrms_alignment")
+
+
 
 
 def setup_default_dashboard():
