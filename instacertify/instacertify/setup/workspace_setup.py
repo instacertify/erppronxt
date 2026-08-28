@@ -11,6 +11,7 @@ import frappe
 def ensure_workspaces():
 	_ensure_home_html_block()
 	_ensure_home_workspace()
+	ensure_hrms_expenses_workspace()
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
@@ -926,7 +927,6 @@ def _ensure_home_workspace():
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 3}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
 		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 3}},
-		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
 		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
 		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Document Requests", "col": 3}},
 		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 3}},
@@ -936,6 +936,9 @@ def _ensure_home_workspace():
 		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 3}},
 		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 3}},
 		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 3}},
+		# Expenses & HRMS — always last
+		{"id": "sc_hrms", "type": "shortcut", "data": {"shortcut_name": "HRMS Lifecycle", "col": 3}},
+		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
 	]
 
 
@@ -950,7 +953,6 @@ def _ensure_home_workspace():
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Quote Format Library", "link_to": "IC Quotation Template", "type": "DocType", "doc_view": "List"},
-		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
 		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
 		{"label": "Document Requests", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Helpdesk", "link_to": "Helpdesk Ticket", "type": "DocType", "doc_view": "List"},
@@ -960,6 +962,9 @@ def _ensure_home_workspace():
 		{"label": "GSTR-1", "link_to": "GSTR-1", "type": "DocType", "doc_view": ""},
 		{"label": "GSTR-3B", "link_to": "GSTR 3B Report", "type": "DocType", "doc_view": "List"},
 		{"label": "GST Settings", "link_to": "GST Settings", "type": "DocType", "doc_view": ""},
+		# Expenses & HRMS last
+		{"label": "HRMS Lifecycle", "link_to": "Employee", "type": "DocType", "doc_view": "List"},
+		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
 	]
 
 	links = [
@@ -1016,15 +1021,6 @@ def _ensure_home_workspace():
 		{"label": "Calendar & Planner", "type": "Card Break"},
 		{"label": "Event", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
-		{"label": "My HR & Employment", "type": "Card Break"},
-		{"label": "File an Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
-		{"label": "My Expense Claims", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
-		{"label": "My Employee Profile", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
-		{"label": "Joining Letters", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
-		{"label": "Salary Slips & Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
-		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
-		{"label": "Holiday List", "link_type": "DocType", "link_to": "Holiday List", "type": "Link"},
-		{"label": "Event Calendar", "link_type": "DocType", "link_to": "Event", "type": "Link"},
 		{"label": "Assets", "type": "Card Break"},
 		{"label": "Asset", "link_type": "DocType", "link_to": "Asset", "type": "Link"},
 		{"label": "Asset Category", "link_type": "DocType", "link_to": "Asset Category", "type": "Link"},
@@ -1032,6 +1028,22 @@ def _ensure_home_workspace():
 		{"label": "User", "link_type": "DocType", "link_to": "User", "type": "Link"},
 		{"label": "Role", "link_type": "DocType", "link_to": "Role", "type": "Link"},
 		{"label": "Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
+		# Expenses & HRMS — always last on Instacertify Home
+		{"label": "Expenses & HRMS (Hiring → FnF)", "type": "Card Break"},
+		{"label": "File an Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "My Expense Claims", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "Job Applicant", "link_type": "DocType", "link_to": "Job Applicant", "type": "Link"},
+		{"label": "Job Offer", "link_type": "DocType", "link_to": "Job Offer", "type": "Link"},
+		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "Employee Onboarding", "link_type": "DocType", "link_to": "Employee Onboarding", "type": "Link"},
+		{"label": "Joining Letters", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
+		{"label": "Employee Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
+		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
+		{"label": "Leave Application", "link_type": "DocType", "link_to": "Leave Application", "type": "Link"},
+		{"label": "Salary Slip", "link_type": "DocType", "link_to": "Salary Slip", "type": "Link"},
+		{"label": "Payroll Entry", "link_type": "DocType", "link_to": "Payroll Entry", "type": "Link"},
+		{"label": "Employee Separation", "link_type": "DocType", "link_to": "Employee Separation", "type": "Link"},
+		{"label": "Full and Final Statement", "link_type": "DocType", "link_to": "Full and Final Statement", "type": "Link"},
 	]
 
 	# Filter missing DocTypes / Reports / Pages
@@ -1059,6 +1071,9 @@ def _ensure_home_workspace():
 		if stype == "Page":
 			if dt and not frappe.db.exists("Page", dt):
 				continue
+		elif stype == "URL":
+			safe_shortcuts.append(s)
+			continue
 		elif dt and not frappe.db.exists("DocType", dt):
 			continue
 		safe_shortcuts.append(s)
@@ -1123,3 +1138,146 @@ def _ensure_home_workspace():
 				if frappe.db.exists("Dashboard Chart", ch):
 					ws.append("charts", {"chart_name": ch, "label": ch})
 		ws.insert(ignore_permissions=True)
+
+
+def ensure_hrms_expenses_workspace():
+	"""Dedicated workspace — Expenses & HRMS last in navigation (Hiring → FnF)."""
+	name = "HRMS & Expenses"
+	# High sequence so it sits after core Instacertify / GST / ops workspaces
+	sequence_id = 80
+
+	content = [
+		{
+			"id": "hrms_header",
+			"type": "header",
+			"data": {
+				"text": "<span class=\"h5\">Employee lifecycle — Hiring to Full &amp; Final</span>",
+				"col": 12,
+			},
+		},
+		{"id": "sc_job_applicant", "type": "shortcut", "data": {"shortcut_name": "Job Applicant", "col": 3}},
+		{"id": "sc_job_offer", "type": "shortcut", "data": {"shortcut_name": "Job Offer", "col": 3}},
+		{"id": "sc_employee", "type": "shortcut", "data": {"shortcut_name": "Employee", "col": 3}},
+		{"id": "sc_onboarding", "type": "shortcut", "data": {"shortcut_name": "Employee Onboarding", "col": 3}},
+		{"id": "sc_joining", "type": "shortcut", "data": {"shortcut_name": "Joining Letters", "col": 3}},
+		{"id": "sc_attendance", "type": "shortcut", "data": {"shortcut_name": "Attendance", "col": 3}},
+		{"id": "sc_leave", "type": "shortcut", "data": {"shortcut_name": "Leave Application", "col": 3}},
+		{"id": "sc_salary", "type": "shortcut", "data": {"shortcut_name": "Salary Slip", "col": 3}},
+		{"id": "sc_payroll", "type": "shortcut", "data": {"shortcut_name": "Payroll Entry", "col": 3}},
+		{"id": "sc_file_expense", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
+		{"id": "sc_expense_hrms", "type": "shortcut", "data": {"shortcut_name": "Expense Claim", "col": 3}},
+		{"id": "sc_separation", "type": "shortcut", "data": {"shortcut_name": "Employee Separation", "col": 3}},
+		{"id": "sc_fnf", "type": "shortcut", "data": {"shortcut_name": "Full and Final", "col": 3}},
+	]
+
+	shortcuts = [
+		{"label": "Job Applicant", "link_to": "Job Applicant", "type": "DocType", "doc_view": "List"},
+		{"label": "Job Offer", "link_to": "Job Offer", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee", "link_to": "Employee", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee Onboarding", "link_to": "Employee Onboarding", "type": "DocType", "doc_view": "List"},
+		{"label": "Joining Letters", "link_to": "IC Joining Letter", "type": "DocType", "doc_view": "List"},
+		{"label": "Attendance", "link_to": "Attendance", "type": "DocType", "doc_view": "List"},
+		{"label": "Leave Application", "link_to": "Leave Application", "type": "DocType", "doc_view": "List"},
+		{"label": "Salary Slip", "link_to": "Salary Slip", "type": "DocType", "doc_view": "List"},
+		{"label": "Payroll Entry", "link_to": "Payroll Entry", "type": "DocType", "doc_view": "List"},
+		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
+		{"label": "Expense Claim", "link_to": "Expense Claim", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee Separation", "link_to": "Employee Separation", "type": "DocType", "doc_view": "List"},
+		{"label": "Full and Final", "link_to": "Full and Final Statement", "type": "DocType", "doc_view": "List"},
+	]
+
+	links = [
+		{"label": "1. Hiring", "type": "Card Break"},
+		{"label": "Job Applicant", "link_type": "DocType", "link_to": "Job Applicant", "type": "Link"},
+		{"label": "Job Offer", "link_type": "DocType", "link_to": "Job Offer", "type": "Link"},
+		{"label": "Interview", "link_type": "DocType", "link_to": "Interview", "type": "Link"},
+		{"label": "2. Onboarding", "type": "Card Break"},
+		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "Employee Onboarding", "link_type": "DocType", "link_to": "Employee Onboarding", "type": "Link"},
+		{"label": "Joining Letter (Instacertify)", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
+		{"label": "Employee Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
+		{"label": "3. Attendance & Leave", "type": "Card Break"},
+		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
+		{"label": "Attendance Request", "link_type": "DocType", "link_to": "Attendance Request", "type": "Link"},
+		{"label": "Leave Application", "link_type": "DocType", "link_to": "Leave Application", "type": "Link"},
+		{"label": "Holiday List", "link_type": "DocType", "link_to": "Holiday List", "type": "Link"},
+		{"label": "4. Payroll", "type": "Card Break"},
+		{"label": "Salary Structure", "link_type": "DocType", "link_to": "Salary Structure", "type": "Link"},
+		{"label": "Salary Structure Assignment", "link_type": "DocType", "link_to": "Salary Structure Assignment", "type": "Link"},
+		{"label": "Payroll Entry", "link_type": "DocType", "link_to": "Payroll Entry", "type": "Link"},
+		{"label": "Salary Slip", "link_type": "DocType", "link_to": "Salary Slip", "type": "Link"},
+		{"label": "5. Expenses", "type": "Card Break"},
+		{"label": "File Expense (Instacertify)", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "Expense Claim (HRMS)", "link_type": "DocType", "link_to": "Expense Claim", "type": "Link"},
+		{"label": "Expense Claim Type", "link_type": "DocType", "link_to": "Expense Claim Type", "type": "Link"},
+		{"label": "6. Performance", "type": "Card Break"},
+		{"label": "Appraisal", "link_type": "DocType", "link_to": "Appraisal", "type": "Link"},
+		{"label": "Goal", "link_type": "DocType", "link_to": "Goal", "type": "Link"},
+		{"label": "7. Exit & Full and Final", "type": "Card Break"},
+		{"label": "Employee Separation", "link_type": "DocType", "link_to": "Employee Separation", "type": "Link"},
+		{"label": "Full and Final Statement", "link_type": "DocType", "link_to": "Full and Final Statement", "type": "Link"},
+	]
+
+	safe_links = []
+	for link in links:
+		if link.get("type") == "Card Break":
+			safe_links.append(link)
+			continue
+		dt = link.get("link_to")
+		if dt and not frappe.db.exists("DocType", dt):
+			continue
+		safe_links.append(link)
+
+	safe_shortcuts = []
+	for s in shortcuts:
+		dt = s.get("link_to")
+		if dt and not frappe.db.exists("DocType", dt):
+			continue
+		safe_shortcuts.append(s)
+
+	# Drop content shortcuts that were filtered out
+	labels = {s["label"] for s in safe_shortcuts}
+	safe_content = []
+	for block in content:
+		if block.get("type") == "shortcut":
+			name_sc = (block.get("data") or {}).get("shortcut_name")
+			if name_sc and name_sc not in labels:
+				continue
+		safe_content.append(block)
+
+	payload = {
+		"doctype": "Workspace",
+		"name": name,
+		"label": name,
+		"title": name,
+		"module": "Instacertify",
+		"public": 1,
+		"is_hidden": 0,
+		"sequence_id": sequence_id,
+		"content": json.dumps(safe_content),
+		"shortcuts": safe_shortcuts,
+		"links": safe_links,
+	}
+
+	if frappe.db.exists("Workspace", name):
+		ws = frappe.get_doc("Workspace", name)
+		ws.update(payload)
+		ws.shortcuts = []
+		ws.links = []
+		for s in safe_shortcuts:
+			ws.append("shortcuts", s)
+		for l in safe_links:
+			ws.append("links", l)
+		ws.content = json.dumps(safe_content)
+		ws.sequence_id = sequence_id
+		ws.save(ignore_permissions=True)
+	else:
+		ws = frappe.get_doc(payload)
+		ws.insert(ignore_permissions=True)
+
+	frappe.db.set_value(
+		"Workspace",
+		name,
+		{"public": 1, "is_hidden": 0, "sequence_id": sequence_id},
+		update_modified=False,
+	)
