@@ -2005,29 +2005,8 @@ frappe.ui.form.on("Project", {
 		frm.add_custom_button(__("Add Project Update"), () => {
 			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
 		}, __("Actions"));
-		frm.add_custom_button(__("Request Documents from Customer"), () => {
-			frappe.call({
-				method: "instacertify.documents.api.create_document_request_for_project",
-				args: { project: frm.doc.name },
-				freeze: true,
-				callback(r) {
-					const url = r.message && r.message.url;
-					frappe.msgprint({
-						title: __("Customer document link"),
-						message: `
-							<p>${__("Share this link so the customer can upload documents, remarks, and sample POD / tracking:")}</p>
-							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-						`,
-						indicator: "green",
-					});
-					if (url && navigator.clipboard) {
-						navigator.clipboard.writeText(url).catch(() => {});
-					}
-					if (r.message && r.message.document_request) {
-						frappe.set_route("Form", "IC Document Request", r.message.document_request);
-					}
-				},
-			});
+		frm.add_custom_button(__("Generate / Share Document List"), () => {
+			instacertify.open_project_document_share_dialog(frm);
 		}, __("Actions"));
 		frm.add_custom_button(__("Open Team Chat"), () => {
 			instacertify.open_project_chat(frm);
@@ -3017,6 +2996,167 @@ instacertify.load_project_chat = function (frm) {
 			$log.scrollTop($log[0].scrollHeight);
 		},
 	});
+};
+
+instacertify.open_project_document_share_dialog = function (frm) {
+	if (!frm.doc.customer) {
+		frappe.msgprint({
+			title: __("Customer required"),
+			message: __("Set a Customer on this project before sharing a document list."),
+			indicator: "orange",
+		});
+		return;
+	}
+
+	const d = new frappe.ui.Dialog({
+		title: __("Generate / Share Document List with Customer"),
+		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "intro",
+				options: `<p class="text-muted">${__(
+					"Pick a document checklist from the dropdown (or leave blank for the default list). This generates the share link for the customer."
+				)}</p>`,
+			},
+			{
+				fieldname: "title",
+				fieldtype: "Data",
+				label: __("List title"),
+				default: __("Documents for {0}", [frm.doc.project_name || frm.doc.name]),
+			},
+			{
+				fieldname: "template",
+				fieldtype: "Link",
+				label: __("Document checklist (dropdown)"),
+				options: "IC Document Checklist Template",
+				get_query() {
+					return { filters: { is_active: 1 } };
+				},
+				description: __("Select from saved document lists — e.g. BIS Certification Documents"),
+			},
+			{
+				fieldname: "preview_html",
+				fieldtype: "HTML",
+				label: __("Documents in selected list"),
+			},
+			{
+				fieldname: "force_new",
+				fieldtype: "Check",
+				label: __("Always create a new document request"),
+				default: 0,
+			},
+			{
+				fieldname: "replace_items",
+				fieldtype: "Check",
+				label: __("Replace document list with selected checklist"),
+				default: 1,
+			},
+		],
+		primary_action_label: __("Generate & Share Link"),
+		primary_action(values) {
+			frappe.call({
+				method: "instacertify.documents.api.create_document_request_for_project",
+				args: {
+					project: frm.doc.name,
+					title: values.title,
+					template: values.template || null,
+					force_new: values.force_new ? 1 : 0,
+					replace_items: values.replace_items ? 1 : 0,
+				},
+				freeze: true,
+				freeze_message: __("Generating document list…"),
+				callback(r) {
+					const m = r.message || {};
+					const url = m.url;
+					const docs = m.documents || [];
+					const rows = docs
+						.map(
+							(x, i) =>
+								`<tr><td>${i + 1}</td><td>${frappe.utils.escape_html(
+									x.document_name || ""
+								)}</td><td>${frappe.utils.escape_html(
+									x.category || ""
+								)}</td><td>${x.is_mandatory ? __("Yes") : __("No")}</td></tr>`
+						)
+						.join("");
+					d.hide();
+					frappe.msgprint({
+						title: __("Document list shared with customer"),
+						message: `
+							<p>${__("Share this link so the customer can upload the documents:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener"><b>${frappe.utils.escape_html(
+							url
+						)}</b></a></p>
+							<p class="text-muted">${__("Request")}: ${frappe.utils.escape_html(m.document_request || "")}</p>
+							<table class="table table-bordered" style="margin-top:12px;">
+								<thead><tr><th>#</th><th>${__("Document")}</th><th>${__("Category")}</th><th>${__(
+							"Mandatory"
+						)}</th></tr></thead>
+								<tbody>${rows || `<tr><td colspan="4">${__("No documents")}</td></tr>`}</tbody>
+							</table>
+						`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+						frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+					}
+					if (m.document_request) {
+						frappe.set_route("Form", "IC Document Request", m.document_request);
+					}
+				},
+			});
+		},
+	});
+
+	const render_preview = (template) => {
+		const $wrap = $(d.fields_dict.preview_html.wrapper);
+		if (!template) {
+			$wrap.html(
+				`<p class="text-muted">${__(
+					"No checklist selected — a default document list will be used."
+				)}</p>`
+			);
+			return;
+		}
+		$wrap.html(`<p class="text-muted">${__("Loading…")}</p>`);
+		frappe.call({
+			method: "instacertify.documents.api.preview_checklist_template",
+			args: { template },
+			callback(r) {
+				const items = (r.message && r.message.items) || [];
+				if (!items.length) {
+					$wrap.html(`<p class="text-muted">${__("This checklist has no documents.")}</p>`);
+					return;
+				}
+				const rows = items
+					.map(
+						(x, i) =>
+							`<tr><td>${i + 1}</td><td>${frappe.utils.escape_html(
+								x.document_name || ""
+							)}</td><td>${frappe.utils.escape_html(x.category || "")}</td><td>${
+								x.is_mandatory ? __("Yes") : __("No")
+							}</td></tr>`
+					)
+					.join("");
+				$wrap.html(`
+					<table class="table table-bordered table-condensed" style="margin:0;">
+						<thead><tr><th>#</th><th>${__("Document")}</th><th>${__("Category")}</th><th>${__(
+					"Mandatory"
+				)}</th></tr></thead>
+						<tbody>${rows}</tbody>
+					</table>
+				`);
+			},
+		});
+	};
+
+	d.fields_dict.template.df.onchange = () => {
+		render_preview(d.get_value("template"));
+	};
+	d.show();
+	render_preview(null);
 };
 
 instacertify.open_project_chat = function (frm) {
