@@ -37,20 +37,9 @@ OPEN_DOC_STATUSES = {
 
 def _assert_allowed_upload(file_url: str | None):
 	"""Accept only local File attachments with allowlisted extensions."""
-	if not file_url:
-		frappe.throw(_("Upload a file first"))
-	url = str(file_url).strip().split("?")[0]
-	# Reject external / absolute http URLs
-	if url.startswith("http://") or url.startswith("https://"):
-		# Allow only same-site file paths rewritten as absolute
-		site = (frappe.utils.get_url() or "").rstrip("/")
-		if not url.startswith(site + "/files/") and not url.startswith(site + "/private/files/"):
-			frappe.throw(_("Only files uploaded through this portal are allowed"))
-		url = url[len(site) :] if url.startswith(site) else url
+	from instacertify.utils.files import assert_internal_file
 
-	if not (url.startswith("/files/") or url.startswith("/private/files/")):
-		frappe.throw(_("Invalid file path"))
-
+	url = assert_internal_file(file_url, "File")
 	fname = url.rsplit("/", 1)[-1].lower()
 	ext = ""
 	if "." in fname:
@@ -61,16 +50,7 @@ def _assert_allowed_upload(file_url: str | None):
 				"File type not allowed. Upload PDF, image (PNG/JPG/WEBP/GIF/TIFF), Excel/CSV, or Word documents."
 			)
 		)
-
-	# Must exist as a File document on this site
-	exists = frappe.db.exists("File", {"file_url": url}) or frappe.db.exists(
-		"File", {"file_url": file_url}
-	)
-	if not exists:
-		# Try matching by file_name for private uploads
-		exists = frappe.db.exists("File", {"file_name": fname})
-	if not exists:
-		frappe.throw(_("Uploaded file not found. Please upload again from this page."))
+	return url
 
 
 def _assert_doc_request_open(doc):
@@ -211,7 +191,7 @@ def upload_document_item(token: str, item_name: str, file_url: str, remarks: str
 		frappe.throw(_("Invalid document link"), frappe.PermissionError)
 	doc = frappe.get_doc("IC Document Request", parent)
 	_assert_doc_request_open(doc)
-	_assert_allowed_upload(file_url)
+	file_url = _assert_allowed_upload(file_url)
 	updated_row = None
 	for row in doc.items:
 		if row.name == item_name:
@@ -314,6 +294,7 @@ def clear_document_item(document_request: str, item_name: str):
 def replace_document_item(document_request: str, item_name: str, file_url: str, remarks: str | None = None):
 	"""Manager/admin replace customer document with a new file."""
 	_assert_manager()
+	file_url = _assert_allowed_upload(file_url)
 	doc = frappe.get_doc("IC Document Request", document_request)
 	for row in doc.items:
 		if row.name == item_name:

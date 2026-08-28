@@ -48,6 +48,11 @@ def create_expense_claim(
 	if category not in allowed:
 		frappe.throw(_("Invalid category"))
 
+	if receipt:
+		from instacertify.utils.files import assert_internal_file
+
+		receipt = assert_internal_file(receipt, "Receipt / Bill")
+
 	employee = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
 	doc = frappe.get_doc(
 		{

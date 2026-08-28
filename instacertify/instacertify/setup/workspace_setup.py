@@ -242,7 +242,9 @@ def _ensure_home_html_block():
           {fieldname:"expense_date", fieldtype:"Date", label:"Expense Date", reqd:1, default: frappe.datetime.get_today()},
           {fieldname:"amount", fieldtype:"Currency", label:"Amount", reqd:1},
           {fieldname:"description", fieldtype:"Small Text", label:"Description", reqd:1},
-          {fieldname:"receipt", fieldtype:"Attach", label:"Receipt / Bill"},
+          {fieldname:"receipt", fieldtype:"Attach", label:"Receipt / Bill",
+            description:"Select from My Device or File Library (internal drive).",
+            options:{allow_web_link:false, allow_google_drive:false}},
         ],
         primary_action_label: "Save Expense",
         primary_action(values) {
