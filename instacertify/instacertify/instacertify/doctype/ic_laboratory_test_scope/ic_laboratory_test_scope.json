@@ -1,0 +1,74 @@
+{
+ "name": "IC Laboratory Test Scope",
+ "module": "Instacertify",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "test_name",
+   "fieldtype": "Data",
+   "label": "Test Name",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Applicable Standard",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "purchase_price",
+   "fieldtype": "Currency",
+   "label": "Buying Price",
+   "in_list_view": 1,
+   "permlevel": 1,
+   "description": "Lab buy / cost price — Admin only. Not shown on customer quotations."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "selling_price",
+   "fieldtype": "Currency",
+   "label": "Suggested Selling Price",
+   "in_list_view": 1,
+   "description": "Default selling price offered on Testing quotations (editable per quote)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "margin",
+   "fieldtype": "Currency",
+   "label": "Margin",
+   "in_list_view": 1,
+   "permlevel": 1,
+   "read_only": 1,
+   "description": "Suggested Selling − Buying (Admin only)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "default": "INR"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "default": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

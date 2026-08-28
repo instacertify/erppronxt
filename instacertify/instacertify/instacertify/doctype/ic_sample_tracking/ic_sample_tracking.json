@@ -1,0 +1,330 @@
+{
+ "name": "IC Sample Tracking",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "module": "Instacertify",
+ "track_changes": 1,
+ "title_field": "sample_description",
+ "search_fields": "tracking_number,customer,project,sample_description,sample_location",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "SMP-.YYYY.-.####",
+   "default": "SMP-.YYYY.-.####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "tracking_number",
+   "fieldtype": "Data",
+   "label": "Sample Tracking Number",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Auto-generated unique tracking number"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "default": "Sample Awaited",
+   "options": "Sample Awaited\nSample Received\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nSample Dispatched to Laboratory\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer\nDiscarded"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_location",
+   "fieldtype": "Select",
+   "label": "Sample Location",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "in_preview": 1,
+   "options": "\nWith Customer\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nDiscarded",
+   "description": "Physical custody: transit to office / lab, at lab, Instacertify storage, or discarded"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "location_updated_on",
+   "fieldtype": "Datetime",
+   "label": "Location Updated On",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "qr_code",
+   "fieldtype": "Attach Image",
+   "label": "QR Code",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "label": "Customer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "options": "Project",
+   "label": "Project",
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_request",
+   "fieldtype": "Link",
+   "options": "IC Testing Request",
+   "label": "Testing Request"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Laboratory",
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_receipt",
+   "fieldtype": "Section Break",
+   "label": "Sample Receipt"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_received_date",
+   "fieldtype": "Date",
+   "label": "Sample Received Date"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "label": "Quantity",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_description",
+   "fieldtype": "Small Text",
+   "label": "Sample Description",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_condition",
+   "fieldtype": "Select",
+   "label": "Sample Condition",
+   "options": "Good\nDamaged\nIncomplete\nOther"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "received_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Received By"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "dispatch_date",
+   "fieldtype": "Date",
+   "label": "Dispatched to Lab Date"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_transit",
+   "fieldtype": "Section Break",
+   "label": "Transit / Courier",
+   "collapsible": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "courier_name",
+   "fieldtype": "Data",
+   "label": "Courier / Carrier"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "courier_awb",
+   "fieldtype": "Data",
+   "label": "AWB / Tracking No."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_transit",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "expected_arrival",
+   "fieldtype": "Date",
+   "label": "Expected Arrival"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_discard",
+   "fieldtype": "Section Break",
+   "label": "Discard Details",
+   "depends_on": "eval:doc.sample_location=='Discarded' || doc.status=='Discarded'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "discard_date",
+   "fieldtype": "Date",
+   "label": "Discarded On"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "discard_reason",
+   "fieldtype": "Small Text",
+   "label": "Discard Reason"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_discard",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "discarded_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Discarded By"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "remarks",
+   "fieldtype": "Text Editor",
+   "label": "Remarks"
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Sales Person",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 0,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

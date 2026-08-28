@@ -1,0 +1,190 @@
+{
+ "name": "IC Project Update",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "module": "Instacertify",
+ "track_changes": 1,
+ "title_field": "subject",
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "PU-.YYYY.-.####",
+   "default": "PU-.YYYY.-.####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "options": "Project",
+   "label": "Project",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "update_date",
+   "fieldtype": "Datetime",
+   "label": "Update Date",
+   "default": "Now",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "progress_percentage",
+   "fieldtype": "Percent",
+   "label": "Progress %",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "project_stage",
+   "fieldtype": "Select",
+   "label": "Project Stage",
+   "options": "\nProject Initiated\nCustomer Documents Pending\nDocuments Under Review\nApplication Submitted\nSample Awaited\nSample Received\nSample Dispatched to Laboratory\nTesting in Progress\nReport Awaited\nReport Available\nCertification in Progress\nCertificate Available\nDelivered to Customer\nProject Completed"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "pending_action",
+   "fieldtype": "Data",
+   "label": "Pending Action"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_details",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "remarks",
+   "fieldtype": "Text Editor",
+   "label": "Remarks"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "working_hours",
+   "fieldtype": "Float",
+   "label": "Working Hours"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "updated_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Updated By",
+   "default": "__user"
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 1,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Sales Person",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 1,
+   "export": 0,
+   "import": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

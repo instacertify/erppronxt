@@ -1,0 +1,77 @@
+{
+ "name": "IC Quotation Cost Item",
+ "module": "Instacertify",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "cost_component",
+   "fieldtype": "Select",
+   "label": "Cost Component",
+   "in_list_view": 1,
+   "reqd": 1,
+   "options": "Consulting Charges\nTesting Charges\nGovernment Fees\nCertification Authority Fees\nLaboratory Charges\nOther Charges"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "particulars",
+   "fieldtype": "Data",
+   "label": "Particulars (Print)",
+   "in_list_view": 1,
+   "description": "Printed Particulars column. Falls back to Cost Component / Description."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "in_list_view": 1,
+   "reqd": 1,
+   "options": "currency"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "charges_display",
+   "fieldtype": "Data",
+   "label": "Charges Display (Print)",
+   "in_list_view": 1,
+   "description": "Optional print text e.g. ₹ 25,000/- per Test Report"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "payment_destination",
+   "fieldtype": "Select",
+   "label": "Payment Destination",
+   "in_list_view": 1,
+   "reqd": 1,
+   "options": "Payable to Instacertify\nPayable Directly to Government\nPayable Directly to Laboratory\nPayable to Third Party"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "is_passthrough",
+   "fieldtype": "Check",
+   "label": "Pass-Through",
+   "in_list_view": 1,
+   "description": "Not counted as Instacertify revenue"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "hidden": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

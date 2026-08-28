@@ -1,0 +1,49 @@
+{
+ "name": "IC Testing Request Item",
+ "module": "Instacertify",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "product",
+   "fieldtype": "Data",
+   "label": "Product",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_name",
+   "fieldtype": "Data",
+   "label": "Test Name",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Applicable Standard",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "number_of_samples",
+   "fieldtype": "Int",
+   "label": "Samples",
+   "default": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Laboratory",
+   "in_list_view": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

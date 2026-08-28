@@ -1,0 +1,69 @@
+{
+ "name": "IC Document Request Item",
+ "module": "Instacertify",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "document_name",
+   "fieldtype": "Data",
+   "label": "Document Name",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "in_list_view": 1,
+   "options": "Customer Documents\nApplications\nTechnical Documents\nTesting Documents\nTest Reports\nCertificates\nFinal Deliverables\nProject Records\nOther"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "is_mandatory",
+   "fieldtype": "Check",
+   "label": "Mandatory",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "in_list_view": 1,
+   "default": "Pending",
+   "options": "Pending\nUploaded\nApproved\nRejected\nReplacement Requested"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "uploaded_file",
+   "fieldtype": "Attach",
+   "label": "Uploaded File",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "customer_remarks",
+   "fieldtype": "Small Text",
+   "label": "Customer Remarks"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "review_remarks",
+   "fieldtype": "Small Text",
+   "label": "Review Remarks"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "uploaded_on",
+   "fieldtype": "Datetime",
+   "label": "Uploaded On",
+   "read_only": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

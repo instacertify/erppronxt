@@ -1,0 +1,193 @@
+{
+ "name": "Project Chat Message",
+ "autoname": "hash",
+ "module": "Instacertify",
+ "track_changes": 0,
+ "title_field": "message",
+ "sort_field": "creation",
+ "sort_order": "ASC",
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "options": "Project",
+   "label": "Project",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sender",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Sender",
+   "default": "__user",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sender_name",
+   "fieldtype": "Data",
+   "label": "Sender Name",
+   "read_only": 1,
+   "fetch_from": "sender.full_name"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "message_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Chat\nNote\nMention",
+   "default": "Chat",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_message",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "message",
+   "fieldtype": "Text Editor",
+   "label": "Message",
+   "reqd": 1
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Sales Person",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 1,
+   "print": 0,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Projects User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 1,
+   "print": 0,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Projects Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Employee",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "All",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 0,
+   "export": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

@@ -1,0 +1,135 @@
+{
+ "name": "IC Quotation Test Item",
+ "module": "Instacertify",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Laboratory",
+   "in_list_view": 1,
+   "description": "Pick a registered lab from the Laboratory Library"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_test_scope",
+   "fieldtype": "Autocomplete",
+   "label": "Lab Test / Pricing",
+   "in_list_view": 1,
+   "description": "Accreditation scope tests with suggested selling price from the lab library"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_scope_row",
+   "fieldtype": "Data",
+   "label": "Lab Scope Row",
+   "read_only": 1,
+   "hidden": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_name",
+   "fieldtype": "Data",
+   "label": "Testing",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Applicable Standard",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "number_of_samples",
+   "fieldtype": "Int",
+   "label": "Units / Samples",
+   "default": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "suggested_selling_price",
+   "fieldtype": "Currency",
+   "label": "Suggested Selling",
+   "options": "currency",
+   "read_only": 1,
+   "description": "From lab library — copy into Per Unit Charges (editable)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "per_unit_charges",
+   "fieldtype": "Currency",
+   "label": "Selling Price / Unit",
+   "in_list_view": 1,
+   "options": "currency",
+   "description": "Editable selling price used on this quotation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_charges",
+   "fieldtype": "Currency",
+   "label": "Total Charges",
+   "in_list_view": 1,
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_requirement",
+   "fieldtype": "Small Text",
+   "label": "Sample Requirement"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_type",
+   "fieldtype": "Data",
+   "label": "Sample Type"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory_location",
+   "fieldtype": "Data",
+   "label": "Laboratory Location",
+   "fetch_from": "laboratory.location",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory_accreditation",
+   "fieldtype": "Small Text",
+   "label": "Laboratory Accreditation",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_timeline",
+   "fieldtype": "Data",
+   "label": "Testing Timeline"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "hidden": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Instacertify Test Report</title>
+  <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
+  <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
+  <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+</head>
+<body class="ic-portal-body">
+  <div class="ic-portal-wrap">
+    <div class="ic-portal-brand" style="margin-bottom:14px;">
+      <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+    </div>
+    <div class="ic-portal-card">
+      <h2 style="color:#065175;margin-top:0;">Test Report</h2>
+      <div id="content">Loading…</div>
+    </div>
+  </div>
+  <script>
+    const token = {{ token|tojson }};
+    fetch('/api/method/instacertify.www.ic_report.get_report?token=' + encodeURIComponent(token))
+      .then(r => r.json()).then(r => {
+        const d = r.message;
+        if (!d) { document.getElementById('content').innerText = 'Not found'; return; }
+        document.getElementById('content').innerHTML =
+          '<p><b>' + d.title + '</b> (' + d.name + ')</p>' +
+          '<p>Product: ' + (d.product || '') + '</p>' +
+          '<p>Test: ' + (d.test_name || '') + '</p>' +
+          '<p>Status: ' + (d.status || '') + '</p>' +
+          (d.test_report ? '<p><a class="ic-btn ic-btn-primary" href="' + d.test_report + '" target="_blank">View / Download Report</a></p>' : '<p>Report not available.</p>');
+      });
+  </script>
+</body>
+</html>

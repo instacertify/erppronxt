@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Instacertify Verification</title>
+  <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
+  <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
+  <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+</head>
+<body class="ic-portal-body">
+  <div class="ic-portal-wrap">
+    <div class="ic-portal-brand" style="margin-bottom:14px;">
+      <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+    </div>
+    <div class="ic-portal-card">
+      <h2 style="color:#065175;margin-top:0;">Document Verification</h2>
+      {% if valid %}
+        <p style="color:#1e7a4c;font-weight:600;">Verified authentic Instacertify record</p>
+        <p><b>Type:</b> {{ doctype }}</p>
+        <p><b>Title:</b> {{ details.title }}</p>
+        <p><b>Status:</b> {{ details.status }}</p>
+        <p><b>Last Updated:</b> {{ details.modified }}</p>
+      {% else %}
+        <p style="color:#c0392b;">{{ error or "This reference could not be verified." }}</p>
+      {% endif %}
+      <p style="color:#5b7380;font-size:0.9rem;margin-top:18px;">Verification only — this page does not sign you into Instacertify ERP.</p>
+    </div>
+  </div>
+</body>
+</html>

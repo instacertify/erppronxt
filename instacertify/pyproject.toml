@@ -1,0 +1,23 @@
+[project]
+name = "instacertify"
+authors = [
+    { name = "Instacertify", email = "admin@instacertify.com"}
+]
+description = "Instacertify ERP customizations on ERPNext for certification, compliance, consulting and testing"
+requires-python = ">=3.14"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    "qrcode[pil]",
+    # "frappe~=16.0.0"
+]
+
+[build-system]
+requires = ["flit_core >=3.4,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.bench.dev-dependencies]
+
+[tool.ruff]
+line-length = 110
+target-version = "py314"

@@ -1,0 +1,54 @@
+{
+ "name": "IC Quotation Product",
+ "module": "Instacertify",
+ "istable": 1,
+ "editable_grid": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "product_description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "services",
+   "fieldtype": "Small Text",
+   "label": "Services (comma-separated)",
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "applicable_standards",
+   "fieldtype": "Data",
+   "label": "Applicable Standards"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "estimated_value",
+   "fieldtype": "Currency",
+   "label": "Estimated Value",
+   "in_list_view": 1,
+   "options": "currency"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "hidden": 1
+  }
+ ],
+ "permissions": [],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}

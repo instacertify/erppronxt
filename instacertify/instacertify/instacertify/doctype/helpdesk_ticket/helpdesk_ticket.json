@@ -1,0 +1,340 @@
+{
+ "name": "Helpdesk Ticket",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "module": "Instacertify",
+ "track_changes": 1,
+ "title_field": "subject",
+ "search_fields": "customer,lead,project,ticket_type,status,priority",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "allow_import": 1,
+ "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "HT-.YYYY.-.####",
+   "default": "HT-.YYYY.-.####",
+   "reqd": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "bold": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "ticket_type",
+   "fieldtype": "Select",
+   "label": "Ticket Type",
+   "options": "Complaint\nQuery\nBilling\nDocument Issue\nCertification Delay\nSample / Lab\nPortal / Access\nOther",
+   "default": "Complaint",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nIn Progress\nWaiting on Customer\nResolved\nClosed",
+   "default": "Open",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nUrgent",
+   "default": "Medium",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "opened_on",
+   "fieldtype": "Datetime",
+   "label": "Opened On",
+   "default": "Now",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "CRM Links"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "label": "Customer",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "options": "Lead",
+   "label": "Lead",
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "opportunity",
+   "fieldtype": "Link",
+   "options": "Opportunity",
+   "label": "Opportunity"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_links",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "options": "Project",
+   "label": "Project",
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "options": "Quotation",
+   "label": "Quotation"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "options": "Sales Invoice",
+   "label": "Sales Invoice"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_contact",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_contact",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "options": "Phone"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Raised Via",
+   "options": "Phone\nEmail\nWhatsApp\nWalk-in\nPortal\nInternal\nOther",
+   "default": "Internal"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_people",
+   "fieldtype": "Section Break",
+   "label": "Ownership"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "raised_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Raised By",
+   "default": "__user"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_people",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Assigned To",
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_details",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description / Complaint"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "attachment",
+   "fieldtype": "Attach",
+   "label": "Attachment"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_resolution",
+   "fieldtype": "Section Break",
+   "label": "Resolution",
+   "collapsible": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "resolution_notes",
+   "fieldtype": "Text Editor",
+   "label": "Resolution Notes"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "resolved_on",
+   "fieldtype": "Datetime",
+   "label": "Resolved On",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "doctype": "DocPerm",
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "IC Sales Person",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Sales User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 0,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  },
+  {
+   "doctype": "DocPerm",
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "report": 1,
+   "export": 1,
+   "share": 1,
+   "print": 1,
+   "email": 1
+  }
+ ],
+ "links": [
+  {
+   "link_doctype": "Project",
+   "link_fieldname": "project"
+  }
+ ],
+ "doctype": "DocType",
+ "engine": "InnoDB"
+}
