@@ -31,7 +31,7 @@ def _ensure_home_html_block():
     <div class="ic-explore-head">
       <div>
         <div class="ic-explore-title">Explore Instacertify</div>
-        <div class="ic-explore-sub" id="ic-explore-hint">Relevant options for you — tap any card to open</div>
+        <div class="ic-explore-sub" id="ic-explore-hint">Organised in tiles — tap any square to open</div>
       </div>
     </div>
     <div class="ic-explore-grid" id="ic-explore-grid"></div>
@@ -699,11 +699,38 @@ _SHADOW_THEME_CSS = """
   margin-top: 8px;
 }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
-.ic-summary-card:nth-child(3n+1) { border-left: 4px solid #065175 !important; }
-.ic-summary-card:nth-child(3n+2) { border-left: 4px solid #EC6820 !important; }
-.ic-summary-card:nth-child(3n) { border-left: 4px solid #0a8fb5 !important; }
+.ic-summary-grid, .ic-explore-grid, .ic-project-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  gap: 12px !important;
+}
+.ic-explore-card, .ic-summary-card {
+  aspect-ratio: 1 / 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border-radius: 12px !important;
+  min-height: 0 !important;
+}
+.ic-summary-card {
+  justify-content: space-between !important;
+  padding: 14px 12px !important;
+  border: 1px solid rgba(6,81,117,0.1) !important;
+  border-top: 4px solid #065175 !important;
+  border-left: 1px solid rgba(6,81,117,0.1) !important;
+}
+.ic-summary-card:nth-child(3n+1) { border-top-color: #065175 !important; }
+.ic-summary-card:nth-child(3n+2) { border-top-color: #EC6820 !important; }
+.ic-summary-card:nth-child(3n) { border-top-color: #0a8fb5 !important; }
 .ic-summary-card:nth-child(3n) .value { color: #0a8fb5 !important; }
 .ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC6820 !important; }
+.ic-summary-card .label {
+  font-size: 0.68rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5a6f7a;
+}
+.ic-summary-card .value { margin-top: auto !important; font-size: 1.6rem !important; }
 .ic-explore-panel { margin-bottom: 20px; }
 .ic-explore-title {
   font-family: "Poppins", sans-serif !important;
@@ -713,16 +740,10 @@ _SHADOW_THEME_CSS = """
   letter-spacing: -0.02em;
 }
 .ic-explore-sub { color: #5a6f7a; font-size: 0.86rem; margin-top: 2px; margin-bottom: 12px; }
-.ic-explore-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  gap: 10px;
-}
 .ic-explore-card {
   text-align: left;
   border: 1px solid rgba(6,81,117,0.12);
-  border-radius: 12px;
-  padding: 14px 14px 16px;
+  padding: 12px;
   background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -730,20 +751,42 @@ _SHADOW_THEME_CSS = """
   font-family: "Poppins", sans-serif !important;
 }
 .ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,81,117,0.1); }
-.ic-explore-card.accent-coral { border-left: 4px solid #c0392b; }
-.ic-explore-card.accent-citrus { border-left: 4px solid #EC6820; }
-.ic-explore-card.accent-teal { border-left: 4px solid #065175; }
-.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; }
+.ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
+.ic-explore-card.accent-citrus { border-top: 4px solid #EC6820; }
+.ic-explore-card.accent-teal { border-top: 4px solid #065175; }
+.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; flex-shrink: 0; }
 .ic-explore-count {
   background: #065175; color: #fff; font-size: 0.72rem; font-weight: 700;
-  border-radius: 999px; padding: 2px 8px;
+  border-radius: 8px; padding: 2px 8px;
 }
 .ic-explore-action {
   background: #fff4ec; color: #c44710; font-size: 0.7rem; font-weight: 700;
   border-radius: 6px; padding: 2px 7px; text-transform: uppercase; letter-spacing: 0.04em;
 }
-.ic-explore-card-title { font-weight: 700; color: #033447; font-size: 0.95rem; }
-.ic-explore-card-sub { color: #5a6f7a; font-size: 0.78rem; margin-top: 4px; line-height: 1.35; }
+.ic-explore-card-title { font-weight: 700; color: #033447; font-size: 0.9rem; line-height: 1.25;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ic-explore-card-sub { color: #5a6f7a; font-size: 0.74rem; margin-top: auto; padding-top: 8px; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ic-project-tile {
+  aspect-ratio: 1 / 1 !important;
+  min-height: 0 !important;
+  padding: 12px !important;
+  border-radius: 12px !important;
+}
+.ic-lead-prompt-list {
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  gap: 12px !important;
+}
+.ic-lead-prompt, .ic-lead-hub-card {
+  aspect-ratio: 1 / 1 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.ic-workdesk-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
+  gap: 12px !important;
+}
 """
 
 
@@ -886,21 +929,21 @@ def _ensure_home_workspace():
 		{"id": "ic_spacer1", "type": "spacer", "data": {"col": 12}},
 		{"id": "ic_crm_header", "type": "header", "data": {"text": "<span class=\"h5\">CRM Lead Tracker</span>", "col": 12}},
 		{"id": "ic_crm_block", "type": "custom_block", "data": {"custom_block_name": "CRM Lead Tracker", "col": 12}},
-		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "Leads This Week", "col": 3}},
-		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "Leads This Month", "col": 3}},
-		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "New Leads", "col": 3}},
-		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "Active Leads", "col": 3}},
+		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "Leads This Week", "col": 2}},
+		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "Leads This Month", "col": 2}},
+		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "New Leads", "col": 2}},
+		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "Active Leads", "col": 2}},
 		{"id": "ic_cards_header", "type": "header", "data": {"text": "<span class=\"h5\">Operations Snapshot</span>", "col": 12}},
-		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "Quotations Sent", "col": 3}},
-		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "Quotations Accepted", "col": 3}},
-		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "Active Projects", "col": 3}},
-		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "Pending Tasks", "col": 3}},
-		{"id": "nc_open_tickets", "type": "number_card", "data": {"number_card_name": "Open Tickets", "col": 3}},
-		{"id": "nc_pending_docs", "type": "number_card", "data": {"number_card_name": "Pending Documents", "col": 3}},
-		{"id": "nc_leads_contact", "type": "number_card", "data": {"number_card_name": "Leads to Contact", "col": 3}},
-		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "Testing Requests", "col": 3}},
-		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "Upcoming Deadlines", "col": 3}},
-		{"id": "nc_amc", "type": "number_card", "data": {"number_card_name": "AMC Due Soon", "col": 3}},
+		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "Quotations Sent", "col": 2}},
+		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "Quotations Accepted", "col": 2}},
+		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "Active Projects", "col": 2}},
+		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "Pending Tasks", "col": 2}},
+		{"id": "nc_open_tickets", "type": "number_card", "data": {"number_card_name": "Open Tickets", "col": 2}},
+		{"id": "nc_pending_docs", "type": "number_card", "data": {"number_card_name": "Pending Documents", "col": 2}},
+		{"id": "nc_leads_contact", "type": "number_card", "data": {"number_card_name": "Leads to Contact", "col": 2}},
+		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "Testing Requests", "col": 2}},
+		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "Upcoming Deadlines", "col": 2}},
+		{"id": "nc_amc", "type": "number_card", "data": {"number_card_name": "AMC Due Soon", "col": 2}},
 		{"id": "ic_samples_header", "type": "header", "data": {"text": "<span class=\"h5\">Sample Custody</span>", "col": 12}},
 		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "Samples Transit to Office", "col": 2}},
 		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "Samples At Office", "col": 2}},
@@ -919,29 +962,30 @@ def _ensure_home_workspace():
 		{"id": "chart_projects_priority", "type": "chart", "data": {"chart_name": "Projects by Priority", "col": 6}},
 		{"id": "chart_samples_location", "type": "chart", "data": {"chart_name": "Samples by Location", "col": 6}},
 		{"id": "ic_shortcuts_header", "type": "header", "data": {"text": "<span class=\"h5\">Quick Links</span>", "col": 12}},
-		{"id": "sc_leads", "type": "shortcut", "data": {"shortcut_name": "Leads", "col": 3}},
-		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 3}},
-		{"id": "sc_quotations", "type": "shortcut", "data": {"shortcut_name": "Quotations", "col": 3}},
-		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 3}},
-		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 3}},
-		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 3}},
-		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 3}},
-		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 3}},
-		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 3}},
-		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 3}},
-		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 3}},
-		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Documents Collection Sheets", "col": 3}},
-		{"id": "sc_dispatch", "type": "shortcut", "data": {"shortcut_name": "Sample Dispatch Sheets", "col": 3}},
-		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 3}},
-		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 3}},
-		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 3}},
-		{"id": "sc_asset", "type": "shortcut", "data": {"shortcut_name": "Asset", "col": 3}},
-		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 3}},
-		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 3}},
-		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 3}},
-		# Expenses & HRMS — always last
-		{"id": "sc_hrms", "type": "shortcut", "data": {"shortcut_name": "HRMS Lifecycle", "col": 3}},
-		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
+		{"id": "sc_leads", "type": "shortcut", "data": {"shortcut_name": "Leads", "col": 2}},
+		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 2}},
+		{"id": "sc_quotations", "type": "shortcut", "data": {"shortcut_name": "Quotations", "col": 2}},
+		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 2}},
+		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
+		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
+		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
+		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 2}},
+		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
+		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 2}},
+		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 2}},
+		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Documents Collection Sheets", "col": 2}},
+		{"id": "sc_dispatch", "type": "shortcut", "data": {"shortcut_name": "Sample Dispatch Sheets", "col": 2}},
+		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 2}},
+		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 2}},
+		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 2}},
+		{"id": "sc_asset", "type": "shortcut", "data": {"shortcut_name": "Asset", "col": 2}},
+		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 2}},
+		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 2}},
+		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 2}},
+		# Expenses & HRMS — always last (square tiles)
+		{"id": "sc_hrms", "type": "shortcut", "data": {"shortcut_name": "HRMS Lifecycle", "col": 2}},
+		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 2}},
+
 	]
 
 
