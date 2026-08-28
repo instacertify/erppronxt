@@ -11,6 +11,71 @@ instacertify.brand = {
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
+/** Prefer ERPNext File Library (internal drive) over pasted URLs / Google Drive. */
+instacertify.attach_options = {
+	allow_web_link: false,
+	allow_google_drive: false,
+};
+
+instacertify.get_attach_upload_notes = function () {
+	return __(
+		"Use My Device or Library (internal drive). Web links and Google Drive are disabled."
+	);
+};
+
+instacertify.open_file_manager = function () {
+	frappe.set_route("List", "File");
+};
+
+/** Append a File Manager shortcut under Attach fields in dialogs. */
+instacertify.add_file_manager_hint = function (dialog, fieldname) {
+	try {
+		const field = dialog.fields_dict && dialog.fields_dict[fieldname];
+		if (!field || !field.$wrapper) return;
+		if (field.$wrapper.find(".ic-open-file-manager").length) return;
+		const $hint = $(
+			`<div class="ic-open-file-manager text-muted" style="margin-top:6px;font-size:12px;">
+				<a href="#" class="ic-file-mgr-link">${__("Open File Manager")}</a>
+				— ${__("browse or upload once, then pick from Library")}
+			</div>`
+		);
+		field.$wrapper.append($hint);
+		$hint.find(".ic-file-mgr-link").on("click", (e) => {
+			e.preventDefault();
+			dialog.hide();
+			instacertify.open_file_manager();
+		});
+	} catch (e) {
+		/* ignore */
+	}
+};
+
+instacertify.patch_file_uploader_for_internal_drive = function () {
+	if (frappe.ui.form.ControlAttach && !frappe.ui.form.ControlAttach.prototype.__ic_internal_drive) {
+		const orig = frappe.ui.form.ControlAttach.prototype.set_upload_options;
+		frappe.ui.form.ControlAttach.prototype.set_upload_options = function () {
+			orig.apply(this, arguments);
+			this.upload_options = this.upload_options || {};
+			this.upload_options.allow_web_link = false;
+			this.upload_options.allow_google_drive = false;
+			if (!this.upload_options.upload_notes) {
+				this.upload_options.upload_notes = instacertify.get_attach_upload_notes();
+			}
+		};
+		frappe.ui.form.ControlAttach.prototype.__ic_internal_drive = true;
+	}
+	if (frappe.ui.form.ControlAttachImage && !frappe.ui.form.ControlAttachImage.prototype.__ic_internal_drive) {
+		const origImg = frappe.ui.form.ControlAttachImage.prototype.set_upload_options;
+		frappe.ui.form.ControlAttachImage.prototype.set_upload_options = function () {
+			origImg.apply(this, arguments);
+			this.upload_options = this.upload_options || {};
+			this.upload_options.allow_web_link = false;
+			this.upload_options.allow_google_drive = false;
+		};
+		frappe.ui.form.ControlAttachImage.prototype.__ic_internal_drive = true;
+	}
+};
+
 /** Quotation naming: Service/Consulting → QTN-SRV, Testing → QTN-TST, else QTN-OTH */
 instacertify.quotation_series_for_type = function (quotation_type) {
 	const t = (quotation_type || "").trim();
@@ -52,6 +117,11 @@ instacertify.has_home_root = function () {
 
 /** Land every user on Instacertify Home dashboard after login / desk boot. */
 $(document).on("app_ready", function () {
+	try {
+		instacertify.patch_file_uploader_for_internal_drive();
+	} catch (e) {
+		/* ignore */
+	}
 	try {
 		const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
 		const route = frappe.get_route_str ? frappe.get_route_str() : "";
@@ -130,7 +200,10 @@ instacertify.open_expense_file = function (opts) {
 				fieldname: "receipt",
 				fieldtype: "Attach",
 				label: __("Receipt / Bill"),
-				description: __("PDF, image, or Excel of the bill"),
+				description: __(
+					"Select from My Device or File Library (internal drive). No web / Drive URLs."
+				),
+				options: instacertify.attach_options,
 			},
 			{
 				fieldname: "project",
@@ -167,6 +240,7 @@ instacertify.open_expense_file = function (opts) {
 		frappe.set_route("List", "IC Expense Claim");
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "receipt");
 };
 
 /** Upload dialog → create/update IC Quotation Template with format file. */
@@ -199,9 +273,12 @@ instacertify.open_quote_format_upload = function (opts) {
 			{
 				fieldname: "file",
 				fieldtype: "Attach",
-				label: __("Upload Quote Format File"),
+				label: __("Quote Format File"),
 				reqd: 1,
-				description: __("PDF, DOCX, HTML, or image"),
+				description: __(
+					"Select PDF/DOCX/HTML from My Device or File Library (internal drive)."
+				),
+				options: instacertify.attach_options,
 			},
 			{
 				fieldname: "template_notes",
@@ -247,6 +324,7 @@ instacertify.open_quote_format_upload = function (opts) {
 		});
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "file");
 };
 
 /** Upload dialog → create/update IC Laboratory with name + scope file. */
@@ -277,8 +355,11 @@ instacertify.open_laboratory_upload = function (opts) {
 			{
 				fieldname: "scope_file",
 				fieldtype: "Attach",
-				label: __("Upload Scope Sheet / PDF"),
-				description: __("PDF or sheet of laboratory scope"),
+				label: __("Scope Sheet / PDF"),
+				description: __(
+					"Select from My Device or File Library (internal drive). No web / Drive URLs."
+				),
+				options: instacertify.attach_options,
 			},
 			{
 				fieldname: "contact_person",
@@ -322,6 +403,7 @@ instacertify.open_laboratory_upload = function (opts) {
 		},
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "scope_file");
 };
 
 instacertify.open_lab_scope_csv_import = function (frm) {
@@ -340,6 +422,10 @@ instacertify.open_lab_scope_csv_import = function (frm) {
 				fieldtype: "Attach",
 				label: __("CSV File"),
 				reqd: 1,
+				description: __(
+					"Select CSV from My Device or File Library (internal drive)."
+				),
+				options: instacertify.attach_options,
 			},
 		],
 		primary_action_label: __("Import"),
@@ -372,6 +458,7 @@ instacertify.open_lab_scope_csv_import = function (frm) {
 		});
 	});
 	d.show();
+	instacertify.add_file_manager_hint(d, "file");
 };
 
 /** Add Raise Ticket / Raise Complaint buttons on CRM forms. */
@@ -1752,6 +1839,9 @@ function ic_bind_customer_file_actions(frm) {
 			docname: frm.doc.name,
 			frm: frm,
 			folder: "Home/Attachments",
+			allow_web_link: false,
+			allow_google_drive: false,
+			upload_notes: instacertify.get_attach_upload_notes(),
 			on_success() {
 				frappe.show_alert({ message: __("File uploaded"), indicator: "green" });
 				instacertify.load_customer_related(frm);
