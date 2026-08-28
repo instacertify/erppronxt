@@ -67,9 +67,10 @@ def ensure_default_dashboard():
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"default_workspace {user}")
 
-	# Global desk home preference
+	# Global desk home preference — must be a real Page name on Frappe 16.
+	# "workspace" is legacy and causes "Page workspace not found".
 	try:
-		frappe.db.set_default("desktop:home_page", "workspace")
+		frappe.db.set_default("desktop:home_page", "desktop")
 	except Exception:
 		pass
 
@@ -88,7 +89,11 @@ def _ensure_desk_entry_redirects():
 		("/desktop", home),
 		("/desktop/", home),
 		("/Desktop", home),
+		("/workspace", home),
+		("/workspace/", home),
+		("/workspaces", home),
 		("/app/home", home),
+		("/app/workspace", home),
 		("/app/instacertify-home", home),
 	)
 

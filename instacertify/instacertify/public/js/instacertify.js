@@ -128,8 +128,14 @@ instacertify.go_home = function () {
 		(frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
 	localStorage.setItem("current_page", home);
 	localStorage.setItem("is_current_page_public", "true");
-	// Prefer slug URL so router resolves via frappe.workspaces[slug]
-	frappe.set_route(frappe.router.slug(home));
+	const slug =
+		frappe.router && frappe.router.slug ? frappe.router.slug(home) : "instacertify-home";
+	// Use slug so /desk/instacertify-home resolves via frappe.workspaces — never Page "workspace"
+	if (frappe.workspaces && frappe.workspaces[slug]) {
+		frappe.set_route(slug);
+	} else {
+		frappe.set_route(slug);
+	}
 };
 
 /** Land every user on Instacertify Home dashboard after login / desk boot. */
@@ -147,12 +153,14 @@ $(document).on("app_ready", function () {
 			!route ||
 			route === "Workspaces" ||
 			route === "workspace" ||
+			route === "workspaces" ||
 			route === "desktop" ||
 			route === "Home" ||
 			route === "Workspaces/Home" ||
 			route === "Welcome Workspace" ||
 			route === "Workspaces/Welcome Workspace";
-		if (isDeskRoot) {
+		// Also recover from boot.home_page mistakenly set to legacy "workspace"
+		if (isDeskRoot || (frappe.boot && frappe.boot.home_page === "workspace")) {
 			instacertify.go_home();
 		} else if (!localStorage.getItem("current_page")) {
 			localStorage.setItem("current_page", home);
@@ -169,6 +177,8 @@ $(document).on("page-change", function () {
 		if (
 			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
 			(route[0] === "workspace" && (!route[1] || route[1] === "Home")) ||
+			route[0] === "workspace" ||
+			route[0] === "workspaces" ||
 			route[0] === "desktop"
 		) {
 			instacertify.go_home();
