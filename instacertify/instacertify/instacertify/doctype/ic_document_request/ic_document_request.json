@@ -117,9 +117,104 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_data_collection",
+   "fieldtype": "Section Break",
+   "label": "Data Collection Sheet"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "company_legal_name",
+   "fieldtype": "Data",
+   "label": "Company Legal Name"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "gstin",
+   "fieldtype": "Data",
+   "label": "GSTIN"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_data_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "data_contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "data_contact_phone",
+   "fieldtype": "Data",
+   "label": "Contact Phone"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "data_contact_email",
+   "fieldtype": "Data",
+   "label": "Contact Email"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_data_product",
+   "fieldtype": "Section Break",
+   "label": "Product / Application Data"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "company_address",
+   "fieldtype": "Small Text",
+   "label": "Company Address"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_data_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "product_model",
+   "fieldtype": "Data",
+   "label": "Model / Variant"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "product_brand",
+   "fieldtype": "Data",
+   "label": "Brand"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "data_collection_remarks",
+   "fieldtype": "Small Text",
+   "label": "Data Collection Remarks"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_data_fields",
+   "fieldtype": "Section Break",
+   "label": "Additional Data Fields"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "data_fields",
+   "fieldtype": "Table",
+   "label": "Data Collection Fields",
+   "options": "IC Data Collection Item"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_sample",
    "fieldtype": "Section Break",
-   "label": "Sample Dispatch (from Customer)",
+   "label": "Sample Dispatch (legacy — prefer Sample Dispatch Collection Sheet)",
    "collapsible": 1
   },
   {

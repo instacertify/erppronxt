@@ -2005,7 +2005,7 @@ frappe.ui.form.on("Project", {
 		frm.add_custom_button(__("Add Project Update"), () => {
 			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
 		}, __("Actions"));
-		frm.add_custom_button(__("Request Documents from Customer"), () => {
+		frm.add_custom_button(__("Share Documents Collection Sheet"), () => {
 			frappe.call({
 				method: "instacertify.documents.api.create_document_request_for_project",
 				args: { project: frm.doc.name },
@@ -2013,9 +2013,9 @@ frappe.ui.form.on("Project", {
 				callback(r) {
 					const url = r.message && r.message.url;
 					frappe.msgprint({
-						title: __("Customer document link"),
+						title: __("Documents Collection Sheet — customer link"),
 						message: `
-							<p>${__("Share this link so the customer can upload documents, remarks, and sample POD / tracking:")}</p>
+							<p>${__("Share this link so the customer can upload the document list and fill the Data Collection Sheet:")}</p>
 							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
 						`,
 						indicator: "green",
@@ -2025,6 +2025,30 @@ frappe.ui.form.on("Project", {
 					}
 					if (r.message && r.message.document_request) {
 						frappe.set_route("Form", "IC Document Request", r.message.document_request);
+					}
+				},
+			});
+		}, __("Actions"));
+		frm.add_custom_button(__("Share Sample Dispatch Sheet"), () => {
+			frappe.call({
+				method: "instacertify.sample_dispatch.api.create_sample_dispatch_for_project",
+				args: { project: frm.doc.name },
+				freeze: true,
+				callback(r) {
+					const url = r.message && r.message.url;
+					frappe.msgprint({
+						title: __("Sample Dispatch Data Collection — customer link"),
+						message: `
+							<p>${__("Share this link so the customer can submit courier, AWB, POD, and sample dispatch details:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+						`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+					}
+					if (r.message && r.message.name) {
+						frappe.set_route("Form", "IC Sample Dispatch Collection", r.message.name);
 					}
 				},
 			});
@@ -2173,11 +2197,14 @@ frappe.ui.form.on("IC Document Request", {
 					callback(r) {
 						const url = r.message && r.message.url;
 						frappe.msgprint({
-							title: __("Customer link"),
+							title: __("Documents Collection Sheet — customer link"),
 							message: `<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-								<p class="text-muted">${__("Customer can upload docs, remarks, and sample POD / tracking.")}</p>`,
+								<p class="text-muted">${__("Customer can upload the document list and fill the Data Collection Sheet.")}</p>`,
 							indicator: "green",
 						});
+						if (url && navigator.clipboard) {
+							navigator.clipboard.writeText(url).catch(() => {});
+						}
 						frm.reload_doc();
 					},
 				});
@@ -2234,6 +2261,32 @@ frappe.ui.form.on("IC Document Request", {
 			args: { document_request: frm.doc.name, template: frm.doc.checklist_template },
 			callback() { frm.reload_doc(); },
 		});
+	},
+});
+
+frappe.ui.form.on("IC Sample Dispatch Collection", {
+	refresh(frm) {
+		if (frm.is_new()) return;
+		frm.add_custom_button(__("Generate / Share Customer Link"), () => {
+			frappe.call({
+				method: "instacertify.sample_dispatch.api.share_sample_dispatch_collection",
+				args: { name: frm.doc.name },
+				freeze: true,
+				callback(r) {
+					const url = r.message && r.message.url;
+					frappe.msgprint({
+						title: __("Sample Dispatch Data Collection — customer link"),
+						message: `<p>${__("Share this link with the customer to collect courier, AWB, POD, and sample details:")}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>`,
+						indicator: "green",
+					});
+					if (url && navigator.clipboard) {
+						navigator.clipboard.writeText(url).catch(() => {});
+					}
+					frm.reload_doc();
+				},
+			});
+		}, __("Actions"));
 	},
 });
 

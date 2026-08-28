@@ -3,18 +3,21 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Document Checklist</title>
+  <title>Documents & Data Collection Sheet</title>
   <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
   <style>
     .ic-doc-item { border:1px solid #d7e6ef; border-radius:12px; padding:14px; margin:12px 0; background:#fff; }
     .ic-doc-item textarea { width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; margin-top:8px; }
     .ic-doc-meta { font-size:12px; color:#667; margin-top:4px; }
-    .ic-sample-box { margin-top:18px; padding:14px; border-radius:12px; background:#f3f8fb; border:1px solid #d7e6ef; }
-    .ic-sample-box input, .ic-sample-box textarea { width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; margin:6px 0 10px; }
+    .ic-data-box { margin-top:18px; padding:14px; border-radius:12px; background:#f3f8fb; border:1px solid #d7e6ef; }
+    .ic-data-box input, .ic-data-box textarea { width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; margin:6px 0 10px; box-sizing:border-box; }
+    .ic-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
+    @media (max-width:720px){ .ic-form-grid { grid-template-columns:1fr; } }
     .ic-msg { margin-top:10px; padding:10px 12px; border-radius:10px; display:none; }
     .ic-msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     .ic-msg.err { display:block; background:#fdecea; color:#b42318; }
+    .ic-section-title { color:#065175; margin:0 0 10px; }
   </style>
 </head>
 <body class="ic-portal-body">
@@ -23,26 +26,29 @@
       <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
     </div>
     <div class="ic-portal-card">
-      <h2 style="color:#065175;margin-top:0;">Documents & Sample Dispatch</h2>
+      <h2 style="color:#065175;margin-top:0;">Documents Collection Sheet</h2>
       <div id="content">Loading…</div>
       <div id="msg" class="ic-msg"></div>
       <div id="list"></div>
-      <div class="ic-sample-box" id="sample-box" style="display:none;">
-        <h3 style="color:#065175;margin-top:0;">Sample dispatch</h3>
-        <p style="color:#5b7380;font-size:0.92rem;">Enter courier details and upload POD so our team can track your sample.</p>
-        <label>Courier name</label>
-        <input id="courier_name" type="text" placeholder="e.g. BlueDart / DTDC"/>
-        <label>Tracking / AWB number</label>
-        <input id="tracking_number" type="text" placeholder="Tracking number"/>
-        <label>Dispatch date</label>
-        <input id="dispatch_date" type="date"/>
+      <div class="ic-data-box" id="data-box" style="display:none;">
+        <h3 class="ic-section-title">Data Collection Sheet</h3>
+        <p style="color:#5b7380;font-size:0.92rem;">Fill company / product details required for this project.</p>
+        <div class="ic-form-grid">
+          <div><label>Company legal name</label><input id="company_legal_name" type="text"/></div>
+          <div><label>GSTIN</label><input id="gstin" type="text"/></div>
+          <div><label>Contact person</label><input id="data_contact_person" type="text"/></div>
+          <div><label>Contact phone</label><input id="data_contact_phone" type="text"/></div>
+          <div><label>Contact email</label><input id="data_contact_email" type="email"/></div>
+          <div><label>Product name</label><input id="product_name" type="text"/></div>
+          <div><label>Model / variant</label><input id="product_model" type="text"/></div>
+          <div><label>Brand</label><input id="product_brand" type="text"/></div>
+        </div>
+        <label>Company address</label>
+        <textarea id="company_address" rows="2"></textarea>
         <label>Remarks</label>
-        <textarea id="sample_remarks" rows="3" placeholder="Any notes about the sample shipment"></textarea>
-        <label>POD / dispatch proof</label>
-        <input id="pod_file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"/>
-        <p style="color:#5b7380;font-size:0.85rem;margin:4px 0 10px;">Allowed: PDF, images (all common formats), Excel/CSV, Word</p>
-        <div id="pod_link" style="margin:6px 0;"></div>
-        <button class="ic-btn ic-btn-primary" id="btn-sample">Save sample dispatch</button>
+        <textarea id="data_collection_remarks" rows="2"></textarea>
+        <div id="data-fields"></div>
+        <button class="ic-btn ic-btn-primary" id="btn-data" style="margin-top:8px;">Save data collection</button>
       </div>
     </div>
   </div>
@@ -94,6 +100,7 @@
       }
       return data.message;
     }
+    function fill(id, v) { const el = document.getElementById(id); if (el) el.value = v || ''; }
     function load() {
       fetch('/api/method/instacertify.documents.api.get_document_request_by_token?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
@@ -102,7 +109,8 @@
           document.getElementById('content').innerHTML =
             (d.portal_notice ? ('<p style="color:#5b7380;font-size:0.92rem;">' + esc(d.portal_notice) + '</p>') : '') +
             '<p><b>' + esc(d.title || '') + '</b></p><p>Status: <b>' + esc(d.status || '') + '</b></p>' +
-            '<p style="color:#5b7380;font-size:0.92rem;">Allowed uploads: ' + esc(d.allowed_types || 'PDF, images, Excel/CSV, Word') + '</p>';
+            '<p style="color:#5b7380;font-size:0.92rem;">Allowed uploads: ' + esc(d.allowed_types || 'PDF, images, Excel/CSV, Word') + '</p>' +
+            '<h3 class="ic-section-title">List of documents</h3>';
           const list = document.getElementById('list');
           list.innerHTML = '';
           (d.items || []).forEach(item => {
@@ -142,31 +150,45 @@
             });
           });
 
-          document.getElementById('sample-box').style.display = 'block';
-          document.getElementById('courier_name').value = d.courier_name || '';
-          document.getElementById('tracking_number').value = d.tracking_number || '';
-          document.getElementById('dispatch_date').value = d.dispatch_date || '';
-          document.getElementById('sample_remarks').value = d.sample_dispatch_remarks || '';
-          document.getElementById('pod_link').innerHTML = d.pod_attachment
-            ? '<a href="' + d.pod_attachment + '" target="_blank" rel="noopener">Current POD</a>' : '';
+          document.getElementById('data-box').style.display = 'block';
+          ['company_legal_name','gstin','company_address','data_contact_person','data_contact_phone',
+           'data_contact_email','product_name','product_model','product_brand','data_collection_remarks'
+          ].forEach(k => fill(k, d[k]));
+          const df = document.getElementById('data-fields');
+          df.innerHTML = '';
+          (d.data_fields || []).forEach(row => {
+            const wrap = document.createElement('div');
+            wrap.innerHTML =
+              '<label>' + esc(row.field_label || '') + (row.is_mandatory ? ' *' : '') + '</label>' +
+              (row.help_text ? '<div class="ic-doc-meta">' + esc(row.help_text) + '</div>' : '') +
+              '<textarea data-df="' + esc(row.name) + '" rows="2">' + esc(row.field_value || '') + '</textarea>';
+            df.appendChild(wrap);
+          });
         });
     }
-    document.getElementById('btn-sample').onclick = async () => {
+    document.getElementById('btn-data').onclick = async () => {
       try {
-        let pod = null;
-        const f = document.getElementById('pod_file').files[0];
-        if (f) pod = await uploadFile(f);
-        await post('instacertify.documents.api.save_sample_dispatch', {
+        const data_fields = Array.from(document.querySelectorAll('[data-df]')).map(el => ({
+          name: el.getAttribute('data-df'),
+          field_value: el.value || ''
+        }));
+        await post('instacertify.documents.api.save_data_collection', {
           token,
-          courier_name: document.getElementById('courier_name').value,
-          tracking_number: document.getElementById('tracking_number').value,
-          dispatch_date: document.getElementById('dispatch_date').value,
-          pod_attachment: pod,
-          sample_dispatch_remarks: document.getElementById('sample_remarks').value
+          company_legal_name: document.getElementById('company_legal_name').value,
+          gstin: document.getElementById('gstin').value,
+          company_address: document.getElementById('company_address').value,
+          data_contact_person: document.getElementById('data_contact_person').value,
+          data_contact_phone: document.getElementById('data_contact_phone').value,
+          data_contact_email: document.getElementById('data_contact_email').value,
+          product_name: document.getElementById('product_name').value,
+          product_model: document.getElementById('product_model').value,
+          product_brand: document.getElementById('product_brand').value,
+          data_collection_remarks: document.getElementById('data_collection_remarks').value,
+          data_fields: JSON.stringify(data_fields)
         });
-        showMsg('Sample dispatch saved. Our team can now track it.', true);
+        showMsg('Data collection saved.', true);
         setTimeout(load, 600);
-      } catch (e) { showMsg(e.message || 'Could not save sample dispatch', false); }
+      } catch (e) { showMsg(e.message || 'Could not save data collection', false); }
     };
     load();
   </script>
