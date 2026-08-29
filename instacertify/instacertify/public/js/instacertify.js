@@ -644,6 +644,227 @@ instacertify.add_helpdesk_buttons = function (frm, defaults) {
 	setTimeout(run, 800);
 })();
 
+/**
+ * Desk-wide line icons for Previous / Next / Back / Print / Save and other actions.
+ * Frappe already icons some controls; this fills gaps and keeps styling consistent.
+ */
+(function icActionButtonIcons() {
+	const LABEL_ICONS = {
+		Save: "save",
+		Submit: "circle-check",
+		Update: "pencil",
+		Edit: "pencil",
+		Amend: "rotate-ccw",
+		Cancel: "x",
+		Close: "x",
+		Delete: "trash-2",
+		Print: "printer",
+		PDF: "file-text",
+		Email: "mail",
+		Reload: "refresh-cw",
+		Rename: "text-cursor-input",
+		Duplicate: "copy",
+		New: "plus",
+		Add: "plus",
+		Back: "arrow-left",
+		Previous: "chevron-left",
+		Next: "chevron-right",
+		"Previous Document": "chevron-left",
+		"Next Document": "chevron-right",
+		Refresh: "refresh-cw",
+		Filter: "filter",
+		Filters: "filter",
+		Export: "download",
+		Import: "upload",
+		Download: "download",
+		Upload: "upload",
+		Share: "share-2",
+		Assign: "user-plus",
+		Comment: "message-circle",
+		Attachments: "paperclip",
+		Links: "link",
+		"Show Links": "link",
+		"Jump to field": "search",
+		"Remind Me": "bell",
+		Follow: "eye",
+		Unfollow: "eye-off",
+		"Copy to Clipboard": "clipboard",
+		"Toggle Sidebar": "panel-left",
+		Discard: "ban",
+		Menu: "menu",
+		Actions: "ellipsis",
+		Help: "circle-question-mark",
+		Settings: "settings",
+		Create: "plus",
+		Yes: "check",
+		No: "x",
+		Continue: "arrow-right",
+		Confirm: "check",
+		Apply: "check",
+		Clear: "eraser",
+		Reset: "rotate-ccw",
+		Search: "search",
+		"List View": "list",
+		Report: "chart-bar",
+		Dashboard: "layout-dashboard",
+	};
+
+	function normalizeLabel(raw) {
+		if (!raw) return "";
+		return String(raw)
+			.replace(/\s+/g, " ")
+			.trim()
+			.replace(/^Add\s+.+$/i, "Add");
+	}
+
+	function iconForLabel(label) {
+		const n = normalizeLabel(label);
+		if (LABEL_ICONS[n]) return LABEL_ICONS[n];
+		const lower = n.toLowerCase();
+		for (const [k, v] of Object.entries(LABEL_ICONS)) {
+			if (k.toLowerCase() === lower) return v;
+		}
+		if (/^add\b/i.test(n)) return "plus";
+		if (/print/i.test(n)) return "printer";
+		if (/email|mail/i.test(n)) return "mail";
+		if (/save/i.test(n)) return "save";
+		if (/submit/i.test(n)) return "circle-check";
+		if (/cancel|close|discard/i.test(n)) return "x";
+		if (/delete|trash/i.test(n)) return "trash-2";
+		if (/reload|refresh/i.test(n)) return "refresh-cw";
+		if (/previous|prev\b/i.test(n)) return "chevron-left";
+		if (/^next\b/i.test(n)) return "chevron-right";
+		if (/^back\b/i.test(n)) return "arrow-left";
+		return null;
+	}
+
+	function ensureIconOnButton($btn) {
+		if (!$btn || !$btn.length) return;
+		if ($btn.find(".ic-action-icon, .icon, svg.icon, svg.es-icon").length) return;
+		const label =
+			$btn.attr("data-label") ||
+			$btn.attr("aria-label") ||
+			$btn.attr("title") ||
+			$btn.text();
+		const iconName = iconForLabel(label);
+		if (!iconName || !frappe.utils || !frappe.utils.icon) return;
+		const $icon = $(
+			`<span class="ic-action-icon" aria-hidden="true">${frappe.utils.icon(
+				iconName,
+				"sm",
+				"",
+				"",
+				"",
+				true
+			)}</span>`
+		);
+		const $span = $btn.children("span.hidden-xs, span:not(.ic-action-icon)").first();
+		if ($span.length) {
+			$icon.prependTo($btn);
+		} else {
+			const text = ($btn.text() || "").trim();
+			$btn.empty().append($icon);
+			if (text) $btn.append(` <span class="ic-action-label">${frappe.utils.escape_html(text)}</span>`);
+		}
+		$btn.addClass("ic-has-action-icon");
+	}
+
+	function ensureIconOnMenuItem($a) {
+		if (!$a || !$a.length) return;
+		if ($a.find(".menu-item-icon, .ic-action-icon").length) return;
+		const label = ($a.find(".menu-item-label").text() || $a.text() || "").trim();
+		const iconName = iconForLabel(label);
+		if (!iconName || !frappe.utils || !frappe.utils.icon) return;
+		$a.prepend(
+			`<span class="menu-item-icon ic-action-icon flex align-items-center">${frappe.utils.icon(
+				iconName,
+				"sm",
+				"",
+				"",
+				"",
+				true
+			)}</span>`
+		);
+	}
+
+	function ensurePrintActionIcon(page) {
+		if (!page || !page.add_action_icon) return;
+		const $group = page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group"));
+		if (!$group || !$group.length) return;
+		if ($group.find(".ic-print-action").length) return;
+		// Only on form / print contexts where printing is allowed
+		const frm = cur_frm;
+		if (!frm || !frappe.model.can_print_doc || !frappe.model.can_print_doc(frm)) return;
+		if (frm.is_new && frm.is_new()) return;
+		const $btn = page.add_action_icon(
+			"printer",
+			() => {
+				if (cur_frm) cur_frm.print_doc();
+			},
+			"ic-print-action",
+			__("Print")
+		);
+		if ($btn && $btn.addClass) $btn.addClass("ic-print-action");
+	}
+
+	function decoratePage(page) {
+		if (!page) return;
+		try {
+			ensureIconOnButton(page.btn_primary);
+			ensureIconOnButton(page.btn_secondary);
+			(page.page_actions || $()).find(".btn").each(function () {
+				ensureIconOnButton($(this));
+			});
+			(page.menu || $()).find("a.dropdown-item, a.grey-link").each(function () {
+				ensureIconOnMenuItem($(this));
+			});
+			(page.actions || $()).find("a.dropdown-item, a.grey-link").each(function () {
+				ensureIconOnMenuItem($(this));
+			});
+			// Style existing prev/next icon buttons
+			(page.icon_group || $()).find(".icon-btn").addClass("ic-line-icon-btn");
+			ensurePrintActionIcon(page);
+		} catch (e) {
+			/* ignore */
+		}
+	}
+
+	function decorateAll() {
+		if (!window.frappe) return;
+		// Current page
+		if (frappe.container && frappe.container.page && frappe.container.page.page) {
+			decoratePage(frappe.container.page.page);
+		}
+		if (cur_page && cur_page.page) decoratePage(cur_page.page);
+		if (cur_frm && cur_frm.page) decoratePage(cur_frm.page);
+		// Dialogs
+		$(".modal.show .btn, .modal.in .btn").each(function () {
+			ensureIconOnButton($(this));
+		});
+		// List / report toolbars
+		$(".page-head .page-actions .btn, .standard-actions .btn").each(function () {
+			ensureIconOnButton($(this));
+		});
+		$(".page-head .dropdown-menu a.dropdown-item, .page-head .dropdown-menu a.grey-link").each(
+			function () {
+				ensureIconOnMenuItem($(this));
+			}
+		);
+	}
+
+	const schedule = () => setTimeout(decorateAll, 80);
+
+	$(document).on("page-change", schedule);
+	$(document).on("form-refresh", schedule);
+	$(document).on("shown.bs.modal", schedule);
+	$(document).ready(schedule);
+	setTimeout(schedule, 500);
+	setTimeout(schedule, 1500);
+
+	// Keep icons after Frappe rebuilds the toolbar
+	frappe.after_ajax && frappe.after_ajax(schedule);
+})();
+
 instacertify.greeting = function (fullName) {
 	const hour = moment().hour();
 	let greet = __("Good Evening");

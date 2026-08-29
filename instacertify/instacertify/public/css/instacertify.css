@@ -117,8 +117,8 @@ select.form-control:focus,
 input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(13, 71, 161, 0.45) !important;
-  box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.12) !important;
+  border-color: var(--ic-field-border-focus, #0D47A1) !important;
+  box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.16) !important;
   outline: none !important;
   transition: border-color 0.2s var(--ic-ease), box-shadow 0.2s var(--ic-ease);
 }
@@ -1746,6 +1746,109 @@ textarea.form-control {
   transition: border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease);
 }
 
+/* ——— Editable fields: darker outline so users see where to click / type ——— */
+:root,
+[data-theme="light"] {
+  --ic-field-border: #0D47A1;
+  --ic-field-border-hover: #0A3380;
+  --ic-field-border-focus: #F26D21;
+  --ic-field-bg: #ffffff;
+}
+
+.form-layout .frappe-control:not(.hide-control) .control-input .form-control,
+.form-layout .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
+.form-layout .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
+.form-layout .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
+.form-layout .frappe-control:not(.hide-control) .control-input .awesomplete > input,
+.form-page .frappe-control:not(.hide-control) .control-input .form-control,
+.form-page .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
+.form-page .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
+.form-page .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
+.form-page .frappe-control:not(.hide-control) .control-input .awesomplete > input,
+.modal-body .frappe-control:not(.hide-control) .control-input .form-control,
+.modal-body .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
+.modal-body .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
+.modal-body .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
+.modal-body .frappe-control:not(.hide-control) .control-input .awesomplete > input,
+.grid-row-open .form-control,
+.grid-form-body .form-control,
+.filter-box .form-control,
+.filter-box input.input-with-feedback,
+.filter-box select.input-with-feedback,
+.page-form .form-control,
+.dialog-assignment-section .form-control,
+input.form-control:not([disabled]):not([readonly]),
+textarea.form-control:not([disabled]):not([readonly]),
+select.form-control:not([disabled]):not([readonly]),
+.input-with-feedback:not([disabled]):not([readonly]) {
+  border: 2px solid var(--ic-field-border) !important;
+  background-color: var(--ic-field-bg) !important;
+  box-shadow: none !important;
+}
+
+.form-layout .frappe-control:not(.hide-control) .control-input .form-control:hover,
+.form-layout .frappe-control:not(.hide-control) .control-input input.input-with-feedback:hover,
+.form-layout .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback:hover,
+.form-layout .frappe-control:not(.hide-control) .control-input select.input-with-feedback:hover,
+.form-layout .frappe-control:not(.hide-control) .control-input .awesomplete > input:hover,
+.form-page .frappe-control:not(.hide-control) .control-input .form-control:hover,
+.form-page .frappe-control:not(.hide-control) .control-input input.input-with-feedback:hover,
+.form-page .frappe-control:not(.hide-control) .control-input select.input-with-feedback:hover,
+.form-page .frappe-control:not(.hide-control) .control-input .awesomplete > input:hover,
+.modal-body .frappe-control:not(.hide-control) .control-input .form-control:hover,
+input.form-control:not([disabled]):not([readonly]):hover,
+textarea.form-control:not([disabled]):not([readonly]):hover,
+select.form-control:not([disabled]):not([readonly]):hover,
+.input-with-feedback:not([disabled]):not([readonly]):hover {
+  border-color: var(--ic-field-border-hover) !important;
+}
+
+.form-control:focus,
+input.form-control:focus,
+textarea.form-control:focus,
+select.form-control:focus,
+.input-with-feedback:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus,
+.awesomplete > input:focus {
+  border-color: var(--ic-field-border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.16) !important;
+  outline: none !important;
+}
+
+/* Read-only / disabled stay quieter so only editable fields stand out */
+.form-control[disabled],
+.form-control[readonly],
+.input-with-feedback[disabled],
+.input-with-feedback[readonly],
+.frappe-control.like-disabled-input .control-value,
+.frappe-control[data-fieldtype="Read Only"] .control-value,
+.like-disabled-input {
+  border-color: rgba(13, 71, 161, 0.12) !important;
+  background-color: #f5f8fc !important;
+  box-shadow: none !important;
+}
+
+.frappe-control .control-input-wrapper .link-btn,
+.frappe-control .control-input .link-btn {
+  opacity: 0.85;
+}
+
+/* Child table editable cells */
+.grid-body .data-row .col input.form-control,
+.grid-body .data-row .col textarea.form-control,
+.grid-body .data-row .col select.form-control,
+.grid-row .grid-static-col .static-area.bold,
+.form-grid .grid-row .form-control {
+  border: 2px solid var(--ic-field-border) !important;
+  background: #fff !important;
+}
+
+.grid-row-open .form-section .form-control {
+  border: 2px solid var(--ic-field-border) !important;
+}
+
 .page-head {
   backdrop-filter: blur(12px);
   background: rgba(245, 249, 252, 0.75) !important;
@@ -2686,6 +2789,92 @@ html, body, .desk-page, .page-container, .form-layout,
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
+}
+
+/* ——— Action buttons: consistent lucide line icons (Prev / Next / Back / Print / Save…) ——— */
+.page-head .btn.ic-has-action-icon,
+.page-actions .btn.ic-has-action-icon,
+.standard-actions .btn.ic-has-action-icon,
+.modal .btn.ic-has-action-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.ic-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 0;
+  --icon-stroke: currentColor;
+}
+
+.ic-action-icon .icon,
+.ic-action-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.btn-primary .ic-action-icon,
+.btn-primary .ic-action-icon .icon {
+  --icon-stroke: #ffffff;
+  color: #ffffff;
+}
+
+.page-icon-group .icon-btn,
+.page-icon-group .ic-line-icon-btn,
+.page-icon-group .ic-print-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  border: 1.5px solid rgba(13, 71, 161, 0.28) !important;
+  background: #ffffff !important;
+  color: var(--ic-primary, #0D47A1) !important;
+  --icon-stroke: var(--ic-primary, #0D47A1);
+  margin-left: 4px;
+}
+
+.page-icon-group .icon-btn:hover,
+.page-icon-group .ic-print-action:hover {
+  border-color: var(--ic-primary, #0D47A1) !important;
+  background: var(--ic-primary-soft, #E7F1FC) !important;
+  color: var(--ic-primary, #0D47A1) !important;
+}
+
+.page-icon-group .icon-btn .icon,
+.page-icon-group .icon-btn svg,
+.page-icon-group .ic-print-action .icon,
+.page-icon-group .ic-print-action svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.dropdown-menu .menu-item-icon.ic-action-icon,
+.dropdown-menu .menu-item-icon {
+  width: 18px;
+  margin-right: 8px;
+  color: var(--ic-primary, #0D47A1);
+  --icon-stroke: var(--ic-primary, #0D47A1);
+}
+
+.dropdown-menu a.dropdown-item,
+.dropdown-menu a.grey-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px;
+}
+
+/* Breadcrumb / back affordance */
+.navbar-breadcrumbs a,
+.breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Workspace shortcut tiles — show icon + label without wasted padding */
