@@ -482,6 +482,50 @@ body {
   margin-bottom: 20px;
 }
 
+.ic-explore-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.ic-explore-section {
+  background: #fff;
+  border: 1px solid rgba(6, 81, 117, 0.1);
+  border-radius: 14px;
+  padding: 14px 14px 16px;
+  border-left: 4px solid #065175;
+}
+.ic-explore-section.accent-coral { border-left-color: #c0392b; }
+.ic-explore-section.accent-citrus { border-left-color: #EC6820; }
+.ic-explore-section.accent-teal { border-left-color: #065175; }
+.ic-explore-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ic-explore-section-title {
+  font-family: "Poppins", var(--ic-font);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #033447;
+  letter-spacing: -0.02em;
+}
+.ic-explore-section-sub {
+  color: var(--ic-muted, #5a6f7a);
+  font-size: 0.82rem;
+  margin-top: 2px;
+}
+.ic-explore-section-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #065175;
+  background: #e8f1f6;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
 .ic-explore-panel {
   margin-bottom: 20px;
   animation: ic-rise-in 0.5s var(--ic-rise) both;
