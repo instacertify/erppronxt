@@ -1196,6 +1196,8 @@ PROJECT_FIELDS = [
 		"label": "Source Quotation",
 		"options": "Quotation",
 		"insert_after": "ic_deadline",
+		"description": "Optional — link the quotation this project was won from. Shown in Customer records.",
+		"in_standard_filter": 1,
 	},
 	{
 		"fieldname": "ic_section_amc",
