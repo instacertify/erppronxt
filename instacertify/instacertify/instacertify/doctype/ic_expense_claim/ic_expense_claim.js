@@ -1,4 +1,4 @@
-# Copyright (c) Instacertify
+// Copyright (c) Instacertify
 frappe.ui.form.on("IC Expense Claim", {
 	refresh(frm) {
 		frm.set_intro(
