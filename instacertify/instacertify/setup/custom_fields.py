@@ -382,11 +382,11 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_quotation_template",
 		"fieldtype": "Link",
-		"label": "Quotation Template",
+		"label": "Quote Format (Library)",
 		"options": "IC Quotation Template",
 		"insert_after": "ic_column_break_type",
 		"bold": 1,
-		"description": "Optional. Filtered by type above — fills About, terms, commercials, and policies in one click.",
+		"description": "From Quote Format Library for this type. Applying a format prefills headings and commercials — edit any value on the form.",
 	},
 	# --- 2. Identity ---
 	{
