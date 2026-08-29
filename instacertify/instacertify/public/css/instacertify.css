@@ -2632,6 +2632,54 @@ html, body, .desk-page, .page-container, .form-layout,
   min-width: 180px;
   max-width: 240px;
 }
+.ic-quote-lib-tag-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+  align-items: center;
+}
+.ic-quote-lib-tag-empty {
+  font-size: 12px;
+  color: #6b7c86;
+}
+.ic-quote-lib-tag {
+  border: 1px solid #c5d0d7;
+  background: #fff;
+  color: #065175;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.ic-quote-lib-tag span {
+  opacity: 0.65;
+  margin-left: 4px;
+}
+.ic-quote-lib-tag:hover {
+  border-color: #065175;
+}
+.ic-quote-lib-tag.active {
+  background: #065175;
+  border-color: #065175;
+  color: #fff;
+}
+.ic-quote-lib-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 4px;
+}
+.ic-quote-lib-card-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: #eef4f8;
+  color: #065175;
+  cursor: pointer;
+}
 .ic-quote-lib-cats {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

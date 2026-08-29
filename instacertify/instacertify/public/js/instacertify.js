@@ -322,7 +322,7 @@ instacertify.open_quote_format_upload = function (opts) {
 				label: __("Quote Format File"),
 				reqd: 1,
 				description: __(
-					"Select PDF/DOCX/HTML from My Device or File Library (internal drive)."
+					"Select PDF/DOCX from My Device or File Library. For bulk create, use CSV/Excel import on Quote Format Library."
 				),
 				options: instacertify.attach_options,
 			},
@@ -358,17 +358,23 @@ instacertify.open_quote_format_upload = function (opts) {
 		},
 	});
 	d.$wrapper.find(".modal-footer").prepend(
-		`<button type="button" class="btn btn-default btn-sm ic-dl-quote-tpl" style="margin-right:auto;">${__("Download Upload Template")}</button>`
+		`<span class="ic-dl-quote-tpl-wrap" style="margin-right:auto;display:inline-flex;gap:6px;">
+			<button type="button" class="btn btn-default btn-sm ic-dl-quote-xlsx">${__("Excel Template")}</button>
+			<button type="button" class="btn btn-default btn-sm ic-dl-quote-csv">${__("CSV Template")}</button>
+		</span>`
 	);
-	d.$wrapper.find(".ic-dl-quote-tpl").on("click", () => {
+	function dl(fmt) {
 		frappe.call({
 			method: "instacertify.setup.library_upload.download_quote_format_upload_template",
+			args: { fmt },
 			callback(r) {
 				const m = r.message || {};
 				if (m.file_url) window.open(m.file_url, "_blank");
 			},
 		});
-	});
+	}
+	d.$wrapper.find(".ic-dl-quote-xlsx").on("click", () => dl("xlsx"));
+	d.$wrapper.find(".ic-dl-quote-csv").on("click", () => dl("csv"));
 	d.show();
 	instacertify.add_file_manager_hint(d, "file");
 };
@@ -3357,7 +3363,7 @@ frappe.listview_settings["IC Expense Claim"] = {
 
 // Quote Format + Laboratory libraries — list upload actions + category chips
 frappe.listview_settings["IC Quotation Template"] = {
-	add_fields: ["quotation_type", "service_family", "is_active", "uploaded_format"],
+	add_fields: ["quotation_type", "service_family", "is_active", "uploaded_format", "template_notes"],
 	filters: [["is_active", "=", 1]],
 	get_indicator(doc) {
 		const t = doc.quotation_type || "Other";
@@ -3371,21 +3377,80 @@ frappe.listview_settings["IC Quotation Template"] = {
 		};
 		return [__(t), colors[t] || "blue", "quotation_type,=," + t];
 	},
+	formatters: {
+		template_notes(value) {
+			if (!value) return "";
+			const m = String(value).match(/\[Tags:\s*([^\]]*)\]/i);
+			if (!m) return "";
+			return (m[1] || "")
+				.split(",")
+				.map((t) => t.trim())
+				.filter(Boolean)
+				.map((t) => `<span class="indicator-pill gray">${frappe.utils.escape_html(t)}</span>`)
+				.join(" ");
+		},
+	},
 	onload(listview) {
 		listview.page.add_inner_button(__("Category Catalog"), () => {
 			frappe.set_route("quote-format-library");
 		});
-		listview.page.add_inner_button(__("Upload Quote Format"), () => {
+		listview.page.add_inner_button(__("Upload Format File"), () => {
 			instacertify.open_quote_format_upload();
 		});
-		listview.page.add_inner_button(__("Download Upload Template"), () => {
+		listview.page.add_inner_button(__("Excel Template"), () => {
 			frappe.call({
 				method: "instacertify.setup.library_upload.download_quote_format_upload_template",
+				args: { fmt: "xlsx" },
 				callback(r) {
 					const m = r.message || {};
 					if (m.file_url) window.open(m.file_url, "_blank");
 				},
 			});
+		});
+		listview.page.add_inner_button(__("CSV Template"), () => {
+			frappe.call({
+				method: "instacertify.setup.library_upload.download_quote_format_upload_template",
+				args: { fmt: "csv" },
+				callback(r) {
+					const m = r.message || {};
+					if (m.file_url) window.open(m.file_url, "_blank");
+				},
+			});
+		});
+		listview.page.add_inner_button(__("Import Spreadsheet"), () => {
+			const d = new frappe.ui.Dialog({
+				title: __("Import Quote Formats (CSV / Excel)"),
+				fields: [
+					{
+						fieldname: "file",
+						fieldtype: "Attach",
+						label: __("Spreadsheet File"),
+						reqd: 1,
+						description: __("Upload filled .csv or .xlsx template"),
+						options: instacertify.attach_options,
+					},
+				],
+				primary_action_label: __("Import"),
+				primary_action(values) {
+					frappe.call({
+						method: "instacertify.setup.library_upload.import_quote_templates_from_spreadsheet",
+						args: { file_url: values.file },
+						freeze: true,
+						callback(r) {
+							d.hide();
+							const m = r.message || {};
+							frappe.show_alert({
+								message:
+									m.message ||
+									__("{0} created, {1} updated", [m.created_count || 0, m.updated_count || 0]),
+								indicator: "green",
+							});
+							listview.refresh();
+						},
+					});
+				},
+			});
+			d.show();
 		});
 
 		const cats = [
