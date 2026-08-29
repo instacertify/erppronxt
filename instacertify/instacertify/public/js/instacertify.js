@@ -4528,23 +4528,27 @@ instacertify.render_sample_sticker_preview = function (frm, fileUrl) {
 	const trk = frm.doc.tracking_number || frm.doc.name || "";
 	const qr = frm.doc.qr_code || "";
 	const stickerImg = fileUrl
-		? `<img src="${frappe.utils.escape_html(fileUrl)}" alt="8mm sticker" style="height:48px;image-rendering:pixelated;border:1px solid #ddd;background:#fff;"/>`
+		? `<img src="${frappe.utils.escape_html(fileUrl)}" alt="50x25mm sticker" style="height:72px;image-rendering:pixelated;border:1px solid #ddd;background:#fff;"/>`
 		: "";
 	const qrImg = qr
 		? `<img src="${frappe.utils.escape_html(qr)}" alt="QR" style="height:64px;width:64px;image-rendering:pixelated;border:1px solid #ddd;"/>`
 		: "";
 	frm.fields_dict.sticker_preview.$wrapper.html(`
 		<div class="ic-sample-sticker-preview" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:8px 0;">
-			<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;border:1px dashed #90a4ae;border-radius:4px;background:#fff;">
+			<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px dashed #90a4ae;border-radius:4px;background:#fff;min-width:220px;">
 				${qrImg}
-				<div style="font-family:ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.1;">
+				<div style="font-family:ui-monospace,monospace;font-weight:700;font-size:13px;line-height:1.15;">
 					<div style="font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#607d8b;">Sample</div>
 					${frappe.utils.escape_html(trk)}
+					<div style="margin-top:6px;font-family:system-ui,sans-serif;font-size:11px;font-weight:500;color:#333;line-height:1.25;">
+						${__("For more information visit")}<br>
+						<b>www.instacertify.com</b>
+					</div>
 				</div>
 			</div>
 			${stickerImg}
-			<div class="text-muted" style="font-size:12px;max-width:280px;">
-				${__("8mm thermal sticker layout: QR + unique sample tracking number, side-by-side. Use Label → Print 8mm Sticker or Download 8mm PNG.")}
+			<div class="text-muted" style="font-size:12px;max-width:300px;">
+				${__("50×25 mm sticker: QR + sample tracking number + www.instacertify.com. Use Label → Print 50×25 mm Sticker or Download PNG.")}
 			</div>
 		</div>
 	`);
@@ -4590,15 +4594,15 @@ frappe.ui.form.on("IC Sample Tracking", {
 	refresh(frm) {
 		if (!frm.is_new()) {
 			instacertify.render_sample_sticker_preview(frm);
-			frm.add_custom_button(__("Print 8mm Sticker"), () => {
-				frm.print_doc("Instacertify Sample Sticker 8mm");
+			frm.add_custom_button(__("Print 50×25 mm Sticker"), () => {
+				frm.print_doc("Instacertify Sample Sticker 50x25mm");
 			}, __("Label"));
-			frm.add_custom_button(__("Download 8mm PNG"), () => {
+			frm.add_custom_button(__("Download 50×25 mm PNG"), () => {
 				frappe.call({
-					method: "instacertify.testing.events.download_sample_sticker_8mm",
+					method: "instacertify.testing.events.download_sample_sticker_50x25",
 					args: { sample: frm.doc.name },
 					freeze: true,
-					freeze_message: __("Rendering 8mm sticker…"),
+					freeze_message: __("Rendering 50×25 mm sticker…"),
 					callback(r) {
 						const m = r.message || {};
 						if (m.file_url) {

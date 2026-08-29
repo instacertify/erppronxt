@@ -501,20 +501,20 @@ SAMPLE_HTML = """
 </div>
 """
 
-# 8mm-high thermal sticker: QR + unique sample tracking number, side-by-side
-SAMPLE_STICKER_8MM_HTML = """
+# 50mm × 25mm sample sticker: QR + tracking number + website line
+SAMPLE_STICKER_50X25_HTML = """
 {%- set trk = doc.tracking_number or doc.name -%}
 {%- set qr_payload = trk + '\\n' + (frappe.utils.get_url()|string).rstrip('/') + '/ic-verify/sample/' + trk -%}
 <style>
   @page {
-    size: 32mm 8mm;
+    size: 50mm 25mm;
     margin: 0;
   }
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 32mm;
-    height: 8mm;
+    width: 50mm;
+    height: 25mm;
     overflow: hidden;
     background: #fff;
   }
@@ -525,54 +525,76 @@ SAMPLE_STICKER_8MM_HTML = """
   }
   .sticker {
     box-sizing: border-box;
-    width: 32mm;
-    height: 8mm;
-    padding: 0.35mm 0.5mm;
+    width: 50mm;
+    height: 25mm;
+    padding: 1.2mm 1.4mm 1mm 1.4mm;
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: stretch;
     justify-content: flex-start;
-    gap: 0.7mm;
-    font-family: 'DejaVu Sans Mono', 'Courier New', monospace;
+    gap: 1.6mm;
+    font-family: 'DejaVu Sans', Arial, Helvetica, sans-serif;
     color: #000;
     background: #fff;
     overflow: hidden;
   }
-  .sticker img {
-    width: 7.2mm;
-    height: 7.2mm;
-    flex: 0 0 7.2mm;
+  .sticker img.qr {
+    width: 18mm;
+    height: 18mm;
+    flex: 0 0 18mm;
+    align-self: center;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
   }
-  .sticker .trk {
+  .sticker .meta {
     flex: 1 1 auto;
-    font-size: 2.35mm;
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: clip;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    gap: 0.6mm;
   }
   .sticker .lbl {
-    display: block;
-    font-size: 1.35mm;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-size: 2.1mm;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    opacity: 0.75;
-    margin-bottom: 0.15mm;
+    color: #333;
+    line-height: 1;
+  }
+  .sticker .trk {
+    font-family: 'DejaVu Sans Mono', 'Courier New', monospace;
+    font-size: 3.1mm;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    word-break: break-all;
+    color: #000;
+  }
+  .sticker .info {
+    margin-top: 0.4mm;
+    font-size: 1.85mm;
+    font-weight: 500;
+    line-height: 1.25;
+    color: #222;
+  }
+  .sticker .info b {
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 </style>
 <div class="sticker">
-  <img src="{{ get_qr_code_data_uri(qr_payload, 6, 1) }}" alt="{{ trk }}"/>
-  <div class="trk">
-    <span class="lbl">Sample</span>
-    {{ trk }}
+  <img class="qr" src="{{ get_qr_code_data_uri(qr_payload, 6, 1) }}" alt="{{ trk }}"/>
+  <div class="meta">
+    <div class="lbl">Sample</div>
+    <div class="trk">{{ trk }}</div>
+    <div class="info">For more information visit<br><b>www.instacertify.com</b></div>
   </div>
 </div>
 """
+
+# Back-compat alias used by older references
+SAMPLE_STICKER_8MM_HTML = SAMPLE_STICKER_50X25_HTML
 
 TESTING_HTML = """
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
@@ -1443,7 +1465,8 @@ def ensure_print_formats():
 		("Instacertify Testing Quotation", "Quotation", TESTING_QUOTATION_HTML),
 		("Instacertify Sales Invoice", "Sales Invoice", INVOICE_HTML),
 		("Instacertify Sample Label", "IC Sample Tracking", SAMPLE_HTML),
-		("Instacertify Sample Sticker 8mm", "IC Sample Tracking", SAMPLE_STICKER_8MM_HTML),
+		("Instacertify Sample Sticker 50x25mm", "IC Sample Tracking", SAMPLE_STICKER_50X25_HTML),
+		("Instacertify Sample Sticker 8mm", "IC Sample Tracking", SAMPLE_STICKER_50X25_HTML),
 		("Instacertify Testing Request", "IC Testing Request", TESTING_HTML),
 		("Instacertify Joining Letter", "IC Joining Letter", JOINING_HTML),
 		("Instacertify Documents Collection Sheet", "IC Document Request", DOCUMENTS_COLLECTION_HTML),

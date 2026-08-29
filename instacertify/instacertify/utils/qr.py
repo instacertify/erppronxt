@@ -121,47 +121,68 @@ def sample_qr_payload(tracking_number: str, docname: str | None = None) -> str:
 	return tracking_number
 
 
-def render_sample_sticker_8mm_png(tracking_number: str, payload: str | None = None) -> bytes:
-	"""Render a thermal sticker PNG: QR + tracking number aligned for 8mm tape height.
+def render_sample_sticker_50x25_png(tracking_number: str, payload: str | None = None) -> bytes:
+	"""Render a 50mm × 25mm sample sticker PNG (QR + tracking + website).
 
-	Output is 300 DPI, height = 8mm (~94px), width sized to fit QR + sample number.
+	Output is 300 DPI (≈591 × 295 px).
 	"""
 	from PIL import Image, ImageDraw, ImageFont
 
 	tracking_number = (tracking_number or "").strip() or "SAMPLE"
 	payload = payload or tracking_number
+	website_line1 = "For more information visit"
+	website_line2 = "www.instacertify.com"
 
-	# 8mm @ 300 DPI
 	dpi = 300
-	height_mm = 8.0
-	height_px = max(int(round(height_mm / 25.4 * dpi)), 72)
-	margin = max(2, int(round(0.3 / 25.4 * dpi)))
-	qr_size = height_px - (2 * margin)
+	width_mm, height_mm = 50.0, 25.0
+	width_px = int(round(width_mm / 25.4 * dpi))
+	height_px = int(round(height_mm / 25.4 * dpi))
+	margin = max(4, int(round(1.2 / 25.4 * dpi)))
+	gap = max(6, int(round(1.6 / 25.4 * dpi)))
+	qr_size = int(round(18.0 / 25.4 * dpi))
 
 	qr_img = generate_qr_image(payload, box_size=8, border=1)
 	qr_img = qr_img.resize((qr_size, qr_size), Image.Resampling.NEAREST)
 
-	# Text beside QR — monospace-ish, fits 8mm height
-	font = _sticker_font(max(10, int(height_px * 0.42)))
-	# Measure text
-	tmp = Image.new("RGB", (10, 10), "white")
-	draw = ImageDraw.Draw(tmp)
-	bbox = draw.textbbox((0, 0), tracking_number, font=font)
-	text_w = bbox[2] - bbox[0]
-	text_h = bbox[3] - bbox[1]
-	gap = max(3, margin)
-	width_px = margin + qr_size + gap + text_w + margin
+	label_font = _sticker_font(max(11, int(round(2.1 / 25.4 * dpi))))
+	trk_font = _sticker_font(max(16, int(round(3.2 / 25.4 * dpi))))
+	info_font = _sticker_font(max(10, int(round(1.9 / 25.4 * dpi))))
 
 	canvas = Image.new("RGB", (width_px, height_px), "white")
-	canvas.paste(qr_img, (margin, margin))
+	qr_y = max(margin, (height_px - qr_size) // 2)
+	canvas.paste(qr_img, (margin, qr_y))
+
 	draw = ImageDraw.Draw(canvas)
 	text_x = margin + qr_size + gap
-	text_y = max(0, (height_px - text_h) // 2 - 1)
-	draw.text((text_x, text_y), tracking_number, fill="black", font=font)
+	text_right = width_px - margin
+	max_text_w = max(40, text_right - text_x)
+
+	# Vertical stack: SAMPLE label, tracking number, website lines
+	y = margin + 2
+	draw.text((text_x, y), "SAMPLE", fill="#333333", font=label_font)
+	y += int(label_font.size * 1.35) + 2
+
+	# Wrap tracking number if needed
+	trk = tracking_number
+	bbox = draw.textbbox((0, 0), trk, font=trk_font)
+	if (bbox[2] - bbox[0]) > max_text_w and len(trk) > 12:
+		# shrink font slightly for long numbers
+		trk_font = _sticker_font(max(12, int(trk_font.size * 0.85)))
+	draw.text((text_x, y), trk, fill="black", font=trk_font)
+	y += int(trk_font.size * 1.35) + 4
+
+	draw.text((text_x, y), website_line1, fill="#222222", font=info_font)
+	y += int(info_font.size * 1.3) + 1
+	draw.text((text_x, y), website_line2, fill="black", font=info_font)
 
 	buf = io.BytesIO()
 	canvas.save(buf, format="PNG", dpi=(dpi, dpi))
 	return buf.getvalue()
+
+
+# Back-compat alias
+def render_sample_sticker_8mm_png(tracking_number: str, payload: str | None = None) -> bytes:
+	return render_sample_sticker_50x25_png(tracking_number, payload)
 
 
 def _sticker_font(size: int):
