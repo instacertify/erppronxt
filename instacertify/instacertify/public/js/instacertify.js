@@ -176,10 +176,11 @@ $(document).on("app_ready", function () {
 	}
 });
 
-/** Stretch desk content — removes Frappe's default ~900px page gutters so tiles can spread. */
+/** Stretch desk content next to the sidebar — correct Frappe localStorage key is container_fullwidth. */
 instacertify.enable_full_width_desk = function () {
 	try {
-		localStorage.setItem("container_full_width", "true");
+		localStorage.setItem("container_fullwidth", "true");
+		localStorage.container_fullwidth = "true";
 	} catch (e) {
 		/* ignore */
 	}
@@ -187,11 +188,41 @@ instacertify.enable_full_width_desk = function () {
 		document.body.classList.add("full-width");
 	}
 	$(document.body).addClass("full-width");
+	try {
+		if (frappe.ui && frappe.ui.toolbar && frappe.ui.toolbar.set_fullwidth_if_enabled) {
+			frappe.ui.toolbar.set_fullwidth_if_enabled();
+		}
+	} catch (e) {
+		/* ignore */
+	}
+	// Keep home content flush beside the desk sidebar (tiny pad only)
+	const pad = "4px";
+	$(".page-body.container, .container.page-body").css({
+		maxWidth: "100%",
+		width: "100%",
+		paddingLeft: 0,
+		paddingRight: 0,
+		marginLeft: 0,
+		marginRight: 0,
+	});
+	$("[data-page-route='Workspaces'] .layout-main, [data-page-route='instacertify-home'] .layout-main").css({
+		maxWidth: "none",
+		width: "100%",
+		marginLeft: 0,
+		marginRight: 0,
+	});
+	$(".layout-main-section-wrapper, .layout-main-section").css({
+		maxWidth: "none",
+		width: "100%",
+		paddingLeft: pad,
+		paddingRight: pad,
+	});
 };
 
 /** Never leave users on the generic ERPNext Home workspace (wrong landing / empty). */
 $(document).on("page-change", function () {
 	try {
+		instacertify.enable_full_width_desk();
 		const route = frappe.get_route ? frappe.get_route() : [];
 		if (
 			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
