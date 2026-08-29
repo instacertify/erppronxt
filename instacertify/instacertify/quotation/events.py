@@ -251,15 +251,18 @@ def _template_field_map(tmpl) -> dict:
 def _template_cost_rows(tmpl) -> list[dict]:
 	rows = []
 	for row in tmpl.cost_items or []:
-		is_pass = cint(row.is_passthrough) or row.payment_destination in (
-			"Payable Directly to Government",
-			"Payable Directly to Laboratory",
-			"Payable to Third Party",
-		)
-		treatment = (
-			row.get("revenue_treatment")
-			or ("Do Not Count as Revenue" if is_pass else "Counted Revenue")
-		)
+		treatment = (row.get("revenue_treatment") or "").strip()
+		if treatment == "Do Not Count as Revenue":
+			is_pass = True
+		elif treatment == "Counted Revenue":
+			is_pass = False
+		else:
+			is_pass = cint(row.is_passthrough) or row.payment_destination in (
+				"Payable Directly to Government",
+				"Payable Directly to Laboratory",
+				"Payable to Third Party",
+			)
+			treatment = "Do Not Count as Revenue" if is_pass else "Counted Revenue"
 		rows.append(
 			{
 				"cost_component": row.cost_component,
@@ -345,6 +348,141 @@ def duplicate_quotation_template(template: str, new_name: str):
 	doc.template_name = name
 	doc.insert(ignore_permissions=True)
 	return {"template": doc.name}
+
+
+_PREVIEW_LEAD_NAME = "Template Preview (Internal)"
+_PREVIEW_TITLE_PREFIX = "[Template Preview]"
+
+
+def _ensure_preview_party() -> tuple[str, str]:
+	"""Return (quotation_to, party_name) for template Print/PDF previews."""
+	lead = frappe.db.get_value("Lead", {"lead_name": _PREVIEW_LEAD_NAME}, "name")
+	if not lead:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Lead",
+				"lead_name": _PREVIEW_LEAD_NAME,
+				"company_name": _PREVIEW_LEAD_NAME,
+				"status": "Lead",
+				"ic_party_name": _PREVIEW_LEAD_NAME,
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		lead = doc.name
+	return "Lead", lead
+
+
+def _preview_item_code() -> str:
+	item = (
+		frappe.db.get_value("Item", {"item_code": "CONSULTING-SVC", "disabled": 0}, "name")
+		or frappe.db.get_value("Item", {"disabled": 0, "is_sales_item": 1}, "name")
+		or frappe.db.get_value("Item", {"disabled": 0}, "name")
+	)
+	if not item:
+		frappe.throw(_("Create at least one sales Item before previewing a quote template."))
+	return item
+
+
+def _preview_title(template_name: str) -> str:
+	base = f"{_PREVIEW_TITLE_PREFIX} {template_name or 'Quote'}".strip()
+	return base[:140]
+
+
+@frappe.whitelist()
+def ensure_template_preview_quotation(template: str):
+	"""Create or refresh a draft Quotation used to Print / PDF-test a template."""
+	if not template or not frappe.db.exists("IC Quotation Template", template):
+		frappe.throw(_("Quote format not found"))
+	frappe.has_permission("IC Quotation Template", "read", throw=True)
+
+	tmpl = frappe.get_doc("IC Quotation Template", template)
+	qtype = tmpl.quotation_type or "Consulting"
+	if qtype == "Service":
+		qtype = "Consulting"
+	title = _preview_title(tmpl.template_name)
+
+	existing = frappe.db.get_value(
+		"Quotation",
+		{
+			"ic_quotation_template": tmpl.name,
+			"docstatus": 0,
+			"title": title,
+		},
+		"name",
+	)
+	# Fallback: any draft preview for this template (title prefix)
+	if not existing:
+		existing = frappe.db.get_value(
+			"Quotation",
+			{
+				"ic_quotation_template": tmpl.name,
+				"docstatus": 0,
+				"title": ["like", f"{_PREVIEW_TITLE_PREFIX}%"],
+			},
+			"name",
+			order_by="modified desc",
+		)
+
+	from instacertify.utils.pdf import quotation_print_format
+
+	if existing:
+		apply_quotation_template(existing, tmpl.name)
+		qt = frappe.get_doc("Quotation", existing)
+		qt.db_set("title", title, update_modified=False)
+		fmt = quotation_print_format(qt) or "Instacertify Quotation"
+		return {
+			"quotation": qt.name,
+			"print_format": fmt,
+			"template": tmpl.name,
+			"template_name": tmpl.template_name,
+			"message": _("Preview quotation refreshed from template."),
+		}
+
+	quotation_to, party = _ensure_preview_party()
+	company = (
+		frappe.db.get_single_value("Global Defaults", "default_company")
+		or frappe.db.get_value("Company", {}, "name")
+	)
+	if not company:
+		frappe.throw(_("Set a default Company before previewing templates."))
+
+	item_code = _preview_item_code()
+	default_rate = 0.0
+	for row in tmpl.cost_items or []:
+		treatment = (row.get("revenue_treatment") or "").strip()
+		is_pass = treatment == "Do Not Count as Revenue" or cint(row.is_passthrough)
+		if not is_pass and float(row.amount or 0) > 0:
+			default_rate = float(row.amount or 0)
+			break
+	if not default_rate and tmpl.cost_items:
+		default_rate = float(tmpl.cost_items[0].amount or 0)
+
+	qt = frappe.get_doc(
+		{
+			"doctype": "Quotation",
+			"title": title,
+			"quotation_to": quotation_to,
+			"party_name": party,
+			"company": company,
+			"transaction_date": frappe.utils.today(),
+			"order_type": "Sales",
+			"ic_quotation_type": qtype,
+			"ic_quotation_template": tmpl.name,
+			"items": [{"item_code": item_code, "qty": 1, "rate": default_rate or 1}],
+		}
+	)
+	qt.insert(ignore_permissions=True)
+	apply_quotation_template(qt.name, tmpl.name)
+	qt.reload()
+	qt.db_set("title", title, update_modified=False)
+	fmt = quotation_print_format(qt) or "Instacertify Quotation"
+	return {
+		"quotation": qt.name,
+		"print_format": fmt,
+		"template": tmpl.name,
+		"template_name": tmpl.template_name,
+		"message": _("Preview quotation created from template."),
+	}
 
 
 @frappe.whitelist()
