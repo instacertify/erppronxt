@@ -1411,7 +1411,7 @@ frappe.ui.form.on("Quotation", {
 						frappe.msgprint({
 							title: __("Customer Share Link"),
 							message: `
-								<p>${__("Customer can open this link to read, download PDF, approve, reject, or ask for revision:")}</p>
+								<p>${__("Customer can open this link to read, download PDF, approve, or ask for revision:")}</p>
 								<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
 								<p class="text-muted">${__("Copy and send this open link to the customer (email / WhatsApp).")}</p>
 							`,
