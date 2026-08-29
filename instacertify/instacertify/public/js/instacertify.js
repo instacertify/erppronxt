@@ -188,135 +188,6 @@ $(document).on("page-change", function () {
 	}
 });
 
-/** Quick lead capture — name + phone, optional need/source, save in seconds. */
-instacertify.open_quick_lead = function (opts) {
-	opts = opts || {};
-	const tomorrow = frappe.datetime.add_days(frappe.datetime.get_today(), 1);
-	const d = new frappe.ui.Dialog({
-		title: __("Capture a Lead"),
-		fields: [
-			{
-				fieldtype: "HTML",
-				fieldname: "ic_zippy_hint",
-				options:
-					'<div class="ic-quick-lead-hint">Name is enough to start. Phone helps you call back. Save and keep moving.</div>',
-			},
-			{
-				fieldname: "ic_party_name",
-				fieldtype: "Data",
-				label: __("Name / company"),
-				reqd: 1,
-				default: opts.ic_party_name || "",
-			},
-			{
-				fieldname: "mobile_no",
-				fieldtype: "Data",
-				label: __("Mobile"),
-				options: "Phone",
-				default: opts.mobile_no || "",
-			},
-			{
-				fieldname: "email_id",
-				fieldtype: "Data",
-				label: __("Email (optional)"),
-				options: "Email",
-				default: opts.email_id || "",
-			},
-			{
-				fieldname: "ic_lead_source_detail",
-				fieldtype: "Link",
-				label: __("Source"),
-				options: "IC Lead Source",
-				default: opts.ic_lead_source_detail || "",
-			},
-			{
-				fieldname: "ic_project_type",
-				fieldtype: "Link",
-				label: __("Project type"),
-				options: "IC Project Type",
-				default: opts.ic_project_type || "",
-			},
-			{
-				fieldname: "ic_call_remarks",
-				fieldtype: "Small Text",
-				label: __("What they need"),
-				default: opts.ic_call_remarks || "",
-			},
-			{
-				fieldname: "ic_next_contact_date",
-				fieldtype: "Date",
-				label: __("Call back on"),
-				default: opts.ic_next_contact_date || tomorrow,
-			},
-			{
-				fieldname: "assign_to_me",
-				fieldtype: "Check",
-				label: __("Assign to me"),
-				default: 1,
-			},
-		],
-		primary_action_label: __("Save Lead"),
-		secondary_action_label: __("Save & another"),
-		primary_action(values) {
-			instacertify._save_quick_lead(d, values, { another: false, on_done: opts.on_done });
-		},
-	});
-	d.$wrapper.addClass("ic-quick-lead-dialog");
-	d.set_secondary_action(() => {
-		const values = d.get_values();
-		if (!values) return;
-		instacertify._save_quick_lead(d, values, {
-			another: true,
-			on_done: opts.on_done,
-		});
-	});
-	d.$wrapper.find(".modal-footer").prepend(
-		`<button type="button" class="btn btn-default btn-sm ic-open-full-lead" style="margin-right:auto;">${__("Full form")}</button>`
-	);
-	d.$wrapper.find(".ic-open-full-lead").on("click", () => {
-		d.hide();
-		frappe.new_doc("Lead");
-	});
-	d.show();
-	setTimeout(() => {
-		d.get_field("ic_party_name") && d.get_field("ic_party_name").$input.focus();
-	}, 200);
-};
-
-instacertify._save_quick_lead = function (dialog, values, opts) {
-	opts = opts || {};
-	frappe.call({
-		method: "instacertify.crm.events.create_quick_lead",
-		args: values,
-		freeze: true,
-		freeze_message: __("Saving lead…"),
-		callback(r) {
-			const name = r.message && r.message.name;
-			frappe.show_alert({
-				message: __("Lead saved{0}", [name ? ": " + name : " — nice!"]),
-				indicator: "green",
-			});
-			if (opts.on_done) opts.on_done(name);
-			if (opts.another) {
-				dialog.set_values({
-					ic_party_name: "",
-					mobile_no: "",
-					email_id: "",
-					ic_call_remarks: "",
-					ic_next_contact_date: frappe.datetime.add_days(frappe.datetime.get_today(), 1),
-					assign_to_me: 1,
-				});
-				setTimeout(() => {
-					dialog.get_field("ic_party_name") && dialog.get_field("ic_party_name").$input.focus();
-				}, 100);
-				return;
-			}
-			dialog.hide();
-			if (name) frappe.set_route("Form", "Lead", name);
-		},
-	});
-};
-
 /** Open a new Helpdesk Ticket with CRM context defaults. */
 instacertify.raise_helpdesk_ticket = function (defaults) {
 	defaults = defaults || {};
@@ -1106,41 +977,6 @@ frappe.ui.form.on("Quotation", {
 				});
 			}, __("Actions"));
 
-			frm.add_custom_button(__("Create / Share Contract"), () => {
-				frappe.call({
-					method: "instacertify.contract.events.create_contract_from_quotation",
-					args: { quotation: frm.doc.name },
-					freeze: true,
-					callback(r) {
-						const name = r.message && r.message.contract;
-						if (!name) return;
-						frappe.confirm(
-							__("Contract {0} is ready. Share with customer now?", [name]),
-							() => {
-								frappe.call({
-									method: "instacertify.contract.events.share_contract",
-									args: { contract: name },
-									freeze: true,
-									callback(sr) {
-										const url = sr.message && sr.message.url;
-										frappe.set_route("Form", "IC Contract", name);
-										frappe.msgprint({
-											title: __("Contract Share Link"),
-											message: `<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>`,
-											indicator: "green",
-										});
-										if (url && navigator.clipboard) {
-											navigator.clipboard.writeText(url).catch(() => {});
-										}
-									},
-								});
-							},
-							() => frappe.set_route("Form", "IC Contract", name)
-						);
-					},
-				});
-			}, __("Actions"));
-
 			frm.add_custom_button(__("Download PDF"), () => {
 				const fmt = frm.meta.default_print_format || "Instacertify Quotation";
 				const url = frappe.urllib.get_full_url(
@@ -1317,9 +1153,6 @@ frappe.ui.form.on("Quotation", {
 
 				// Make Invoice the primary action after acceptance
 				frm.page.set_inner_btn_group_as_primary(__("Actions"));
-
-				// After customer approval: prompt owner to create Project / Testing Request
-				setTimeout(() => instacertify.maybe_prompt_quote_accept_followup(frm), 400);
 			}
 
 			// Hide Sales Order — Instacertify bills from Quotation directly
@@ -1522,16 +1355,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 
 frappe.ui.form.on("IC Quotation Test Item", {
 	form_render(frm, cdt, cdn) {
-		instacertify.load_standard_options(frm);
 		instacertify.load_lab_scope_options(frm, cdt, cdn);
-		instacertify.load_lab_offers_for_row(frm, cdt, cdn);
-	},
-	applicable_standard(frm, cdt, cdn) {
-		frappe.model.set_value(cdt, cdn, "lab_offer", "");
-		instacertify.load_lab_offers_for_row(frm, cdt, cdn, { open_picker: true });
-	},
-	lab_offer(frm, cdt, cdn) {
-		instacertify.apply_lab_offer(frm, cdt, cdn);
 	},
 	laboratory(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
@@ -1581,28 +1405,6 @@ instacertify.set_lab_scope_autocomplete = function (frm, options) {
 	grid.update_docfield_property("lab_test_scope", "options", opt_str);
 };
 
-instacertify.set_lab_offer_autocomplete = function (frm, options) {
-	const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
-	if (!grid) return;
-	const opt_str = (options || []).map((o) => o.value || o).join("\n");
-	grid.update_docfield_property("lab_offer", "options", opt_str);
-};
-
-instacertify.load_standard_options = function (frm) {
-	frappe.call({
-		method: "instacertify.laboratory.api.get_standard_options",
-		callback(r) {
-			const opts = (r.message || []).map((o) => o.value || o);
-			const opt_str = opts.join("\n");
-			const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
-			if (grid) {
-				grid.update_docfield_property("applicable_standard", "options", opt_str);
-			}
-			frm._ic_standard_options = opts;
-		},
-	});
-};
-
 instacertify.load_lab_scope_options = function (frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
 	if (!row || !row.laboratory) {
@@ -1617,144 +1419,6 @@ instacertify.load_lab_scope_options = function (frm, cdt, cdn) {
 			frm._ic_lab_scopes = frm._ic_lab_scopes || {};
 			frm._ic_lab_scopes[row.laboratory] = opts;
 			instacertify.set_lab_scope_autocomplete(frm, opts);
-		},
-	});
-};
-
-instacertify.load_lab_offers_for_row = function (frm, cdt, cdn, opts) {
-	opts = opts || {};
-	const row = locals[cdt][cdn];
-	if (!row || !row.applicable_standard) {
-		instacertify.set_lab_offer_autocomplete(frm, []);
-		return;
-	}
-	frappe.call({
-		method: "instacertify.laboratory.api.get_labs_for_standard",
-		args: {
-			applicable_standard: row.applicable_standard,
-			test_name: row.test_name || "",
-		},
-		callback(r) {
-			const offers = r.message || [];
-			frm._ic_lab_offers = frm._ic_lab_offers || {};
-			frm._ic_lab_offers[cdn] = offers;
-			instacertify.set_lab_offer_autocomplete(frm, offers);
-			if (opts.open_picker && offers.length) {
-				instacertify.open_lab_offer_picker(frm, cdt, cdn, offers);
-			} else if (!offers.length) {
-				frappe.show_alert({
-					message: __("No Active labs list this standard yet. Add it under Laboratory → Test / Pricing."),
-					indicator: "orange",
-				});
-			}
-		},
-	});
-};
-
-instacertify.open_lab_offer_picker = function (frm, cdt, cdn, offers) {
-	if (!offers || !offers.length) return;
-	const rows_html = offers
-		.map((o, idx) => {
-			const price = format_currency(o.selling_price || 0, o.currency || "INR");
-			return `<tr data-idx="${idx}" class="ic-lab-offer-row" style="cursor:pointer">
-				<td><b>${frappe.utils.escape_html(o.laboratory_name || "")}</b></td>
-				<td>${frappe.utils.escape_html(o.location || "—")}</td>
-				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
-				<td style="text-align:right;font-weight:700;color:#033447">${frappe.utils.escape_html(price)}</td>
-			</tr>`;
-		})
-		.join("");
-	const d = new frappe.ui.Dialog({
-		title: __("Select lab for this standard"),
-		size: "large",
-		fields: [
-			{
-				fieldtype: "HTML",
-				fieldname: "help",
-				options: `<div class="text-muted" style="margin-bottom:8px">
-					${__("Same standard is available from multiple labs at different prices. Pick one:")}
-				</div>
-				<table class="table table-bordered table-hover" style="margin:0">
-					<thead><tr>
-						<th>${__("Laboratory")}</th>
-						<th>${__("Location")}</th>
-						<th>${__("Test")}</th>
-						<th style="text-align:right">${__("Selling")}</th>
-					</tr></thead>
-					<tbody>${rows_html}</tbody>
-				</table>`,
-			},
-		],
-	});
-	d.$body.find(".ic-lab-offer-row").on("click", function () {
-		const idx = cint($(this).data("idx"));
-		const offer = offers[idx];
-		if (!offer) return;
-		frappe.model.set_value(cdt, cdn, "lab_offer", offer.value).then(() => {
-			instacertify.apply_lab_offer(frm, cdt, cdn, offer);
-		});
-		d.hide();
-	});
-	d.show();
-};
-
-instacertify.apply_lab_offer = function (frm, cdt, cdn, offer) {
-	const row = locals[cdt][cdn];
-	const apply = (s) => {
-		if (!s) {
-			frappe.show_alert({
-				message: __("Could not resolve that lab offer. Try again."),
-				indicator: "orange",
-			});
-			return;
-		}
-		frappe.model.set_value(cdt, cdn, "laboratory", s.laboratory);
-		frappe.model.set_value(cdt, cdn, "lab_scope_row", s.scope_row);
-		frappe.model.set_value(cdt, cdn, "test_name", s.test_name);
-		if (s.applicable_standard) {
-			frappe.model.set_value(cdt, cdn, "applicable_standard", s.applicable_standard);
-		}
-		frappe.model.set_value(cdt, cdn, "suggested_selling_price", s.selling_price);
-		frappe.model.set_value(cdt, cdn, "per_unit_charges", s.selling_price).then(() => {
-			instacertify.recalc_test_row(frm, cdt, cdn);
-		});
-		if (s.currency) {
-			frappe.model.set_value(cdt, cdn, "currency", s.currency);
-		}
-		if (s.scope_label) {
-			frappe.model.set_value(cdt, cdn, "lab_test_scope", s.scope_label);
-		}
-		if (s.value && row.lab_offer !== s.value) {
-			frappe.model.set_value(cdt, cdn, "lab_offer", s.value);
-		}
-		frappe.call({
-			method: "instacertify.laboratory.api.get_laboratory_summary",
-			args: { laboratory: s.laboratory },
-			callback(r) {
-				const d = r.message || {};
-				if (d.accreditation_summary) {
-					frappe.model.set_value(cdt, cdn, "laboratory_accreditation", d.accreditation_summary);
-				}
-			},
-		});
-		instacertify.load_lab_scope_options(frm, cdt, cdn);
-	};
-
-	if (offer) {
-		apply(offer);
-		return;
-	}
-	if (!row.lab_offer) return;
-	frappe.call({
-		method: "instacertify.laboratory.api.get_lab_offer_details",
-		args: {
-			lab_offer: row.lab_offer,
-			applicable_standard: row.applicable_standard,
-			laboratory: row.laboratory,
-			scope_row: row.lab_scope_row,
-		},
-		callback(r) {
-			apply(r.message);
 		},
 	});
 };
@@ -1784,6 +1448,7 @@ instacertify.apply_lab_test_scope = function (frm, cdt, cdn) {
 				frappe.model.set_value(cdt, cdn, "applicable_standard", s.applicable_standard);
 			}
 			frappe.model.set_value(cdt, cdn, "suggested_selling_price", s.selling_price);
+			// Prefill editable selling price from library (user may change)
 			frappe.model.set_value(cdt, cdn, "per_unit_charges", s.selling_price).then(() => {
 				instacertify.recalc_test_row(frm, cdt, cdn);
 			});
@@ -1797,180 +1462,10 @@ instacertify.apply_lab_test_scope = function (frm, cdt, cdn) {
 	});
 };
 
-/** After customer approves a quote: prompt to create Project / Testing Request. */
-instacertify._accept_prompt_key = function (name) {
-	return "ic_quote_accept_prompt_dismissed:" + name;
-};
-
-instacertify.maybe_prompt_quote_accept_followup = function (frm) {
-	if (!frm || frm.is_new() || !frm.doc || !frm.doc.name) return;
-	if (frm.doc.ic_workflow_status !== "Accepted") return;
-	if (frm._ic_accept_prompt_busy) return;
-
-	const dismissKey = instacertify._accept_prompt_key(frm.doc.name);
-	let dismissed = false;
-	try {
-		dismissed = sessionStorage.getItem(dismissKey) === "1";
-	} catch (e) {
-		/* ignore */
-	}
-
-	frm._ic_accept_prompt_busy = true;
-	frappe.call({
-		method: "instacertify.quotation.events.get_quotation_accept_followup",
-		args: { quotation: frm.doc.name },
-		callback(r) {
-			frm._ic_accept_prompt_busy = false;
-			const info = r.message || {};
-			if (!info.prompt) {
-				frm.set_intro && frm.set_intro(null);
-				return;
-			}
-			const tip = __(
-				"Customer approved this quotation. Create a Project or Testing Request to continue (Actions menu, or the prompt below)."
-			);
-			frm.set_intro(tip, "orange");
-			if (!dismissed) {
-				instacertify.show_quote_accept_followup_dialog(frm, info);
-			}
-		},
-		error() {
-			frm._ic_accept_prompt_busy = false;
-		},
-	});
-};
-
-instacertify.show_quote_accept_followup_dialog = function (frm, info) {
-	if (frm._ic_accept_prompt_dialog) return;
-
-	const needsProject = cint(info.needs_project);
-	const needsTesting = cint(info.needs_testing);
-
-	const startProject = () => {
-		frappe.call({
-			method: "instacertify.quotation.events.start_project_from_quotation",
-			args: { quotation: frm.doc.name },
-			freeze: true,
-			freeze_message: __("Creating Project..."),
-			callback(r) {
-				const created = (r.message && r.message.testing_requests) || [];
-				if (created.length) {
-					frappe.show_alert({
-						message: __("Created {0} testing request(s)", [created.length]),
-						indicator: "green",
-					});
-				}
-				if (r.message && r.message.project) {
-					frappe.set_route("Form", "Project", r.message.project);
-				} else {
-					frm.reload_doc();
-				}
-			},
-		});
-	};
-
-	const startTesting = () => {
-		frappe.call({
-			method: "instacertify.testing.events.create_testing_requests_from_quotation",
-			args: { quotation: frm.doc.name },
-			freeze: true,
-			freeze_message: __("Creating Testing Request(s)..."),
-			callback(r) {
-				const created = (r.message && r.message.created) || [];
-				const existing = (r.message && r.message.existing) || [];
-				frappe.msgprint({
-					title: __("Testing Requests"),
-					message: __(
-						"Created: {0}<br>Already linked: {1}",
-						[created.join(", ") || "—", existing.join(", ") || "—"]
-					),
-					indicator: "green",
-				});
-				if (created[0]) {
-					frappe.set_route("Form", "IC Testing Request", created[0]);
-				} else {
-					frm.reload_doc();
-				}
-			},
-		});
-	};
-
-	const dismissLater = () => {
-		try {
-			sessionStorage.setItem(instacertify._accept_prompt_key(frm.doc.name), "1");
-		} catch (e) {
-			/* ignore */
-		}
-		frappe.show_alert({
-			message: __(
-				"Reminder saved. Use Actions → Start Project or Create Testing Requests when ready."
-			),
-			indicator: "blue",
-		});
-	};
-
-	let primaryLabel = __("Create Project");
-	let primaryFn = startProject;
-	if (needsTesting && !needsProject) {
-		primaryLabel = __("Create Testing Request(s)");
-		primaryFn = startTesting;
-	} else if (needsTesting && needsProject) {
-		// Prefer testing when quote has lab lines; Project still available as secondary
-		primaryLabel = __("Create Testing Request(s)");
-		primaryFn = startTesting;
-	}
-
-	const d = new frappe.ui.Dialog({
-		title: __("Quotation approved — next step"),
-		fields: [
-			{
-				fieldtype: "HTML",
-				fieldname: "msg",
-				options: `<div class="text-muted" style="margin-bottom: 8px;">
-					${frappe.utils.escape_html(
-						info.message ||
-							__(
-								"Customer approved this quotation. Create a Project or Testing Request to continue."
-							)
-					)}
-				</div>`,
-			},
-		],
-		primary_action_label: primaryLabel,
-		primary_action() {
-			d.hide();
-			frm._ic_accept_prompt_dialog = null;
-			primaryFn();
-		},
-		secondary_action_label: __("Later"),
-		secondary_action() {
-			d.hide();
-			frm._ic_accept_prompt_dialog = null;
-			dismissLater();
-		},
-	});
-
-	if (needsProject && needsTesting) {
-		d.add_custom_action(__("Create Project"), () => {
-			d.hide();
-			frm._ic_accept_prompt_dialog = null;
-			startProject();
-		});
-	} else if (needsProject && !needsTesting) {
-		/* primary already Create Project */
-	} else if (!needsProject && needsTesting) {
-		/* primary already Create Testing */
-	}
-
-	frm._ic_accept_prompt_dialog = d;
-	d.show();
-};
-
 // Prompt for quotation type on new — clearer type + template selection
 frappe.ui.form.on("Quotation", {
 	onload(frm) {
 		instacertify.setup_quotation_template_filter(frm);
-		instacertify.load_standard_options(frm);
 		frm.wrapper && frm.wrapper.addClass("ic-quotation-form");
 		if (frm.is_new() && !frm.doc.ic_quotation_type) {
 			const d = new frappe.ui.Dialog({
@@ -2316,14 +1811,12 @@ function ic_render_customer_files(frm, d) {
 	const total = drive.total || files.length || 0;
 	const categories = drive.categories || [
 		"Uploaded",
-		"Collected Data",
 		"Projects",
 		"Quotes",
 		"Invoices",
 		"Testing",
 		"Samples",
 		"Documents",
-		"Contracts",
 		"Support",
 		"Records",
 	];
@@ -2383,7 +1876,7 @@ function ic_render_customer_files(frm, d) {
 				<div>
 					<div class="ic-drive-title">${__("Customer Data Drive")}</div>
 					<div class="ic-drive-sub">${__(
-						"All data collected from this customer — portal uploads, data collection sheets, sample dispatch, contracts, projects, and invoices — in one place."
+						"All files related to this customer — uploads, projects, quotes, invoices, testing, documents, and support — in one place."
 					)}</div>
 				</div>
 				<div class="ic-drive-actions">
@@ -2577,19 +2070,6 @@ function ic_render_customer_related(d) {
 	const doc_rows = (d.documents || []).map((doc) => [
 		ic_doc_link("IC Document Request", doc.name, doc.title || doc.name),
 		ic_status_pill(doc.status),
-		ic_esc(doc.company_legal_name || doc.product_name || doc.gstin || "—"),
-	]);
-	const dispatch_rows = (d.sample_dispatches || []).map((s) => [
-		ic_doc_link("IC Sample Dispatch Collection", s.name),
-		ic_status_pill(s.status),
-		ic_esc(s.tracking_number || s.courier_name || "—"),
-		ic_esc((s.submitted_on || s.modified || "").toString().slice(0, 16) || "—"),
-	]);
-	const contract_rows = (d.contracts || []).map((c) => [
-		ic_doc_link("IC Contract", c.name, c.title || c.name),
-		ic_status_pill(c.status),
-		ic_esc(c.customer_signed_name || "—"),
-		ic_esc((c.accepted_on || "").toString().slice(0, 16) || "—"),
 	]);
 	const ticket_rows = (d.tickets || []).map((t) => [
 		ic_doc_link("Helpdesk Ticket", t.name, t.subject || t.name),
@@ -2678,18 +2158,8 @@ function ic_render_customer_related(d) {
 			)}
 			${ic_related_section(
 				__("Document Requests"),
-				ic_table([__("Document Request"), __("Status"), __("Collected")], doc_rows),
+				ic_table([__("Document Request"), __("Status")], doc_rows),
 				__("No document requests")
-			)}
-			${ic_related_section(
-				__("Sample Dispatch Sheets"),
-				ic_table([__("Sheet"), __("Status"), __("Tracking / Courier"), __("Submitted")], dispatch_rows),
-				__("No sample dispatch collections")
-			)}
-			${ic_related_section(
-				__("Contracts"),
-				ic_table([__("Contract"), __("Status"), __("Signed by"), __("Accepted")], contract_rows),
-				__("No contracts")
 			)}
 			${ic_related_section(
 				__("Helpdesk Tickets"),
@@ -2838,17 +2308,8 @@ frappe.ui.form.on("Project Team Member", {
 frappe.ui.form.on("IC Testing Request", {
 	refresh(frm) {
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
-		instacertify.load_testing_request_standard_options(frm);
-		if (frm.doc.applicable_standard) {
-			instacertify.load_testing_request_lab_offers(frm);
-		}
 		if (frm.doc.laboratory) {
 			instacertify.load_testing_request_scope_options(frm);
-		}
-		if (!frm.is_new() && frm.doc.applicable_standard) {
-			frm.add_custom_button(__("Compare Labs for Standard"), () => {
-				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
-			}, __("Actions"));
 		}
 		if (!frm.is_new() && frm.doc.test_report) {
 			frm.add_custom_button(__("Share with Customer"), () => {
@@ -2879,13 +2340,6 @@ frappe.ui.form.on("IC Testing Request", {
 				});
 			}, __("Billing"));
 		}
-	},
-	applicable_standard(frm) {
-		frm.set_value("lab_offer", "");
-		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
-	},
-	lab_offer(frm) {
-		instacertify.apply_testing_request_lab_offer(frm);
 	},
 	laboratory(frm) {
 		frm.set_value("lab_test_scope", "");
@@ -2918,116 +2372,6 @@ frappe.ui.form.on("IC Testing Request", {
 		});
 	},
 });
-
-instacertify.load_testing_request_standard_options = function (frm) {
-	frappe.call({
-		method: "instacertify.laboratory.api.get_standard_options",
-		callback(r) {
-			const opt_str = (r.message || []).map((o) => o.value || o).join("\n");
-			frm.set_df_property("applicable_standard", "options", opt_str);
-		},
-	});
-};
-
-instacertify.load_testing_request_lab_offers = function (frm, opts) {
-	opts = opts || {};
-	if (!frm.doc.applicable_standard) {
-		frm.set_df_property("lab_offer", "options", "");
-		return;
-	}
-	frappe.call({
-		method: "instacertify.laboratory.api.get_labs_for_standard",
-		args: {
-			applicable_standard: frm.doc.applicable_standard,
-			test_name: frm.doc.test_name || "",
-		},
-		callback(r) {
-			const offers = r.message || [];
-			frm._ic_lab_offers = offers;
-			frm.set_df_property("lab_offer", "options", offers.map((o) => o.value).join("\n"));
-			if (opts.open_picker && offers.length) {
-				instacertify.open_testing_request_lab_picker(frm, offers);
-			} else if (opts.open_picker && !offers.length) {
-				frappe.show_alert({
-					message: __("No Active labs list this standard yet."),
-					indicator: "orange",
-				});
-			}
-		},
-	});
-};
-
-instacertify.open_testing_request_lab_picker = function (frm, offers) {
-	const rows_html = offers
-		.map((o, idx) => {
-			const price = format_currency(o.selling_price || 0, o.currency || "INR");
-			return `<tr data-idx="${idx}" class="ic-lab-offer-row" style="cursor:pointer">
-				<td><b>${frappe.utils.escape_html(o.laboratory_name || "")}</b></td>
-				<td>${frappe.utils.escape_html(o.location || "—")}</td>
-				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
-				<td style="text-align:right;font-weight:700">${frappe.utils.escape_html(price)}</td>
-			</tr>`;
-		})
-		.join("");
-	const d = new frappe.ui.Dialog({
-		title: __("Select lab for this standard"),
-		size: "large",
-		fields: [
-			{
-				fieldtype: "HTML",
-				options: `<div class="text-muted" style="margin-bottom:8px">
-					${__("Compare labs offering this standard at different prices:")}
-				</div>
-				<table class="table table-bordered table-hover" style="margin:0">
-					<thead><tr>
-						<th>${__("Laboratory")}</th><th>${__("Location")}</th>
-						<th>${__("Test")}</th><th style="text-align:right">${__("Selling")}</th>
-					</tr></thead>
-					<tbody>${rows_html}</tbody>
-				</table>`,
-			},
-		],
-	});
-	d.$body.find(".ic-lab-offer-row").on("click", function () {
-		const offer = offers[cint($(this).data("idx"))];
-		if (!offer) return;
-		frm.set_value("lab_offer", offer.value).then(() => {
-			instacertify.apply_testing_request_lab_offer(frm, offer);
-		});
-		d.hide();
-	});
-	d.show();
-};
-
-instacertify.apply_testing_request_lab_offer = function (frm, offer) {
-	const apply = (s) => {
-		if (!s) return;
-		frm.set_value("laboratory", s.laboratory);
-		frm.set_value("lab_scope_row", s.scope_row);
-		frm.set_value("test_name", s.test_name);
-		if (s.applicable_standard) frm.set_value("applicable_standard", s.applicable_standard);
-		frm.set_value("suggested_selling_price", s.selling_price);
-		if (s.scope_label) frm.set_value("lab_test_scope", s.scope_label);
-		instacertify.load_testing_request_scope_options(frm);
-	};
-	if (offer) {
-		apply(offer);
-		return;
-	}
-	if (!frm.doc.lab_offer) return;
-	frappe.call({
-		method: "instacertify.laboratory.api.get_lab_offer_details",
-		args: {
-			lab_offer: frm.doc.lab_offer,
-			applicable_standard: frm.doc.applicable_standard,
-			laboratory: frm.doc.laboratory,
-			scope_row: frm.doc.lab_scope_row,
-		},
-		callback(r) {
-			apply(r.message);
-		},
-	});
-};
 
 instacertify.load_testing_request_scope_options = function (frm) {
 	if (!frm.doc.laboratory) {
@@ -3518,7 +2862,7 @@ $(document).ready(function () {
 	setTimeout(tryInject, 2000);
 });
 
-// --- Lead capture: zippy new form + quick dialog entry ---
+// --- Lead capture: mandatory name, India-first country, editable source/type ---
 frappe.ui.form.on("Lead", {
 	setup(frm) {
 		frm.set_query("country", () => ({
@@ -3536,11 +2880,6 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("mobile_no", "reqd", 0);
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
-		frm.set_df_property("ic_party_name", "label", __("Name / company"));
-		frm.set_df_property("ic_party_name", "description", __("Person or firm — enough to get started"));
-		frm.set_df_property("ic_call_remarks", "label", __("What they need"));
-		frm.set_df_property("ic_call_remarks", "description", __("One line is fine"));
-		frm.set_df_property("ic_next_contact_date", "label", __("Call back on"));
 		if (!frm.doc.country && frm.is_new()) {
 			frm.set_value("country", "India");
 		}
@@ -3548,17 +2887,7 @@ frappe.ui.form.on("Lead", {
 			const party = frm.doc.company_name || frm.doc.lead_name || frm.doc.first_name;
 			if (party) frm.set_value("ic_party_name", party);
 		}
-		if (frm.is_new()) {
-			instacertify.apply_zippy_lead_capture(frm);
-			if (!frm.doc.ic_next_contact_date) {
-				frm.set_value("ic_next_contact_date", frappe.datetime.add_days(frappe.datetime.get_today(), 1));
-			}
-			if (!frm.doc.ic_assigned_salesperson && frappe.session.user !== "Guest") {
-				frm.set_value("ic_assigned_salesperson", frappe.session.user);
-			}
-			frm.page.set_primary_action(__("Save Lead"), () => frm.save());
-		} else {
-			instacertify.clear_zippy_lead_capture(frm);
+		if (!frm.is_new()) {
 			instacertify.add_helpdesk_buttons(frm, {
 				lead: frm.doc.name,
 				contact_person: frm.doc.lead_name || frm.doc.ic_party_name || frm.doc.company_name,
@@ -3572,38 +2901,6 @@ frappe.ui.form.on("Lead", {
 				frappe.model.open_mapped_doc({
 					method: "erpnext.crm.doctype.lead.lead.make_quotation",
 					frm: frm,
-				});
-			}, __("Create"));
-			frm.add_custom_button(__("Share Contract"), () => {
-				frappe.call({
-					method: "instacertify.contract.events.create_contract_from_lead",
-					args: { lead: frm.doc.name },
-					freeze: true,
-					callback(r) {
-						const name = r.message && r.message.contract;
-						if (!name) return;
-						frappe.call({
-							method: "instacertify.contract.events.share_contract",
-							args: { contract: name },
-							freeze: true,
-							callback(sr) {
-								const url = sr.message && sr.message.url;
-								frappe.msgprint({
-									title: __("Contract Shared"),
-									message: `
-										<p>${__("Contract created from quotation terms and ready to share:")}</p>
-										<p><a href="/app/ic-contract/${encodeURIComponent(name)}">${frappe.utils.escape_html(name)}</a></p>
-										<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-										<p class="text-muted">${__("Customer can download and accept by typing their name. Edit the contract on the form before re-sharing if needed.")}</p>
-									`,
-									indicator: "green",
-								});
-								if (url && navigator.clipboard) {
-									navigator.clipboard.writeText(url).catch(() => {});
-								}
-							},
-						});
-					},
 				});
 			}, __("Create"));
 			frm.add_custom_button(__("Open Dashboard"), () => {
@@ -3641,90 +2938,8 @@ frappe.ui.form.on("Lead", {
 		if (src !== "Consultant" && src !== "Reference") {
 			frm.set_value("ic_consultant_referral", "");
 		}
-		if (frm.is_new() && !frm.__ic_lead_show_all) {
-			const need = src === "Consultant" || src === "Reference";
-			frm.toggle_display("ic_consultant_referral", need);
-		}
 	},
 });
-
-instacertify.ZIPPY_LEAD_HIDE = [
-	"salutation",
-	"first_name",
-	"middle_name",
-	"last_name",
-	"job_title",
-	"gender",
-	"source",
-	"company_name",
-	"website",
-	"industry",
-	"market_segment",
-	"territory",
-	"campaign_name",
-	"fax",
-	"whatsapp_no",
-	"phone_ext",
-	"annual_revenue",
-	"no_of_employees",
-	"image",
-	"language",
-	"disabled",
-	"ic_company_size",
-	"ic_section_company_extra",
-	"ic_factory_address",
-	"ic_gst_number",
-	"ic_state",
-	"ic_request_category",
-	"ic_expected_timeline",
-	"ic_estimated_value",
-	"ic_priority",
-	"ic_assigned_operations_manager",
-	"ic_remarks",
-	"ic_last_contacted",
-	"ic_lead_connected",
-	"ic_section_pipeline",
-	"ic_pipeline_stage",
-	"qualification_status",
-	"company",
-];
-
-instacertify.apply_zippy_lead_capture = function (frm) {
-	if (!frm.layout) return;
-	if (frm.set_intro) {
-		frm.set_intro(
-			__(
-				"Quick capture — name, phone, and what they need. Save now; add GST, factory, and pipeline later."
-			),
-			"blue"
-		);
-	}
-	const hide = !frm.__ic_lead_show_all;
-	(instacertify.ZIPPY_LEAD_HIDE || []).forEach((f) => {
-		if (frm.fields_dict[f]) frm.toggle_display(f, !hide);
-	});
-	if (frm.fields_dict.ic_consultant_referral) {
-		const src = frm.doc.ic_lead_source_detail;
-		const need = src === "Consultant" || src === "Reference";
-		frm.toggle_display("ic_consultant_referral", hide ? true : need);
-	}
-	const btnLabel = hide ? __("Show all fields") : __("Simple view");
-	frm.remove_custom_button(__("Show all fields"));
-	frm.remove_custom_button(__("Simple view"));
-	frm.add_custom_button(btnLabel, () => {
-		frm.__ic_lead_show_all = hide;
-		instacertify.apply_zippy_lead_capture(frm);
-	});
-};
-
-instacertify.clear_zippy_lead_capture = function (frm) {
-	if (frm.set_intro) frm.set_intro(null);
-	(instacertify.ZIPPY_LEAD_HIDE || []).forEach((f) => {
-		if (frm.fields_dict[f]) frm.toggle_display(f, true);
-	});
-	frm.remove_custom_button(__("Show all fields"));
-	frm.remove_custom_button(__("Simple view"));
-};
 
 // --- Project AMC on completion ---
 frappe.ui.form.on("Project", {
