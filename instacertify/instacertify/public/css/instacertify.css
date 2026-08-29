@@ -19,8 +19,9 @@ html {
   --ic-mist: #c9dce8;
   --ic-ink: #152833;
   --ic-muted: #5a7382;
-  --ic-radius: 14px;
-  --ic-radius-sm: 10px;
+  --ic-radius: 22px;
+  --ic-radius-sm: 16px;
+  --ic-radius-lg: 26px;
   --ic-tile-min: 148px;
   --ic-tile-gap: 12px;
   --ic-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
@@ -59,9 +60,9 @@ html {
   --blue-600: #033447;
   --orange-500: #EC6820;
   --orange-600: #c44710;
-  --border-radius: 12px;
-  --border-radius-md: 14px;
-  --border-radius-lg: 16px;
+  --border-radius: 16px;
+  --border-radius-md: 20px;
+  --border-radius-lg: 24px;
 }
 
 html,
@@ -407,7 +408,7 @@ body {
   background:
     linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
   color: #fff;
-  border-radius: var(--ic-radius);
+  border-radius: var(--ic-radius-lg, 26px);
   padding: 28px 28px 26px;
   margin-bottom: 20px;
   box-shadow: var(--ic-shadow);
@@ -1395,7 +1396,7 @@ body.for-login,
   margin: 14px 0 18px;
   padding: 16px 18px;
   border: 1px solid rgba(6, 81, 117, 0.1);
-  border-radius: var(--ic-radius, 14px);
+  border-radius: var(--ic-radius-lg, 26px);
   background:
     linear-gradient(135deg, rgba(255, 241, 230, 0.55) 0%, #ffffff 42%, #f3f9fc 100%);
   border-left: 5px solid var(--ic-accent, #EC6820);
@@ -1790,6 +1791,28 @@ a.ic-lead-prompt-phone:hover {
   transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease);
 }
 
+/* Sections get a deeper arch; tiles keep a softer but still rounded edge */
+.ic-lead-prompt-panel,
+.ic-workdesk-panel,
+.ic-hr-panel,
+.ic-related-section,
+.ic-explore-panel,
+.ic-greeting,
+.widget.dashboard-widget-box,
+.modal-content {
+  border-radius: var(--ic-radius-lg, 26px) !important;
+}
+.ic-summary-card,
+.ic-explore-card,
+.ic-project-tile,
+.ic-project-card,
+.ic-lead-prompt,
+.ic-crm-chart-card,
+.widget.number-widget-box,
+.frappe-card {
+  border-radius: var(--ic-radius-sm, 16px) !important;
+}
+
 .ic-summary-card:hover,
 .ic-project-tile:hover,
 .ic-project-card:hover,
@@ -1802,7 +1825,7 @@ a.ic-lead-prompt-phone:hover {
 .btn-primary,
 .btn-default,
 .btn-secondary {
-  border-radius: 12px !important;
+  border-radius: 14px !important;
   font-weight: 560 !important;
   letter-spacing: -0.01em;
   padding: 0.45rem 1.05rem !important;
@@ -1898,7 +1921,7 @@ textarea.form-control {
 .ic-hr-panel {
   background: linear-gradient(180deg, #ffffff 0%, #f7fbfd 100%);
   border: 1px solid rgba(6, 81, 117, 0.1);
-  border-radius: var(--ic-radius-sm, 12px);
+  border-radius: var(--ic-radius, 22px);
   padding: 14px;
   box-shadow: var(--ic-shadow, 0 10px 28px rgba(6, 81, 117, 0.07));
   animation: ic-rise-in 0.6s var(--ic-rise) both;
