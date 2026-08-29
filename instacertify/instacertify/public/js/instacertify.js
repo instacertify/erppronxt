@@ -1106,6 +1106,41 @@ frappe.ui.form.on("Quotation", {
 				});
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Create / Share Contract"), () => {
+				frappe.call({
+					method: "instacertify.contract.events.create_contract_from_quotation",
+					args: { quotation: frm.doc.name },
+					freeze: true,
+					callback(r) {
+						const name = r.message && r.message.contract;
+						if (!name) return;
+						frappe.confirm(
+							__("Contract {0} is ready. Share with customer now?", [name]),
+							() => {
+								frappe.call({
+									method: "instacertify.contract.events.share_contract",
+									args: { contract: name },
+									freeze: true,
+									callback(sr) {
+										const url = sr.message && sr.message.url;
+										frappe.set_route("Form", "IC Contract", name);
+										frappe.msgprint({
+											title: __("Contract Share Link"),
+											message: `<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>`,
+											indicator: "green",
+										});
+										if (url && navigator.clipboard) {
+											navigator.clipboard.writeText(url).catch(() => {});
+										}
+									},
+								});
+							},
+							() => frappe.set_route("Form", "IC Contract", name)
+						);
+					},
+				});
+			}, __("Actions"));
+
 			frm.add_custom_button(__("Download PDF"), () => {
 				const fmt = frm.meta.default_print_format || "Instacertify Quotation";
 				const url = frappe.urllib.get_full_url(
@@ -3272,6 +3307,38 @@ frappe.ui.form.on("Lead", {
 				frappe.model.open_mapped_doc({
 					method: "erpnext.crm.doctype.lead.lead.make_quotation",
 					frm: frm,
+				});
+			}, __("Create"));
+			frm.add_custom_button(__("Share Contract"), () => {
+				frappe.call({
+					method: "instacertify.contract.events.create_contract_from_lead",
+					args: { lead: frm.doc.name },
+					freeze: true,
+					callback(r) {
+						const name = r.message && r.message.contract;
+						if (!name) return;
+						frappe.call({
+							method: "instacertify.contract.events.share_contract",
+							args: { contract: name },
+							freeze: true,
+							callback(sr) {
+								const url = sr.message && sr.message.url;
+								frappe.msgprint({
+									title: __("Contract Shared"),
+									message: `
+										<p>${__("Contract created from quotation terms and ready to share:")}</p>
+										<p><a href="/app/ic-contract/${encodeURIComponent(name)}">${frappe.utils.escape_html(name)}</a></p>
+										<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+										<p class="text-muted">${__("Customer can download and accept by typing their name. Edit the contract on the form before re-sharing if needed.")}</p>
+									`,
+									indicator: "green",
+								});
+								if (url && navigator.clipboard) {
+									navigator.clipboard.writeText(url).catch(() => {});
+								}
+							},
+						});
+					},
 				});
 			}, __("Create"));
 			frm.add_custom_button(__("Open Dashboard"), () => {

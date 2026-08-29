@@ -40,6 +40,7 @@ REQUIRED_DOCTYPES = (
 # Public portal templates (website_route_rules → www module)
 REQUIRED_PORTALS = (
 	("/ic-quotation/", "ic_quotation"),
+	("/ic-contract/", "ic_contract"),
 	("/ic-documents/", "ic_documents"),
 	("/ic-dispatch/", "ic_dispatch"),
 	("/ic-report/", "ic_report"),
