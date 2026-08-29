@@ -3277,10 +3277,14 @@ frappe.ui.form.on("Task", {
 });
 
 frappe.ui.form.on("IC Testing Request", {
+	onload(frm) {
+		instacertify.load_testing_request_library_options(frm);
+	},
 	refresh(frm) {
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
-		instacertify.load_testing_request_standard_options(frm);
-		if (frm.doc.applicable_standard) {
+		instacertify.load_testing_request_library_options(frm);
+		instacertify.bind_testing_request_library_pickers(frm);
+		if (frm.doc.applicable_standard || frm.doc.test_name) {
 			instacertify.load_testing_request_lab_offers(frm);
 		}
 		if (frm.fields_dict.ic_assignees) {
@@ -3291,11 +3295,15 @@ frappe.ui.form.on("IC Testing Request", {
 		if (frm.doc.laboratory) {
 			instacertify.load_testing_request_scope_options(frm);
 		}
-		if (!frm.is_new() && frm.doc.applicable_standard) {
-			frm.add_custom_button(__("Compare Labs for Standard"), () => {
-				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
-			}, __("Actions"));
-		}
+		frm.add_custom_button(__("Compare Labs"), () => {
+			if (!frm.doc.applicable_standard && !frm.doc.test_name) {
+				frappe.msgprint(
+					__("Select a Test name or Applicable Standard first (from the lab library dropdown).")
+				);
+				return;
+			}
+			instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
+		}, __("Actions"));
 		if (!frm.is_new() && frm.doc.test_report) {
 			frm.add_custom_button(__("Share with Customer"), () => {
 				frappe.call({
@@ -3330,7 +3338,7 @@ frappe.ui.form.on("IC Testing Request", {
 						laboratory: frm.doc.laboratory,
 						testing_request: frm.doc.name,
 						project: frm.doc.project,
-						amount: frm.doc.suggested_selling_price,
+						amount: frm.doc.library_buying_price || frm.doc.suggested_selling_price,
 					},
 					freeze: true,
 					callback(r) {
@@ -3340,17 +3348,27 @@ frappe.ui.form.on("IC Testing Request", {
 			}, __("Billing"));
 		}
 	},
+	test_name(frm) {
+		if (frm._ic_skip_lab_picker) return;
+		frm.set_value("lab_offer", "");
+		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
+	},
 	applicable_standard(frm) {
+		if (frm._ic_skip_lab_picker) return;
 		frm.set_value("lab_offer", "");
 		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 	},
 	lab_offer(frm) {
+		if (frm._ic_skip_lab_picker) return;
 		instacertify.apply_testing_request_lab_offer(frm);
 	},
 	laboratory(frm) {
 		frm.set_value("lab_test_scope", "");
 		frm.set_value("lab_scope_row", "");
 		frm.set_value("suggested_selling_price", 0);
+		if (frm.fields_dict.library_buying_price) {
+			frm.set_value("library_buying_price", 0);
+		}
 		instacertify.load_testing_request_scope_options(frm);
 	},
 	lab_test_scope(frm) {
@@ -3371,6 +3389,9 @@ frappe.ui.form.on("IC Testing Request", {
 					frm.set_value("applicable_standard", s.applicable_standard);
 				}
 				frm.set_value("suggested_selling_price", s.selling_price);
+				if (frm.fields_dict.library_buying_price) {
+					frm.set_value("library_buying_price", s.purchase_price);
+				}
 				if (s.label && frm.doc.lab_test_scope !== s.label) {
 					frm.set_value("lab_test_scope", s.label);
 				}
@@ -3379,26 +3400,90 @@ frappe.ui.form.on("IC Testing Request", {
 	},
 });
 
-instacertify.load_testing_request_standard_options = function (frm) {
+instacertify.load_testing_request_library_options = function (frm) {
+	frappe.call({
+		method: "instacertify.laboratory.api.get_test_name_options",
+		callback(r) {
+			const values = (r.message || []).map((o) => o.value || o);
+			frm.set_df_property("test_name", "options", values.join("\n"));
+			const ctrl = frm.fields_dict.test_name;
+			if (ctrl && ctrl.set_data) {
+				ctrl.set_data(values);
+			} else if (ctrl && ctrl.awesomplete) {
+				ctrl.awesomplete.list = values;
+			}
+		},
+	});
 	frappe.call({
 		method: "instacertify.laboratory.api.get_standard_options",
 		callback(r) {
-			const opt_str = (r.message || []).map((o) => o.value || o).join("\n");
-			frm.set_df_property("applicable_standard", "options", opt_str);
+			const values = (r.message || []).map((o) => o.value || o);
+			frm.set_df_property("applicable_standard", "options", values.join("\n"));
+			const ctrl = frm.fields_dict.applicable_standard;
+			if (ctrl && ctrl.set_data) {
+				ctrl.set_data(values);
+			} else if (ctrl && ctrl.awesomplete) {
+				ctrl.awesomplete.list = values;
+			}
 		},
 	});
 };
 
+instacertify.bind_testing_request_library_pickers = function (frm) {
+	const bind = (fieldname) => {
+		const ctrl = frm.fields_dict[fieldname];
+		if (!ctrl || !ctrl.$input || ctrl._ic_lab_bound) return;
+		ctrl._ic_lab_bound = true;
+		ctrl.$input.on("awesomplete-selectcomplete.ic_lab", () => {
+			if (frm._ic_skip_lab_picker) return;
+			setTimeout(() => {
+				frm.set_value("lab_offer", "");
+				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
+			}, 50);
+		});
+		ctrl.$input.on("change.ic_lab", () => {
+			if (frm._ic_skip_lab_picker) return;
+			if (!frm.doc[fieldname]) return;
+			setTimeout(() => {
+				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
+			}, 80);
+		});
+	};
+	bind("test_name");
+	bind("applicable_standard");
+
+	const offer = frm.fields_dict.lab_offer;
+	if (offer && offer.$input && !offer._ic_lab_bound) {
+		offer._ic_lab_bound = true;
+		offer.$input.on("focus.ic_lab", () => {
+			if (frm.doc.applicable_standard || frm.doc.test_name) {
+				instacertify.load_testing_request_lab_offers(frm);
+			}
+		});
+		offer.$wrapper.find(".control-label").css("cursor", "pointer");
+		offer.$wrapper.on("click.ic_lab_compare", ".control-label, .help-box", () => {
+			if (frm.doc.applicable_standard || frm.doc.test_name) {
+				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
+			} else {
+				frappe.show_alert({
+					message: __("Pick a Test or Applicable Standard first"),
+					indicator: "orange",
+				});
+			}
+		});
+	}
+};
+
 instacertify.load_testing_request_lab_offers = function (frm, opts) {
 	opts = opts || {};
-	if (!frm.doc.applicable_standard) {
+	if (!frm.doc.applicable_standard && !frm.doc.test_name) {
 		frm.set_df_property("lab_offer", "options", "");
 		return;
 	}
 	frappe.call({
 		method: "instacertify.laboratory.api.get_labs_for_standard",
 		args: {
-			applicable_standard: frm.doc.applicable_standard,
+			applicable_standard: frm.doc.applicable_standard || "",
 			test_name: frm.doc.test_name || "",
 		},
 		callback(r) {
@@ -3409,7 +3494,9 @@ instacertify.load_testing_request_lab_offers = function (frm, opts) {
 				instacertify.open_testing_request_lab_picker(frm, offers);
 			} else if (opts.open_picker && !offers.length) {
 				frappe.show_alert({
-					message: __("No Active labs list this standard yet."),
+					message: __(
+						"No Active labs list this test/standard yet. Check the Laboratory Library."
+					),
 					indicator: "orange",
 				});
 			}
@@ -3420,28 +3507,33 @@ instacertify.load_testing_request_lab_offers = function (frm, opts) {
 instacertify.open_testing_request_lab_picker = function (frm, offers) {
 	const rows_html = offers
 		.map((o, idx) => {
-			const price = format_currency(o.selling_price || 0, o.currency || "INR");
+			const buy = format_currency(o.purchase_price || 0, o.currency || "INR");
+			const sell = format_currency(o.selling_price || 0, o.currency || "INR");
 			return `<tr data-idx="${idx}" class="ic-lab-offer-row" style="cursor:pointer">
 				<td><b>${frappe.utils.escape_html(o.laboratory_name || "")}</b></td>
 				<td>${frappe.utils.escape_html(o.location || "—")}</td>
 				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
-				<td style="text-align:right;font-weight:700">${frappe.utils.escape_html(price)}</td>
+				<td>${frappe.utils.escape_html(o.applicable_standard || "—")}</td>
+				<td style="text-align:right;font-weight:700;color:#EC6820">${frappe.utils.escape_html(buy)}</td>
+				<td style="text-align:right">${frappe.utils.escape_html(sell)}</td>
 			</tr>`;
 		})
 		.join("");
 	const d = new frappe.ui.Dialog({
-		title: __("Select lab for this standard"),
-		size: "large",
+		title: __("Choose lab — compare buying rates"),
+		size: "extra-large",
 		fields: [
 			{
 				fieldtype: "HTML",
 				options: `<div class="text-muted" style="margin-bottom:8px">
-					${__("Compare labs offering this standard at different prices:")}
+					${__("Labs in the library that offer this test / standard. Pick one using the buying rate:")}
 				</div>
 				<table class="table table-bordered table-hover" style="margin:0">
 					<thead><tr>
 						<th>${__("Laboratory")}</th><th>${__("Location")}</th>
-						<th>${__("Test")}</th><th style="text-align:right">${__("Selling")}</th>
+						<th>${__("Test")}</th><th>${__("Standard")}</th>
+						<th style="text-align:right">${__("Buying")}</th>
+						<th style="text-align:right">${__("Selling")}</th>
 					</tr></thead>
 					<tbody>${rows_html}</tbody>
 				</table>`,
@@ -3462,13 +3554,38 @@ instacertify.open_testing_request_lab_picker = function (frm, offers) {
 instacertify.apply_testing_request_lab_offer = function (frm, offer) {
 	const apply = (s) => {
 		if (!s) return;
-		frm.set_value("laboratory", s.laboratory);
-		frm.set_value("lab_scope_row", s.scope_row);
-		frm.set_value("test_name", s.test_name);
-		if (s.applicable_standard) frm.set_value("applicable_standard", s.applicable_standard);
-		frm.set_value("suggested_selling_price", s.selling_price);
-		if (s.scope_label) frm.set_value("lab_test_scope", s.scope_label);
-		instacertify.load_testing_request_scope_options(frm);
+		frm._ic_skip_lab_picker = true;
+		const done = () => {
+			frm._ic_skip_lab_picker = false;
+		};
+		Promise.resolve()
+			.then(() => frm.set_value("laboratory", s.laboratory))
+			.then(() => frm.set_value("lab_scope_row", s.scope_row))
+			.then(() => (s.test_name ? frm.set_value("test_name", s.test_name) : null))
+			.then(() =>
+				s.applicable_standard ? frm.set_value("applicable_standard", s.applicable_standard) : null
+			)
+			.then(() => frm.set_value("suggested_selling_price", s.selling_price))
+			.then(() =>
+				frm.fields_dict.library_buying_price
+					? frm.set_value("library_buying_price", s.purchase_price)
+					: null
+			)
+			.then(() => (s.scope_label ? frm.set_value("lab_test_scope", s.scope_label) : null))
+			.then(() => {
+				instacertify.load_testing_request_scope_options(frm);
+				frappe.show_alert({
+					message: __(
+						"Selected {0} — buying {1}",
+						[
+							s.laboratory_name || s.laboratory,
+							format_currency(s.purchase_price || 0, s.currency || "INR"),
+						]
+					),
+					indicator: "green",
+				});
+			})
+			.finally(done);
 	};
 	if (offer) {
 		apply(offer);
@@ -3480,6 +3597,7 @@ instacertify.apply_testing_request_lab_offer = function (frm, offer) {
 		args: {
 			lab_offer: frm.doc.lab_offer,
 			applicable_standard: frm.doc.applicable_standard,
+			test_name: frm.doc.test_name,
 			laboratory: frm.doc.laboratory,
 			scope_row: frm.doc.lab_scope_row,
 		},
