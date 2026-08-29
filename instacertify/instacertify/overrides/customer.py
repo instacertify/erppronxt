@@ -25,7 +25,9 @@ def get_dashboard_data(data):
 		"IC Testing Request",
 		"IC Document Request",
 		"IC Sample Tracking",
+		"IC Sample Dispatch Collection",
 		"IC Project Record",
+		"IC Contract",
 	]
 	missing_ic = [dt for dt in ic_items if dt not in existing_items]
 	if missing_ic:

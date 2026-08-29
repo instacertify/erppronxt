@@ -2316,12 +2316,14 @@ function ic_render_customer_files(frm, d) {
 	const total = drive.total || files.length || 0;
 	const categories = drive.categories || [
 		"Uploaded",
+		"Collected Data",
 		"Projects",
 		"Quotes",
 		"Invoices",
 		"Testing",
 		"Samples",
 		"Documents",
+		"Contracts",
 		"Support",
 		"Records",
 	];
@@ -2381,7 +2383,7 @@ function ic_render_customer_files(frm, d) {
 				<div>
 					<div class="ic-drive-title">${__("Customer Data Drive")}</div>
 					<div class="ic-drive-sub">${__(
-						"All files related to this customer — uploads, projects, quotes, invoices, testing, documents, and support — in one place."
+						"All data collected from this customer — portal uploads, data collection sheets, sample dispatch, contracts, projects, and invoices — in one place."
 					)}</div>
 				</div>
 				<div class="ic-drive-actions">
@@ -2575,6 +2577,19 @@ function ic_render_customer_related(d) {
 	const doc_rows = (d.documents || []).map((doc) => [
 		ic_doc_link("IC Document Request", doc.name, doc.title || doc.name),
 		ic_status_pill(doc.status),
+		ic_esc(doc.company_legal_name || doc.product_name || doc.gstin || "—"),
+	]);
+	const dispatch_rows = (d.sample_dispatches || []).map((s) => [
+		ic_doc_link("IC Sample Dispatch Collection", s.name),
+		ic_status_pill(s.status),
+		ic_esc(s.tracking_number || s.courier_name || "—"),
+		ic_esc((s.submitted_on || s.modified || "").toString().slice(0, 16) || "—"),
+	]);
+	const contract_rows = (d.contracts || []).map((c) => [
+		ic_doc_link("IC Contract", c.name, c.title || c.name),
+		ic_status_pill(c.status),
+		ic_esc(c.customer_signed_name || "—"),
+		ic_esc((c.accepted_on || "").toString().slice(0, 16) || "—"),
 	]);
 	const ticket_rows = (d.tickets || []).map((t) => [
 		ic_doc_link("Helpdesk Ticket", t.name, t.subject || t.name),
@@ -2663,8 +2678,18 @@ function ic_render_customer_related(d) {
 			)}
 			${ic_related_section(
 				__("Document Requests"),
-				ic_table([__("Document Request"), __("Status")], doc_rows),
+				ic_table([__("Document Request"), __("Status"), __("Collected")], doc_rows),
 				__("No document requests")
+			)}
+			${ic_related_section(
+				__("Sample Dispatch Sheets"),
+				ic_table([__("Sheet"), __("Status"), __("Tracking / Courier"), __("Submitted")], dispatch_rows),
+				__("No sample dispatch collections")
+			)}
+			${ic_related_section(
+				__("Contracts"),
+				ic_table([__("Contract"), __("Status"), __("Signed by"), __("Accepted")], contract_rows),
+				__("No contracts")
 			)}
 			${ic_related_section(
 				__("Helpdesk Tickets"),

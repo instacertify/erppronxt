@@ -176,6 +176,12 @@ def save_sample_dispatch_collection(
 	doc.save(ignore_permissions=True)
 
 	_sync_to_sample_tracking(doc)
+	try:
+		from instacertify.crm.customer_data import ingest_sample_dispatch
+
+		ingest_sample_dispatch(doc)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "customer data ingest sample dispatch")
 	_notify_handlers(doc)
 	return {"ok": 1, "status": doc.status, "name": doc.name}
 

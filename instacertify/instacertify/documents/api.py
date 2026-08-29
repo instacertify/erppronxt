@@ -355,6 +355,12 @@ def upload_document_item(token: str, item_name: str, file_url: str, remarks: str
 	doc.save(ignore_permissions=True)
 
 	_log_customer_upload(doc, updated_row)
+	try:
+		from instacertify.crm.customer_data import ingest_document_upload
+
+		ingest_document_upload(doc, updated_row)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "customer data ingest upload")
 	_notify_upload(doc)
 	return {"status": doc.status, "item": updated_row.name}
 
@@ -426,6 +432,12 @@ def save_data_collection(
 	if doc.status == "Sent to Customer":
 		doc.status = "Partially Uploaded"
 	doc.save(ignore_permissions=True)
+	try:
+		from instacertify.crm.customer_data import ingest_data_collection
+
+		ingest_data_collection(doc)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "customer data ingest collection")
 	_notify_upload(doc, subject_prefix="Data collection updated")
 	return {"ok": 1, "status": doc.status}
 
@@ -459,6 +471,12 @@ def save_sample_dispatch(
 
 	_log_sample_dispatch(doc)
 	_sync_sample_tracking(doc)
+	try:
+		from instacertify.crm.customer_data import ingest_sample_dispatch
+
+		ingest_sample_dispatch(doc)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "customer data ingest sample dispatch (docs)")
 	_notify_upload(doc, subject_prefix="Sample dispatch updated")
 	return {
 		"ok": 1,
