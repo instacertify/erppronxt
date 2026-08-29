@@ -15,6 +15,9 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
+	from instacertify.setup.navigation_icons import ensure_navigation_icons
+
+	ensure_navigation_icons()
 
 
 def _ensure_home_html_block():
@@ -296,8 +299,15 @@ def _ensure_home_html_block():
         const actionHint = c.action
           ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
           : "";
+        const iconName = (c.icon || "file").replace(/[^a-z0-9\\-]/gi, "");
+        const iconHtml = (window.frappe && frappe.utils && frappe.utils.icon)
+          ? frappe.utils.icon(iconName, "md", "", "", "ic-explore-svg")
+          : "";
         return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
-          <div class="ic-explore-card-top">${actionHint}${count}</div>
+          <div class="ic-explore-card-top">
+            <span class="ic-explore-icon" aria-hidden="true">${iconHtml}</span>
+            <span class="ic-explore-card-meta">${actionHint}${count}</span>
+          </div>
           <div class="ic-explore-card-title">${esc(c.title)}</div>
           <div class="ic-explore-card-sub">${esc(c.subtitle || "")}</div>
         </button>`;
@@ -754,7 +764,14 @@ _SHADOW_THEME_CSS = """
 .ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
 .ic-explore-card.accent-citrus { border-top: 4px solid #F26D21; }
 .ic-explore-card.accent-teal { border-top: 4px solid #0D47A1; }
-.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; flex-shrink: 0; }
+.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 28px; margin-bottom: 8px; flex-shrink: 0; gap: 8px; }
+.ic-explore-icon {
+  display:inline-flex; align-items:center; justify-content:center;
+  width: 32px; height: 32px; flex: 0 0 32px;
+  border-radius: 9px; background: #E7F1FC; color: #0D47A1;
+}
+.ic-explore-icon .icon, .ic-explore-icon svg { width: 18px; height: 18px; }
+.ic-explore-card-meta { display:inline-flex; align-items:center; gap: 6px; margin-left: auto; }
 .ic-explore-count {
   background: #0D47A1; color: #fff; font-size: 0.72rem; font-weight: 700;
   border-radius: 8px; padding: 2px 8px;
@@ -1142,11 +1159,16 @@ def _ensure_home_workspace():
 		)
 	]
 
+	from instacertify.setup.navigation_icons import apply_shortcut_icons
+
+	safe_shortcuts = apply_shortcut_icons(safe_shortcuts)
+
 	payload = {
 		"doctype": "Workspace",
 		"name": name,
 		"label": name,
 		"title": name,
+		"icon": "layout-dashboard",
 		"module": "Instacertify",
 		"public": 1,
 		"is_hidden": 0,
@@ -1309,11 +1331,16 @@ def ensure_hrms_expenses_workspace():
 				continue
 		safe_content.append(block)
 
+	from instacertify.setup.navigation_icons import apply_shortcut_icons
+
+	safe_shortcuts = apply_shortcut_icons(safe_shortcuts)
+
 	payload = {
 		"doctype": "Workspace",
 		"name": name,
 		"label": name,
 		"title": name,
+		"icon": "id-card",
 		"module": "Instacertify",
 		"public": 1,
 		"is_hidden": 0,
