@@ -2791,6 +2791,92 @@ html, body, .desk-page, .page-container, .form-layout,
   gap: 6px !important;
 }
 
+/* ——— Action buttons: consistent lucide line icons (Prev / Next / Back / Print / Save…) ——— */
+.page-head .btn.ic-has-action-icon,
+.page-actions .btn.ic-has-action-icon,
+.standard-actions .btn.ic-has-action-icon,
+.modal .btn.ic-has-action-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.ic-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 0;
+  --icon-stroke: currentColor;
+}
+
+.ic-action-icon .icon,
+.ic-action-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.btn-primary .ic-action-icon,
+.btn-primary .ic-action-icon .icon {
+  --icon-stroke: #ffffff;
+  color: #ffffff;
+}
+
+.page-icon-group .icon-btn,
+.page-icon-group .ic-line-icon-btn,
+.page-icon-group .ic-print-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  border: 1.5px solid rgba(13, 71, 161, 0.28) !important;
+  background: #ffffff !important;
+  color: var(--ic-primary, #0D47A1) !important;
+  --icon-stroke: var(--ic-primary, #0D47A1);
+  margin-left: 4px;
+}
+
+.page-icon-group .icon-btn:hover,
+.page-icon-group .ic-print-action:hover {
+  border-color: var(--ic-primary, #0D47A1) !important;
+  background: var(--ic-primary-soft, #E7F1FC) !important;
+  color: var(--ic-primary, #0D47A1) !important;
+}
+
+.page-icon-group .icon-btn .icon,
+.page-icon-group .icon-btn svg,
+.page-icon-group .ic-print-action .icon,
+.page-icon-group .ic-print-action svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.dropdown-menu .menu-item-icon.ic-action-icon,
+.dropdown-menu .menu-item-icon {
+  width: 18px;
+  margin-right: 8px;
+  color: var(--ic-primary, #0D47A1);
+  --icon-stroke: var(--ic-primary, #0D47A1);
+}
+
+.dropdown-menu a.dropdown-item,
+.dropdown-menu a.grey-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px;
+}
+
+/* Breadcrumb / back affordance */
+.navbar-breadcrumbs a,
+.breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Workspace shortcut tiles — show icon + label without wasted padding */
 .widget.shortcut-widget-box {
   display: flex !important;
