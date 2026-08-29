@@ -635,31 +635,32 @@ _SHADOW_THEME_CSS = """
 .ic-greeting {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
+  background: linear-gradient(125deg, #033447 0%, #065175 55%, #0a8fb5 100%);
   color: #fff;
-  border-radius: 14px;
-  padding: 28px 28px 26px;
-  margin-bottom: 20px;
-  box-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
+  border-radius: 10px;
+  border: 1.5px solid #022a38;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  box-shadow: none;
 }
 .ic-greeting-brand {
-  font-size: clamp(1.85rem, 3.2vw, 2.45rem);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
   font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
   color: #fff;
-  margin: 0 0 8px;
+  margin: 0 0 2px;
   font-family: "Poppins", sans-serif !important;
 }
 .ic-greeting-brand span { color: #ffd7b8; }
 .ic-greeting h2 {
-  margin: 0 0 6px;
+  margin: 0 0 2px;
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 0.88rem;
   color: rgba(255,255,255,0.92) !important;
   font-family: "Poppins", sans-serif !important;
 }
-.ic-greeting .ic-datetime { opacity: 0.88; font-size: 0.88rem; color: #fff; }
+.ic-greeting .ic-datetime { opacity: 0.88; font-size: 0.72rem; color: #fff; }
 
 /* Colorful prompts inside shadow (critical path; full CSS also imported) */
 .ic-lead-prompt-title, .ic-workdesk-title {
@@ -669,16 +670,19 @@ _SHADOW_THEME_CSS = """
   letter-spacing: -0.02em;
 }
 .ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
-  background: linear-gradient(165deg, #fff5f4 0%, #fff 55%) !important;
-  box-shadow: inset 4px 0 0 #c0392b, 0 10px 24px rgba(192,57,43,0.08) !important;
+  background: #fff5f4 !important;
+  border: 1.5px solid #8e2a20 !important;
+  box-shadow: inset 3px 0 0 #c0392b !important;
 }
 .ic-lead-prompt.today, .ic-lead-hub-card.today {
-  background: linear-gradient(165deg, #fff8f0 0%, #fff 55%) !important;
-  box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236,104,32,0.1) !important;
+  background: #fff8f0 !important;
+  border: 1.5px solid #033447 !important;
+  box-shadow: inset 3px 0 0 #EC6820 !important;
 }
 .ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
-  background: linear-gradient(165deg, #f0f9fc 0%, #fff 55%) !important;
-  box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10,143,181,0.08) !important;
+  background: #f0f9fc !important;
+  border: 1.5px solid #033447 !important;
+  box-shadow: inset 3px 0 0 #0a8fb5 !important;
 }
 .ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
 .ic-lead-prompt-when.today { background: #EC6820 !important; color: #fff !important; }
@@ -715,13 +719,14 @@ _SHADOW_THEME_CSS = """
 .ic-summary-card {
   justify-content: space-between !important;
   padding: 14px 12px !important;
-  border: 1px solid rgba(6,81,117,0.1) !important;
-  border-top: 4px solid #065175 !important;
-  border-left: 1px solid rgba(6,81,117,0.1) !important;
+  border: 1.5px solid #033447 !important;
+  border-top: 3px solid #033447 !important;
+  box-shadow: none !important;
+  background: #fff !important;
 }
-.ic-summary-card:nth-child(3n+1) { border-top-color: #065175 !important; }
-.ic-summary-card:nth-child(3n+2) { border-top-color: #EC6820 !important; }
-.ic-summary-card:nth-child(3n) { border-top-color: #0a8fb5 !important; }
+.ic-summary-card:nth-child(3n+1) { border-top-color: #033447 !important; }
+.ic-summary-card:nth-child(3n+2) { border-top-color: #c44710 !important; }
+.ic-summary-card:nth-child(3n) { border-top-color: #066a88 !important; }
 .ic-summary-card:nth-child(3n) .value { color: #0a8fb5 !important; }
 .ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC6820 !important; }
 .ic-summary-card .label {
@@ -742,18 +747,18 @@ _SHADOW_THEME_CSS = """
 .ic-explore-sub { color: #5a6f7a; font-size: 0.86rem; margin-top: 2px; margin-bottom: 12px; }
 .ic-explore-card {
   text-align: left;
-  border: 1px solid rgba(6,81,117,0.12);
+  border: 1.5px solid #033447;
   padding: 12px;
-  background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
+  background: #ffffff;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 6px 16px rgba(6,81,117,0.05);
+  transition: border-color 0.18s ease, background 0.18s ease;
+  box-shadow: none;
   font-family: "Poppins", sans-serif !important;
 }
-.ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,81,117,0.1); }
-.ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
-.ic-explore-card.accent-citrus { border-top: 4px solid #EC6820; }
-.ic-explore-card.accent-teal { border-top: 4px solid #065175; }
+.ic-explore-card:hover { transform: none; background: #f4f9fc; border-color: #022a38; box-shadow: none; }
+.ic-explore-card.accent-coral { border: 1.5px solid #8e2a20; border-top: 3px solid #c0392b; }
+.ic-explore-card.accent-citrus { border: 1.5px solid #033447; border-top: 3px solid #c44710; }
+.ic-explore-card.accent-teal { border: 1.5px solid #033447; border-top: 3px solid #033447; }
 .ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; flex-shrink: 0; }
 .ic-explore-count {
   background: #065175; color: #fff; font-size: 0.72rem; font-weight: 700;
