@@ -15,9 +15,6 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
-	from instacertify.setup.navigation_icons import ensure_navigation_icons
-
-	ensure_navigation_icons()
 
 
 def _ensure_home_html_block():
@@ -299,14 +296,8 @@ def _ensure_home_html_block():
         const actionHint = c.action
           ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
           : "";
-        const iconName = (c.icon || "file").replace(/[^a-z0-9\-]/gi, "");
-        // Inline SVG — Custom HTML Blocks use shadow DOM so <use href="#icon-…"> cannot see desk sprites
-        const iconHtml = icInlineIcon(iconName);
         return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
-          <div class="ic-explore-card-top">
-            <span class="ic-explore-icon" aria-hidden="true">${iconHtml}</span>
-            <span class="ic-explore-card-meta">${actionHint}${count}</span>
-          </div>
+          <div class="ic-explore-card-top">${actionHint}${count}</div>
           <div class="ic-explore-card-title">${esc(c.title)}</div>
           <div class="ic-explore-card-sub">${esc(c.subtitle || "")}</div>
         </button>`;
@@ -319,24 +310,6 @@ def _ensure_home_html_block():
       });
     }
   });
-
-  function icInlineIcon(name) {
-    try {
-      const id = "icon-" + name;
-      const sym =
-        (document.getElementById(id)) ||
-        (document.querySelector && document.querySelector("#frappe-symbols #" + CSS.escape(id)));
-      if (sym) {
-        const viewBox = sym.getAttribute("viewBox") || "0 0 24 24";
-        return `<svg class="icon icon-md ic-explore-svg" viewBox="${viewBox}" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${sym.innerHTML}</svg>`;
-      }
-      if (window.frappe && frappe.utils && frappe.utils.icon) {
-        // Fallback: still try sprite (works outside shadow); may be empty in shadow
-        return frappe.utils.icon(name, "md", "", "", "ic-explore-svg", true);
-      }
-    } catch (e) { /* ignore */ }
-    return `<svg class="icon icon-md" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>`;
-  }
 
   function projectTile(p) {
     if (window.instacertify && instacertify.project_tile_html) {
@@ -781,14 +754,7 @@ _SHADOW_THEME_CSS = """
 .ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
 .ic-explore-card.accent-citrus { border-top: 4px solid #F26D21; }
 .ic-explore-card.accent-teal { border-top: 4px solid #0D47A1; }
-.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 28px; margin-bottom: 8px; flex-shrink: 0; gap: 8px; }
-.ic-explore-icon {
-  display:inline-flex; align-items:center; justify-content:center;
-  width: 32px; height: 32px; flex: 0 0 32px;
-  border-radius: 9px; background: #E7F1FC; color: #0D47A1;
-}
-.ic-explore-icon .icon, .ic-explore-icon svg { width: 18px; height: 18px; stroke: currentColor; color: inherit; }
-.ic-explore-card-meta { display:inline-flex; align-items:center; gap: 6px; margin-left: auto; }
+.ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; flex-shrink: 0; }
 .ic-explore-count {
   background: #0D47A1; color: #fff; font-size: 0.72rem; font-weight: 700;
   border-radius: 8px; padding: 2px 8px;
@@ -1176,16 +1142,11 @@ def _ensure_home_workspace():
 		)
 	]
 
-	from instacertify.setup.navigation_icons import apply_shortcut_icons
-
-	safe_shortcuts = apply_shortcut_icons(safe_shortcuts)
-
 	payload = {
 		"doctype": "Workspace",
 		"name": name,
 		"label": name,
 		"title": name,
-		"icon": "layout-dashboard",
 		"module": "Instacertify",
 		"public": 1,
 		"is_hidden": 0,
@@ -1348,16 +1309,11 @@ def ensure_hrms_expenses_workspace():
 				continue
 		safe_content.append(block)
 
-	from instacertify.setup.navigation_icons import apply_shortcut_icons
-
-	safe_shortcuts = apply_shortcut_icons(safe_shortcuts)
-
 	payload = {
 		"doctype": "Workspace",
 		"name": name,
 		"label": name,
 		"title": name,
-		"icon": "id-card",
 		"module": "Instacertify",
 		"public": 1,
 		"is_hidden": 0,
