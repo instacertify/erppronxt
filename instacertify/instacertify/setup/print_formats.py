@@ -25,6 +25,7 @@ BANK_UPI_PAYMENT_HTML = """
 
 # Instacertify Aptos Display / Aptos print typography (quotations + printable docs)
 # Hierarchy: Display for titles/headings; Aptos for body/tables/terms.
+# Quote print look: black text with grey-highlighted section/step bars.
 IC_PRINT_TYPOGRAPHY_CSS = """
   @font-face {
     font-family: 'Aptos Display';
@@ -49,23 +50,17 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   }
   @font-face {
     font-family: 'Aptos';
-    src: url('/assets/instacertify/fonts/aptos/Aptos-SemiBold.ttf') format('truetype');
-    font-weight: 500 600;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'Aptos';
     src: url('/assets/instacertify/fonts/aptos/Aptos-Bold.ttf') format('truetype');
-    font-weight: 700;
+    font-weight: 600 700;
     font-style: normal;
     font-display: swap;
   }
   :root {
-    --ic-navy: #075779;
+    --ic-navy: #111111;
     --ic-orange: #F26D21;
-    --ic-ink: #263238;
-    --ic-soft: #E7F1FC;
+    --ic-ink: #111111;
+    --ic-soft: #E8E8E8;
+    --ic-soft-mid: #D9D9D9;
     --ic-white: #FFFFFF;
   }
   .ic-font-body, .ic-quote, .ic-inv, .tq, .cq, .ic, .ic-sheet {
@@ -79,7 +74,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 700 !important;
     font-size: 30pt !important;
-    color: var(--ic-navy) !important;
+    color: #111111 !important;
     letter-spacing: 0.02em;
     text-align: center;
     margin: 10px 0 14px !important;
@@ -89,7 +84,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 20pt !important;
-    color: var(--ic-navy) !important;
+    color: #111111 !important;
     text-align: center;
     margin: 0 0 14px !important;
     line-height: 1.2;
@@ -98,64 +93,76 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 15pt !important;
-    color: var(--ic-navy) !important;
+    color: #111111 !important;
     letter-spacing: 0.01em;
   }
+  /* Grey-highlighted step / section bars */
   .tq-label, .cq-bar {
     font-size: 11pt !important;
-    background: var(--ic-soft) !important;
+    background: #E8E8E8 !important;
+    color: #111111 !important;
   }
   .ic-subheading {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 500 !important;
     font-size: 12pt !important;
-    color: var(--ic-navy) !important;
+    color: #111111 !important;
   }
   .ic-quote-no, .tq-meta, .cq-meta {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 9.5pt !important;
-    color: var(--ic-ink) !important;
+    color: #111111 !important;
   }
   .ic-lh-co .name, .tq-co .name, .cq-co .name {
     font-family: 'Aptos Display', 'Aptos', sans-serif !important;
     font-weight: 600 !important;
     font-size: 12.5px !important;
-    color: var(--ic-navy) !important;
+    color: #111111 !important;
   }
   .ic-lh, .tq-head, .cq-head {
     border-bottom-color: var(--ic-orange) !important;
     background: transparent;
   }
+  #header-html {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #header-html .ic-lh,
+  #header-html .tq-head,
+  #header-html .cq-head {
+    margin-bottom: 0 !important;
+  }
   table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 9.5pt !important;
-    background: var(--ic-navy) !important;
-    color: var(--ic-white) !important;
+    background: #D0D0D0 !important;
+    color: #111111 !important;
   }
   table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 400 !important;
-    font-size: 9.5pt !important;
-    color: var(--ic-ink) !important;
+    color: #111111 !important;
   }
-  .ic-grand-total, .ic-price-callout, table.tq-comm td.amt, table.cq-comm td.amt {
-    font-family: 'Aptos Display', 'Aptos', sans-serif !important;
-    font-weight: 700 !important;
-    font-size: 18pt !important;
-    color: var(--ic-navy) !important;
+  /* Numbered / bulleted process steps — black on light grey wash */
+  .cq-body ol li, .cq-body ul li, .tq-value ol li, .tq-value ul li,
+  .ic-box ol li, .ic-box ul li {
+    color: #111111 !important;
   }
-  table.tq-comm td.amt, table.cq-comm td.amt {
-    font-size: 10.5pt !important;
-    font-family: 'Aptos', sans-serif !important;
-    font-weight: 600 !important;
+  .cq-body ol > li, .tq-value ol > li, .ic-process-steps ol > li {
+    background: #F3F3F3;
+    border-left: 3px solid #C8C8C8;
+    padding: 4px 8px;
+    margin-bottom: 6px !important;
+    list-style-position: inside;
   }
+
   .ic-terms, .tq-note, .cq-body .ic-terms {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 400 !important;
     font-size: 8.75pt !important;
-    color: var(--ic-ink) !important;
+    color: #111111 !important;
   }
   .ic-footer-bar, .tq-footer-bar, .cq-footer-bar {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
@@ -165,8 +172,29 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   }
   .ic-accent-text { color: var(--ic-orange) !important; }
   .ic-soft-block { background: var(--ic-soft) !important; }
+  table.tq-comm td.amt, table.cq-comm td.amt, .ic-grand-total {
+    color: #111111 !important;
+  }
 """
 
+# Letterhead markup for Chrome/wkhtmltopdf `#header-html` (repeats on every PDF page).
+# Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
+QUOTE_LETTERHEAD_HTML = """
+<div id="header-html">
+  <div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #F26D21;width:100%;box-sizing:border-box;background:#fff;">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
+    <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
+      <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:uppercase;margin-bottom:2px;">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }}</div>
+      <div>✉ {{ email }}</div>
+      <div>{{ website }}</div>
+      <div><b>CIN :</b> {{ cin }}</div>
+      <div><b>GSTIN :</b> {{ gstin }}</div>
+    </div>
+  </div>
+</div>
+"""
 QUOTATION_HTML = """
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
 {%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
@@ -179,7 +207,7 @@ QUOTATION_HTML = """
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 12mm; }
+  @page { size: A4; margin: 28mm 12mm 14mm 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-quote { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color: var(--ic-ink); font-size: 10px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -191,7 +219,7 @@ QUOTATION_HTML = """
   .ic-box { border: 1px solid #d9e6ee; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
   .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; border-bottom: 1px solid #ecf3f7; padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.ic-table th { background: var(--ic-navy); color: #fff; padding: 6px 8px; text-align: left; font-family:'Aptos',sans-serif; font-weight:600; font-size: 9.5pt; }
+  table.ic-table th { background: #D0D0D0; color: #111; padding: 6px 8px; text-align: left; font-family:'Aptos',sans-serif; font-weight:600; font-size: 9.5pt; }
   table.ic-table td { border-bottom: 1px solid #e5eef3; padding: 6px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
   .badge-pass { background: #fff3e8; color: var(--ic-orange); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
   .badge-rev { background: var(--ic-soft); color: var(--ic-navy); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
@@ -208,19 +236,8 @@ QUOTATION_HTML = """
   }
   .ic-grand-total { font-family:'Aptos Display',sans-serif; font-weight:700; font-size:18pt; color:var(--ic-navy); }
 </style>
+""" + QUOTE_LETTERHEAD_HTML + """
 <div class="ic-quote">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div class="ic-lh-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>☎ {{ phone }}</div>
-      <div>✉ {{ email }}</div>
-      <div>{{ website }}</div>
-      <div><b>CIN :</b> {{ cin }}</div>
-      <div><b>GSTIN :</b> {{ gstin }}</div>
-    </div>
-  </div>
   <div class="ic-doc-title">QUOTATION</div>
   <div class="ic-meta">
     <div>
@@ -602,7 +619,7 @@ TESTING_QUOTATION_HTML = """
 {%- set curr = doc.currency or 'INR' -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 12mm; }
+  @page { size: A4; margin: 28mm 12mm 14mm 12mm; }
   .tq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
   .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -614,14 +631,14 @@ TESTING_QUOTATION_HTML = """
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
   table.tq-grid > tbody > tr { page-break-inside:avoid; }
   table.tq-grid > tbody > tr > td { border:1px solid #333; vertical-align:top; padding:0; }
-  .tq-label { width:17%; background:var(--ic-soft); font-family:'Aptos Display',sans-serif; font-weight:600; padding:10px 8px; color:var(--ic-navy); font-size:11pt; }
+  .tq-label { width:17%; background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:10px 8px; color:#111; font-size:11pt; }
   .tq-value { width:83%; padding:10px 12px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
   .tq-value ul { margin:6px 0 0 18px; padding:0; }
   .tq-value ol { margin:6px 0 0 18px; padding:0; }
   .tq-value li { margin-bottom:4px; }
   .tq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
   table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.tq-comm th { background:var(--ic-navy); color:#fff; border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
+  table.tq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
   table.tq-comm td { border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-ink); }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
   table.tq-comm td.amt { text-align:center; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); }
@@ -645,23 +662,9 @@ TESTING_QUOTATION_HTML = """
   .tq-qr .cap { font-size:8px; color:#555; font-family:'Aptos',sans-serif; }
   .print-format { padding:0 !important; margin:0 !important; }
 </style>
+""" + QUOTE_LETTERHEAD_HTML + """
 <div class="tq">
-  <div class="tq-head">
-    <div class="tq-logo">
-      <img src="{{ logo }}" alt="Instacertify"/>
-    </div>
-    <div class="tq-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>☎ {{ phone }}</div>
-      <div>✉ {{ email }}</div>
-      <div>{{ website }}</div>
-      <div><b>CIN :</b> {{ cin }}</div>
-      <div><b>GSTIN :</b> {{ gstin }}</div>
-    </div>
-  </div>
-
-  <div class="tq-meta">
+<div class="tq-meta">
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
@@ -890,7 +893,7 @@ CONSULTING_QUOTATION_HTML = """
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 12mm; }
+  @page { size: A4; margin: 28mm 12mm 14mm 12mm; }
   .cq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
   .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -903,13 +906,13 @@ CONSULTING_QUOTATION_HTML = """
   .cq-box { border:1px solid #333; margin-bottom:0; }
   .cq-sec { border-top:1px solid #333; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:var(--ic-soft); font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid #333; font-size:11pt; text-transform:uppercase; letter-spacing:0.2px; color:var(--ic-navy); }
+  .cq-bar { background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid #333; font-size:11pt; text-transform:uppercase; letter-spacing:0.2px; color:#111; }
   .cq-body { padding:12px 14px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
   .cq-body ul, .cq-body ol { margin:6px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:4px; }
   .cq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
   table.cq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-comm th { background:var(--ic-navy); color:#fff; border:1px solid #555; padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
+  table.cq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
   table.cq-comm td { border:1px solid #555; padding:8px; vertical-align:top; font-family:'Aptos',sans-serif; font-size:9.5pt; color:var(--ic-ink); }
   table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); width:32%; }
   table.cq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
@@ -929,21 +932,9 @@ CONSULTING_QUOTATION_HTML = """
   .cq-qr .cap { font-size:8px; color:#555; font-family:'Aptos',sans-serif; }
   .print-format { padding:0 !important; margin:0 !important; }
 </style>
+""" + QUOTE_LETTERHEAD_HTML + """
 <div class="cq">
-  <div class="cq-head">
-    <div class="cq-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div class="cq-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>☎ {{ phone }}</div>
-      <div>✉ {{ email }}</div>
-      <div>{{ website }}</div>
-      <div><b>CIN :</b> {{ cin }}</div>
-      <div><b>GSTIN :</b> {{ gstin }}</div>
-    </div>
-  </div>
-
-  <div class="cq-meta">
+<div class="cq-meta">
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
@@ -1299,8 +1290,73 @@ def _ensure_aptos_fonts():
 		frappe.log_error(frappe.get_traceback(), "Aptos font install")
 
 
+def _ensure_instacertify_letter_head():
+	"""Create/update Letter Head so Print / PDF Options shows Instacertify branding.
+
+	Quote Jinja formats embed `#header-html` (repeats on every PDF page). Prefer
+	\"No Letterhead\" with those formats to avoid a double header; use this Letter
+	Head when printing other DocTypes from the print dialog.
+	"""
+	name = "Instacertify"
+	try:
+		s = frappe.get_cached_doc("IC Settings")
+	except Exception:
+		s = None
+	logo = (
+		(getattr(s, "header_image", None) if s else None)
+		or (getattr(s, "logo", None) if s else None)
+		or "/assets/instacertify/images/instacertify_logo.png"
+	)
+	legal = (getattr(s, "legal_name", None) if s else None) or "INSTACERTIFY LABS PRIVATE LIMITED"
+	address = (getattr(s, "address_line", None) if s else None) or (
+		"PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA"
+	)
+	phone = (getattr(s, "phone", None) if s else None) or "+91 9999118039"
+	email = (getattr(s, "email", None) if s else None) or "contact@instacertify.com"
+	website = (getattr(s, "website", None) if s else None) or "www.instacertify.com"
+	cin = (getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291"
+	gstin = (getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7"
+	addr_html = (address or "").replace("\n", "<br>")
+	content = f"""
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #F26D21;width:100%;box-sizing:border-box;background:#fff;">
+  <div><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
+  <div style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
+    <div style="font-weight:600;font-size:12.5px;text-transform:uppercase;margin-bottom:2px;">{legal}</div>
+    <div>{addr_html}</div>
+    <div>☎ {phone}</div>
+    <div>✉ {email}</div>
+    <div>{website}</div>
+    <div><b>CIN :</b> {cin}</div>
+    <div><b>GSTIN :</b> {gstin}</div>
+  </div>
+</div>
+"""
+	try:
+		if frappe.db.exists("Letter Head", name):
+			doc = frappe.get_doc("Letter Head", name)
+			doc.source = "HTML"
+			doc.content = content
+			doc.disabled = 0
+			doc.is_default = 1
+			doc.save(ignore_permissions=True)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Letter Head",
+					"letter_head_name": name,
+					"source": "HTML",
+					"content": content,
+					"disabled": 0,
+					"is_default": 1,
+				}
+			).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Instacertify Letter Head")
+
+
 def ensure_print_formats():
 	_ensure_aptos_fonts()
+	_ensure_instacertify_letter_head()
 	formats = [
 		("Instacertify Quotation", "Quotation", QUOTATION_HTML),
 		("Instacertify Consulting Quotation", "Quotation", CONSULTING_QUOTATION_HTML),

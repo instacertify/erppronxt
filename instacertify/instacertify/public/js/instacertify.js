@@ -1334,8 +1334,19 @@ frappe.ui.form.on("Quotation", {
 				});
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Print / PDF Options"), () => {
+				// Opens Frappe print view: format picker, letter head, page options, PDF
+				frm.print_doc();
+			}, __("Actions"));
+
 			frm.add_custom_button(__("Download PDF"), () => {
-				const fmt = frm.meta.default_print_format || "Instacertify Quotation";
+				const fmt =
+					frm.meta.default_print_format
+					|| (frm.doc.ic_quotation_type === "Testing"
+						? "Instacertify Testing Quotation"
+						: frm.doc.ic_quotation_type
+							? "Instacertify Consulting Quotation"
+							: "Instacertify Quotation");
 				const url = frappe.urllib.get_full_url(
 					"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
 						$.param({ name: frm.doc.name, print_format: fmt })
