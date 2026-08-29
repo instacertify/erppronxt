@@ -1749,9 +1749,9 @@ textarea.form-control {
 /* ——— Editable fields: darker outline so users see where to click / type ——— */
 :root,
 [data-theme="light"] {
-  --ic-field-border: #7BA3D4;
-  --ic-field-border-hover: #0D47A1;
-  --ic-field-border-focus: #0D47A1;
+  --ic-field-border: #0D47A1;
+  --ic-field-border-hover: #0A3380;
+  --ic-field-border-focus: #F26D21;
   --ic-field-bg: #ffffff;
 }
 
@@ -1781,7 +1781,7 @@ input.form-control:not([disabled]):not([readonly]),
 textarea.form-control:not([disabled]):not([readonly]),
 select.form-control:not([disabled]):not([readonly]),
 .input-with-feedback:not([disabled]):not([readonly]) {
-  border: 1.5px solid var(--ic-field-border) !important;
+  border: 2px solid var(--ic-field-border) !important;
   background-color: var(--ic-field-bg) !important;
   box-shadow: none !important;
 }
@@ -1841,12 +1841,12 @@ select:focus,
 .grid-body .data-row .col select.form-control,
 .grid-row .grid-static-col .static-area.bold,
 .form-grid .grid-row .form-control {
-  border: 1.5px solid var(--ic-field-border) !important;
+  border: 2px solid var(--ic-field-border) !important;
   background: #fff !important;
 }
 
 .grid-row-open .form-section .form-control {
-  border: 1.5px solid var(--ic-field-border) !important;
+  border: 2px solid var(--ic-field-border) !important;
 }
 
 .page-head {

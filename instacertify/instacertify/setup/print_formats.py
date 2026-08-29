@@ -357,7 +357,6 @@ JOINING_HTML = """
 {%- set email = s.email or 'contact@instacertify.com' -%}
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
@@ -387,7 +386,6 @@ JOINING_HTML = """
       <div>✉ {{ email }}</div>
       <div>{{ website }}</div>
       <div><b>CIN :</b> {{ cin }}</div>
-      <div><b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
   <h3 style="color:#0D47A1;">Joining Letter</h3>
@@ -399,10 +397,209 @@ JOINING_HTML = """
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Joining Letter/' + doc.name) }}" alt="QR"/>
     <div>Verification: {{ doc.verification_code or doc.name }}</div>
   </div>
-  <p style="margin-top:28px;"><b>For Instacertify Labs Private Limited</b></p>
+  <p style="margin-top:28px;"><b>For {{ legal }}</b></p>
   <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
 """
+
+# HR letterhead prints — logo + company details, NO GSTIN (Salary Slip / Job Offer / Joining)
+HR_LETTERHEAD_CSS = """
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding:0 !important; margin:0 !important; }
+  .ic-hr { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#1a1a1a; font-size:11px; line-height:1.45; }
+  .ic-hr-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #F26D21; margin-bottom:14px; }
+  .ic-hr-lh-logo img { max-height:52px; max-width:300px; }
+  .ic-hr-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
+  .ic-hr-lh-co .name { color:#F26D21; font-weight:700; font-size:12px; text-transform:uppercase; margin-bottom:2px; }
+  .ic-hr-title { color:#0D47A1; font-size:18px; font-weight:700; margin:4px 0 14px; text-align:center; }
+  .ic-hr-meta { display:flex; justify-content:space-between; gap:12px; margin-bottom:14px; padding:10px 12px; background:#E7F1FC; border-radius:8px; }
+  .ic-hr-box { border:1px solid #c9dbf2; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .ic-hr-box h4 { margin:0 0 8px; color:#0D47A1; font-size:12px; border-bottom:1px solid #E7F1FC; padding-bottom:4px; }
+  table.ic-hr-table { width:100%; border-collapse:collapse; margin-top:4px; }
+  table.ic-hr-table th { background:#0D47A1; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
+  table.ic-hr-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; font-size:10.5px; }
+  table.ic-hr-table td.num, table.ic-hr-table th.num { text-align:right; }
+  .ic-hr-totals { margin-top:10px; width:100%; }
+  .ic-hr-totals td { padding:4px 0; }
+  .ic-hr-totals td.k { color:#555; }
+  .ic-hr-totals td.v { text-align:right; font-weight:700; color:#0D47A1; }
+  .ic-hr-sign { margin-top:36px; page-break-inside:avoid; }
+  .ic-hr-footer {
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
+    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    border:none; line-height:1.2;
+  }
+"""
+
+HR_LETTERHEAD_VARS = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set phone = s.phone or '+91 9999118039' -%}
+{%- set email = s.email or 'contact@instacertify.com' -%}
+{%- set website = s.website or 'www.instacertify.com' -%}
+{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
+"""
+
+HR_LETTERHEAD_BLOCK = """
+  <div class="ic-hr-lh">
+    <div class="ic-hr-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div class="ic-hr-lh-co">
+      <div class="name">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>☎ {{ phone }}</div>
+      <div>✉ {{ email }}</div>
+      <div>{{ website }}</div>
+      <div><b>CIN :</b> {{ cin }}</div>
+    </div>
+  </div>
+"""
+
+JOB_OFFER_HTML = (
+	HR_LETTERHEAD_VARS
+	+ """
+<style>
+"""
+	+ HR_LETTERHEAD_CSS
+	+ """
+</style>
+<div class="ic-hr">
+"""
+	+ HR_LETTERHEAD_BLOCK
+	+ """
+  <div class="ic-hr-title">Job Offer Letter</div>
+  <div class="ic-hr-meta">
+    <div>
+      <div><b>Offer No:</b> {{ doc.name }}</div>
+      <div><b>Offer Date:</b> {{ frappe.utils.formatdate(doc.offer_date) if doc.offer_date else '' }}</div>
+      <div><b>Status:</b> {{ doc.status or '' }}</div>
+    </div>
+    <div style="text-align:right;">
+      <div><b>Company:</b> {{ doc.company or legal }}</div>
+      <div><b>Designation:</b> {{ doc.designation or '' }}</div>
+    </div>
+  </div>
+  <div class="ic-hr-box">
+    <h4>Applicant</h4>
+    <div><b>{{ doc.applicant_name or '' }}</b></div>
+    <div>{{ doc.applicant_email or '' }}</div>
+    {% if doc.job_applicant %}<div>Applicant ID: {{ doc.job_applicant }}</div>{% endif %}
+  </div>
+  {% if doc.offer_terms %}
+  <div class="ic-hr-box">
+    <h4>Offer Terms</h4>
+    <table class="ic-hr-table">
+      <thead><tr><th>Term</th><th>Value</th></tr></thead>
+      <tbody>
+      {% for row in doc.offer_terms %}
+        <tr>
+          <td>{{ row.offer_term or row.term or '' }}</td>
+          <td>{{ row.value or '' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if doc.terms %}
+  <div class="ic-hr-box">
+    <h4>Terms &amp; Conditions</h4>
+    <div>{{ doc.terms }}</div>
+  </div>
+  {% endif %}
+  <div class="ic-hr-sign">
+    <p>We look forward to welcoming you to our team.</p>
+    <p style="margin-top:28px;"><b>For {{ legal }}</b></p>
+    <p style="margin-top:40px;">Authorized Signatory</p>
+  </div>
+  <div class="ic-hr-footer">www.instacertify.com</div>
+</div>
+"""
+)
+
+SALARY_SLIP_HTML = (
+	HR_LETTERHEAD_VARS
+	+ """
+<style>
+"""
+	+ HR_LETTERHEAD_CSS
+	+ """
+</style>
+<div class="ic-hr">
+"""
+	+ HR_LETTERHEAD_BLOCK
+	+ """
+  <div class="ic-hr-title">Salary Slip</div>
+  <div class="ic-hr-meta">
+    <div>
+      <div><b>Slip No:</b> {{ doc.name }}</div>
+      <div><b>Period:</b> {{ frappe.utils.formatdate(doc.start_date) if doc.start_date else '' }}
+        {% if doc.end_date %} – {{ frappe.utils.formatdate(doc.end_date) }}{% endif %}</div>
+      <div><b>Posting Date:</b> {{ frappe.utils.formatdate(doc.posting_date) if doc.posting_date else '' }}</div>
+    </div>
+    <div style="text-align:right;">
+      <div><b>Employee:</b> {{ doc.employee_name or doc.employee or '' }}</div>
+      <div><b>Designation:</b> {{ doc.designation or '' }}</div>
+      <div><b>Department:</b> {{ doc.department or '' }}</div>
+      <div><b>Company:</b> {{ doc.company or legal }}</div>
+    </div>
+  </div>
+  {% if doc.earnings %}
+  <div class="ic-hr-box">
+    <h4>Earnings</h4>
+    <table class="ic-hr-table">
+      <thead><tr><th>Component</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+      {% for row in doc.earnings %}
+        <tr>
+          <td>{{ row.salary_component or '' }}</td>
+          <td class="num">{{ frappe.utils.fmt_money(row.amount or 0, currency=doc.currency) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if doc.deductions %}
+  <div class="ic-hr-box">
+    <h4>Deductions</h4>
+    <table class="ic-hr-table">
+      <thead><tr><th>Component</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+      {% for row in doc.deductions %}
+        <tr>
+          <td>{{ row.salary_component or '' }}</td>
+          <td class="num">{{ frappe.utils.fmt_money(row.amount or 0, currency=doc.currency) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <div class="ic-hr-box">
+    <h4>Summary</h4>
+    <table class="ic-hr-totals">
+      <tr><td class="k">Gross Pay</td><td class="v">{{ frappe.utils.fmt_money(doc.gross_pay or 0, currency=doc.currency) }}</td></tr>
+      <tr><td class="k">Total Deduction</td><td class="v">{{ frappe.utils.fmt_money(doc.total_deduction or 0, currency=doc.currency) }}</td></tr>
+      <tr><td class="k">Net Pay</td><td class="v">{{ frappe.utils.fmt_money(doc.net_pay or doc.rounded_total or 0, currency=doc.currency) }}</td></tr>
+      {% if doc.total_in_words %}
+      <tr><td class="k">In Words</td><td class="v" style="font-weight:500;">{{ doc.total_in_words }}</td></tr>
+      {% endif %}
+      {% if doc.bank_name %}
+      <tr><td class="k">Bank</td><td class="v" style="font-weight:500;">{{ doc.bank_name }}</td></tr>
+      {% endif %}
+    </table>
+  </div>
+  <div class="ic-hr-sign">
+    <p style="margin-top:28px;"><b>For {{ legal }}</b></p>
+    <p style="margin-top:40px;">Authorized Signatory · HR</p>
+  </div>
+  <div class="ic-hr-footer">www.instacertify.com</div>
+</div>
+"""
+)
 
 # Matches uploaded Instacertify Labs testing quotation template (A4)
 # Source: public/templates/testing_quotation_template.pdf
@@ -1117,10 +1314,14 @@ def ensure_print_formats():
 		("Instacertify Sample Label", "IC Sample Tracking", SAMPLE_HTML),
 		("Instacertify Testing Request", "IC Testing Request", TESTING_HTML),
 		("Instacertify Joining Letter", "IC Joining Letter", JOINING_HTML),
+		("Instacertify Job Offer", "Job Offer", JOB_OFFER_HTML),
+		("Instacertify Salary Slip", "Salary Slip", SALARY_SLIP_HTML),
 		("Instacertify Documents Collection Sheet", "IC Document Request", DOCUMENTS_COLLECTION_HTML),
 		("Instacertify Sample Dispatch Collection", "IC Sample Dispatch Collection", SAMPLE_DISPATCH_COLLECTION_HTML),
 	]
 	for name, dt, html in formats:
+		if dt in ("Job Offer", "Salary Slip") and not frappe.db.exists("DocType", dt):
+			continue
 		values = {
 			"html": html,
 			"module": "Instacertify",
@@ -1148,6 +1349,8 @@ def ensure_print_formats():
 	_ensure_default_print_format("IC Sample Tracking", "Instacertify Sample Label")
 	_ensure_default_print_format("IC Testing Request", "Instacertify Testing Request")
 	_ensure_default_print_format("IC Joining Letter", "Instacertify Joining Letter")
+	_ensure_default_print_format("Job Offer", "Instacertify Job Offer")
+	_ensure_default_print_format("Salary Slip", "Instacertify Salary Slip")
 	_ensure_default_print_format("IC Document Request", "Instacertify Documents Collection Sheet")
 	_ensure_default_print_format("IC Sample Dispatch Collection", "Instacertify Sample Dispatch Collection")
 
