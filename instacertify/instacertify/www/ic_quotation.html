@@ -12,8 +12,8 @@
     .ic-portal-muted { color:#5b7380; font-size:0.92rem; }
     .ic-portal-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:0.95rem; }
     .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #e2eef4; padding:8px 6px; text-align:left; }
-    .ic-portal-table th { color:#065175; font-weight:600; }
-    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#e8f3f8; color:#065175; font-size:0.85rem; }
+    .ic-portal-table th { color:#0D47A1; font-weight:600; }
+    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#E7F1FC; color:#0D47A1; font-size:0.85rem; }
     .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
     .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
     .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
@@ -28,13 +28,14 @@
       <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
     </div>
     <div class="ic-portal-card" id="app">
-      <h2 style="color:#065175;margin-top:0;">Your Quotation</h2>
+      <h2 style="color:#0D47A1;margin-top:0;">Your Quotation</h2>
       <div id="content">Loading…</div>
       <div id="msg"></div>
       <div class="ic-portal-actions" id="actions" style="display:none;">
-        <p class="ic-portal-muted">Approve or ask to revise — and download the PDF. This page does not provide access to the Instacertify ERP desk.</p>
+        <p class="ic-portal-muted">Approve, reject, or request changes — and download the PDF. This page does not provide access to the Instacertify ERP desk.</p>
         <button class="ic-btn ic-btn-primary" id="btn-accept">Approve Quotation</button>
-        <button class="ic-btn ic-btn-accent" id="btn-changes">Ask to Revise</button>
+        <button class="ic-btn ic-btn-ghost" id="btn-reject">Reject</button>
+        <button class="ic-btn ic-btn-accent" id="btn-changes">Ask for Revision</button>
         <a class="ic-btn ic-btn-ghost" id="btn-download" href="#" target="_blank" rel="noopener">Download PDF</a>
       </div>
       <div id="remarks-box" style="display:none;margin-top:12px;">
@@ -105,26 +106,6 @@
           '</td><td>' + esc(money(r.amount, currency)) + '</td></tr>').join('') +
         '</tbody></table>';
     }
-    function paymentBlock(p) {
-      if (!p) return '';
-      const qr = esc(p.upi_qr_image || '/assets/instacertify/images/upi_payment_qr.jpg');
-      return '<div style="margin-top:16px;padding:12px;border:1px solid #d9e6ee;border-radius:8px;background:#f7fbfe;">' +
-        '<h4 style="color:#065175;margin:0 0 8px;">Pay via UPI / Bank Transfer</h4>' +
-        '<p class="ic-portal-muted" style="margin:0 0 10px;">' + esc(p.prompt || 'Scan the UPI QR or transfer to our bank account.') + '</p>' +
-        '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">' +
-          '<div style="flex:1;min-width:200px;font-size:13px;line-height:1.55;">' +
-            '<div><b>Beneficiary:</b> ' + esc(p.beneficiary_name || '') + '</div>' +
-            '<div><b>Bank:</b> ' + esc(p.bank_name || '') + '</div>' +
-            '<div><b>Account:</b> ' + esc(p.account_number || '') + '</div>' +
-            '<div><b>IFSC:</b> ' + esc(p.ifsc_code || '') + '</div>' +
-            '<div><b>UPI ID:</b> ' + esc(p.upi_id || '') + '</div>' +
-          '</div>' +
-          '<div style="text-align:center;width:160px;">' +
-            '<img src="' + qr + '" alt="UPI QR" style="width:148px;height:auto;border:1px solid #c5d5e0;background:#fff;"/>' +
-            '<div class="ic-portal-muted" style="font-size:11px;margin-top:6px;">Scan with any UPI app</div>' +
-          '</div>' +
-        '</div></div>';
-    }
     function load() {
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
@@ -140,20 +121,20 @@
               (d.valid_till ? (' · Valid till ' + esc(d.valid_till)) : '') +
               (d.ic_estimated_timeline ? (' · Timeline: ' + esc(d.ic_estimated_timeline)) : '') + '</p>' +
             (d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
-            (d.ic_deliverables ? ('<h4 style="color:#065175;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
-            '<h4 style="color:#065175;margin-bottom:4px;">Commercials</h4>' +
+            (d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
+            '<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
             costTable(d.cost_items, d.currency) +
             '<p><b>Commercial:</b> ' + esc(money(d.ic_commercial_value, d.currency)) + '</p>' +
             '<p><b>Pass-through:</b> ' + esc(money(d.ic_passthrough_value, d.currency)) + '</p>' +
             '<p><b>Total:</b> ' + esc(money(d.ic_total_quoted_value || d.grand_total, d.currency)) + '</p>' +
-            (d.ic_payment_terms ? ('<h4 style="color:#065175;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
-            paymentBlock(d.payment) +
+            (d.ic_payment_terms ? ('<h4 style="color:#0D47A1;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
 
           document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));
           const show = !!d.can_decide;
           document.getElementById('actions').style.display = 'flex';
           document.getElementById('btn-accept').style.display = show ? '' : 'none';
+          document.getElementById('btn-reject').style.display = show ? '' : 'none';
           document.getElementById('btn-changes').style.display = show ? '' : 'none';
           document.getElementById('remarks-box').style.display = 'none';
         }).catch(() => {
@@ -163,8 +144,11 @@
     document.getElementById('btn-accept').onclick = function () {
       openRemarks('accept', 'Optional remarks (approve)', 'Any note for Instacertify (optional)');
     };
+    document.getElementById('btn-reject').onclick = function () {
+      openRemarks('reject', 'Reason for rejection (required)', 'Please tell us why you are rejecting');
+    };
     document.getElementById('btn-changes').onclick = function () {
-      openRemarks('changes', 'Ask to revise — what should we change?', 'What should we change in the quotation?');
+      openRemarks('changes', 'Revision request', 'What should we change in the quotation?');
     };
     document.getElementById('btn-cancel-remarks').onclick = function () {
       pendingAction = null;
@@ -176,10 +160,17 @@
         showMsg('Please enter revision remarks.', false);
         return;
       }
+      if (pendingAction === 'reject' && !remarks.trim()) {
+        showMsg('Please enter a rejection reason.', false);
+        return;
+      }
       let method = 'instacertify.quotation.events.customer_accept_quotation';
       let body = {token: token, remarks: remarks};
       let okText = 'Quotation approved. Thank you!';
-      if (pendingAction === 'changes') {
+      if (pendingAction === 'reject') {
+        method = 'instacertify.quotation.events.customer_reject_quotation';
+        okText = 'Quotation rejected. Our team has been notified.';
+      } else if (pendingAction === 'changes') {
         method = 'instacertify.quotation.events.customer_request_changes';
         okText = 'Revision request submitted. We will send an updated quote.';
       }
