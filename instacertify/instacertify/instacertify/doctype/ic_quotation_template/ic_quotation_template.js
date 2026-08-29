@@ -1,4 +1,4 @@
-# Copyright (c) Instacertify
+// Copyright (c) Instacertify
 frappe.ui.form.on("IC Quotation Template", {
 	refresh(frm) {
 		frm.set_intro(

@@ -1,4 +1,4 @@
-# Copyright (c) Instacertify
+// Copyright (c) Instacertify
 /** Cost lines: free-text names + Counted Revenue vs Do Not Count as Revenue. */
 
 function sync_revenue_from_treatment(cdt, cdn) {

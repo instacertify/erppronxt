@@ -1529,7 +1529,7 @@ frappe.ui.form.on("Quotation", {
 			instacertify.toggle_quotation_sections(frm);
 		}
 		instacertify.setup_quotation_template_filter(frm);
-		frm.layout && frm.wrapper && frm.wrapper.addClass("ic-quotation-form");
+		frm.layout && frm.$wrapper && frm.$wrapper.addClass("ic-quotation-form");
 	},
 
 	ic_quotation_type(frm) {
@@ -1872,7 +1872,7 @@ instacertify.apply_lab_test_scope = function (frm, cdt, cdn) {
 frappe.ui.form.on("Quotation", {
 	onload(frm) {
 		instacertify.setup_quotation_template_filter(frm);
-		frm.wrapper && frm.wrapper.addClass("ic-quotation-form");
+		frm.$wrapper && frm.$wrapper.addClass("ic-quotation-form");
 		instacertify.maybe_prompt_or_apply_quote_format(frm);
 	},
 	refresh(frm) {
@@ -3027,8 +3027,17 @@ frappe.ui.form.on("Project Team Member", {
 frappe.ui.form.on("IC Testing Request", {
 	refresh(frm) {
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
+		instacertify.load_testing_request_standard_options(frm);
+		if (frm.doc.applicable_standard) {
+			instacertify.load_testing_request_lab_offers(frm);
+		}
 		if (frm.doc.laboratory) {
 			instacertify.load_testing_request_scope_options(frm);
+		}
+		if (!frm.is_new() && frm.doc.applicable_standard) {
+			frm.add_custom_button(__("Compare Labs for Standard"), () => {
+				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
+			}, __("Actions"));
 		}
 		if (!frm.is_new() && frm.doc.test_report) {
 			frm.add_custom_button(__("Share with Customer"), () => {
@@ -3059,6 +3068,13 @@ frappe.ui.form.on("IC Testing Request", {
 				});
 			}, __("Billing"));
 		}
+	},
+	applicable_standard(frm) {
+		frm.set_value("lab_offer", "");
+		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
+	},
+	lab_offer(frm) {
+		instacertify.apply_testing_request_lab_offer(frm);
 	},
 	laboratory(frm) {
 		frm.set_value("lab_test_scope", "");
@@ -3091,6 +3107,116 @@ frappe.ui.form.on("IC Testing Request", {
 		});
 	},
 });
+
+instacertify.load_testing_request_standard_options = function (frm) {
+	frappe.call({
+		method: "instacertify.laboratory.api.get_standard_options",
+		callback(r) {
+			const opt_str = (r.message || []).map((o) => o.value || o).join("\n");
+			frm.set_df_property("applicable_standard", "options", opt_str);
+		},
+	});
+};
+
+instacertify.load_testing_request_lab_offers = function (frm, opts) {
+	opts = opts || {};
+	if (!frm.doc.applicable_standard) {
+		frm.set_df_property("lab_offer", "options", "");
+		return;
+	}
+	frappe.call({
+		method: "instacertify.laboratory.api.get_labs_for_standard",
+		args: {
+			applicable_standard: frm.doc.applicable_standard,
+			test_name: frm.doc.test_name || "",
+		},
+		callback(r) {
+			const offers = r.message || [];
+			frm._ic_lab_offers = offers;
+			frm.set_df_property("lab_offer", "options", offers.map((o) => o.value).join("\n"));
+			if (opts.open_picker && offers.length) {
+				instacertify.open_testing_request_lab_picker(frm, offers);
+			} else if (opts.open_picker && !offers.length) {
+				frappe.show_alert({
+					message: __("No Active labs list this standard yet."),
+					indicator: "orange",
+				});
+			}
+		},
+	});
+};
+
+instacertify.open_testing_request_lab_picker = function (frm, offers) {
+	const rows_html = offers
+		.map((o, idx) => {
+			const price = format_currency(o.selling_price || 0, o.currency || "INR");
+			return `<tr data-idx="${idx}" class="ic-lab-offer-row" style="cursor:pointer">
+				<td><b>${frappe.utils.escape_html(o.laboratory_name || "")}</b></td>
+				<td>${frappe.utils.escape_html(o.location || "—")}</td>
+				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
+				<td style="text-align:right;font-weight:700">${frappe.utils.escape_html(price)}</td>
+			</tr>`;
+		})
+		.join("");
+	const d = new frappe.ui.Dialog({
+		title: __("Select lab for this standard"),
+		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: `<div class="text-muted" style="margin-bottom:8px">
+					${__("Compare labs offering this standard at different prices:")}
+				</div>
+				<table class="table table-bordered table-hover" style="margin:0">
+					<thead><tr>
+						<th>${__("Laboratory")}</th><th>${__("Location")}</th>
+						<th>${__("Test")}</th><th style="text-align:right">${__("Selling")}</th>
+					</tr></thead>
+					<tbody>${rows_html}</tbody>
+				</table>`,
+			},
+		],
+	});
+	d.$body.find(".ic-lab-offer-row").on("click", function () {
+		const offer = offers[cint($(this).data("idx"))];
+		if (!offer) return;
+		frm.set_value("lab_offer", offer.value).then(() => {
+			instacertify.apply_testing_request_lab_offer(frm, offer);
+		});
+		d.hide();
+	});
+	d.show();
+};
+
+instacertify.apply_testing_request_lab_offer = function (frm, offer) {
+	const apply = (s) => {
+		if (!s) return;
+		frm.set_value("laboratory", s.laboratory);
+		frm.set_value("lab_scope_row", s.scope_row);
+		frm.set_value("test_name", s.test_name);
+		if (s.applicable_standard) frm.set_value("applicable_standard", s.applicable_standard);
+		frm.set_value("suggested_selling_price", s.selling_price);
+		if (s.scope_label) frm.set_value("lab_test_scope", s.scope_label);
+		instacertify.load_testing_request_scope_options(frm);
+	};
+	if (offer) {
+		apply(offer);
+		return;
+	}
+	if (!frm.doc.lab_offer) return;
+	frappe.call({
+		method: "instacertify.laboratory.api.get_lab_offer_details",
+		args: {
+			lab_offer: frm.doc.lab_offer,
+			applicable_standard: frm.doc.applicable_standard,
+			laboratory: frm.doc.laboratory,
+			scope_row: frm.doc.lab_scope_row,
+		},
+		callback(r) {
+			apply(r.message);
+		},
+	});
+};
 
 instacertify.load_testing_request_scope_options = function (frm) {
 	if (!frm.doc.laboratory) {

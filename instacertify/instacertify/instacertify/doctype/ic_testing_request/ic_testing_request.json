@@ -116,33 +116,52 @@
    "fieldname": "product",
    "fieldtype": "Data",
    "label": "Product",
-   "reqd": 1
+   "reqd": 1,
+   "placeholder": "Product name"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_product_test",
+   "fieldtype": "Column Break"
   },
   {
    "doctype": "DocField",
    "fieldname": "test_name",
    "fieldtype": "Data",
    "label": "Test",
-   "reqd": 1
+   "reqd": 1,
+   "placeholder": "Test name"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_standard_lab",
+   "fieldtype": "Section Break",
+   "label": "Standard & Lab"
   },
   {
    "doctype": "DocField",
    "fieldname": "applicable_standard",
    "fieldtype": "Autocomplete",
    "label": "Applicable Standard",
-   "description": "Same standard can be available from multiple labs — pick a Lab Offer below"
+   "description": "Pick a standard from the lab library"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_standard",
+   "fieldtype": "Column Break"
   },
   {
    "doctype": "DocField",
    "fieldname": "lab_offer",
    "fieldtype": "Autocomplete",
    "label": "Lab Offer (price compare)",
-   "description": "Labs offering this standard at different prices — select one"
+   "description": "Labs for this standard with buying/selling rates"
   },
   {
    "doctype": "DocField",
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
+   "fieldname": "section_samples_lab",
+   "fieldtype": "Section Break",
+   "label": "Samples & Laboratory"
   },
   {
    "doctype": "DocField",
@@ -153,18 +172,17 @@
   },
   {
    "doctype": "DocField",
-   "fieldname": "laboratory",
-   "fieldtype": "Link",
-   "options": "IC Laboratory",
-   "label": "Laboratory",
-   "description": "Filled from Lab Offer, or pick an Active lab manually"
-  },
-  {
-   "doctype": "DocField",
    "fieldname": "lab_test_scope",
    "fieldtype": "Autocomplete",
    "label": "Lab Test / Scope",
-   "description": "Pick accredited test from the lab library"
+   "description": "Accredited test from the selected lab"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "suggested_selling_price",
+   "fieldtype": "Currency",
+   "label": "Library Selling Price",
+   "read_only": 1
   },
   {
    "doctype": "DocField",
@@ -176,10 +194,16 @@
   },
   {
    "doctype": "DocField",
-   "fieldname": "suggested_selling_price",
-   "fieldtype": "Currency",
-   "label": "Library Selling Price",
-   "read_only": 1
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Laboratory",
+   "description": "Filled from Lab Offer, or pick manually"
   },
   {
    "doctype": "DocField",
