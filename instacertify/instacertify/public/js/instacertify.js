@@ -3925,8 +3925,14 @@ frappe.listview_settings["IC Sample Tracking"] = {
 			Discarded: "red",
 			"Sample Awaited": "blue",
 			"Sample Received": "green",
+			"Report Available": "yellow",
+			"Report Uploaded": "green",
+			"Report Shared with Customer": "blue",
 		};
-		return [__(loc || "Unset"), colors[loc] || "gray", "sample_location,=," + (doc.sample_location || "")];
+		const label = doc.status === "Report Available" || doc.status === "Report Uploaded" || doc.status === "Report Shared with Customer"
+			? doc.status
+			: (doc.sample_location || doc.status || "");
+		return [__(label || "Unset"), colors[label] || colors[loc] || "gray", "status,=," + (doc.status || "")];
 	},
 	onload(listview) {
 		const locs = [
@@ -4026,6 +4032,107 @@ frappe.ui.form.on("IC Sample Tracking", {
 				});
 			}, __("Location"));
 		});
+
+		if (frm.is_new()) return;
+
+		// Mark Report Available when testing is done
+		if (
+			["Testing in Progress", "At Laboratory", "Sample Dispatched to Laboratory"].includes(
+				frm.doc.status
+			)
+		) {
+			frm.add_custom_button(__("Mark Report Available"), () => {
+				frappe.call({
+					method: "instacertify.testing.events.mark_sample_report_available",
+					args: { sample: frm.doc.name },
+					freeze: true,
+					callback() {
+						frm.reload_doc();
+						frappe.show_alert({
+							message: __("Status set to Report Available — upload the lab report"),
+							indicator: "blue",
+						});
+					},
+				});
+			}, __("Report"));
+		}
+
+		// Upload report once Report Available (or replace after upload)
+		if (
+			["Report Available", "Report Uploaded", "Report Shared with Customer"].includes(
+				frm.doc.status
+			)
+		) {
+			frm.add_custom_button(
+				frm.doc.test_report ? __("Replace Test Report") : __("Upload Test Report"),
+				() => {
+					frappe.prompt(
+						[
+							{
+								fieldname: "test_report",
+								fieldtype: "Attach",
+								label: __("Test Report File"),
+								reqd: 1,
+								description: __(
+									"PDF or lab report file. Saved to Customer records with date & time."
+								),
+							},
+						],
+						(values) => {
+							frappe.call({
+								method: "instacertify.testing.events.upload_sample_report",
+								args: {
+									sample: frm.doc.name,
+									file_url: values.test_report,
+								},
+								freeze: true,
+								freeze_message: __("Uploading report to customer records…"),
+								callback(r) {
+									const m = r.message || {};
+									frappe.msgprint({
+										title: __("Report uploaded"),
+										indicator: "green",
+										message: __(
+											"Report saved on {0}. It is available for download in Customer records.",
+											[m.report_uploaded_on || __("now")]
+										),
+									});
+									frm.reload_doc();
+								},
+							});
+						},
+						__("Upload Test Report"),
+						__("Upload")
+					);
+				},
+				__("Report")
+			);
+		}
+
+		if (frm.doc.test_report) {
+			frm.dashboard.add_comment(
+				__(
+					"Test report on file{0}. Visible in Customer → Data Drive / Project Records.",
+					[
+						frm.doc.report_uploaded_on
+							? ` (${frm.doc.report_uploaded_on})`
+							: "",
+					]
+				),
+				"blue",
+				true
+			);
+		}
+	},
+	test_report(frm) {
+		// Direct attach on the form also stamps + ingests via DocType validate/on_update
+		if (!frm.doc.test_report || frm.is_new()) return;
+		if (frm.doc.status === "Report Available") {
+			frappe.show_alert({
+				message: __("Save to stamp date/time and push report to customer records"),
+				indicator: "blue",
+			});
+		}
 	},
 });
 

@@ -432,6 +432,49 @@ def _attach_field_files(doctype: str, names: list, fieldnames: list[str], catego
 	return out
 
 
+def _sample_report_files(sample_names: list) -> list[dict]:
+	"""Test reports on Sample Tracking with uploaded-on timestamp for Customer Data Drive."""
+	out: list[dict] = []
+	if not sample_names or not frappe.db.exists("DocType", "IC Sample Tracking"):
+		return out
+	meta = frappe.get_meta("IC Sample Tracking")
+	if not meta.has_field("test_report"):
+		return out
+	fields = ["name", "test_report", "tracking_number", "modified"]
+	if meta.has_field("report_uploaded_on"):
+		fields.append("report_uploaded_on")
+	try:
+		rows = frappe.get_all(
+			"IC Sample Tracking",
+			filters={"name": ["in", sample_names], "test_report": ["!=", ""]},
+			fields=fields,
+			limit_page_length=200,
+		)
+	except Exception:
+		return out
+	for r in rows:
+		url = (r.get("test_report") or "").strip()
+		if not url:
+			continue
+		stamp = r.get("report_uploaded_on") or r.get("modified")
+		fname = url.rstrip("/").split("/")[-1] or "test-report"
+		out.append(
+			{
+				"name": f"IC Sample Tracking-{r.name}-test_report",
+				"file_name": f"Test Report — {r.get('tracking_number') or r.name} — {fname}",
+				"file_url": url,
+				"creation": stamp,
+				"content_hash": None,
+				"source": "IC Sample Tracking",
+				"category": "Test Reports",
+				"source_doctype": "IC Sample Tracking",
+				"source_name": r.name,
+				"label": f"Test Report ({stamp})",
+			}
+		)
+	return out
+
+
 def _document_request_item_files(doc_names: list) -> list[dict]:
 	"""Files uploaded on IC Document Request Item.uploaded_file."""
 	out: list[dict] = []
@@ -514,6 +557,15 @@ def _build_customer_data_drive(
 	)
 	files.extend(
 		_files_for("IC Sample Tracking", [s["name"] for s in (samples or [])], "Samples")
+	)
+	files.extend(_sample_report_files([s["name"] for s in (samples or [])]))
+	files.extend(
+		_attach_field_files(
+			"IC Testing Request",
+			[t["name"] for t in (testing or [])],
+			["test_report"],
+			"Test Reports",
+		)
 	)
 	files.extend(_files_for("IC Document Request", doc_names, "Documents"))
 	files.extend(_document_request_item_files(doc_names))

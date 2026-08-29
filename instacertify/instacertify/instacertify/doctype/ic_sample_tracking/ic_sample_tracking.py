@@ -49,10 +49,35 @@ class ICSampleTracking(Document):
 	def validate(self):
 		self._sync_custody()
 		self._handle_receipt_and_discard()
+		self._handle_report_upload()
 
 	def on_update(self):
 		if not self.qr_code:
 			self._ensure_qr()
+		# Push newly uploaded reports into customer records (idempotent attach)
+		if self.test_report and self.has_value_changed("test_report"):
+			try:
+				from instacertify.crm.customer_data import ingest_sample_report
+
+				ingest_sample_report(self)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), "ingest sample report")
+
+	def _handle_report_upload(self):
+		"""When a report file is attached, stamp date/time and move to Report Uploaded."""
+		if not self.test_report:
+			return
+		prev = self.get_doc_before_save()
+		prev_report = prev.test_report if prev else None
+		if self.test_report != prev_report:
+			self.report_uploaded_on = now_datetime()
+			self.report_uploaded_by = frappe.session.user
+			if self.status in ("Report Available", "Testing in Progress", "At Laboratory"):
+				self.status = "Report Uploaded"
+		elif not self.report_uploaded_on:
+			self.report_uploaded_on = now_datetime()
+			if not self.report_uploaded_by:
+				self.report_uploaded_by = frappe.session.user
 
 	def _sync_custody(self):
 		prev = self.get_doc_before_save()
