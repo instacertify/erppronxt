@@ -434,17 +434,50 @@ def _file_bytes_from_url(file_url: str) -> tuple[bytes, str]:
 	return content, file_name
 
 
+def _cell_str(val) -> str:
+	"""Normalize a CSV/Excel cell to a stripped string (handles overflow lists)."""
+	if val is None:
+		return ""
+	if isinstance(val, (list, tuple)):
+		return ",".join(_cell_str(x) for x in val if x is not None and _cell_str(x))
+	return str(val).strip()
+
+
+def _normalize_upload_row(raw: dict) -> dict:
+	"""Lower-case keys; fold DictReader overflow (None key) into tags."""
+	row: dict[str, str] = {}
+	overflow: list[str] = []
+	for k, v in (raw or {}).items():
+		key = (k or "").strip().lower() if isinstance(k, str) else k
+		val = _cell_str(v)
+		if key in (None, ""):
+			if val:
+				overflow.extend([p.strip() for p in val.split(",") if p.strip()])
+			continue
+		row[key] = val
+	if overflow:
+		extra = ",".join(overflow)
+		row["tags"] = f"{row['tags']},{extra}" if row.get("tags") else extra
+	return row
+
+
 def _rows_from_worksheet(ws) -> list[dict]:
 	headers = None
 	rows: list[dict] = []
 	for i, row in enumerate(ws.iter_rows(values_only=True)):
-		vals = [("" if v is None else str(v).strip()) for v in row]
+		vals = [_cell_str(v) for v in row]
 		if i == 0:
 			headers = [h.lower().strip() for h in vals]
 			continue
 		if not any(vals) or not headers:
 			continue
-		rows.append({headers[j]: vals[j] for j in range(min(len(headers), len(vals))) if headers[j]})
+		# Extra columns beyond headers → append to tags
+		item = {headers[j]: vals[j] for j in range(min(len(headers), len(vals))) if headers[j]}
+		if len(vals) > len(headers):
+			extra = ",".join(v for v in vals[len(headers) :] if v)
+			if extra:
+				item["tags"] = f"{item.get('tags','')},{extra}" if item.get("tags") else extra
+		rows.append(item)
 	return rows
 
 
@@ -463,20 +496,23 @@ def _read_upload_rows(file_url: str) -> list[dict]:
 				ws = wb[title]
 				break
 		if ws is None:
-			# Prefer first sheet whose header includes template_name
 			for sheet in wb.worksheets:
 				probe = _rows_from_worksheet(sheet)
 				if probe and "template_name" in probe[0]:
 					return probe
-				# empty data but maybe headers only — re-open via sheet name
 			ws = wb.active
 		return _rows_from_worksheet(ws)
 
 	text = content.decode("utf-8-sig")
-	reader = csv.DictReader(io.StringIO(text))
+	# Prefer excel dialect; fall back if sniff fails
+	try:
+		dialect = csv.Sniffer().sniff(text[:4096], delimiters=",\t;")
+	except Exception:
+		dialect = csv.excel
+	reader = csv.DictReader(io.StringIO(text), dialect=dialect)
 	rows: list[dict] = []
 	for raw in reader:
-		row = {(k or "").strip().lower(): (v or "").strip() for k, v in (raw or {}).items()}
+		row = _normalize_upload_row(raw)
 		if any(row.values()):
 			rows.append(row)
 	return rows
