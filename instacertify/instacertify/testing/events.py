@@ -47,6 +47,18 @@ def _attach_sample_qr(doc):
 		frappe.log_error(frappe.get_traceback(), "Sample QR")
 
 
+def validate_testing_request(doc, method=None):
+	from instacertify.team.assignees import sync_assignees
+
+	sync_assignees(
+		doc,
+		table_field="ic_assignees",
+		primary_field="assigned_person",
+		legacy_seed_field="assigned_person",
+		default_user=doc.owner,
+	)
+
+
 def on_update_testing_request(doc, method=None):
 	if doc.has_value_changed("status"):
 		_sync_sample_status(doc)
@@ -133,7 +145,12 @@ def get_sample_custody_summary():
 
 
 def _notify_status_change(doc):
-	users = [doc.assigned_person, doc.owner, "Administrator"]
+	from instacertify.team.assignees import get_assignee_users
+
+	users = get_assignee_users(doc, primary_field="assigned_person") + [
+		doc.owner,
+		"Administrator",
+	]
 	for user in set(filter(None, users)):
 		if not frappe.db.exists("User", user):
 			continue
@@ -233,7 +250,14 @@ def create_testing_requests_from_quotation(quotation: str, project: str | None =
 			existing.append(found)
 			continue
 
+		from instacertify.team.assignees import append_assignees_from_users, get_assignee_users
+
 		title = f"{row.test_name} – {row.product_name or qt.party_name}"
+		assignees = get_assignee_users(qt, primary_field="ic_primary_assignee")
+		if not assignees:
+			seed = qt.get("ic_assigned_salesperson") or qt.owner
+			if seed:
+				assignees = [seed]
 		doc = frappe.get_doc(
 			{
 				"doctype": "IC Testing Request",
@@ -251,11 +275,12 @@ def create_testing_requests_from_quotation(quotation: str, project: str | None =
 				"suggested_selling_price": row.get("suggested_selling_price")
 				or row.get("per_unit_charges"),
 				"testing_timeline": row.testing_timeline,
-				"assigned_person": qt.get("ic_assigned_salesperson") or qt.owner,
+				"assigned_person": (assignees[0] if assignees else None),
 				"status": "Testing Request Created",
 				"priority": "Medium",
 			}
 		)
+		append_assignees_from_users(doc, assignees)
 		doc.insert(ignore_permissions=True)
 		created.append(doc.name)
 

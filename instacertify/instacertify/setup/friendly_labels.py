@@ -67,6 +67,7 @@ FRIENDLY_LABELS = {
 	"IC Home Dashboard": "Home Dashboard",
 	"IC CRM Lead Tracker": "CRM Lead Tracker",
 	"Project Team Member": "Team Member",
+	"IC Assignee": "Assignee",
 }
 
 

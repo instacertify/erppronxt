@@ -1364,6 +1364,11 @@ $(document).on("page-change", function () {
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
 		instacertify.apply_quotation_naming_series(frm);
+		if (frm.fields_dict.ic_assignees) {
+			frm.add_custom_button(__("Assign Me"), () => {
+				instacertify.add_me_as_assignee(frm, "ic_assignees");
+			}, __("Actions"));
+		}
 		frm.add_custom_button(__("Upload Quote Format"), () => {
 			instacertify.open_quote_format_upload({
 				quotation_type: frm.doc.ic_quotation_type || "Consulting",
@@ -3122,9 +3127,60 @@ frappe.ui.form.on("Project Team Member", {
 	},
 });
 
+/** Shared multi-person assignee helpers (Quotation / Testing / Task). */
+instacertify.add_me_as_assignee = function (frm, tableField) {
+	const me = frappe.session.user;
+	const rows = frm.doc[tableField] || [];
+	if (rows.some((r) => r.user === me)) {
+		frappe.show_alert({ message: __("You are already assigned"), indicator: "blue" });
+		return;
+	}
+	frm.add_child(tableField, {
+		user: me,
+		full_name: (frappe.boot.user && frappe.boot.user.full_name) || me,
+		role: rows.length ? "Member" : "Primary",
+	});
+	frm.refresh_field(tableField);
+	frappe.show_alert({ message: __("Added — save to confirm"), indicator: "green" });
+};
+
+frappe.ui.form.on("IC Assignee", {
+	user(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (!row.user) return;
+		frappe.db.get_value("User", row.user, "full_name", (r) => {
+			if (r && r.full_name) frappe.model.set_value(cdt, cdn, "full_name", r.full_name);
+		});
+	},
+	role(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (row.role !== "Primary") return;
+		(frm.doc.ic_assignees || []).forEach((r) => {
+			if (r.name !== cdn && r.role === "Primary") {
+				frappe.model.set_value(r.doctype, r.name, "role", "Member");
+			}
+		});
+	},
+});
+
+frappe.ui.form.on("Task", {
+	refresh(frm) {
+		if (frm.fields_dict.ic_assignees) {
+			frm.add_custom_button(__("Assign Me"), () => {
+				instacertify.add_me_as_assignee(frm, "ic_assignees");
+			}, __("Actions"));
+		}
+	},
+});
+
 frappe.ui.form.on("IC Testing Request", {
 	refresh(frm) {
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
+		if (frm.fields_dict.ic_assignees) {
+			frm.add_custom_button(__("Assign Me"), () => {
+				instacertify.add_me_as_assignee(frm, "ic_assignees");
+			}, __("Actions"));
+		}
 		if (frm.doc.laboratory) {
 			instacertify.load_testing_request_scope_options(frm);
 		}

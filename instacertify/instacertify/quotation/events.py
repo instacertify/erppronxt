@@ -21,6 +21,14 @@ def validate_quotation(doc, method=None):
 
 	apply_quotation_series(doc)
 	_apply_quotation_defaults(doc)
+	from instacertify.team.assignees import sync_assignees
+
+	sync_assignees(
+		doc,
+		table_field="ic_assignees",
+		primary_field="ic_primary_assignee",
+		default_user=doc.owner,
+	)
 	if doc.quotation_to == "Customer" and doc.party_name:
 		from instacertify.accounting.billing import apply_transaction_billing_defaults
 
@@ -881,18 +889,22 @@ def start_project_from_quotation(quotation: str):
 			"ic_products_services": "\n".join(products),
 			"ic_deliverables": frappe.utils.strip_html(qt.ic_deliverables or "")[:500],
 			"ic_testing_requirements": "\n".join(testing),
-			"ic_assigned_employee": qt.ic_assigned_salesperson
-			if hasattr(qt, "ic_assigned_salesperson") and qt.ic_assigned_salesperson
-			else qt.owner,
+			"ic_assigned_employee": (
+				qt.get("ic_primary_assignee")
+				or getattr(qt, "ic_assigned_salesperson", None)
+				or qt.owner
+			),
 		}
 	)
-	# Seed team: salesperson + ops manager + owner
+	# Seed team: quotation assignees first, then legacy salesperson / ops / owner
+	from instacertify.team.assignees import get_assignee_users
+
 	team_users = []
-	for u in (
+	for u in get_assignee_users(qt, primary_field="ic_primary_assignee") + [
 		getattr(qt, "ic_assigned_salesperson", None),
 		getattr(qt, "ic_assigned_operations_manager", None),
 		qt.owner,
-	):
+	]:
 		if u and u not in team_users and frappe.db.exists("User", u):
 			team_users.append(u)
 	for i, user in enumerate(team_users):
@@ -907,21 +919,26 @@ def start_project_from_quotation(quotation: str):
 	# Map estimated end from timeline if possible
 	project.insert(ignore_permissions=True)
 
-	# Create starter tasks
+	# Create starter tasks — assign the same people
+	from instacertify.team.assignees import append_assignees_from_users
+
 	for subject in (
 		"Collect customer documents",
 		"Review technical documents",
 		"Prepare application package",
 	):
-		frappe.get_doc(
+		task = frappe.get_doc(
 			{
 				"doctype": "Task",
 				"subject": subject,
 				"project": project.name,
 				"status": "Open",
 				"priority": "Medium",
+				"ic_customer": customer,
 			}
-		).insert(ignore_permissions=True)
+		)
+		append_assignees_from_users(task, team_users)
+		task.insert(ignore_permissions=True)
 
 	_notify_project_assigned(project)
 	_advance_linked_lead(qt, "Project / Case")
@@ -1278,12 +1295,21 @@ def _notify_share(doc):
 	_send_notification("Quotation Shared", doc, recipients)
 
 
+def _quotation_notify_recipients(doc) -> list[str]:
+	from instacertify.team.assignees import get_assignee_users
+
+	return get_assignee_users(doc, primary_field="ic_primary_assignee") + [
+		doc.owner,
+		"Administrator",
+		doc.get("ic_assigned_salesperson"),
+	]
+
+
 def _notify_acceptance(doc):
-	recipients = [doc.owner, "Administrator", doc.get("ic_assigned_salesperson")]
 	_send_notification(
 		_("Quotation Accepted — create Project or Testing Request"),
 		doc,
-		recipients,
+		_quotation_notify_recipients(doc),
 		body=_(
 			"Customer approved {0}. Open the quotation and create a Project and/or Testing Request to continue."
 		).format(doc.name),
@@ -1292,18 +1318,18 @@ def _notify_acceptance(doc):
 
 
 def _notify_changes(doc):
-	_send_notification("Quotation Changes Requested", doc, [doc.owner, "Administrator"])
+	_send_notification("Quotation Changes Requested", doc, _quotation_notify_recipients(doc))
 
 
 def _notify_rejection(doc):
-	_send_notification("Quotation Rejected by Customer", doc, [doc.owner, "Administrator"])
+	_send_notification("Quotation Rejected by Customer", doc, _quotation_notify_recipients(doc))
 
 
 def _notify_revision_opened(doc):
 	_send_notification(
 		f"Quotation opened for revision (Rev {doc.ic_revision_number})",
 		doc,
-		[doc.owner, "Administrator"],
+		_quotation_notify_recipients(doc),
 	)
 
 
