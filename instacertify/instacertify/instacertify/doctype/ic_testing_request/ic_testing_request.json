@@ -111,7 +111,7 @@
    "doctype": "DocField",
    "fieldname": "section_assignees",
    "fieldtype": "Section Break",
-   "label": "Assigned Team — one or more people"
+   "label": "Assigned Team \u2014 one or more people"
   },
   {
    "doctype": "DocField",
@@ -143,10 +143,10 @@
   {
    "doctype": "DocField",
    "fieldname": "test_name",
-   "fieldtype": "Data",
+   "fieldtype": "Autocomplete",
    "label": "Test",
    "reqd": 1,
-   "placeholder": "Test name"
+   "description": "From the full lab library \u2014 pick a test to see labs and buying rates"
   },
   {
    "doctype": "DocField",
@@ -159,7 +159,7 @@
    "fieldname": "applicable_standard",
    "fieldtype": "Autocomplete",
    "label": "Applicable Standard",
-   "description": "Pick a standard from the lab library"
+   "description": "From the full lab library \u2014 pick a standard to compare labs"
   },
   {
    "doctype": "DocField",
@@ -170,8 +170,8 @@
    "doctype": "DocField",
    "fieldname": "lab_offer",
    "fieldtype": "Autocomplete",
-   "label": "Lab Offer (price compare)",
-   "description": "Labs for this standard with buying/selling rates"
+   "label": "Lab Offer (buying rate compare)",
+   "description": "Labs that offer this test/standard with buying & selling rates \u2014 select one"
   },
   {
    "doctype": "DocField",
@@ -202,6 +202,13 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "library_buying_price",
+   "fieldtype": "Currency",
+   "label": "Library Buying Price",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "lab_scope_row",
    "fieldtype": "Data",
    "label": "Lab Scope Row",
@@ -219,7 +226,7 @@
    "fieldtype": "Link",
    "options": "IC Laboratory",
    "label": "Laboratory",
-   "description": "Filled from Lab Offer, or pick manually"
+   "description": "Filled from Lab Offer, or pick an Active lab manually"
   },
   {
    "doctype": "DocField",
