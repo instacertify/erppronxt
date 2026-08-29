@@ -288,17 +288,42 @@ instacertify.open_expense_file = function (opts) {
 	instacertify.add_file_manager_hint(d, "receipt");
 };
 
-/** Upload dialog → create/update IC Quotation Template with format file. */
+/** Upload dialog → create/update IC Quotation Template with format file or CSV import. */
 instacertify.open_quote_format_upload = function (opts) {
 	opts = opts || {};
 	const d = new frappe.ui.Dialog({
 		title: __("Upload Quote Format / Template"),
 		fields: [
 			{
+				fieldtype: "HTML",
+				fieldname: "csv_hint",
+				options: `<div class="text-muted" style="margin-bottom:8px;">
+					${__("Download the CSV template, fill rows (one template per row), then import — or attach a single PDF/DOCX format file below.")}
+				</div>`,
+			},
+			{
+				fieldname: "mode",
+				fieldtype: "Select",
+				label: __("Upload mode"),
+				options: "CSV templates\nSingle format file",
+				default: "CSV templates",
+				reqd: 1,
+			},
+			{
+				fieldname: "csv_file",
+				fieldtype: "Attach",
+				label: __("CSV template file"),
+				depends_on: "eval:doc.mode==='CSV templates'",
+				mandatory_depends_on: "eval:doc.mode==='CSV templates'",
+				description: __("Use the Download CSV Template button. Headers: template_name, quotation_type, service_family, …"),
+				options: instacertify.attach_options,
+			},
+			{
 				fieldname: "template_name",
 				fieldtype: "Data",
 				label: __("Template Name"),
-				reqd: 1,
+				depends_on: "eval:doc.mode==='Single format file'",
+				mandatory_depends_on: "eval:doc.mode==='Single format file'",
 				default: opts.template_name || "",
 			},
 			{
@@ -306,33 +331,61 @@ instacertify.open_quote_format_upload = function (opts) {
 				fieldtype: "Select",
 				label: __("Quote Type"),
 				options: "Consulting\nTesting\nRenewal\nService\nOther\nMultiple Products / Multiple Services",
-				reqd: 1,
+				depends_on: "eval:doc.mode==='Single format file'",
+				mandatory_depends_on: "eval:doc.mode==='Single format file'",
 				default: opts.quotation_type || "Consulting",
 			},
 			{
 				fieldname: "service_family",
 				fieldtype: "Data",
 				label: __("Service Family / Subtype"),
+				depends_on: "eval:doc.mode==='Single format file'",
 				description: __("e.g. BIS CRS, TEC, EMC"),
 			},
 			{
 				fieldname: "file",
 				fieldtype: "Attach",
 				label: __("Quote Format File"),
-				reqd: 1,
-				description: __(
-					"Select PDF/DOCX/HTML from My Device or File Library (internal drive)."
-				),
+				depends_on: "eval:doc.mode==='Single format file'",
+				mandatory_depends_on: "eval:doc.mode==='Single format file'",
+				description: __("Select PDF/DOCX/HTML from My Device or File Library (internal drive)."),
 				options: instacertify.attach_options,
 			},
 			{
 				fieldname: "template_notes",
 				fieldtype: "Small Text",
 				label: __("Notes"),
+				depends_on: "eval:doc.mode==='Single format file'",
 			},
 		],
 		primary_action_label: __("Save to Library"),
 		primary_action(values) {
+			if ((values.mode || "") === "CSV templates") {
+				if (!values.csv_file) {
+					frappe.msgprint(__("Attach the CSV template file first."));
+					return;
+				}
+				frappe.call({
+					method: "instacertify.setup.library_upload.import_quote_templates_csv",
+					args: { file_url: values.csv_file },
+					freeze: true,
+					freeze_message: __("Importing quotation templates from CSV…"),
+					callback(r) {
+						d.hide();
+						const m = r.message || {};
+						frappe.show_alert({
+							message: __(
+								"CSV import: {0} created, {1} updated",
+								[m.created || 0, m.updated || 0]
+							),
+							indicator: "green",
+						});
+						if (opts.on_done) opts.on_done(m);
+						else frappe.set_route("List", "IC Quotation Template");
+					},
+				});
+				return;
+			}
 			frappe.call({
 				method: "instacertify.setup.library_upload.create_quote_format_from_upload",
 				args: {
@@ -357,7 +410,7 @@ instacertify.open_quote_format_upload = function (opts) {
 		},
 	});
 	d.$wrapper.find(".modal-footer").prepend(
-		`<button type="button" class="btn btn-default btn-sm ic-dl-quote-tpl" style="margin-right:auto;">${__("Download Upload Template")}</button>`
+		`<button type="button" class="btn btn-default btn-sm ic-dl-quote-tpl" style="margin-right:auto;">${__("Download CSV Template")}</button>`
 	);
 	d.$wrapper.find(".ic-dl-quote-tpl").on("click", () => {
 		frappe.call({
@@ -370,6 +423,7 @@ instacertify.open_quote_format_upload = function (opts) {
 	});
 	d.show();
 	instacertify.add_file_manager_hint(d, "file");
+	instacertify.add_file_manager_hint(d, "csv_file");
 };
 
 /** Upload dialog → create/update IC Laboratory with name + scope file. */
@@ -2948,9 +3002,13 @@ frappe.listview_settings["IC Expense Claim"] = {
 frappe.listview_settings["IC Quotation Template"] = {
 	onload(listview) {
 		listview.page.add_inner_button(__("Upload Quote Format"), () => {
-			instacertify.open_quote_format_upload();
+			instacertify.open_quote_format_upload({
+				on_done() {
+					listview.refresh();
+				},
+			});
 		});
-		listview.page.add_inner_button(__("Download Upload Template"), () => {
+		listview.page.add_inner_button(__("Download CSV Template"), () => {
 			frappe.call({
 				method: "instacertify.setup.library_upload.download_quote_format_upload_template",
 				callback(r) {

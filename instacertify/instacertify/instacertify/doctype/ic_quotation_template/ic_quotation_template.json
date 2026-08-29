@@ -64,14 +64,14 @@
    "fieldname": "section_upload_library",
    "fieldtype": "Section Break",
    "label": "Upload Quote Format Library",
-   "description": "Upload PDF / DOCX / HTML quote formats and supporting template packs for this library entry."
+   "description": "Upload CSV templates (bulk) or PDF / DOCX / HTML quote formats for this library entry."
   },
   {
    "doctype": "DocField",
    "fieldname": "uploaded_format",
    "fieldtype": "Attach",
    "label": "Primary Quote Format",
-   "description": "Main printable quote format file (PDF, DOCX, HTML)"
+   "description": "Main printable quote format file (PDF, DOCX, HTML) — or import many templates via CSV"
   },
   {
    "doctype": "DocField",

@@ -245,46 +245,206 @@ def download_lab_scope_template() -> dict:
 
 @frappe.whitelist()
 def download_quote_format_upload_template() -> dict:
-	"""Downloadable HTML sample for quote-format library uploads."""
-	content = """<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<title>Instacertify Quote Format Upload Template</title>
-<style>
-  body { font-family: Georgia, serif; margin: 32px; color: #1a1a1a; }
-  h1 { color: #065175; margin-bottom: 4px; }
-  .meta { color: #666; margin-bottom: 24px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  th { background: #f3f7fa; }
-  .note { margin-top: 28px; padding: 12px; background: #fff7f0; border-left: 4px solid #EC6820; }
-</style>
-</head>
-<body>
-  <h1>INSTACERTIFY</h1>
-  <p class="meta">Quote Format Upload Template — replace headings, scope, and commercials for your service.</p>
-  <p><strong>Customer:</strong> ____________ &nbsp; <strong>Date:</strong> ____________</p>
-  <p><strong>Service / Certification:</strong> ____________</p>
-  <h2>Scope of Work</h2>
-  <p>Describe deliverables, standards, and timelines here.</p>
-  <h2>Commercials</h2>
-  <table>
-    <thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
-    <tbody>
-      <tr><td>Consulting / Testing fee</td><td>1</td><td></td><td></td></tr>
-      <tr><td>Government / Lab fee (if any)</td><td>1</td><td></td><td></td></tr>
-    </tbody>
-  </table>
-  <div class="note">
-    Upload this file (or your PDF/DOCX) via <em>Upload Quote Format</em> on the Quote Format Library.
-    Keep one library entry per service family (e.g. BIS CRS, TEC, EMC).
-  </div>
-</body>
-</html>
-"""
-	return _public_file(
+	"""Downloadable CSV template for quotation / quote-format library uploads."""
+	# Remove stale HTML sample if present so users are not served the old format.
+	for stale in (
 		"IC_Quote_Format_Upload_Template.html",
-		content,
-		"text/html",
+		"IC_Quotation_Upload_Template.html",
+	):
+		try:
+			name = frappe.db.get_value("File", {"file_name": stale, "is_private": 0}, "name")
+			if name:
+				frappe.delete_doc("File", name, ignore_permissions=True, force=True)
+		except Exception:
+			pass
+
+	buf = io.StringIO()
+	writer = csv.writer(buf)
+	writer.writerow(
+		[
+			"template_name",
+			"quotation_type",
+			"service_family",
+			"service_name",
+			"certification_type",
+			"applicable_standard",
+			"estimated_timeline",
+			"validity_days",
+			"scope_of_work",
+			"deliverables",
+			"payment_terms",
+			"template_notes",
+			"is_active",
+		]
 	)
+	writer.writerow(
+		[
+			"BIS CRS Consulting",
+			"Consulting",
+			"BIS CRS",
+			"BIS CRS Registration Support",
+			"BIS CRS",
+			"IS 13252",
+			"4–6 weeks",
+			"90",
+			"Application preparation, portal filing, and liaison until registration.",
+			"Draft application pack; filing tracker; registration certificate handoff.",
+			"50% advance; balance on grant of registration.",
+			"Sample consulting quote template — edit before use.",
+			"1",
+		]
+	)
+	writer.writerow(
+		[
+			"EMC Testing Package",
+			"Testing",
+			"EMC",
+			"EMI/EMC Lab Testing",
+			"EMC",
+			"CISPR 32",
+			"2–3 weeks",
+			"60",
+			"Radiated and conducted emission tests as per CISPR 32.",
+			"Test report PDF; raw data pack.",
+			"100% before sample dispatch.",
+			"Sample testing quote template — edit before use.",
+			"1",
+		]
+	)
+	writer.writerow(
+		[
+			"BIS Renewal",
+			"Renewal",
+			"BIS Renewal",
+			"BIS Licence Renewal",
+			"BIS",
+			"",
+			"3–5 weeks",
+			"90",
+			"Renewal documentation, portal update, and follow-up.",
+			"Renewed licence copy.",
+			"40% advance; balance on renewal.",
+			"Sample renewal quote template — edit before use.",
+			"1",
+		]
+	)
+	content = buf.getvalue()
+
+	# Force-refresh public file (overwrite if an older CSV exists)
+	existing = frappe.db.get_value(
+		"File", {"file_name": "IC_Quotation_Upload_Template.csv", "is_private": 0}, "name"
+	)
+	if existing:
+		try:
+			frappe.delete_doc("File", existing, ignore_permissions=True, force=True)
+			frappe.db.commit()
+		except Exception:
+			pass
+
+	return _public_file("IC_Quotation_Upload_Template.csv", content, "text/csv")
+
+
+@frappe.whitelist()
+def import_quote_templates_csv(file_url: str):
+	"""Create/update IC Quotation Template rows from a CSV upload template."""
+	if not file_url:
+		frappe.throw(_("Select a CSV from My Device or File Library first"))
+
+	file_url = assert_internal_file(file_url, "CSV file")
+	_fname, content = get_file(file_url)
+	if isinstance(content, bytes):
+		text = content.decode("utf-8-sig", errors="ignore")
+	else:
+		text = str(content)
+
+	reader = csv.DictReader(io.StringIO(text))
+	if not reader.fieldnames:
+		frappe.throw(_("CSV has no header row"))
+
+	def pick(row, *keys):
+		lower = {(k or "").strip().lower().replace(" ", "_"): v for k, v in row.items()}
+		# also allow spaces in headers
+		for k, v in list(row.items()):
+			lower[(k or "").strip().lower()] = v
+		for key in keys:
+			if key in lower and lower[key] not in (None, ""):
+				return str(lower[key]).strip()
+		return ""
+
+	allowed_types = {
+		"Consulting",
+		"Testing",
+		"Renewal",
+		"Other",
+		"Multiple Products / Multiple Services",
+		"Service",
+	}
+	created = []
+	updated = []
+	for row in reader:
+		template_name = pick(row, "template_name", "template", "name")
+		if not template_name:
+			continue
+		qtype = pick(row, "quotation_type", "quote_type", "type") or "Consulting"
+		if qtype not in allowed_types:
+			frappe.throw(_("Invalid quotation_type '{0}' for {1}").format(qtype, template_name))
+
+		exists = frappe.db.exists("IC Quotation Template", template_name)
+		doc = (
+			frappe.get_doc("IC Quotation Template", template_name)
+			if exists
+			else frappe.new_doc("IC Quotation Template")
+		)
+		if not exists:
+			doc.template_name = template_name
+
+		doc.quotation_type = qtype
+		doc.service_family = pick(row, "service_family", "service family") or doc.service_family
+		doc.service_name = pick(row, "service_name", "service", "service / consultancy title") or doc.service_name
+		doc.certification_type = pick(row, "certification_type", "certification type") or doc.certification_type
+		doc.applicable_standard = (
+			pick(row, "applicable_standard", "standard", "applicable standard") or doc.applicable_standard
+		)
+		doc.estimated_timeline = (
+			pick(row, "estimated_timeline", "timeline", "estimated timeline") or doc.estimated_timeline
+		)
+		validity = pick(row, "validity_days", "validity", "validity days")
+		if validity:
+			try:
+				doc.validity_days = int(float(validity))
+			except Exception:
+				pass
+		for field, keys in (
+			("scope_of_work", ("scope_of_work", "scope", "scope of work")),
+			("deliverables", ("deliverables", "deliverable")),
+			("payment_terms", ("payment_terms", "payment terms")),
+			("template_notes", ("template_notes", "notes", "template notes")),
+			("about_service", ("about_service", "about")),
+			("terms_and_conditions", ("terms_and_conditions", "terms", "t&c")),
+		):
+			val = pick(row, *keys)
+			if val and hasattr(doc, field):
+				setattr(doc, field, val)
+
+		active = pick(row, "is_active", "active")
+		if active != "":
+			doc.is_active = 1 if str(active).strip().lower() in ("1", "yes", "true", "y", "active") else 0
+		elif not exists:
+			doc.is_active = 1
+
+		doc.save(ignore_permissions=False)
+		(updated if exists else created).append(doc.name)
+
+	if not created and not updated:
+		frappe.throw(
+			_(
+				"No template rows found. Use headers like template_name, quotation_type, service_family, scope_of_work."
+			)
+		)
+
+	frappe.db.commit()
+	return {
+		"created": len(created),
+		"updated": len(updated),
+		"templates": created + updated,
+	}
