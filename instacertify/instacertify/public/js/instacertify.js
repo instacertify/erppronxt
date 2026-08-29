@@ -1625,7 +1625,9 @@ instacertify.render_quotation_entry_guide = function (frm) {
 	]
 		.map(([key, hint]) => {
 			const active = t === key ? "active" : "";
-			return `<button type="button" class="ic-quote-type-chip ${active}" data-type="${frappe.utils.escape_html(key)}">
+			const slug = ({ Consulting: "consulting", Testing: "testing", Renewal: "renewal", Other: "other" })[key] || "other";
+			return `<button type="button" class="ic-quote-type-chip cat-${slug} ${active}" data-type="${frappe.utils.escape_html(key)}">
+				<span class="ic-quote-type-swatch" aria-hidden="true"></span>
 				<span class="ic-quote-type-name">${frappe.utils.escape_html(key)}</span>
 				<span class="ic-quote-type-hint">${frappe.utils.escape_html(hint)}</span>
 			</button>`;
@@ -1941,13 +1943,21 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				fieldtype: "HTML",
 				fieldname: "type_chips",
 				options: `<div class="ic-new-quote-type-chips">${TYPE_OPTIONS.map(
-					(t) =>
-						`<button type="button" class="ic-new-quote-type-chip" data-type="${frappe.utils.escape_html(
+					(t) => {
+						const slug = ({
+							Consulting: "consulting",
+							Testing: "testing",
+							Renewal: "renewal",
+							Other: "other",
+						})[t.value] || "other";
+						return `<button type="button" class="ic-new-quote-type-chip cat-${slug}" data-type="${frappe.utils.escape_html(
 							t.value
 						)}">
+							<span class="ic-new-quote-type-swatch" aria-hidden="true"></span>
 							<span class="ic-new-quote-type-name">${frappe.utils.escape_html(t.label)}</span>
 							<span class="ic-new-quote-type-hint">${frappe.utils.escape_html(t.hint)}</span>
-						</button>`
+						</button>`;
+					}
 				).join("")}</div>`,
 			},
 			{
@@ -3779,20 +3789,21 @@ frappe.listview_settings["IC Quotation Template"] = {
 			d.show();
 		});
 
-		const cats = [
-			"",
-			"Consulting",
-			"Testing",
-			"Renewal",
-			"Service",
-			"Multiple Products / Multiple Services",
-			"Other",
-		];
+		const cats = ["", "Consulting", "Testing", "Renewal", "Other"];
 		const $bar = $(`<div class="ic-quote-lib-list-cats"></div>`);
+		const slugOf = {
+			Consulting: "consulting",
+			Testing: "testing",
+			Renewal: "renewal",
+			Other: "other",
+		};
 		cats.forEach((c) => {
 			const label = c || __("All");
+			const slug = c ? slugOf[c] || "other" : "all";
 			const $btn = $(
-				`<button type="button" class="btn btn-default btn-xs">${frappe.utils.escape_html(label)}</button>`
+				`<button type="button" class="btn btn-xs ic-list-cat-btn cat-${slug}">${frappe.utils.escape_html(
+					label
+				)}</button>`
 			);
 			$btn.on("click", () => {
 				if (!c) {
