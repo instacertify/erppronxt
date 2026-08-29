@@ -2940,6 +2940,7 @@ function ic_render_customer_related(d) {
 		ic_status_pill(p.status),
 		ic_esc(p.ic_project_stage || "—"),
 		`${ic_esc(p.ic_progress_percentage || 0)}%`,
+		p.ic_quotation ? ic_doc_link("Quotation", p.ic_quotation) : "—",
 		ic_esc(p.ic_deadline || p.expected_end_date || "—"),
 	]);
 	const invoice_rows = (d.invoices || []).map((i) => [
@@ -2968,6 +2969,8 @@ function ic_render_customer_related(d) {
 		ic_doc_link("IC Testing Request", t.name, t.title || t.name),
 		ic_status_pill(t.status),
 		ic_esc(t.product || t.test_name || "—"),
+		t.project ? ic_doc_link("Project", t.project) : "—",
+		t.quotation ? ic_doc_link("Quotation", t.quotation) : "—",
 	]);
 	const doc_rows = (d.documents || []).map((doc) => [
 		ic_doc_link("IC Document Request", doc.name, doc.title || doc.name),
@@ -3033,7 +3036,10 @@ function ic_render_customer_related(d) {
 			)}
 			${ic_related_section(
 				__("Customer Projects"),
-				ic_table([__("Project"), __("Status"), __("Stage"), __("Progress"), __("Deadline")], project_rows),
+				ic_table(
+					[__("Project"), __("Status"), __("Stage"), __("Progress"), __("Quotation"), __("Deadline")],
+					project_rows
+				),
 				__("No projects for this customer"),
 				customer ? ic_list_link("Project", customer) : ""
 			)}
@@ -3067,7 +3073,10 @@ function ic_render_customer_related(d) {
 			)}
 			${ic_related_section(
 				__("Testing Requests"),
-				ic_table([__("Request"), __("Status"), __("Product / Test")], testing_rows),
+				ic_table(
+					[__("Request"), __("Status"), __("Product / Test"), __("Project"), __("Quotation")],
+					testing_rows
+				),
 				__("No testing requests"),
 				customer ? ic_list_link("IC Testing Request", customer) : ""
 			)}
@@ -3137,6 +3146,16 @@ frappe.ui.form.on("Project", {
 		html += "</div>";
 		html += `<div class="ic-progress" style="margin-top:12px;"><span style="width:${frm.doc.ic_progress_percentage||0}%"></span></div>`;
 		frm.set_df_property("ic_progress_html", "options", html);
+
+		// Optional Quotation map — filter to this customer's quotes
+		frm.set_query("ic_quotation", () => {
+			const filters = { docstatus: ["<", 2] };
+			if (frm.doc.customer) {
+				filters.party_name = frm.doc.customer;
+				filters.quotation_to = "Customer";
+			}
+			return { filters };
+		});
 
 		if (frm.doc.ic_quotation) {
 			frm.add_custom_button(__("Open Quotation"), () => {
@@ -3292,6 +3311,19 @@ frappe.ui.form.on("IC Testing Request", {
 				instacertify.add_me_as_assignee(frm, "ic_assignees");
 			}, __("Actions"));
 		}
+		frm.set_query("quotation", () => {
+			const filters = { docstatus: ["<", 2] };
+			if (frm.doc.customer) {
+				filters.party_name = frm.doc.customer;
+				filters.quotation_to = "Customer";
+			}
+			return { filters };
+		});
+		frm.set_query("project", () => {
+			const filters = {};
+			if (frm.doc.customer) filters.customer = frm.doc.customer;
+			return { filters };
+		});
 		if (frm.doc.laboratory) {
 			instacertify.load_testing_request_scope_options(frm);
 		}
@@ -3304,6 +3336,21 @@ frappe.ui.form.on("IC Testing Request", {
 			}
 			instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 		}, __("Actions"));
+		if (frm.doc.quotation) {
+			frm.add_custom_button(__("Open Quotation"), () => {
+				frappe.set_route("Form", "Quotation", frm.doc.quotation);
+			}, __("Links"));
+		}
+		if (frm.doc.project) {
+			frm.add_custom_button(__("Open Project"), () => {
+				frappe.set_route("Form", "Project", frm.doc.project);
+			}, __("Links"));
+		}
+		if (frm.doc.customer) {
+			frm.add_custom_button(__("Open Customer"), () => {
+				frappe.set_route("Form", "Customer", frm.doc.customer);
+			}, __("Links"));
+		}
 		if (!frm.is_new() && frm.doc.test_report) {
 			frm.add_custom_button(__("Share with Customer"), () => {
 				frappe.call({

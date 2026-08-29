@@ -112,12 +112,13 @@ def get_customer_history(customer: str):
 			"ic_progress_percentage",
 			"ic_deadline",
 			"expected_end_date",
+			"ic_quotation",
 		],
 	)
 	testing = list_docs(
 		"IC Testing Request",
 		{"customer": customer},
-		["name", "title", "status", "product", "test_name", "modified"],
+		["name", "title", "status", "product", "test_name", "project", "quotation", "modified"],
 	)
 	samples = list_docs(
 		"IC Sample Tracking",

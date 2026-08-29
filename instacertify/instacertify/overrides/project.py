@@ -42,7 +42,7 @@ def get_dashboard_data(data):
 		existing.update(needed)
 
 	ensure(_("Project"), ["Task", "Timesheet", "Issue", "Project Update"])
-	ensure(_("Sales"), ["Sales Order", "Delivery Note", "Sales Invoice"])
+	ensure(_("Sales"), ["Quotation", "Sales Order", "Delivery Note", "Sales Invoice"])
 	ensure(_("Purchase"), ["Purchase Order", "Purchase Receipt", "Purchase Invoice"])
 	ensure(
 		_("Instacertify"),
@@ -55,4 +55,7 @@ def get_dashboard_data(data):
 			"Helpdesk Ticket",
 		],
 	)
+	# Quotation is linked from Project.ic_quotation (parent field)
+	data.setdefault("internal_links", {})
+	data["internal_links"]["Quotation"] = ["ic_quotation"]
 	return data

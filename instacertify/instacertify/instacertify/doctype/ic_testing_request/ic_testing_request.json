@@ -70,7 +70,9 @@
    "fieldname": "quotation",
    "fieldtype": "Link",
    "options": "Quotation",
-   "label": "Quotation"
+   "label": "Quotation",
+   "description": "Optional — map to the related quotation. Shown in Customer records.",
+   "in_standard_filter": 1
   },
   {
    "doctype": "DocField",
