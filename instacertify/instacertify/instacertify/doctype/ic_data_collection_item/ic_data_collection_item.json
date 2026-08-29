@@ -8,7 +8,7 @@
    "doctype": "DocField",
    "fieldname": "field_label",
    "fieldtype": "Data",
-   "label": "Field Label",
+   "label": "Name",
    "in_list_view": 1,
    "reqd": 1
   },
@@ -16,7 +16,7 @@
    "doctype": "DocField",
    "fieldname": "field_value",
    "fieldtype": "Small Text",
-   "label": "Value",
+   "label": "Value (fill)",
    "in_list_view": 1
   },
   {
@@ -30,8 +30,8 @@
   {
    "doctype": "DocField",
    "fieldname": "help_text",
-   "fieldtype": "Data",
-   "label": "Help Text"
+   "fieldtype": "Small Text",
+   "label": "Remark"
   }
  ],
  "permissions": [],

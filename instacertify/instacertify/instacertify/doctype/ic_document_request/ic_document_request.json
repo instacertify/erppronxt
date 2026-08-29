@@ -86,7 +86,15 @@
    "fieldname": "checklist_template",
    "fieldtype": "Link",
    "options": "IC Document Checklist Template",
-   "label": "Checklist Template"
+   "label": "Collection Sheet Template"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "share_url",
+   "fieldtype": "Data",
+   "label": "Customer Share Link",
+   "read_only": 1,
+   "description": "Generated when you Send to Customer — customer uploads files and fills fields here"
   },
   {
    "doctype": "DocField",

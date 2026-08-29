@@ -19,6 +19,7 @@ SHORTCUT_ICONS = {
 	"Quote Format Library": "book-open",
 	"Samples": "package",
 	"Documents Collection Sheets": "clipboard-list",
+	"Document Collection Library": "folder-open",
 	"Sample Dispatch Sheets": "truck",
 	"Helpdesk": "headset",
 	"Sales Invoice": "receipt",
