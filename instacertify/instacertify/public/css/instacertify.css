@@ -117,8 +117,8 @@ select.form-control:focus,
 input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus,
 select:focus {
-  border-color: rgba(6, 81, 117, 0.45) !important;
-  box-shadow: 0 0 0 3px rgba(6, 81, 117, 0.12) !important;
+  border-color: #EC6820 !important;
+  box-shadow: 0 0 0 3px rgba(236, 104, 32, 0.22) !important;
   outline: none !important;
   transition: border-color 0.2s var(--ic-ease), box-shadow 0.2s var(--ic-ease);
 }
@@ -1714,9 +1714,29 @@ a.ic-lead-prompt-phone:hover {
 textarea.form-control,
 select.form-control {
   border-radius: var(--ic-radius-sm) !important;
-  border: 2px solid rgba(6, 81, 117, 0.45) !important;
-  background-color: #ffffff !important;
+  border: 2.5px solid #065175 !important;
+  background-color: #f7fbfe !important;
+  box-shadow: inset 0 0 0 1px rgba(6, 81, 117, 0.12) !important;
+  color: #152833 !important;
   transition: border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease), background-color 0.18s var(--ic-ease);
+}
+
+select.form-control,
+select.input-with-feedback {
+  background-color: #e8f3f8 !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #065175 50%),
+    linear-gradient(135deg, #065175 50%, transparent 50%),
+    linear-gradient(180deg, #eef6fa 0%, #ffffff 70%) !important;
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px),
+    0 0 !important;
+  background-size: 5px 5px, 5px 5px, 100% 100% !important;
+  background-repeat: no-repeat !important;
+  padding-right: 2rem !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
 }
 
 .page-head {
@@ -2594,52 +2614,31 @@ html, body, .desk-page, .page-container, .form-layout,
 :root,
 [data-theme="light"] {
   --ic-field-border: #065175;
-  --ic-field-border-soft: rgba(6, 81, 117, 0.55);
+  --ic-field-border-soft: #065175;
   --ic-field-border-focus: #EC6820;
-  --ic-field-bg: #ffffff;
-  --ic-field-bg-tint: #f3f9fc;
-  --ic-field-ring: rgba(6, 81, 117, 0.14);
+  --ic-field-bg: #f7fbfe;
+  --ic-field-bg-tint: #e8f3f8;
+  --ic-field-ring: rgba(6, 81, 117, 0.18);
 }
 
-/* Text / textarea / select / link / date — rest state is already bold */
-.form-layout .frappe-control:not(.hide-control) .control-input .form-control,
-.form-layout .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
-.form-layout .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
-.form-layout .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
-.form-layout .frappe-control:not(.hide-control) .control-input .awesomplete > input,
-.form-page .frappe-control:not(.hide-control) .control-input .form-control,
-.form-page .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
-.form-page .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
-.form-page .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
-.form-page .frappe-control:not(.hide-control) .control-input .awesomplete > input,
-.modal-body .frappe-control:not(.hide-control) .control-input .form-control,
-.modal-body .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
-.modal-body .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
-.modal-body .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
-.modal-body .frappe-control:not(.hide-control) .control-input .awesomplete > input,
-.grid-row-open .form-control,
-.grid-form-body .form-control,
-.filter-box .form-control,
-.filter-box input.input-with-feedback,
-.filter-box select.input-with-feedback,
-.page-form .form-control,
-.dialog-assignment-section .form-control,
-.std-form-layout .form-control,
-.form-column .form-control,
-input.form-control:not([disabled]):not([readonly]),
-textarea.form-control:not([disabled]):not([readonly]),
-select.form-control:not([disabled]):not([readonly]),
-.input-with-feedback:not([disabled]):not([readonly]),
-.awesomplete > input:not([disabled]):not([readonly]),
-.datepicker input:not([disabled]):not([readonly]),
-.control-input-wrapper input:not([type="checkbox"]):not([type="radio"]):not([disabled]):not([readonly]),
-.control-input-wrapper textarea:not([disabled]):not([readonly]),
-.control-input-wrapper select:not([disabled]):not([readonly]) {
-  border: 2px solid var(--ic-field-border) !important;
-  background-color: var(--ic-field-bg) !important;
-  background-image: linear-gradient(180deg, var(--ic-field-bg-tint) 0%, var(--ic-field-bg) 55%) !important;
-  box-shadow: inset 0 0 0 1px var(--ic-field-ring) !important;
-  color: var(--ic-ink, #152833) !important;
+/* Catch-all for Desk / dialogs / filters — solid outline, no hover needed */
+body .form-control:not([disabled]):not([readonly]),
+body .input-with-feedback:not([disabled]):not([readonly]),
+body input.form-control:not([disabled]):not([readonly]),
+body textarea.form-control:not([disabled]):not([readonly]),
+body select.form-control:not([disabled]):not([readonly]),
+body .awesomplete > input:not([disabled]):not([readonly]),
+body .control-input input:not([type="checkbox"]):not([type="radio"]):not([disabled]):not([readonly]),
+body .control-input textarea:not([disabled]):not([readonly]),
+body .control-input select:not([disabled]):not([readonly]),
+body .filter-box .form-control,
+body .page-form .form-control,
+body .modal-body .form-control,
+body .grid-row-open .form-control,
+body .grid-form-body .form-control {
+  border: 2.5px solid #065175 !important;
+  background-color: #f7fbfe !important;
+  box-shadow: inset 0 0 0 1px rgba(6, 81, 117, 0.15) !important;
 }
 
 /* Select / dropdown affordance — darker chevron area */
