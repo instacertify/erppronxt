@@ -10,20 +10,24 @@
    "fieldtype": "Data",
    "label": "Test Name",
    "in_list_view": 1,
-   "reqd": 1
+   "reqd": 1,
+   "columns": 2
   },
   {
    "doctype": "DocField",
    "fieldname": "applicable_standard",
    "fieldtype": "Data",
    "label": "Applicable Standard",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 2
   },
   {
    "doctype": "DocField",
    "fieldname": "category",
    "fieldtype": "Data",
-   "label": "Category"
+   "label": "Category",
+   "in_list_view": 1,
+   "columns": 1
   },
   {
    "doctype": "DocField",
@@ -31,8 +35,8 @@
    "fieldtype": "Currency",
    "label": "Buying Price",
    "in_list_view": 1,
-   "permlevel": 1,
-   "description": "Lab buy / cost price — Admin only. Not shown on customer quotations."
+   "columns": 1,
+   "description": "Lab buy / cost price. Editable on the laboratory form."
   },
   {
    "doctype": "DocField",
@@ -40,6 +44,7 @@
    "fieldtype": "Currency",
    "label": "Suggested Selling Price",
    "in_list_view": 1,
+   "columns": 1,
    "description": "Default selling price offered on Testing quotations (editable per quote)"
   },
   {
@@ -48,9 +53,9 @@
    "fieldtype": "Currency",
    "label": "Margin",
    "in_list_view": 1,
-   "permlevel": 1,
+   "columns": 1,
    "read_only": 1,
-   "description": "Suggested Selling − Buying (Admin only)"
+   "description": "Suggested Selling − Buying (auto-calculated)"
   },
   {
    "doctype": "DocField",
@@ -58,14 +63,18 @@
    "fieldtype": "Link",
    "options": "Currency",
    "label": "Currency",
-   "default": "INR"
+   "default": "INR",
+   "in_list_view": 1,
+   "columns": 1
   },
   {
    "doctype": "DocField",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Active",
-   "default": 1
+   "default": 1,
+   "in_list_view": 1,
+   "columns": 1
   }
  ],
  "permissions": [],
