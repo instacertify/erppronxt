@@ -61,9 +61,6 @@ QUOTATION_HTML = """
   .badge-pass { background: #fff3e8; color: #EC6820; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
   .badge-rev { background: #e8f4fa; color: #065175; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
   .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; }
-  .ic-qr { float: right; margin: 0 0 8px 16px; text-align: center; }
-  .ic-qr img { width: 72px; height: 72px; }
-  .ic-qr .cap { font-size: 8px; color: #555; }
   .ic-sign { margin-top: 28px; page-break-inside: avoid; }
   .ic-footer-bar {
     background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
@@ -204,15 +201,7 @@ QUOTATION_HTML = """
   </div>
 
   <div class="ic-footer">
-    <div style="max-width:70%; color:#667;">Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
-    <div class="ic-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
-      {% endif %}
-      <div style="font-size:8px;">Scan to verify</div>
-    </div>
+    <div style="color:#667;">Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
   </div>
   <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
@@ -499,9 +488,6 @@ TESTING_QUOTATION_HTML = """
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
-  .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
-  .tq-qr img { width:72px; height:72px; }
-  .tq-qr .cap { font-size:8px; color:#555; }
   .print-format { padding:0 !important; margin:0 !important; }
 </style>
 <div class="tq">
@@ -706,14 +692,6 @@ TESTING_QUOTATION_HTML = """
   </table>
 
   <div class="tq-close">
-    <div class="tq-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Scan to verify</div>
-    </div>
     <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
     <p><b>Thanking You,</b></p>
     <div class="tq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
@@ -782,9 +760,6 @@ CONSULTING_QUOTATION_HTML = """
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
-  .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
-  .cq-qr img { width:72px; height:72px; }
-  .cq-qr .cap { font-size:8px; color:#555; }
   .print-format { padding:0 !important; margin:0 !important; }
 </style>
 <div class="cq">
@@ -957,14 +932,6 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 
   <div class="cq-close">
-    <div class="cq-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Scan to verify</div>
-    </div>
     <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
     <p><b>Thanking You,</b></p>
     <div class="cq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
