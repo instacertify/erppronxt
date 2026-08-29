@@ -78,20 +78,20 @@ def _ensure_home_html_block():
   <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub">
     <div class="ic-lead-prompt-header">
       <div>
-        <div class="ic-lead-prompt-title">Lead follow-up</div>
-        <div class="ic-lead-prompt-sub">Grouped by due and upcoming — filter, then tap a lead to open</div>
+        <div class="ic-lead-prompt-title">Lead reminder hub</div>
+        <div class="ic-lead-prompt-sub">Whom to call · who to connect with · customer remarks</div>
       </div>
       <div class="ic-lead-hub-actions">
         <span class="ic-lead-hub-counts" id="ic-lead-hub-counts"></span>
         <a class="ic-view-all" href="/app/lead">Open Leads</a>
       </div>
     </div>
-    <div class="ic-lead-hub-filters" id="ic-lead-hub-filters" role="tablist">
-      <button type="button" class="ic-lead-filter active" data-filter="all">All</button>
-      <button type="button" class="ic-lead-filter" data-filter="due">Due now</button>
-      <button type="button" class="ic-lead-filter" data-filter="upcoming">Upcoming</button>
+    <div class="ic-lead-hub-legend">
+      <span class="ic-lead-hub-chip overdue">Overdue / today</span>
+      <span class="ic-lead-hub-chip upcoming">Upcoming</span>
+      <span class="ic-lead-hub-chip tip">Tap a card to open the lead and log remarks</span>
     </div>
-    <div id="ic-lead-prompts" class="ic-lead-prompt-list ic-lead-followup-list"></div>
+    <div id="ic-lead-prompts" class="ic-lead-prompt-list"></div>
   </div>
 
   <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel">
@@ -407,7 +407,6 @@ def _ensure_home_html_block():
     callback(r) {
       const el = root_element.getElementById("ic-lead-prompts");
       const counts = root_element.getElementById("ic-lead-hub-counts");
-      const filters = root_element.getElementById("ic-lead-hub-filters");
       if (!el) return;
       const d = r.message || {};
       const rows = d.prompts || [];
@@ -415,11 +414,10 @@ def _ensure_home_html_block():
         counts.textContent = (d.due_count || 0) + " due · " + (d.upcoming_count || 0) + " upcoming";
       }
       if (!rows.length) {
-        el.innerHTML = empty("No lead reminders yet. On a Lead set <b>Next Contact Date</b>, remarks, and who is assigned — they show up here.");
+        el.innerHTML = empty("No lead reminders yet. On a Lead set <b>Next Contact Date</b>, <b>Call / Lead Remarks</b> (what the customer said), and who is assigned — they show up here.");
         return;
       }
-
-      function cardHtml(row) {
+      el.innerHTML = rows.map(row => {
         const person = esc(row.contact_person || row.title || row.name);
         const company = esc(row.company || "");
         const when = esc(row.due_label || row.ic_next_contact_date || "—");
@@ -431,62 +429,38 @@ def _ensure_home_html_block():
         const connCls = row.ic_lead_connected ? "connected" : "not-connected";
         const urg = esc(row.urgency || "upcoming");
         const stage = esc(row.pipeline_stage || row.status || "");
-        const bucket = (urg === "overdue" || urg === "today") ? "due" : "upcoming";
-        const kicker = bucket === "due" ? "Due now" : "Upcoming";
         const phoneBlock = phoneHref
           ? `<a class="ic-lead-prompt-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
           : `<span class="ic-lead-prompt-phone">${phone}</span>`;
-        return `<a class="ic-lead-prompt ic-lead-hub-card ic-lead-followup-block ${urg}" data-bucket="${bucket}" href="/app/lead/${encodeURIComponent(row.name)}">
-          <div class="ic-lead-followup-main">
-            <div class="ic-lead-followup-who">
-              <div class="ic-lead-hub-kicker">${kicker}</div>
+        return `<a class="ic-lead-prompt ic-lead-hub-card ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
+          <div class="ic-lead-prompt-top">
+            <div>
+              <div class="ic-lead-hub-kicker">Call</div>
               <div class="ic-lead-prompt-name">${person}</div>
               ${company ? `<div class="ic-lead-hub-company">${company}</div>` : ""}
             </div>
             <span class="ic-lead-prompt-when ${urg}">${when}</span>
           </div>
-          <div class="ic-lead-followup-meta">
-            <span class="ic-lead-followup-meta-item"><span class="ic-lead-hub-label">Phone</span>${phoneBlock}</span>
-            <span class="ic-lead-followup-meta-item"><span class="ic-lead-hub-label">Owner</span><span class="ic-lead-hub-value">${callWith}</span></span>
-            <span class="ic-lead-followup-meta-item"><span class="ic-lead-hub-label">Status</span><span class="ic-lead-hub-value"><span class="ic-lead-prompt-connected ${connCls}">${connected}</span>${stage ? " · " + stage : ""}</span></span>
+          <div class="ic-lead-hub-grid">
+            <div class="ic-lead-hub-cell">
+              <div class="ic-lead-hub-label">Phone</div>
+              <div class="ic-lead-hub-value">${phoneBlock}</div>
+            </div>
+            <div class="ic-lead-hub-cell">
+              <div class="ic-lead-hub-label">Connect with</div>
+              <div class="ic-lead-hub-value">${callWith}</div>
+            </div>
+            <div class="ic-lead-hub-cell">
+              <div class="ic-lead-hub-label">Status</div>
+              <div class="ic-lead-hub-value"><span class="ic-lead-prompt-connected ${connCls}">${connected}</span>${stage ? " · " + stage : ""}</div>
+            </div>
           </div>
           <div class="ic-lead-hub-remarks-wrap">
             <div class="ic-lead-hub-label">Customer remarks</div>
             <div class="ic-lead-prompt-remarks ${row.has_remarks ? "" : "muted"}">${remarks}</div>
           </div>
         </a>`;
-      }
-
-      const dueRows = rows.filter(row => row.urgency === "overdue" || row.urgency === "today");
-      const upRows = rows.filter(row => row.urgency !== "overdue" && row.urgency !== "today");
-      let html = "";
-      if (dueRows.length) {
-        html += `<div class="ic-lead-group" data-group="due">
-          <div class="ic-lead-group-title">Due now <span>${dueRows.length}</span></div>
-          <div class="ic-lead-group-grid">${dueRows.map(cardHtml).join("")}</div>
-        </div>`;
-      }
-      if (upRows.length) {
-        html += `<div class="ic-lead-group" data-group="upcoming">
-          <div class="ic-lead-group-title">Upcoming <span>${upRows.length}</span></div>
-          <div class="ic-lead-group-grid">${upRows.map(cardHtml).join("")}</div>
-        </div>`;
-      }
-      el.innerHTML = html;
-
-      if (filters) {
-        filters.querySelectorAll(".ic-lead-filter").forEach(btn => {
-          btn.addEventListener("click", () => {
-            filters.querySelectorAll(".ic-lead-filter").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            const f = btn.getAttribute("data-filter") || "all";
-            el.querySelectorAll(".ic-lead-group").forEach(g => {
-              const group = g.getAttribute("data-group");
-              g.style.display = (f === "all" || f === group) ? "" : "none";
-            });
-          });
-        });
-      }
+      }).join("");
     }
   });
 
@@ -663,7 +637,7 @@ _SHADOW_THEME_CSS = """
   overflow: hidden;
   background: linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
   color: #fff;
-  border-radius: 14px;
+  border-radius: 26px;
   padding: 28px 28px 26px;
   margin-bottom: 20px;
   box-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
@@ -690,194 +664,39 @@ _SHADOW_THEME_CSS = """
 /* Colorful prompts inside shadow (critical path; full CSS also imported) */
 .ic-lead-prompt-title, .ic-workdesk-title {
   font-family: "Poppins", sans-serif !important;
-  font-weight: 800;
-  color: #033447;
-  letter-spacing: -0.02em;
-  font-size: 1.2rem;
-}
-.ic-lead-prompt-panel.ic-lead-hub {
-  border: 1px solid rgba(6, 81, 117, 0.14) !important;
-  border-left: 6px solid #EC6820 !important;
-  background: linear-gradient(180deg, #fffaf6 0%, #ffffff 42%) !important;
-  box-shadow: 0 10px 28px rgba(6, 81, 117, 0.06) !important;
-  padding: 18px 20px 16px !important;
-  border-radius: 18px !important;
-}
-.ic-lead-hub-filters {
-  display: inline-flex !important;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 0 0 16px;
-  padding: 4px;
-  border-radius: 999px;
-  background: #eef4f8;
-  border: 1px solid #d5e4ee;
-}
-.ic-lead-filter {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: #5a7382;
-  border-radius: 999px;
-  padding: 7px 14px;
-  font-size: 0.78rem;
-  font-weight: 650;
-  cursor: pointer;
-  font-family: "Poppins", sans-serif !important;
-  line-height: 1.2;
-}
-.ic-lead-filter.active {
-  background: #033447;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(3, 52, 71, 0.18);
-}
-.ic-lead-followup-list,
-.ic-lead-prompt-list.ic-lead-followup-list {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 18px !important;
-  grid-template-columns: none !important;
-}
-.ic-lead-group-title {
-  font-weight: 750;
-  color: #033447;
-  font-size: 0.82rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin: 0 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ic-lead-group-title span {
-  background: #e8f1f6;
+  font-weight: 700;
   color: #065175;
-  border-radius: 999px;
-  padding: 2px 9px;
-  font-size: 0.72rem;
-  letter-spacing: 0;
-  text-transform: none;
+  letter-spacing: -0.02em;
 }
-.ic-lead-group[data-group="due"] .ic-lead-group-title span {
-  background: #ffe8e4;
-  color: #c0392b;
+.ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
+  background: linear-gradient(165deg, #fff5f4 0%, #fff 55%) !important;
+  box-shadow: inset 4px 0 0 #c0392b, 0 10px 24px rgba(192,57,43,0.08) !important;
 }
-.ic-lead-group-grid {
-  display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 10px !important;
+.ic-lead-prompt.today, .ic-lead-hub-card.today {
+  background: linear-gradient(165deg, #fff8f0 0%, #fff 55%) !important;
+  box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236,104,32,0.1) !important;
 }
-@media (min-width: 980px) {
-  .ic-lead-group-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-.ic-lead-hub .ic-lead-prompt,
-.ic-lead-hub .ic-lead-hub-card,
-.ic-lead-followup-block {
-  aspect-ratio: auto !important;
-  min-height: 0 !important;
-  height: auto !important;
-  padding: 14px 16px !important;
-  border: 1px solid rgba(6, 81, 117, 0.14) !important;
-  border-radius: 14px !important;
-  box-shadow: none !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 10px !important;
-  overflow: visible !important;
-  text-decoration: none !important;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease !important;
-}
-.ic-lead-hub .ic-lead-prompt:hover,
-.ic-lead-followup-block:hover {
-  transform: translateY(-1px) !important;
-  border-color: rgba(6, 81, 117, 0.28) !important;
-  box-shadow: 0 10px 22px rgba(6, 81, 117, 0.08) !important;
-  text-decoration: none !important;
-}
-.ic-lead-hub .ic-lead-prompt.overdue,
-.ic-lead-hub .ic-lead-hub-card.overdue {
-  background: #fff7f6 !important;
-  border-color: rgba(192, 57, 43, 0.28) !important;
-  box-shadow: inset 5px 0 0 #c0392b !important;
-}
-.ic-lead-hub .ic-lead-prompt.today,
-.ic-lead-hub .ic-lead-hub-card.today {
-  background: #fff9f4 !important;
-  border-color: rgba(236, 104, 32, 0.3) !important;
-  box-shadow: inset 5px 0 0 #EC6820 !important;
-}
-.ic-lead-hub .ic-lead-prompt.upcoming,
-.ic-lead-hub .ic-lead-hub-card.upcoming {
-  background: #f7fbfd !important;
-  border-color: rgba(10, 143, 181, 0.28) !important;
-  box-shadow: inset 5px 0 0 #0a8fb5 !important;
-}
-.ic-lead-prompt-when {
-  flex-shrink: 0 !important;
-  border-radius: 999px !important;
-  padding: 4px 10px !important;
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  white-space: nowrap !important;
+.ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
+  background: linear-gradient(165deg, #f0f9fc 0%, #fff 55%) !important;
+  box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10,143,181,0.08) !important;
 }
 .ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
 .ic-lead-prompt-when.today { background: #EC6820 !important; color: #fff !important; }
 .ic-lead-prompt-when.upcoming { background: #0a8fb5 !important; color: #fff !important; }
 .ic-lead-hub-counts {
-  background: #c44710 !important;
+  background: linear-gradient(90deg, #EC6820, #c44710) !important;
   color: #fff !important;
-  font-weight: 750 !important;
-  border-radius: 999px;
-  padding: 6px 12px;
+  font-weight: 700 !important;
+  border-radius: 8px;
+  padding: 4px 10px;
 }
-.ic-lead-hub-legend { display: none !important; }
-.ic-lead-followup-main {
-  display: flex !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  align-items: flex-start !important;
-  margin-bottom: 0 !important;
-}
-.ic-lead-followup-meta {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 8px 18px !important;
-  padding: 10px 0 !important;
-  border-top: 1px solid rgba(6, 81, 117, 0.08) !important;
-  border-bottom: 1px solid rgba(6, 81, 117, 0.08) !important;
-}
-.ic-lead-followup-meta-item {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 2px !important;
-  min-width: 0 !important;
-}
-.ic-lead-hub-label {
-  font-size: 0.68rem !important;
-  font-weight: 750 !important;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #5a7382;
-  margin-bottom: 0;
-}
-.ic-lead-hub-value, .ic-lead-prompt-name {
-  font-size: 0.9rem !important;
-  font-weight: 650 !important;
-  color: #152833 !important;
-}
-.ic-lead-prompt-name { font-size: 1.05rem !important; font-weight: 750 !important; color: #033447 !important; }
+.ic-lead-hub-chip.overdue { background: #c0392b !important; color: #fff !important; }
+.ic-lead-hub-chip.upcoming { background: #0a8fb5 !important; color: #fff !important; }
 .ic-lead-hub-remarks-wrap {
-  background: rgba(255, 255, 255, 0.72) !important;
-  border: 0 !important;
-  border-radius: 10px;
-  padding: 0 !important;
-  margin-top: 0 !important;
-}
-@media (max-width: 700px) {
-  .ic-lead-group-grid { grid-template-columns: 1fr !important; }
-  .ic-lead-hub-filters { width: 100%; }
+  background: rgba(6,81,117,0.04);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-top: 8px;
 }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
@@ -890,7 +709,7 @@ _SHADOW_THEME_CSS = """
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   min-height: 0 !important;
 }
 .ic-summary-card {
@@ -952,31 +771,23 @@ _SHADOW_THEME_CSS = """
   aspect-ratio: 1 / 1 !important;
   min-height: 0 !important;
   padding: 12px !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
 }
 .ic-lead-prompt-list {
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
   gap: 12px !important;
-}
-.ic-lead-prompt-list.ic-lead-followup-list {
-  display: flex !important;
-  flex-direction: column !important;
-  grid-template-columns: none !important;
-  gap: 18px !important;
 }
 .ic-lead-prompt, .ic-lead-hub-card {
   aspect-ratio: 1 / 1 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+  border-radius: 16px !important;
 }
-.ic-lead-hub .ic-lead-prompt,
-.ic-lead-hub .ic-lead-hub-card,
-.ic-lead-followup-block {
-  aspect-ratio: auto !important;
-  overflow: visible !important;
-  height: auto !important;
-  min-height: 0 !important;
+.ic-lead-prompt-panel,
+.ic-workdesk-panel,
+.ic-hr-panel {
+  border-radius: 26px !important;
 }
 .ic-workdesk-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
