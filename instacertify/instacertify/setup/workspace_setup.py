@@ -79,12 +79,17 @@ def _ensure_home_html_block():
     <div class="ic-lead-prompt-header">
       <div>
         <div class="ic-lead-prompt-title">Lead follow-up</div>
-        <div class="ic-lead-prompt-sub">Who to call, phone, owner, and customer remarks — tap a block to open</div>
+        <div class="ic-lead-prompt-sub">Grouped by due and upcoming — filter, then tap a lead to open</div>
       </div>
       <div class="ic-lead-hub-actions">
         <span class="ic-lead-hub-counts" id="ic-lead-hub-counts"></span>
         <a class="ic-view-all" href="/app/lead">Open Leads</a>
       </div>
+    </div>
+    <div class="ic-lead-hub-filters" id="ic-lead-hub-filters" role="tablist">
+      <button type="button" class="ic-lead-filter active" data-filter="all">All</button>
+      <button type="button" class="ic-lead-filter" data-filter="due">Due now</button>
+      <button type="button" class="ic-lead-filter" data-filter="upcoming">Upcoming</button>
     </div>
     <div id="ic-lead-prompts" class="ic-lead-prompt-list ic-lead-followup-list"></div>
   </div>
@@ -120,7 +125,7 @@ def _ensure_home_html_block():
         <div class="ic-workdesk-title">My HR</div>
         <div class="ic-workdesk-sub">Employment · joining letter · salary slips · documents</div>
       </div>
-        <a class="ic-view-all" href="/desk/hrms">Open HRMS</a>
+      <a class="ic-view-all" href="/app/employee">HR profile</a>
     </div>
     <div id="ic-hr-profile" class="ic-hr-profile"></div>
     <div class="ic-hr-columns">
@@ -222,10 +227,6 @@ def _ensure_home_html_block():
       instacertify.open_laboratory_upload();
       return;
     }
-    if (card.action === "open_hrms") {
-      frappe.set_route("hrms");
-      return;
-    }
     if (card.action === "new_expense") {
       if (window.instacertify && typeof instacertify.open_expense_file === "function") {
         instacertify.open_expense_file();
@@ -293,7 +294,7 @@ def _ensure_home_html_block():
           ? `<span class="ic-explore-count">${esc(c.count)}</span>`
           : "";
         const actionHint = c.action
-          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : (c.action === "open_hrms" ? "HRMS" : "Open"))}</span>`
+          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
           : "";
         return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
           <div class="ic-explore-card-top">${actionHint}${count}</div>
@@ -406,6 +407,7 @@ def _ensure_home_html_block():
     callback(r) {
       const el = root_element.getElementById("ic-lead-prompts");
       const counts = root_element.getElementById("ic-lead-hub-counts");
+      const filters = root_element.getElementById("ic-lead-hub-filters");
       if (!el) return;
       const d = r.message || {};
       const rows = d.prompts || [];
@@ -413,10 +415,11 @@ def _ensure_home_html_block():
         counts.textContent = (d.due_count || 0) + " due · " + (d.upcoming_count || 0) + " upcoming";
       }
       if (!rows.length) {
-        el.innerHTML = empty("No lead reminders yet. On a Lead set <b>Next Contact Date</b>, <b>Call / Lead Remarks</b> (what the customer said), and who is assigned — they show up here.");
+        el.innerHTML = empty("No lead reminders yet. On a Lead set <b>Next Contact Date</b>, remarks, and who is assigned — they show up here.");
         return;
       }
-      el.innerHTML = rows.map(row => {
+
+      function cardHtml(row) {
         const person = esc(row.contact_person || row.title || row.name);
         const company = esc(row.company || "");
         const when = esc(row.due_label || row.ic_next_contact_date || "—");
@@ -428,38 +431,62 @@ def _ensure_home_html_block():
         const connCls = row.ic_lead_connected ? "connected" : "not-connected";
         const urg = esc(row.urgency || "upcoming");
         const stage = esc(row.pipeline_stage || row.status || "");
+        const bucket = (urg === "overdue" || urg === "today") ? "due" : "upcoming";
+        const kicker = bucket === "due" ? "Due now" : "Upcoming";
         const phoneBlock = phoneHref
           ? `<a class="ic-lead-prompt-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
           : `<span class="ic-lead-prompt-phone">${phone}</span>`;
-        return `<a class="ic-lead-prompt ic-lead-hub-card ic-lead-followup-block ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
+        return `<a class="ic-lead-prompt ic-lead-hub-card ic-lead-followup-block ${urg}" data-bucket="${bucket}" href="/app/lead/${encodeURIComponent(row.name)}">
           <div class="ic-lead-followup-main">
             <div class="ic-lead-followup-who">
-              <div class="ic-lead-hub-kicker">${urg === "overdue" || urg === "today" ? "Due now" : "Upcoming"}</div>
+              <div class="ic-lead-hub-kicker">${kicker}</div>
               <div class="ic-lead-prompt-name">${person}</div>
               ${company ? `<div class="ic-lead-hub-company">${company}</div>` : ""}
             </div>
             <span class="ic-lead-prompt-when ${urg}">${when}</span>
           </div>
-          <div class="ic-lead-hub-grid">
-            <div class="ic-lead-hub-cell">
-              <div class="ic-lead-hub-label">Phone</div>
-              <div class="ic-lead-hub-value">${phoneBlock}</div>
-            </div>
-            <div class="ic-lead-hub-cell">
-              <div class="ic-lead-hub-label">Owner / connect with</div>
-              <div class="ic-lead-hub-value">${callWith}</div>
-            </div>
-            <div class="ic-lead-hub-cell">
-              <div class="ic-lead-hub-label">Status</div>
-              <div class="ic-lead-hub-value"><span class="ic-lead-prompt-connected ${connCls}">${connected}</span>${stage ? " · " + stage : ""}</div>
-            </div>
+          <div class="ic-lead-followup-meta">
+            <span class="ic-lead-followup-meta-item"><span class="ic-lead-hub-label">Phone</span>${phoneBlock}</span>
+            <span class="ic-lead-followup-meta-item"><span class="ic-lead-hub-label">Owner</span><span class="ic-lead-hub-value">${callWith}</span></span>
+            <span class="ic-lead-followup-meta-item"><span class="ic-lead-hub-label">Status</span><span class="ic-lead-hub-value"><span class="ic-lead-prompt-connected ${connCls}">${connected}</span>${stage ? " · " + stage : ""}</span></span>
           </div>
           <div class="ic-lead-hub-remarks-wrap">
             <div class="ic-lead-hub-label">Customer remarks</div>
             <div class="ic-lead-prompt-remarks ${row.has_remarks ? "" : "muted"}">${remarks}</div>
           </div>
         </a>`;
-      }).join("");
+      }
+
+      const dueRows = rows.filter(row => row.urgency === "overdue" || row.urgency === "today");
+      const upRows = rows.filter(row => row.urgency !== "overdue" && row.urgency !== "today");
+      let html = "";
+      if (dueRows.length) {
+        html += `<div class="ic-lead-group" data-group="due">
+          <div class="ic-lead-group-title">Due now <span>${dueRows.length}</span></div>
+          <div class="ic-lead-group-grid">${dueRows.map(cardHtml).join("")}</div>
+        </div>`;
+      }
+      if (upRows.length) {
+        html += `<div class="ic-lead-group" data-group="upcoming">
+          <div class="ic-lead-group-title">Upcoming <span>${upRows.length}</span></div>
+          <div class="ic-lead-group-grid">${upRows.map(cardHtml).join("")}</div>
+        </div>`;
+      }
+      el.innerHTML = html;
+
+      if (filters) {
+        filters.querySelectorAll(".ic-lead-filter").forEach(btn => {
+          btn.addEventListener("click", () => {
+            filters.querySelectorAll(".ic-lead-filter").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const f = btn.getAttribute("data-filter") || "all";
+            el.querySelectorAll(".ic-lead-group").forEach(g => {
+              const group = g.getAttribute("data-group");
+              g.style.display = (f === "all" || f === group) ? "" : "none";
+            });
+          });
+        });
+      }
     }
   });
 
@@ -669,46 +696,131 @@ _SHADOW_THEME_CSS = """
   font-size: 1.2rem;
 }
 .ic-lead-prompt-panel.ic-lead-hub {
-  border: 1.5px solid #033447 !important;
-  border-left: 8px solid #EC6820 !important;
-  background: #fffaf6 !important;
-  box-shadow: none !important;
-  padding: 14px 16px !important;
-  margin: 12px 0 14px !important;
+  border: 1px solid rgba(6, 81, 117, 0.14) !important;
+  border-left: 6px solid #EC6820 !important;
+  background: linear-gradient(180deg, #fffaf6 0%, #ffffff 42%) !important;
+  box-shadow: 0 10px 28px rgba(6, 81, 117, 0.06) !important;
+  padding: 18px 20px 16px !important;
+  border-radius: 18px !important;
 }
-.ic-lead-followup-list {
+.ic-lead-hub-filters {
+  display: inline-flex !important;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #eef4f8;
+  border: 1px solid #d5e4ee;
+}
+.ic-lead-filter {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #5a7382;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif !important;
+  line-height: 1.2;
+}
+.ic-lead-filter.active {
+  background: #033447;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(3, 52, 71, 0.18);
+}
+.ic-lead-followup-list,
+.ic-lead-prompt-list.ic-lead-followup-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px !important;
+  grid-template-columns: none !important;
+}
+.ic-lead-group-title {
+  font-weight: 750;
+  color: #033447;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ic-lead-group-title span {
+  background: #e8f1f6;
+  color: #065175;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ic-lead-group[data-group="due"] .ic-lead-group-title span {
+  background: #ffe8e4;
+  color: #c0392b;
+}
+.ic-lead-group-grid {
   display: grid !important;
   grid-template-columns: 1fr !important;
   gap: 10px !important;
 }
 @media (min-width: 980px) {
-  .ic-lead-followup-list {
+  .ic-lead-group-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
-.ic-lead-prompt, .ic-lead-hub-card, .ic-lead-followup-block {
+.ic-lead-hub .ic-lead-prompt,
+.ic-lead-hub .ic-lead-hub-card,
+.ic-lead-followup-block {
   aspect-ratio: auto !important;
   min-height: 0 !important;
   height: auto !important;
-  padding: 12px 14px !important;
-  border: 1.5px solid #033447 !important;
-  border-radius: 10px !important;
+  padding: 14px 16px !important;
+  border: 1px solid rgba(6, 81, 117, 0.14) !important;
+  border-radius: 14px !important;
   box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  overflow: visible !important;
+  text-decoration: none !important;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease !important;
 }
-.ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
+.ic-lead-hub .ic-lead-prompt:hover,
+.ic-lead-followup-block:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(6, 81, 117, 0.28) !important;
+  box-shadow: 0 10px 22px rgba(6, 81, 117, 0.08) !important;
+  text-decoration: none !important;
+}
+.ic-lead-hub .ic-lead-prompt.overdue,
+.ic-lead-hub .ic-lead-hub-card.overdue {
   background: #fff7f6 !important;
-  border-color: #8e2a20 !important;
+  border-color: rgba(192, 57, 43, 0.28) !important;
   box-shadow: inset 5px 0 0 #c0392b !important;
 }
-.ic-lead-prompt.today, .ic-lead-hub-card.today {
+.ic-lead-hub .ic-lead-prompt.today,
+.ic-lead-hub .ic-lead-hub-card.today {
   background: #fff9f4 !important;
-  border-color: #033447 !important;
+  border-color: rgba(236, 104, 32, 0.3) !important;
   box-shadow: inset 5px 0 0 #EC6820 !important;
 }
-.ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
+.ic-lead-hub .ic-lead-prompt.upcoming,
+.ic-lead-hub .ic-lead-hub-card.upcoming {
   background: #f7fbfd !important;
-  border-color: #033447 !important;
+  border-color: rgba(10, 143, 181, 0.28) !important;
   box-shadow: inset 5px 0 0 #0a8fb5 !important;
+}
+.ic-lead-prompt-when {
+  flex-shrink: 0 !important;
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
 }
 .ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
 .ic-lead-prompt-when.today { background: #EC6820 !important; color: #fff !important; }
@@ -717,42 +829,56 @@ _SHADOW_THEME_CSS = """
   background: #c44710 !important;
   color: #fff !important;
   font-weight: 750 !important;
-  border-radius: 8px;
+  border-radius: 999px;
   padding: 6px 12px;
 }
 .ic-lead-hub-legend { display: none !important; }
-.ic-lead-hub-chip.overdue { background: #c0392b !important; color: #fff !important; }
-.ic-lead-hub-chip.upcoming { background: #0a8fb5 !important; color: #fff !important; }
-.ic-lead-hub-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 8px !important;
-  margin: 0 0 8px !important;
+.ic-lead-followup-main {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  margin-bottom: 0 !important;
 }
-.ic-lead-hub-cell {
-  padding: 8px 10px !important;
-  border: 1px solid #d5e4ee !important;
-  border-radius: 8px !important;
-  background: #f8fbfd !important;
+.ic-lead-followup-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px 18px !important;
+  padding: 10px 0 !important;
+  border-top: 1px solid rgba(6, 81, 117, 0.08) !important;
+  border-bottom: 1px solid rgba(6, 81, 117, 0.08) !important;
+}
+.ic-lead-followup-meta-item {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
 }
 .ic-lead-hub-label {
-  font-size: 0.72rem !important;
+  font-size: 0.68rem !important;
   font-weight: 750 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5a7382;
+  margin-bottom: 0;
 }
 .ic-lead-hub-value, .ic-lead-prompt-name {
-  font-size: 1rem !important;
-  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  font-weight: 650 !important;
   color: #152833 !important;
 }
-.ic-lead-prompt-name { font-size: 1.1rem !important; color: #033447 !important; }
+.ic-lead-prompt-name { font-size: 1.05rem !important; font-weight: 750 !important; color: #033447 !important; }
 .ic-lead-hub-remarks-wrap {
-  background: #fff !important;
-  border: 1px solid #d5e4ee !important;
-  border-radius: 8px;
-  padding: 8px 10px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 0 !important;
+  border-radius: 10px;
+  padding: 0 !important;
   margin-top: 0 !important;
 }
-.ic-lead-followup-main { margin-bottom: 8px !important; }
+@media (max-width: 700px) {
+  .ic-lead-group-grid { grid-template-columns: 1fr !important; }
+  .ic-lead-hub-filters { width: 100%; }
+}
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
   display: grid !important;
@@ -828,33 +954,29 @@ _SHADOW_THEME_CSS = """
   padding: 12px !important;
   border-radius: 12px !important;
 }
-.ic-lead-prompt-list:not(.ic-lead-followup-list) {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+.ic-lead-prompt-list {
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
   gap: 12px !important;
 }
-.ic-lead-prompt-list:not(.ic-lead-followup-list) .ic-lead-prompt {
-  aspect-ratio: auto !important;
-  min-height: 120px !important;
+.ic-lead-prompt-list.ic-lead-followup-list {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  gap: 18px !important;
+}
+.ic-lead-prompt, .ic-lead-hub-card {
+  aspect-ratio: 1 / 1 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
 }
-.ic-lead-followup-block,
-.ic-lead-hub-card {
+.ic-lead-hub .ic-lead-prompt,
+.ic-lead-hub .ic-lead-hub-card,
+.ic-lead-followup-block {
   aspect-ratio: auto !important;
-  min-height: 0 !important;
-  height: auto !important;
   overflow: visible !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-@media (max-width: 700px) {
-  .ic-lead-hub-grid {
-    grid-template-columns: 1fr !important;
-  }
-  .ic-lead-followup-list {
-    grid-template-columns: 1fr !important;
-  }
+  height: auto !important;
+  min-height: 0 !important;
 }
 .ic-workdesk-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
@@ -1055,8 +1177,8 @@ def _ensure_home_workspace():
 		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 2}},
 		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 2}},
 		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 2}},
-		# HRMS — one tab for all employee work
-		{"id": "sc_hrms", "type": "shortcut", "data": {"shortcut_name": "HRMS", "col": 2}},
+		# Expenses & HRMS — always last (square tiles)
+		{"id": "sc_hrms", "type": "shortcut", "data": {"shortcut_name": "HRMS Lifecycle", "col": 2}},
 		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 2}},
 
 	]
@@ -1083,8 +1205,8 @@ def _ensure_home_workspace():
 		{"label": "GSTR-1", "link_to": "GSTR-1", "type": "DocType", "doc_view": ""},
 		{"label": "GSTR-3B", "link_to": "GSTR 3B Report", "type": "DocType", "doc_view": "List"},
 		{"label": "GST Settings", "link_to": "GST Settings", "type": "DocType", "doc_view": ""},
-		# HRMS last — single tab for hiring → salary → expenses
-		{"label": "HRMS", "type": "URL", "url": "/desk/hrms"},
+		# Expenses & HRMS last
+		{"label": "HRMS Lifecycle", "link_to": "Employee", "type": "DocType", "doc_view": "List"},
 		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
 	]
 
@@ -1150,12 +1272,22 @@ def _ensure_home_workspace():
 		{"label": "User", "link_type": "DocType", "link_to": "User", "type": "Link"},
 		{"label": "Role", "link_type": "DocType", "link_to": "Role", "type": "Link"},
 		{"label": "Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
-		# HRMS — one place for all employee work (open the HRMS sidebar tab)
-		{"label": "HRMS", "type": "Card Break"},
+		# Expenses & HRMS — always last on Instacertify Home
+		{"label": "Expenses & HRMS (Hiring → FnF)", "type": "Card Break"},
 		{"label": "File an Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
-		{"label": "Salary Slip", "link_type": "DocType", "link_to": "Salary Slip", "type": "Link"},
-		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "My Expense Claims", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
 		{"label": "Job Applicant", "link_type": "DocType", "link_to": "Job Applicant", "type": "Link"},
+		{"label": "Job Offer", "link_type": "DocType", "link_to": "Job Offer", "type": "Link"},
+		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
+		{"label": "Employee Onboarding", "link_type": "DocType", "link_to": "Employee Onboarding", "type": "Link"},
+		{"label": "Joining Letters", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
+		{"label": "Employee Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
+		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
+		{"label": "Leave Application", "link_type": "DocType", "link_to": "Leave Application", "type": "Link"},
+		{"label": "Salary Slip", "link_type": "DocType", "link_to": "Salary Slip", "type": "Link"},
+		{"label": "Payroll Entry", "link_type": "DocType", "link_to": "Payroll Entry", "type": "Link"},
+		{"label": "Employee Separation", "link_type": "DocType", "link_to": "Employee Separation", "type": "Link"},
+		{"label": "Full and Final Statement", "link_type": "DocType", "link_to": "Full and Final Statement", "type": "Link"},
 	]
 
 	# Filter missing DocTypes / Reports / Pages
@@ -1268,75 +1400,74 @@ def _ensure_home_workspace():
 
 
 def ensure_hrms_expenses_workspace():
-	"""Single sidebar tab **HRMS** — hiring → salary slips → expenses → FnF."""
-	_ensure_hrms_hub_block()
-	_hide_fragmented_hr_workspaces()
-
-	name = "HRMS"
-	sequence_id = 70
+	"""Dedicated workspace — Expenses & HRMS last in navigation (Hiring → FnF)."""
+	name = "HRMS & Expenses"
+	# High sequence so it sits after core Instacertify / GST / ops workspaces
+	sequence_id = 80
 
 	content = [
 		{
 			"id": "hrms_header",
 			"type": "header",
 			"data": {
-				"text": "<span class=\"h5\">HRMS — Hiring to salary slips &amp; expenses</span>",
+				"text": "<span class=\"h5\">Employee lifecycle — Hiring to Full &amp; Final</span>",
 				"col": 12,
 			},
 		},
-		{
-			"id": "hrms_hub_block",
-			"type": "custom_block",
-			"data": {"custom_block_name": "HRMS Hub", "col": 12},
-		},
 		{"id": "sc_job_applicant", "type": "shortcut", "data": {"shortcut_name": "Job Applicant", "col": 3}},
+		{"id": "sc_job_offer", "type": "shortcut", "data": {"shortcut_name": "Job Offer", "col": 3}},
 		{"id": "sc_employee", "type": "shortcut", "data": {"shortcut_name": "Employee", "col": 3}},
-		{"id": "sc_salary", "type": "shortcut", "data": {"shortcut_name": "Salary Slip", "col": 3}},
-		{"id": "sc_file_expense", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
+		{"id": "sc_onboarding", "type": "shortcut", "data": {"shortcut_name": "Employee Onboarding", "col": 3}},
+		{"id": "sc_joining", "type": "shortcut", "data": {"shortcut_name": "Joining Letters", "col": 3}},
 		{"id": "sc_attendance", "type": "shortcut", "data": {"shortcut_name": "Attendance", "col": 3}},
 		{"id": "sc_leave", "type": "shortcut", "data": {"shortcut_name": "Leave Application", "col": 3}},
+		{"id": "sc_salary", "type": "shortcut", "data": {"shortcut_name": "Salary Slip", "col": 3}},
 		{"id": "sc_payroll", "type": "shortcut", "data": {"shortcut_name": "Payroll Entry", "col": 3}},
+		{"id": "sc_file_expense", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 3}},
+		{"id": "sc_expense_hrms", "type": "shortcut", "data": {"shortcut_name": "Expense Claim", "col": 3}},
+		{"id": "sc_separation", "type": "shortcut", "data": {"shortcut_name": "Employee Separation", "col": 3}},
 		{"id": "sc_fnf", "type": "shortcut", "data": {"shortcut_name": "Full and Final", "col": 3}},
 	]
 
 	shortcuts = [
 		{"label": "Job Applicant", "link_to": "Job Applicant", "type": "DocType", "doc_view": "List"},
+		{"label": "Job Offer", "link_to": "Job Offer", "type": "DocType", "doc_view": "List"},
 		{"label": "Employee", "link_to": "Employee", "type": "DocType", "doc_view": "List"},
-		{"label": "Salary Slip", "link_to": "Salary Slip", "type": "DocType", "doc_view": "List"},
-		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee Onboarding", "link_to": "Employee Onboarding", "type": "DocType", "doc_view": "List"},
+		{"label": "Joining Letters", "link_to": "IC Joining Letter", "type": "DocType", "doc_view": "List"},
 		{"label": "Attendance", "link_to": "Attendance", "type": "DocType", "doc_view": "List"},
 		{"label": "Leave Application", "link_to": "Leave Application", "type": "DocType", "doc_view": "List"},
+		{"label": "Salary Slip", "link_to": "Salary Slip", "type": "DocType", "doc_view": "List"},
 		{"label": "Payroll Entry", "link_to": "Payroll Entry", "type": "DocType", "doc_view": "List"},
+		{"label": "File Expense", "link_to": "IC Expense Claim", "type": "DocType", "doc_view": "List"},
+		{"label": "Expense Claim", "link_to": "Expense Claim", "type": "DocType", "doc_view": "List"},
+		{"label": "Employee Separation", "link_to": "Employee Separation", "type": "DocType", "doc_view": "List"},
 		{"label": "Full and Final", "link_to": "Full and Final Statement", "type": "DocType", "doc_view": "List"},
 	]
 
 	links = [
 		{"label": "1. Hiring", "type": "Card Break"},
-		{"label": "Job Opening", "link_type": "DocType", "link_to": "Job Opening", "type": "Link"},
 		{"label": "Job Applicant", "link_type": "DocType", "link_to": "Job Applicant", "type": "Link"},
 		{"label": "Job Offer", "link_type": "DocType", "link_to": "Job Offer", "type": "Link"},
 		{"label": "Interview", "link_type": "DocType", "link_to": "Interview", "type": "Link"},
 		{"label": "2. Onboarding", "type": "Card Break"},
 		{"label": "Employee", "link_type": "DocType", "link_to": "Employee", "type": "Link"},
 		{"label": "Employee Onboarding", "link_type": "DocType", "link_to": "Employee Onboarding", "type": "Link"},
-		{"label": "Joining Letter", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
+		{"label": "Joining Letter (Instacertify)", "link_type": "DocType", "link_to": "IC Joining Letter", "type": "Link"},
 		{"label": "Employee Documents", "link_type": "DocType", "link_to": "IC Employee Document", "type": "Link"},
 		{"label": "3. Attendance & Leave", "type": "Card Break"},
 		{"label": "Attendance", "link_type": "DocType", "link_to": "Attendance", "type": "Link"},
 		{"label": "Attendance Request", "link_type": "DocType", "link_to": "Attendance Request", "type": "Link"},
 		{"label": "Leave Application", "link_type": "DocType", "link_to": "Leave Application", "type": "Link"},
-		{"label": "Leave Type", "link_type": "DocType", "link_to": "Leave Type", "type": "Link"},
 		{"label": "Holiday List", "link_type": "DocType", "link_to": "Holiday List", "type": "Link"},
-		{"label": "Shift Type", "link_type": "DocType", "link_to": "Shift Type", "type": "Link"},
-		{"label": "4. Salary & Payroll", "type": "Card Break"},
+		{"label": "4. Payroll", "type": "Card Break"},
 		{"label": "Salary Structure", "link_type": "DocType", "link_to": "Salary Structure", "type": "Link"},
 		{"label": "Salary Structure Assignment", "link_type": "DocType", "link_to": "Salary Structure Assignment", "type": "Link"},
 		{"label": "Payroll Entry", "link_type": "DocType", "link_to": "Payroll Entry", "type": "Link"},
 		{"label": "Salary Slip", "link_type": "DocType", "link_to": "Salary Slip", "type": "Link"},
-		{"label": "Additional Salary", "link_type": "DocType", "link_to": "Additional Salary", "type": "Link"},
 		{"label": "5. Expenses", "type": "Card Break"},
-		{"label": "File Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
-		{"label": "Expense Claim", "link_type": "DocType", "link_to": "Expense Claim", "type": "Link"},
+		{"label": "File Expense (Instacertify)", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},
+		{"label": "Expense Claim (HRMS)", "link_type": "DocType", "link_to": "Expense Claim", "type": "Link"},
 		{"label": "Expense Claim Type", "link_type": "DocType", "link_to": "Expense Claim Type", "type": "Link"},
 		{"label": "6. Performance", "type": "Card Break"},
 		{"label": "Appraisal", "link_type": "DocType", "link_to": "Appraisal", "type": "Link"},
@@ -1363,6 +1494,7 @@ def ensure_hrms_expenses_workspace():
 			continue
 		safe_shortcuts.append(s)
 
+	# Drop content shortcuts that were filtered out
 	labels = {s["label"] for s in safe_shortcuts}
 	safe_content = []
 	for block in content:
@@ -1388,256 +1520,23 @@ def ensure_hrms_expenses_workspace():
 
 	if frappe.db.exists("Workspace", name):
 		ws = frappe.get_doc("Workspace", name)
-		ws.update(
-			{
-				"label": name,
-				"title": name,
-				"module": "Instacertify",
-				"public": 1,
-				"is_hidden": 0,
-				"sequence_id": sequence_id,
-			}
-		)
+		ws.update(payload)
 		ws.shortcuts = []
 		ws.links = []
-		ws.custom_blocks = []
 		for s in safe_shortcuts:
 			ws.append("shortcuts", s)
 		for l in safe_links:
 			ws.append("links", l)
-		ws.append("custom_blocks", {"custom_block_name": "HRMS Hub", "label": "HRMS Hub"})
 		ws.content = json.dumps(safe_content)
+		ws.sequence_id = sequence_id
 		ws.save(ignore_permissions=True)
 	else:
 		ws = frappe.get_doc(payload)
-		ws.append("custom_blocks", {"custom_block_name": "HRMS Hub", "label": "HRMS Hub"})
 		ws.insert(ignore_permissions=True)
 
 	frappe.db.set_value(
 		"Workspace",
 		name,
-		{"public": 1, "is_hidden": 0, "sequence_id": sequence_id, "label": name, "title": name},
+		{"public": 1, "is_hidden": 0, "sequence_id": sequence_id},
 		update_modified=False,
 	)
-
-	# Retire old combined name if present
-	if frappe.db.exists("Workspace", "HRMS & Expenses"):
-		frappe.db.set_value(
-			"Workspace",
-			"HRMS & Expenses",
-			{"is_hidden": 1, "public": 0},
-			update_modified=False,
-		)
-
-
-def _hide_fragmented_hr_workspaces():
-	"""Keep employee work in one HRMS tab — hide split HRMS app workspaces."""
-	for ws_name in (
-		"HR Setup",
-		"Tenure",
-		"Recruitment",
-		"Expenses",
-		"Performance",
-		"Leaves",
-		"Shift & Attendance",
-		"Payroll",
-		"HR",
-		"HRMS & Expenses",
-	):
-		if frappe.db.exists("Workspace", ws_name):
-			try:
-				frappe.db.set_value(
-					"Workspace",
-					ws_name,
-					{"is_hidden": 1},
-					update_modified=False,
-				)
-			except Exception:
-				pass
-
-
-def _ensure_hrms_hub_block():
-	"""Visual Hiring → Salary Slip → Expenses hub for the HRMS workspace."""
-	name = "HRMS Hub"
-	html = """
-<div id="ic-hrms-hub" class="ic-hrms-hub">
-  <div class="ic-hrms-hub-top">
-    <div>
-      <div class="ic-hrms-hub-brand">HRMS</div>
-      <div class="ic-hrms-hub-sub">Everything employee-related in one place — hiring, onboarding, attendance, salary slips, expenses, and exit.</div>
-    </div>
-    <div class="ic-hrms-hub-actions">
-      <button type="button" class="btn btn-primary btn-sm" id="ic-hrms-file-expense">File Expense</button>
-      <a class="btn btn-default btn-sm" href="/desk/employee/new">New Employee</a>
-    </div>
-  </div>
-  <div id="ic-hrms-stages" class="ic-hrms-stages"></div>
-</div>
-"""
-	script = """
-(function() {
-  function esc(v){ return frappe.utils.escape_html(v == null ? "" : String(v)); }
-  const root = root_element;
-  const btn = root.getElementById("ic-hrms-file-expense");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      if (window.instacertify && instacertify.open_expense_file) {
-        instacertify.open_expense_file();
-      } else {
-        frappe.set_route("List", "IC Expense Claim");
-      }
-    });
-  }
-  frappe.call({
-    method: "instacertify.hr.lifecycle.get_employee_lifecycle",
-    callback(r) {
-      const d = r.message || {};
-      const el = root.getElementById("ic-hrms-stages");
-      if (!el) return;
-      const stages = d.stages || [];
-      if (!stages.length) {
-        el.innerHTML = "<div class='ic-hrms-empty'>HRMS DocTypes are not available yet. Install / enable the HRMS app.</div>";
-        return;
-      }
-      el.innerHTML = stages.map((stage, idx) => {
-        const items = (stage.items || []).map(it => {
-          const count = (it.count != null) ? `<span class="ic-hrms-count">${esc(it.count)}</span>` : "";
-          const dt = esc(it.doctype || "");
-          return `<button type="button" class="ic-hrms-item" data-dt="${dt}">
-            <span class="ic-hrms-item-label">${esc(it.label)}</span>${count}
-          </button>`;
-        }).join("");
-        return `<section class="ic-hrms-stage">
-          <div class="ic-hrms-stage-head">
-            <span class="ic-hrms-step">${idx + 1}</span>
-            <div>
-              <div class="ic-hrms-stage-title">${esc(stage.title)}</div>
-              <div class="ic-hrms-stage-desc">${esc(stage.description || "")}</div>
-            </div>
-          </div>
-          <div class="ic-hrms-items">${items}</div>
-        </section>`;
-      }).join("");
-      el.querySelectorAll(".ic-hrms-item").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const dt = btn.getAttribute("data-dt");
-          if (dt) frappe.set_route("List", dt);
-        });
-      });
-    }
-  });
-})();
-"""
-	style = """
-.ic-hrms-hub {
-  font-family: "Poppins", "Segoe UI", sans-serif;
-  border: 1.5px solid #033447;
-  border-radius: 12px;
-  background: linear-gradient(165deg, #f4fafc 0%, #ffffff 45%);
-  padding: 18px 20px 16px;
-  margin-bottom: 8px;
-}
-.ic-hrms-hub-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-.ic-hrms-hub-brand {
-  font-weight: 800;
-  font-size: 1.35rem;
-  color: #033447;
-  letter-spacing: -0.03em;
-}
-.ic-hrms-hub-sub {
-  color: #5b7382;
-  font-size: 0.9rem;
-  margin-top: 4px;
-  max-width: 40rem;
-  line-height: 1.35;
-}
-.ic-hrms-hub-actions { display:flex; gap:8px; flex-wrap:wrap; }
-.ic-hrms-stages {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-@media (min-width: 980px) {
-  .ic-hrms-stages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-.ic-hrms-stage {
-  border: 1px solid #d5e4ee;
-  border-radius: 10px;
-  background: #fff;
-  padding: 14px 14px 12px;
-}
-.ic-hrms-stage-head {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  margin-bottom: 10px;
-}
-.ic-hrms-step {
-  flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: #EC6820;
-  color: #fff;
-  font-weight: 750;
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.ic-hrms-stage-title {
-  font-weight: 750;
-  color: #033447;
-  font-size: 1rem;
-}
-.ic-hrms-stage-desc {
-  color: #5b7382;
-  font-size: 0.8rem;
-  margin-top: 2px;
-}
-.ic-hrms-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.ic-hrms-item {
-  border: 1px solid #c5d6e2;
-  background: #f7fbfd;
-  border-radius: 8px;
-  padding: 8px 10px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: #065175;
-}
-.ic-hrms-item:hover {
-  border-color: #033447;
-  background: #fff;
-}
-.ic-hrms-count {
-  background: #033447;
-  color: #fff;
-  border-radius: 6px;
-  padding: 1px 7px;
-  font-size: 0.72rem;
-}
-.ic-hrms-empty {
-  border: 1.5px dashed #9bb4c3;
-  border-radius: 10px;
-  padding: 18px;
-  color: #5b7382;
-  text-align: center;
-}
-"""
-	_upsert_html_block(name, html, script, style=style)
-
