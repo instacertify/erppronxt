@@ -299,29 +299,35 @@ def _create_laboratories():
 
 
 def _create_customers():
+	# (name, country, state, currency, gstin, customer_group category)
 	customers = [
-		("ABC Electronics Pvt. Ltd.", "India", "Maharashtra", "INR", "27AABCU9603R1ZM"),
-		("Shakti Appliances India", "India", "Gujarat", "INR", "24AADCS1234A1Z5"),
-		("Nova Circuits Pvt Ltd", "India", "Karnataka", "INR", "29AABCN9988B1Z2"),
-		("BrightLite Manufacturing", "India", "Tamil Nadu", "INR", "33AABCB5566C1Z9"),
-		("Hindustan Power Gadgets", "India", "Delhi", "INR", "07AABCH7788D1Z1"),
-		("GlobalTech Imports LLC", "United States", "California", "USD", None),
-		("Nordic Home Devices AB", "Sweden", "", "USD", None),
-		("Orient Trading Co.", "United Arab Emirates", "Dubai", "USD", None),
-		("Pacific Brands Ltd", "Singapore", "", "USD", None),
-		("Aurora Consumer Tech", "India", "Telangana", "INR", "36AABCA1122E1Z3"),
+		("ABC Electronics Pvt. Ltd.", "India", "Maharashtra", "INR", "27AABCU9603R1ZM", "Manufacturer"),
+		("Shakti Appliances India", "India", "Gujarat", "INR", "24AADCS1234A1Z5", "Manufacturer"),
+		("Nova Circuits Pvt Ltd", "India", "Karnataka", "INR", "29AABCN9988B1Z2", "Manufacturer"),
+		("BrightLite Manufacturing", "India", "Tamil Nadu", "INR", "33AABCB5566C1Z9", "Manufacturer"),
+		("Hindustan Power Gadgets", "India", "Delhi", "INR", "07AABCH7788D1Z1", "Manufacturer"),
+		("GlobalTech Imports LLC", "United States", "California", "USD", None, "Importer"),
+		("Nordic Home Devices AB", "Sweden", "", "USD", None, "Manufacturer"),
+		("Orient Trading Co.", "United Arab Emirates", "Dubai", "USD", None, "Trader"),
+		("Pacific Brands Ltd", "Singapore", "", "USD", None, "Agent"),
+		("Aurora Consumer Tech", "India", "Telangana", "INR", "36AABCA1122E1Z3", "Manufacturer"),
 	]
+	from instacertify.setup.install import CUSTOMER_GROUP_CATEGORIES, ensure_customer_groups
+
+	ensure_customer_groups()
+	default_group = "Manufacturer" if "Manufacturer" in CUSTOMER_GROUP_CATEGORIES else CUSTOMER_GROUP_CATEGORIES[0]
 	names = []
-	for name, country, state, currency, gst in customers:
+	for name, country, state, currency, gst, group in customers:
 		if frappe.db.exists("Customer", name):
 			names.append(name)
 			continue
+		customer_group = group if frappe.db.exists("Customer Group", group) else default_group
 		doc = frappe.get_doc(
 			{
 				"doctype": "Customer",
 				"customer_name": name,
 				"customer_type": "Company",
-				"customer_group": "Commercial",
+				"customer_group": customer_group,
 				"territory": "All Territories" if frappe.db.exists("Territory", "All Territories") else frappe.db.get_value("Territory", {}, "name"),
 				"default_currency": currency,
 				"ic_country": country if frappe.db.exists("Country", country) else None,
