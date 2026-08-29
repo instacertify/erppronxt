@@ -33,6 +33,150 @@ BANK_UPI_PAYMENT_HTML = """
 <div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
 """
 
+# Instacertify Aptos Display / Aptos print typography (quotations + printable docs)
+# Hierarchy: Display for titles/headings; Aptos for body/tables/terms.
+IC_PRINT_TYPOGRAPHY_CSS = """
+  @font-face {
+    font-family: 'Aptos Display';
+    src: url('/assets/instacertify/fonts/aptos/Aptos-Display.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Aptos Display';
+    src: url('/assets/instacertify/fonts/aptos/Aptos-Display-Bold.ttf') format('truetype');
+    font-weight: 600 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Aptos';
+    src: url('/assets/instacertify/fonts/aptos/Aptos.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Aptos';
+    src: url('/assets/instacertify/fonts/aptos/Aptos-SemiBold.ttf') format('truetype');
+    font-weight: 500 600;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Aptos';
+    src: url('/assets/instacertify/fonts/aptos/Aptos-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --ic-navy: #075779;
+    --ic-orange: #F26D21;
+    --ic-ink: #263238;
+    --ic-soft: #E7F1FC;
+    --ic-white: #FFFFFF;
+  }
+  .ic-font-body, .ic-quote, .ic-inv, .tq, .cq, .ic, .ic-sheet {
+    font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif;
+    color: var(--ic-ink);
+    font-size: 10px;
+    line-height: 1.45;
+    font-weight: 400;
+  }
+  .ic-doc-title, .tq-title, .cq-title {
+    font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 30pt !important;
+    color: var(--ic-navy) !important;
+    letter-spacing: 0.02em;
+    text-align: center;
+    margin: 10px 0 14px !important;
+    line-height: 1.15;
+  }
+  .ic-doc-subtitle, .cq-service {
+    font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 20pt !important;
+    color: var(--ic-navy) !important;
+    text-align: center;
+    margin: 0 0 14px !important;
+    line-height: 1.2;
+  }
+  .ic-section-heading, .tq-label, .cq-bar, .ic-box > h3, .tq-h, .cq-h {
+    font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 15pt !important;
+    color: var(--ic-navy) !important;
+    letter-spacing: 0.01em;
+  }
+  .tq-label, .cq-bar {
+    font-size: 11pt !important;
+    background: var(--ic-soft) !important;
+  }
+  .ic-subheading {
+    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 12pt !important;
+    color: var(--ic-navy) !important;
+  }
+  .ic-quote-no, .tq-meta, .cq-meta {
+    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 9.5pt !important;
+    color: var(--ic-ink) !important;
+  }
+  .ic-lh-co .name, .tq-co .name, .cq-co .name {
+    font-family: 'Aptos Display', 'Aptos', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 12.5px !important;
+    color: var(--ic-navy) !important;
+  }
+  .ic-lh, .tq-head, .cq-head {
+    border-bottom-color: var(--ic-orange) !important;
+    background: transparent;
+  }
+  table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
+    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 9.5pt !important;
+    background: var(--ic-navy) !important;
+    color: var(--ic-white) !important;
+  }
+  table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
+    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 400 !important;
+    font-size: 9.5pt !important;
+    color: var(--ic-ink) !important;
+  }
+  .ic-grand-total, .ic-price-callout, table.tq-comm td.amt, table.cq-comm td.amt {
+    font-family: 'Aptos Display', 'Aptos', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 18pt !important;
+    color: var(--ic-navy) !important;
+  }
+  table.tq-comm td.amt, table.cq-comm td.amt {
+    font-size: 10.5pt !important;
+    font-family: 'Aptos', sans-serif !important;
+    font-weight: 600 !important;
+  }
+  .ic-terms, .tq-note, .cq-body .ic-terms {
+    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 400 !important;
+    font-size: 8.75pt !important;
+    color: var(--ic-ink) !important;
+  }
+  .ic-footer-bar, .tq-footer-bar, .cq-footer-bar {
+    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-weight: 400 !important;
+    font-size: 8.5pt !important;
+    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%) !important;
+  }
+  .ic-accent-text { color: var(--ic-orange) !important; }
+  .ic-soft-block { background: var(--ic-soft) !important; }
+"""
+
 QUOTATION_HTML = """
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
 {%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
@@ -44,30 +188,35 @@ QUOTATION_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
-  .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: #1a1a1a; font-size: 11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .ic-quote { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color: var(--ic-ink); font-size: 10px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
-  .ic-accent { color: #F26D21; }
-  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #0D47A1; margin-bottom: 12px; }
+  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
+  .ic-lh-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
+  .ic-accent { color: var(--ic-orange); }
+  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-navy); margin-bottom: 12px; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
   .ic-box { border: 1px solid #d9e6ee; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
-  .ic-box h3 { margin: 0 0 8px 0; color: #0D47A1; font-size: 13px; border-bottom: 1px solid #E7F1FC; padding-bottom: 4px; }
+  .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; border-bottom: 1px solid #ecf3f7; padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.ic-table th { background: #0D47A1; color: #fff; padding: 6px 8px; text-align: left; font-size: 10px; }
-  table.ic-table td { border-bottom: 1px solid #e5eef3; padding: 6px 8px; }
-  .badge-pass { background: #FFF0E8; color: #F26D21; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
-  .badge-rev { background: #e8f4fa; color: #0D47A1; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
-  .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; }
-  .ic-sign { margin-top: 28px; page-break-inside: avoid; }
+  table.ic-table th { background: var(--ic-navy); color: #fff; padding: 6px 8px; text-align: left; font-family:'Aptos',sans-serif; font-weight:600; font-size: 9.5pt; }
+  table.ic-table td { border-bottom: 1px solid #e5eef3; padding: 6px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  .badge-pass { background: #fff3e8; color: var(--ic-orange); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
+  .badge-rev { background: var(--ic-soft); color: var(--ic-navy); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
+  .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; font-family:'Aptos',sans-serif; font-size:8.5pt; }
+  .ic-qr { float: right; margin: 0 0 8px 16px; text-align: center; }
+  .ic-qr img { width: 72px; height: 72px; }
+  .ic-qr .cap { font-size: 8px; color: #555; font-family:'Aptos',sans-serif; }
+  .ic-sign { margin-top: 28px; page-break-inside: avoid; font-family:'Aptos',sans-serif; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
-    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
+  .ic-grand-total { font-family:'Aptos Display',sans-serif; font-weight:700; font-size:18pt; color:var(--ic-navy); }
 </style>
 <div class="ic-quote">
   <div class="ic-lh">
@@ -82,7 +231,7 @@ QUOTATION_HTML = """
       <div><b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <div style="text-align:center;font-size:18px;font-weight:700;margin:8px 0 12px;">Quotation</div>
+  <div class="ic-doc-title">QUOTATION</div>
   <div class="ic-meta">
     <div>
       <div><b>Quotation:</b> {{ doc.name }}</div>
@@ -158,7 +307,7 @@ QUOTATION_HTML = """
     <div style="margin-top:10px;">
       <div><b>Instacertify Commercial Value:</b> {{ frappe.utils.fmt_money(doc.ic_commercial_value, currency=doc.currency) }}</div>
       <div><b>Pass-Through Charges:</b> {{ frappe.utils.fmt_money(doc.ic_passthrough_value, currency=doc.currency) }}</div>
-      <div><b>Total Quoted Value:</b> {{ frappe.utils.fmt_money(doc.ic_total_quoted_value or doc.grand_total, currency=doc.currency) }}</div>
+      <div class="ic-grand-total">Total Quoted Value: {{ frappe.utils.fmt_money(doc.ic_total_quoted_value or doc.grand_total, currency=doc.currency) }}</div>
     </div>
   </div>
   {% endif %}
@@ -182,7 +331,7 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
 
-  <div class="ic-box">
+  <div class="ic-box ic-terms">
     <h3>Terms and Conditions</h3>
     {{ doc.ic_terms_and_conditions or doc.terms or '' }}
   </div>
@@ -201,7 +350,15 @@ QUOTATION_HTML = """
   </div>
 
   <div class="ic-footer">
-    <div style="color:#667;">Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
+    <div style="max-width:70%; color:#667;">Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
+    <div class="ic-qr">
+      {% if doc.ic_qr_code %}
+        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+      {% else %}
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+      {% endif %}
+      <div style="font-size:8px;">Scan to verify</div>
+    </div>
   </div>
   <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
@@ -218,22 +375,23 @@ INVOICE_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
-  .ic-inv { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size: 11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .ic-inv { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; font-size: 10px; color: var(--ic-ink); }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
+  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
+  .ic-lh-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
   table { width:100%; border-collapse: collapse; margin-top:12px; }
-  th { background:#0D47A1; color:#fff; padding:6px; text-align:left; }
-  td { border-bottom:1px solid #e5eef3; padding:6px; }
+  th { background:var(--ic-navy); color:#fff; padding:6px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
+  td { border-bottom:1px solid #e5eef3; padding:6px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
   .qr { text-align:right; margin-top:20px; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
-    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
 </style>
@@ -250,8 +408,8 @@ INVOICE_HTML = """
       <div><b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <div style="text-align:center;font-size:18px;font-weight:700;margin:8px 0 12px;">Tax Invoice</div>
-  <p><b>Invoice:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Date:</b> {{ frappe.utils.formatdate(doc.posting_date) }}</p>
+  <div class="ic-doc-title">TAX INVOICE</div>
+  <p class="ic-quote-no"><b>Invoice:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Date:</b> {{ frappe.utils.formatdate(doc.posting_date) }}</p>
   <p><b>Customer:</b> {{ doc.customer_name }}</p>
   <table>
     <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
@@ -266,7 +424,7 @@ INVOICE_HTML = """
     {% endfor %}
     </tbody>
   </table>
-  <p style="text-align:right; margin-top:12px;"><b>Grand Total:</b> {{ frappe.utils.fmt_money(doc.grand_total, currency=doc.currency) }}</p>
+  <p class="ic-grand-total" style="text-align:right; margin-top:12px;">Grand Total: {{ frappe.utils.fmt_money(doc.grand_total, currency=doc.currency) }}</p>
   <div style="margin-top:16px;padding:10px 12px;border:1px solid #d9e6ee;border-radius:6px;">
     <div style="font-weight:700;color:#065175;margin-bottom:8px;font-size:12px;">Bank Details &amp; UPI Payment</div>
 """ + BANK_UPI_PAYMENT_HTML + """
@@ -289,16 +447,17 @@ SAMPLE_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
-  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:11px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
   .qr img { width:90px; height:90px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -314,7 +473,7 @@ SAMPLE_HTML = """
       <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <h2 style="margin:0 0 10px; color:#0D47A1;">Sample Tracking Label</h2>
+  <h2 style="margin:0 0 10px; color:#065175;">Sample Tracking Label</h2>
   <p><b>Tracking No:</b> {{ doc.tracking_number }}</p>
   <p><b>Customer:</b> {{ doc.customer }}</p>
   <p><b>Description:</b> {{ doc.sample_description }}</p>
@@ -339,15 +498,16 @@ TESTING_HTML = """
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
-  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:11px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -363,7 +523,7 @@ TESTING_HTML = """
       <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <h2 style="margin:0 0 10px; color:#0D47A1;">Testing Request</h2>
+  <h2 style="margin:0 0 10px; color:#065175;">Testing Request</h2>
   <p><b>{{ doc.name }}</b> — {{ doc.title }}</p>
   <p><b>Customer:</b> {{ doc.customer }} | <b>Project:</b> {{ doc.project or '' }}</p>
   <p><b>Product:</b> {{ doc.product }} | <b>Test:</b> {{ doc.test_name }}</p>
@@ -382,20 +542,22 @@ JOINING_HTML = """
 {%- set email = s.email or 'contact@instacertify.com' -%}
 {%- set website = s.website or 'www.instacertify.com' -%}
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
+{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Georgia, 'Times New Roman', serif; font-size:12px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #F26D21; margin-bottom:14px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #EC6820; margin-bottom:14px; }
   .ic-lh-logo img { max-height:52px; max-width:300px; }
   .ic-lh-co { text-align:right; font-family: Arial, Helvetica, sans-serif; color:#222; font-size:10px; line-height:1.4; }
-  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:12px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12px; text-transform:uppercase; }
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -411,9 +573,10 @@ JOINING_HTML = """
       <div>✉ {{ email }}</div>
       <div>{{ website }}</div>
       <div><b>CIN :</b> {{ cin }}</div>
+      <div><b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <h3 style="color:#0D47A1;">Joining Letter</h3>
+  <h3 style="color:#065175;">Joining Letter</h3>
   <p>Date: {{ frappe.utils.formatdate(doc.joining_date) }}</p>
   <p>Dear <b>{{ doc.employee_name }}</b>,</p>
   {{ doc.letter_content or '<p>We are pleased to welcome you to Instacertify.</p>' }}
@@ -422,209 +585,10 @@ JOINING_HTML = """
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Joining Letter/' + doc.name) }}" alt="QR"/>
     <div>Verification: {{ doc.verification_code or doc.name }}</div>
   </div>
-  <p style="margin-top:28px;"><b>For {{ legal }}</b></p>
+  <p style="margin-top:28px;"><b>For Instacertify Labs Private Limited</b></p>
   <div class="ic-footer-bar">www.instacertify.com</div>
 </div>
 """
-
-# HR letterhead prints — logo + company details, NO GSTIN (Salary Slip / Job Offer / Joining)
-HR_LETTERHEAD_CSS = """
-  @page { size: A4; margin: 12mm; }
-  .print-format { padding:0 !important; margin:0 !important; }
-  .ic-hr { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#1a1a1a; font-size:11px; line-height:1.45; }
-  .ic-hr-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #F26D21; margin-bottom:14px; }
-  .ic-hr-lh-logo img { max-height:52px; max-width:300px; }
-  .ic-hr-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .ic-hr-lh-co .name { color:#F26D21; font-weight:700; font-size:12px; text-transform:uppercase; margin-bottom:2px; }
-  .ic-hr-title { color:#0D47A1; font-size:18px; font-weight:700; margin:4px 0 14px; text-align:center; }
-  .ic-hr-meta { display:flex; justify-content:space-between; gap:12px; margin-bottom:14px; padding:10px 12px; background:#E7F1FC; border-radius:8px; }
-  .ic-hr-box { border:1px solid #c9dbf2; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
-  .ic-hr-box h4 { margin:0 0 8px; color:#0D47A1; font-size:12px; border-bottom:1px solid #E7F1FC; padding-bottom:4px; }
-  table.ic-hr-table { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.ic-hr-table th { background:#0D47A1; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
-  table.ic-hr-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; font-size:10.5px; }
-  table.ic-hr-table td.num, table.ic-hr-table th.num { text-align:right; }
-  .ic-hr-totals { margin-top:10px; width:100%; }
-  .ic-hr-totals td { padding:4px 0; }
-  .ic-hr-totals td.k { color:#555; }
-  .ic-hr-totals td.v { text-align:right; font-weight:700; color:#0D47A1; }
-  .ic-hr-sign { margin-top:36px; page-break-inside:avoid; }
-  .ic-hr-footer {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
-    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
-    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
-    border:none; line-height:1.2;
-  }
-"""
-
-HR_LETTERHEAD_VARS = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
-{%- set phone = s.phone or '+91 9999118039' -%}
-{%- set email = s.email or 'contact@instacertify.com' -%}
-{%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
-"""
-
-HR_LETTERHEAD_BLOCK = """
-  <div class="ic-hr-lh">
-    <div class="ic-hr-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div class="ic-hr-lh-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>☎ {{ phone }}</div>
-      <div>✉ {{ email }}</div>
-      <div>{{ website }}</div>
-      <div><b>CIN :</b> {{ cin }}</div>
-    </div>
-  </div>
-"""
-
-JOB_OFFER_HTML = (
-	HR_LETTERHEAD_VARS
-	+ """
-<style>
-"""
-	+ HR_LETTERHEAD_CSS
-	+ """
-</style>
-<div class="ic-hr">
-"""
-	+ HR_LETTERHEAD_BLOCK
-	+ """
-  <div class="ic-hr-title">Job Offer Letter</div>
-  <div class="ic-hr-meta">
-    <div>
-      <div><b>Offer No:</b> {{ doc.name }}</div>
-      <div><b>Offer Date:</b> {{ frappe.utils.formatdate(doc.offer_date) if doc.offer_date else '' }}</div>
-      <div><b>Status:</b> {{ doc.status or '' }}</div>
-    </div>
-    <div style="text-align:right;">
-      <div><b>Company:</b> {{ doc.company or legal }}</div>
-      <div><b>Designation:</b> {{ doc.designation or '' }}</div>
-    </div>
-  </div>
-  <div class="ic-hr-box">
-    <h4>Applicant</h4>
-    <div><b>{{ doc.applicant_name or '' }}</b></div>
-    <div>{{ doc.applicant_email or '' }}</div>
-    {% if doc.job_applicant %}<div>Applicant ID: {{ doc.job_applicant }}</div>{% endif %}
-  </div>
-  {% if doc.offer_terms %}
-  <div class="ic-hr-box">
-    <h4>Offer Terms</h4>
-    <table class="ic-hr-table">
-      <thead><tr><th>Term</th><th>Value</th></tr></thead>
-      <tbody>
-      {% for row in doc.offer_terms %}
-        <tr>
-          <td>{{ row.offer_term or row.term or '' }}</td>
-          <td>{{ row.value or '' }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
-  {% if doc.terms %}
-  <div class="ic-hr-box">
-    <h4>Terms &amp; Conditions</h4>
-    <div>{{ doc.terms }}</div>
-  </div>
-  {% endif %}
-  <div class="ic-hr-sign">
-    <p>We look forward to welcoming you to our team.</p>
-    <p style="margin-top:28px;"><b>For {{ legal }}</b></p>
-    <p style="margin-top:40px;">Authorized Signatory</p>
-  </div>
-  <div class="ic-hr-footer">www.instacertify.com</div>
-</div>
-"""
-)
-
-SALARY_SLIP_HTML = (
-	HR_LETTERHEAD_VARS
-	+ """
-<style>
-"""
-	+ HR_LETTERHEAD_CSS
-	+ """
-</style>
-<div class="ic-hr">
-"""
-	+ HR_LETTERHEAD_BLOCK
-	+ """
-  <div class="ic-hr-title">Salary Slip</div>
-  <div class="ic-hr-meta">
-    <div>
-      <div><b>Slip No:</b> {{ doc.name }}</div>
-      <div><b>Period:</b> {{ frappe.utils.formatdate(doc.start_date) if doc.start_date else '' }}
-        {% if doc.end_date %} – {{ frappe.utils.formatdate(doc.end_date) }}{% endif %}</div>
-      <div><b>Posting Date:</b> {{ frappe.utils.formatdate(doc.posting_date) if doc.posting_date else '' }}</div>
-    </div>
-    <div style="text-align:right;">
-      <div><b>Employee:</b> {{ doc.employee_name or doc.employee or '' }}</div>
-      <div><b>Designation:</b> {{ doc.designation or '' }}</div>
-      <div><b>Department:</b> {{ doc.department or '' }}</div>
-      <div><b>Company:</b> {{ doc.company or legal }}</div>
-    </div>
-  </div>
-  {% if doc.earnings %}
-  <div class="ic-hr-box">
-    <h4>Earnings</h4>
-    <table class="ic-hr-table">
-      <thead><tr><th>Component</th><th class="num">Amount</th></tr></thead>
-      <tbody>
-      {% for row in doc.earnings %}
-        <tr>
-          <td>{{ row.salary_component or '' }}</td>
-          <td class="num">{{ frappe.utils.fmt_money(row.amount or 0, currency=doc.currency) }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
-  {% if doc.deductions %}
-  <div class="ic-hr-box">
-    <h4>Deductions</h4>
-    <table class="ic-hr-table">
-      <thead><tr><th>Component</th><th class="num">Amount</th></tr></thead>
-      <tbody>
-      {% for row in doc.deductions %}
-        <tr>
-          <td>{{ row.salary_component or '' }}</td>
-          <td class="num">{{ frappe.utils.fmt_money(row.amount or 0, currency=doc.currency) }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
-  <div class="ic-hr-box">
-    <h4>Summary</h4>
-    <table class="ic-hr-totals">
-      <tr><td class="k">Gross Pay</td><td class="v">{{ frappe.utils.fmt_money(doc.gross_pay or 0, currency=doc.currency) }}</td></tr>
-      <tr><td class="k">Total Deduction</td><td class="v">{{ frappe.utils.fmt_money(doc.total_deduction or 0, currency=doc.currency) }}</td></tr>
-      <tr><td class="k">Net Pay</td><td class="v">{{ frappe.utils.fmt_money(doc.net_pay or doc.rounded_total or 0, currency=doc.currency) }}</td></tr>
-      {% if doc.total_in_words %}
-      <tr><td class="k">In Words</td><td class="v" style="font-weight:500;">{{ doc.total_in_words }}</td></tr>
-      {% endif %}
-      {% if doc.bank_name %}
-      <tr><td class="k">Bank</td><td class="v" style="font-weight:500;">{{ doc.bank_name }}</td></tr>
-      {% endif %}
-    </table>
-  </div>
-  <div class="ic-hr-sign">
-    <p style="margin-top:28px;"><b>For {{ legal }}</b></p>
-    <p style="margin-top:40px;">Authorized Signatory · HR</p>
-  </div>
-  <div class="ic-hr-footer">www.instacertify.com</div>
-</div>
-"""
-)
 
 # Matches uploaded Instacertify Labs testing quotation template (A4)
 # Source: public/templates/testing_quotation_template.pdf
@@ -647,44 +611,48 @@ TESTING_QUOTATION_HTML = """
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
-  .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.45; }
+  .tq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
   .tq-logo img { max-height:58px; max-width:320px; }
-  .tq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .tq-co .name { color:#F26D21; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
-  .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
-  .tq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 16px; color:#111; }
+  .tq-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
+  .tq-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
+  .tq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:30pt; font-weight:700; margin:10px 0 16px; color:var(--ic-navy); letter-spacing:0.02em; line-height:1.15; }
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
   table.tq-grid > tbody > tr { page-break-inside:avoid; }
   table.tq-grid > tbody > tr > td { border:1px solid #333; vertical-align:top; padding:0; }
-  .tq-label { width:17%; background:#efefef; font-weight:700; padding:10px 8px; color:#111; font-size:10.5px; }
-  .tq-value { width:83%; padding:10px 12px; }
+  .tq-label { width:17%; background:var(--ic-soft); font-family:'Aptos Display',sans-serif; font-weight:600; padding:10px 8px; color:var(--ic-navy); font-size:11pt; }
+  .tq-value { width:83%; padding:10px 12px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
   .tq-value ul { margin:6px 0 0 18px; padding:0; }
   .tq-value ol { margin:6px 0 0 18px; padding:0; }
   .tq-value li { margin-bottom:4px; }
-  .tq-h { font-weight:700; margin:0 0 6px; }
+  .tq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
   table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.tq-comm th { background:#f5f5f5; border:1px solid #555; padding:7px 5px; font-size:9.5px; text-align:center; font-weight:700; }
-  table.tq-comm td { border:1px solid #555; padding:7px 5px; font-size:10px; vertical-align:top; }
+  table.tq-comm th { background:var(--ic-navy); color:#fff; border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
+  table.tq-comm td { border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-ink); }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
-  table.tq-comm td.amt { text-align:center; white-space:nowrap; font-weight:600; }
-  .tq-note { margin-top:8px; font-size:10px; }
+  table.tq-comm td.amt { text-align:center; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); }
+  .tq-note { margin-top:8px; font-family:'Aptos',sans-serif; font-size:8.75pt; color:var(--ic-ink); }
   table.tq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.tq-bank td { border:1px solid #555; padding:7px 8px; }
-  table.tq-bank td.k { width:34%; background:#f5f5f5; font-weight:600; }
-  .tq-close { margin-top:28px; page-break-inside:avoid; }
+  table.tq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  table.tq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
+  .tq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
   .tq-close p { margin:6px 0; }
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
-  .tq-sign { margin-top:8px; font-weight:700; }
+  .tq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
   .tq-footer-bar {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
-    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
+  .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
+  .tq-qr img { width:72px; height:72px; }
+  .tq-qr .cap { font-size:8px; color:#555; font-family:'Aptos',sans-serif; }
   .print-format { padding:0 !important; margin:0 !important; }
 </style>
 <div class="tq">
@@ -707,7 +675,7 @@ TESTING_QUOTATION_HTML = """
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
-  <div class="tq-title">Quotation</div>
+  <div class="tq-title">QUOTATION</div>
 
   <table class="tq-grid">
     <tr>
@@ -889,6 +857,14 @@ TESTING_QUOTATION_HTML = """
   </table>
 
   <div class="tq-close">
+    <div class="tq-qr">
+      {% if doc.ic_qr_code %}
+        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+      {% else %}
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+      {% endif %}
+      <div class="cap">Scan to verify</div>
+    </div>
     <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
     <p><b>Thanking You,</b></p>
     <div class="tq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
@@ -923,40 +899,44 @@ CONSULTING_QUOTATION_HTML = """
 {%- set title = doc.ic_service_name or 'Consultancy' -%}
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
-  .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.5; }
+  .cq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
-  .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
   .cq-logo img { max-height:58px; max-width:320px; }
-  .cq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .cq-co .name { color:#F26D21; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
-  .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
-  .cq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 14px; color:#111; }
-  .cq-service { text-align:center; font-size:14px; font-weight:700; margin:0 0 14px; }
+  .cq-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
+  .cq-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
+  .cq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:30pt; font-weight:700; margin:10px 0 14px; color:var(--ic-navy); letter-spacing:0.02em; line-height:1.15; }
+  .cq-service { text-align:center; font-family:'Aptos Display',sans-serif; font-size:20pt; font-weight:600; margin:0 0 14px; color:var(--ic-navy); line-height:1.2; }
   .cq-box { border:1px solid #333; margin-bottom:0; }
   .cq-sec { border-top:1px solid #333; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:#efefef; font-weight:700; padding:8px 12px; border-bottom:1px solid #333; font-size:11px; text-transform:uppercase; letter-spacing:0.2px; }
-  .cq-body { padding:12px 14px; }
+  .cq-bar { background:var(--ic-soft); font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid #333; font-size:11pt; text-transform:uppercase; letter-spacing:0.2px; color:var(--ic-navy); }
+  .cq-body { padding:12px 14px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
   .cq-body ul, .cq-body ol { margin:6px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:4px; }
-  .cq-h { font-weight:700; margin:0 0 6px; }
+  .cq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
   table.cq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-comm th { background:#f5f5f5; border:1px solid #555; padding:8px; text-align:left; }
-  table.cq-comm td { border:1px solid #555; padding:8px; vertical-align:top; }
-  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-weight:600; width:32%; }
+  table.cq-comm th { background:var(--ic-navy); color:#fff; border:1px solid #555; padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
+  table.cq-comm td { border:1px solid #555; padding:8px; vertical-align:top; font-family:'Aptos',sans-serif; font-size:9.5pt; color:var(--ic-ink); }
+  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); width:32%; }
   table.cq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-bank td { border:1px solid #555; padding:7px 8px; }
-  table.cq-bank td.k { width:34%; background:#f5f5f5; font-weight:600; }
-  .cq-close { margin-top:28px; page-break-inside:avoid; }
+  table.cq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  table.cq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
+  .cq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
-  .cq-sign { margin-top:8px; font-weight:700; }
+  .cq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
   .cq-footer-bar {
-    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
+    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
-    font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
+  .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
+  .cq-qr img { width:72px; height:72px; }
+  .cq-qr .cap { font-size:8px; color:#555; font-family:'Aptos',sans-serif; }
   .print-format { padding:0 !important; margin:0 !important; }
 </style>
 <div class="cq">
@@ -977,7 +957,7 @@ CONSULTING_QUOTATION_HTML = """
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
-  <div class="cq-title">Quotation</div>
+  <div class="cq-title">QUOTATION</div>
   <div class="cq-service">{{ title }}</div>
 
   <div class="cq-box">
@@ -1129,6 +1109,14 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 
   <div class="cq-close">
+    <div class="cq-qr">
+      {% if doc.ic_qr_code %}
+        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+      {% else %}
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+      {% endif %}
+      <div class="cap">Scan to verify</div>
+    </div>
     <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
     <p><b>Thanking You,</b></p>
     <div class="cq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
@@ -1145,20 +1133,21 @@ DOCUMENTS_COLLECTION_HTML = """
 {%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-title { color:#0D47A1; font-size:16px; font-weight:700; margin:8px 0 4px; }
+  .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
   .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
-  .ic-box h3 { margin:0 0 8px; color:#0D47A1; font-size:13px; border-bottom:1px solid #E7F1FC; padding-bottom:4px; }
+  .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
   table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.ic-table th { background:#0D47A1; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
+  table.ic-table th { background:#065175; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#D45A12 0%,#F26D21 50%,#D45A12 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
   <div class="ic-lh">
@@ -1228,20 +1217,21 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
 {%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
 <style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-title { color:#0D47A1; font-size:16px; font-weight:700; margin:8px 0 4px; }
+  .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
   .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
-  .ic-box h3 { margin:0 0 8px; color:#0D47A1; font-size:13px; border-bottom:1px solid #E7F1FC; padding-bottom:4px; }
+  .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
   table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; vertical-align:top; }
-  table.ic-table td:first-child { width:32%; color:#0D47A1; font-weight:600; }
+  table.ic-table td:first-child { width:32%; color:#065175; font-weight:600; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#D45A12 0%,#F26D21 50%,#D45A12 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
   <div class="ic-lh">
@@ -1288,7 +1278,39 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
 """
 
 
+def _ensure_aptos_fonts():
+	"""Install Aptos Display / Aptos into the system font cache for Chrome PDF."""
+	import os
+	import shutil
+	from pathlib import Path
+
+	try:
+		app_fonts = Path(frappe.get_app_path("instacertify")) / "public" / "fonts" / "aptos"
+		if not app_fonts.is_dir():
+			return
+		dest = Path("/usr/local/share/fonts/aptos")
+		try:
+			dest.mkdir(parents=True, exist_ok=True)
+		except PermissionError:
+			dest = Path.home() / ".local" / "share" / "fonts" / "aptos"
+			dest.mkdir(parents=True, exist_ok=True)
+		copied = False
+		for ttf in app_fonts.glob("*.ttf"):
+			target = dest / ttf.name
+			if not target.exists() or target.stat().st_size != ttf.stat().st_size:
+				try:
+					shutil.copy2(ttf, target)
+					copied = True
+				except Exception:
+					pass
+		if copied:
+			os.system("fc-cache -f >/dev/null 2>&1")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Aptos font install")
+
+
 def ensure_print_formats():
+	_ensure_aptos_fonts()
 	formats = [
 		("Instacertify Quotation", "Quotation", QUOTATION_HTML),
 		("Instacertify Consulting Quotation", "Quotation", CONSULTING_QUOTATION_HTML),
@@ -1297,14 +1319,10 @@ def ensure_print_formats():
 		("Instacertify Sample Label", "IC Sample Tracking", SAMPLE_HTML),
 		("Instacertify Testing Request", "IC Testing Request", TESTING_HTML),
 		("Instacertify Joining Letter", "IC Joining Letter", JOINING_HTML),
-		("Instacertify Job Offer", "Job Offer", JOB_OFFER_HTML),
-		("Instacertify Salary Slip", "Salary Slip", SALARY_SLIP_HTML),
 		("Instacertify Documents Collection Sheet", "IC Document Request", DOCUMENTS_COLLECTION_HTML),
 		("Instacertify Sample Dispatch Collection", "IC Sample Dispatch Collection", SAMPLE_DISPATCH_COLLECTION_HTML),
 	]
 	for name, dt, html in formats:
-		if dt in ("Job Offer", "Salary Slip") and not frappe.db.exists("DocType", dt):
-			continue
 		values = {
 			"html": html,
 			"module": "Instacertify",
@@ -1332,8 +1350,6 @@ def ensure_print_formats():
 	_ensure_default_print_format("IC Sample Tracking", "Instacertify Sample Label")
 	_ensure_default_print_format("IC Testing Request", "Instacertify Testing Request")
 	_ensure_default_print_format("IC Joining Letter", "Instacertify Joining Letter")
-	_ensure_default_print_format("Job Offer", "Instacertify Job Offer")
-	_ensure_default_print_format("Salary Slip", "Instacertify Salary Slip")
 	_ensure_default_print_format("IC Document Request", "Instacertify Documents Collection Sheet")
 	_ensure_default_print_format("IC Sample Dispatch Collection", "Instacertify Sample Dispatch Collection")
 
