@@ -1500,7 +1500,7 @@ frappe.ui.form.on("Quotation", {
 		instacertify.setup_quotation_template_filter(frm);
 		instacertify.render_quotation_entry_guide(frm);
 		instacertify.apply_quotation_naming_series(frm);
-		if (frm.doc.ic_quotation_template) {
+		if (frm.doc.ic_quotation_template && !frm._ic_skip_template_apply) {
 			frm.set_value("ic_quotation_template", "");
 		}
 	},
@@ -1508,26 +1508,68 @@ frappe.ui.form.on("Quotation", {
 	ic_quotation_template(frm) {
 		instacertify.render_quotation_entry_guide(frm);
 		if (!frm.doc.ic_quotation_template) return;
-		if (!frm.doc.name) {
-			frappe.show_alert(__("Save the quotation first to apply a template"));
-			return;
-		}
-		frappe.call({
-			method: "instacertify.quotation.events.apply_quotation_template",
-			args: { quotation: frm.doc.name, template: frm.doc.ic_quotation_template },
-			freeze: true,
-			callback() {
-				frm.reload_doc();
-			},
-		});
+		if (frm._ic_skip_template_apply) return;
+		instacertify.apply_quote_format_to_form(frm, frm.doc.ic_quotation_template);
 	},
 });
+
+instacertify.apply_quote_format_to_form = function (frm, template) {
+	if (!template) return;
+	frappe.call({
+		method: "instacertify.quotation.events.get_quotation_template_payload",
+		args: { template },
+		freeze: true,
+		freeze_message: __("Loading quote format…"),
+		callback(r) {
+			const payload = r.message || {};
+			instacertify.fill_quotation_from_format_payload(frm, payload);
+			frappe.show_alert({
+				message: payload.message || __("Format applied — edit headings and values as needed"),
+				indicator: "green",
+			});
+		},
+	});
+};
+
+instacertify.fill_quotation_from_format_payload = function (frm, payload) {
+	payload = payload || {};
+	const fields = payload.fields || {};
+	frm._ic_skip_template_apply = true;
+	const chain = Promise.resolve();
+	let p = chain;
+	Object.keys(fields).forEach((key) => {
+		const val = fields[key];
+		if (val === undefined || val === null || val === "") {
+			if (key === "ic_subject") return;
+		}
+		p = p.then(() => frm.set_value(key, val));
+	});
+	return p
+		.then(() => {
+			frm.clear_table("ic_cost_items");
+			(payload.cost_items || []).forEach((row) => {
+				frm.add_child("ic_cost_items", row);
+			});
+			frm.clear_table("ic_test_items");
+			(payload.test_items || []).forEach((row) => {
+				frm.add_child("ic_test_items", row);
+			});
+			frm.refresh_field("ic_cost_items");
+			frm.refresh_field("ic_test_items");
+			instacertify.toggle_quotation_sections(frm);
+			instacertify.apply_quotation_naming_series(frm);
+			instacertify.render_quotation_entry_guide(frm);
+		})
+		.finally(() => {
+			frm._ic_skip_template_apply = false;
+		});
+};
 
 instacertify.QUOTATION_TYPE_HELP = {
 	Consulting: {
 		title: "Consulting / Certification",
 		steps: [
-			"Select a Quotation Template (right) or fill title & standards below",
+			"Quote type + library format are chosen first — edit title, standards, and headings below",
 			"Enter commercials in Cost Items",
 			"Review payment terms → Share with Customer",
 		],
@@ -1535,15 +1577,15 @@ instacertify.QUOTATION_TYPE_HELP = {
 	Service: {
 		title: "Service",
 		steps: [
-			"Pick a Service/Consulting template",
-			"Confirm title, timeline, and cost lines",
+			"Confirm the library format title, timeline, and cost lines (all editable)",
+			"Adjust commercials as needed",
 			"Share with Customer when ready",
 		],
 	},
 	Testing: {
 		title: "Testing",
 		steps: [
-			"Open Test Lines — pick Laboratory, then Lab Test Scope",
+			"Format may prefill testing notes — open Test Lines for Laboratory & Lab Test Scope",
 			"Charges fill from the lab library; adjust samples if needed",
 			"Share with Customer when ready",
 		],
@@ -1551,14 +1593,14 @@ instacertify.QUOTATION_TYPE_HELP = {
 	Renewal: {
 		title: "Renewal",
 		steps: [
-			"Choose a Renewal template if available",
+			"Confirm renewal format headings from the library",
 			"Update validity / commercial lines",
 			"Share with Customer",
 		],
 	},
 	Other: {
 		title: "Other",
-		steps: ["Fill service basics", "Add cost lines", "Share when ready"],
+		steps: ["Edit service basics from the format (or fill blank)", "Add cost lines", "Share when ready"],
 	},
 	"Multiple Products / Multiple Services": {
 		title: "Multiple Products / Services",
@@ -1789,75 +1831,265 @@ instacertify.apply_lab_test_scope = function (frm, cdt, cdn) {
 	});
 };
 
-// Prompt for quotation type on new — clearer type + template selection
+// Prompt: type first → then Quote Format Library dropdown → editable form
 frappe.ui.form.on("Quotation", {
 	onload(frm) {
 		instacertify.setup_quotation_template_filter(frm);
 		frm.wrapper && frm.wrapper.addClass("ic-quotation-form");
+		if (frm.is_new() && frm.doc.ic_quotation_template && frm.doc.ic_quotation_type) {
+			// Started from library "Use in Quotation" — apply format values once
+			if (!frm._ic_format_applied_on_load) {
+				frm._ic_format_applied_on_load = true;
+				setTimeout(() => {
+					instacertify.apply_quote_format_to_form(frm, frm.doc.ic_quotation_template);
+				}, 300);
+			}
+			return;
+		}
 		if (frm.is_new() && !frm.doc.ic_quotation_type) {
-			const d = new frappe.ui.Dialog({
-				title: __("New Quotation — choose type"),
-				size: "large",
-				fields: [
-					{
-						fieldtype: "HTML",
-						fieldname: "help",
-						options: `<div class="ic-quote-dialog-help">
-							<strong>${__("Step 1")}</strong> ${__("Pick the quotation type")}<br>
-							<strong>${__("Step 2")}</strong> ${__("Optionally pick a template (filtered by type)")}<br>
-							<span class="text-muted">${__("You can change both later on the form.")}</span>
-						</div>`,
-					},
-					{
-						fieldname: "ic_quotation_type",
-						fieldtype: "Select",
-						label: __("Quotation Type"),
-						options:
-							"Consulting\nTesting\nRenewal\nService\nOther\nMultiple Products / Multiple Services",
-						reqd: 1,
-						default: "Consulting",
-						description: __(
-							"Consulting/Service = certification · Testing = lab lines · Renewal = renewals"
-						),
-					},
-					{
-						fieldname: "ic_quotation_template",
-						fieldtype: "Link",
-						label: __("Quotation Template (optional)"),
-						options: "IC Quotation Template",
-						get_query() {
-							const t = d.get_value("ic_quotation_type");
-							const filters = { is_active: 1 };
-							if (t === "Consulting" || t === "Service") {
-								filters.quotation_type = ["in", ["Consulting", "Service"]];
-							} else if (t) {
-								filters.quotation_type = t;
-							}
-							return { filters };
-						},
-					},
-				],
-				primary_action_label: __("Continue to form"),
-				primary_action(values) {
-					frm.set_value("ic_quotation_type", values.ic_quotation_type);
-					instacertify.apply_quotation_naming_series(frm);
-					if (values.ic_quotation_template) {
-						frm.set_value("ic_quotation_template", values.ic_quotation_template);
-					}
-					d.hide();
-					setTimeout(() => {
-						frm.scroll_to_field("ic_quotation_type");
-						instacertify.render_quotation_entry_guide(frm);
-					}, 200);
-				},
-			});
-			d.fields_dict.ic_quotation_type.df.onchange = () => {
-				d.set_value("ic_quotation_template", "");
-			};
-			d.show();
+			instacertify.open_new_quotation_type_format_dialog(frm);
 		}
 	},
 });
+
+instacertify.open_new_quotation_type_format_dialog = function (frm) {
+	const TYPE_OPTIONS = [
+		{ value: "Consulting", label: __("Consulting"), hint: __("Certification / consultancy packs") },
+		{ value: "Testing", label: __("Testing"), hint: __("Lab tests & commercials") },
+		{ value: "Other", label: __("Other"), hint: __("Custom / miscellaneous") },
+		{ value: "Renewal", label: __("Renewal"), hint: __("Certificate / licence renewals") },
+		{ value: "Service", label: __("Service"), hint: __("Service delivery quotes") },
+		{
+			value: "Multiple Products / Multiple Services",
+			label: __("Multi Product / Service"),
+			hint: __("Bundled multi-line quotes"),
+		},
+	];
+
+	let format_map = {};
+
+	const d = new frappe.ui.Dialog({
+		title: __("New Quotation"),
+		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "help",
+				options: `<div class="ic-quote-dialog-help">
+					<div class="ic-quote-dialog-step"><strong>${__("1.")}</strong> ${__(
+						"Choose quote type (Consulting, Testing, Other…)"
+					)}</div>
+					<div class="ic-quote-dialog-step"><strong>${__("2.")}</strong> ${__(
+						"Pick a format from the Quote Format Library"
+					)}</div>
+					<div class="ic-quote-dialog-step text-muted">${__(
+						"Headings, commercials, and terms load from the format — edit anything on the form after."
+					)}</div>
+				</div>`,
+			},
+			{
+				fieldname: "ic_quotation_type",
+				fieldtype: "Select",
+				label: __("Quote Type"),
+				options: TYPE_OPTIONS.map((t) => t.value).join("\n"),
+				reqd: 1,
+				default: "Consulting",
+				description: __("Required first — filters formats from the library"),
+			},
+			{
+				fieldtype: "HTML",
+				fieldname: "type_chips",
+				options: `<div class="ic-new-quote-type-chips">${TYPE_OPTIONS.map(
+					(t) =>
+						`<button type="button" class="ic-new-quote-type-chip" data-type="${frappe.utils.escape_html(
+							t.value
+						)}">
+							<span class="ic-new-quote-type-name">${frappe.utils.escape_html(t.label)}</span>
+							<span class="ic-new-quote-type-hint">${frappe.utils.escape_html(t.hint)}</span>
+						</button>`
+				).join("")}</div>`,
+			},
+			{
+				fieldname: "ic_quotation_template",
+				fieldtype: "Select",
+				label: __("Quote Format (from library)"),
+				options: "",
+				reqd: 1,
+				description: __("Suggested formats for the selected type — change type to refresh the list"),
+			},
+			{
+				fieldtype: "HTML",
+				fieldname: "format_hint",
+				options: `<div class="ic-new-quote-format-hint text-muted"></div>`,
+			},
+			{
+				fieldname: "skip_format",
+				fieldtype: "Check",
+				label: __("Continue without a library format (blank quote)"),
+				default: 0,
+			},
+		],
+		primary_action_label: __("Start Quotation"),
+		primary_action(values) {
+			const skip = cint(values.skip_format);
+			if (!skip && !values.ic_quotation_template) {
+				frappe.msgprint(__("Select a quote format from the library, or check Continue without a library format."));
+				return;
+			}
+			const qtype = values.ic_quotation_type;
+			frm._ic_skip_template_apply = true;
+			frm.set_value("ic_quotation_type", qtype).then(() => {
+				instacertify.apply_quotation_naming_series(frm);
+				instacertify.toggle_quotation_sections(frm);
+				if (skip || !values.ic_quotation_template) {
+					frm._ic_skip_template_apply = false;
+					d.hide();
+					setTimeout(() => {
+						instacertify.render_quotation_entry_guide(frm);
+						frm.scroll_to_field("ic_quotation_type");
+					}, 200);
+					return;
+				}
+				frappe.call({
+					method: "instacertify.quotation.events.get_quotation_template_payload",
+					args: { template: values.ic_quotation_template },
+					freeze: true,
+					freeze_message: __("Loading quote format…"),
+					callback(r) {
+						const payload = r.message || {};
+						instacertify
+							.fill_quotation_from_format_payload(frm, payload)
+							.finally(() => {
+								frm._ic_skip_template_apply = false;
+								d.hide();
+								frappe.show_alert({
+									message: __(
+										"Format applied. Edit headings, values, and commercials on the form as needed."
+									),
+									indicator: "green",
+								});
+								setTimeout(() => {
+									instacertify.render_quotation_entry_guide(frm);
+									frm.scroll_to_field("ic_service_name") ||
+										frm.scroll_to_field("ic_subject") ||
+										frm.scroll_to_field("ic_quotation_type");
+								}, 250);
+							});
+					},
+					error() {
+						frm._ic_skip_template_apply = false;
+					},
+				});
+			});
+		},
+	});
+
+	function set_chip_active(type) {
+		d.$wrapper.find(".ic-new-quote-type-chip").each(function () {
+			$(this).toggleClass("active", $(this).data("type") === type);
+		});
+	}
+
+	function load_formats(type) {
+		const $hint = d.$wrapper.find(".ic-new-quote-format-hint");
+		$hint.text(__("Loading formats…"));
+		frappe.call({
+			method: "instacertify.quotation.events.list_quote_formats_for_type",
+			args: { quotation_type: type },
+			callback(r) {
+				const formats = (r.message && r.message.formats) || [];
+				format_map = {};
+				const options = [""].concat(
+					formats.map((f) => {
+						format_map[f.name] = f;
+						return { label: f.label, value: f.name };
+					})
+				);
+				const df = d.fields_dict.ic_quotation_template.df;
+				if (formats.length) {
+					df.options = options.map((o) => (typeof o === "string" ? o : o.value)).join("\n");
+					// Prefer Select with labels via set_data when available
+					d.set_df_property(
+						"ic_quotation_template",
+						"options",
+						[""].concat(formats.map((f) => f.name)).join("\n")
+					);
+					// Rebuild select with readable labels
+					const $sel = d.fields_dict.ic_quotation_template.$input;
+					if ($sel && $sel.length) {
+						$sel.empty();
+						$sel.append(`<option value="">${__("— Select a format —")}</option>`);
+						formats.forEach((f) => {
+							$sel.append(
+								`<option value="${frappe.utils.escape_html(f.name)}">${frappe.utils.escape_html(
+									f.label
+								)}</option>`
+							);
+						});
+					}
+					d.set_value("ic_quotation_template", "");
+					$hint.html(
+						__(
+							"{0} format(s) in library for this type. Select one to prefill headings — you can edit everything after.",
+							[`<strong>${formats.length}</strong>`]
+						)
+					);
+				} else {
+					d.set_df_property("ic_quotation_template", "options", "");
+					const $sel = d.fields_dict.ic_quotation_template.$input;
+					if ($sel && $sel.length) {
+						$sel.empty().append(`<option value="">${__("No formats for this type")}</option>`);
+					}
+					$hint.html(
+						__(
+							"No active formats for this type yet. Open Quote Format Library to add one, or continue without a format."
+						)
+					);
+				}
+			},
+		});
+	}
+
+	d.fields_dict.ic_quotation_type.df.onchange = () => {
+		const t = d.get_value("ic_quotation_type");
+		set_chip_active(t);
+		d.set_value("ic_quotation_template", "");
+		load_formats(t);
+	};
+
+	d.fields_dict.ic_quotation_template.df.onchange = () => {
+		const name = d.get_value("ic_quotation_template");
+		const f = format_map[name];
+		const $hint = d.$wrapper.find(".ic-new-quote-format-hint");
+		if (f) {
+			const note = f.template_notes
+				? frappe.utils.escape_html(String(f.template_notes).slice(0, 180))
+				: "";
+			$hint.html(
+				`<strong>${frappe.utils.escape_html(f.template_name || f.name)}</strong>` +
+					(f.service_family
+						? ` · ${frappe.utils.escape_html(f.service_family)}`
+						: "") +
+					(note ? `<div class="text-muted" style="margin-top:4px;">${note}</div>` : "")
+			);
+		}
+	};
+
+	d.fields_dict.skip_format.df.onchange = () => {
+		const skip = cint(d.get_value("skip_format"));
+		d.set_df_property("ic_quotation_template", "reqd", skip ? 0 : 1);
+	};
+
+	d.show();
+	setTimeout(() => {
+		d.$wrapper.find(".ic-new-quote-type-chip").on("click", function () {
+			const type = $(this).data("type");
+			d.set_value("ic_quotation_type", type);
+		});
+		set_chip_active(d.get_value("ic_quotation_type") || "Consulting");
+		load_formats(d.get_value("ic_quotation_type") || "Consulting");
+	}, 50);
+};
 
 // Customer Related Data tab — full per-customer history + completed project files
 frappe.ui.form.on("Customer", {

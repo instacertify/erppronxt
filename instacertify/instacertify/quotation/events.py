@@ -115,74 +115,156 @@ def _ensure_qr(doc):
 
 
 @frappe.whitelist()
+def list_quote_formats_for_type(quotation_type: str | None = None):
+	"""Active Quote Format Library entries for a quotation type (create-quote picker)."""
+	quotation_type = (quotation_type or "").strip()
+	filters: dict = {"is_active": 1}
+	if quotation_type in ("Consulting", "Service"):
+		filters["quotation_type"] = ["in", ["Consulting", "Service"]]
+	elif quotation_type:
+		filters["quotation_type"] = quotation_type
+
+	rows = frappe.get_all(
+		"IC Quotation Template",
+		filters=filters,
+		fields=[
+			"name",
+			"template_name",
+			"quotation_type",
+			"service_family",
+			"service_name",
+			"template_notes",
+			"uploaded_format",
+		],
+		order_by="quotation_type asc, template_name asc",
+		limit_page_length=300,
+	)
+	out = []
+	for r in rows:
+		label_parts = [r.template_name or r.name]
+		if r.service_family:
+			label_parts.append(f"— {r.service_family}")
+		elif r.service_name:
+			label_parts.append(f"— {r.service_name}")
+		out.append(
+			{
+				"name": r.name,
+				"label": " ".join(label_parts),
+				"template_name": r.template_name,
+				"quotation_type": r.quotation_type,
+				"service_family": r.service_family,
+				"service_name": r.service_name,
+				"template_notes": r.template_notes,
+				"has_format_file": 1 if r.uploaded_format else 0,
+			}
+		)
+	return {"formats": out, "count": len(out)}
+
+
+def _template_field_map(tmpl) -> dict:
+	"""Scalar quotation fields filled from an IC Quotation Template."""
+	qtype = "Consulting" if tmpl.quotation_type == "Service" else tmpl.quotation_type
+	return {
+		"ic_quotation_type": qtype,
+		"ic_quotation_template": tmpl.name,
+		"ic_service_family": tmpl.get("service_family"),
+		"ic_service_name": tmpl.service_name,
+		"ic_certification_type": tmpl.certification_type,
+		"ic_applicable_standard": tmpl.applicable_standard,
+		"ic_estimated_timeline": tmpl.estimated_timeline,
+		"ic_validity_days": tmpl.validity_days,
+		"ic_about_service": tmpl.get("about_service"),
+		"ic_standard_narrative": tmpl.get("standard_narrative"),
+		"ic_process_steps": tmpl.get("process_steps"),
+		"ic_validity_text": tmpl.get("validity_text"),
+		"ic_timeline_details": tmpl.get("timeline_details"),
+		"ic_sample_required": tmpl.get("sample_required"),
+		"ic_documents_required": tmpl.get("documents_required"),
+		"ic_commercials_notes": tmpl.get("commercials_notes"),
+		"ic_scope_of_work": tmpl.scope_of_work,
+		"ic_deliverables": tmpl.deliverables,
+		"ic_payment_terms": tmpl.get("payment_terms"),
+		"ic_cancellation_policy": tmpl.get("cancellation_policy"),
+		"ic_confidentiality": tmpl.get("confidentiality"),
+		"ic_terms_and_conditions": tmpl.terms_and_conditions,
+		"ic_force_majeure": tmpl.force_majeure,
+		"ic_subject": tmpl.get("subject"),
+		"ic_about_testing": tmpl.get("about_testing"),
+		"ic_applicable_standards_text": tmpl.get("applicable_standards_text"),
+		"ic_samples_note": tmpl.get("samples_note"),
+		"ic_gst_note": tmpl.get("gst_note"),
+		"ic_sample_handling_policy": tmpl.get("sample_handling_policy"),
+	}
+
+
+def _template_cost_rows(tmpl) -> list[dict]:
+	return [
+		{
+			"cost_component": row.cost_component,
+			"particulars": row.get("particulars"),
+			"description": row.description,
+			"amount": row.amount,
+			"charges_display": row.get("charges_display"),
+			"payment_destination": row.payment_destination,
+			"is_passthrough": row.is_passthrough,
+		}
+		for row in (tmpl.cost_items or [])
+	]
+
+
+def _template_test_rows(tmpl) -> list[dict]:
+	return [
+		{
+			"product_name": row.product_name,
+			"test_name": row.test_name,
+			"applicable_standard": row.applicable_standard,
+			"number_of_samples": row.number_of_samples,
+			"per_unit_charges": row.get("per_unit_charges"),
+			"sample_requirement": row.get("sample_requirement"),
+			"sample_type": row.sample_type,
+			"laboratory": row.laboratory,
+			"laboratory_location": row.laboratory_location,
+			"laboratory_accreditation": row.laboratory_accreditation,
+			"testing_timeline": row.testing_timeline,
+			"testing_charges": row.testing_charges,
+		}
+		for row in (tmpl.test_items or [])
+	]
+
+
+@frappe.whitelist()
+def get_quotation_template_payload(template: str):
+	"""Return format-library values to apply on a new or existing quotation (editable after)."""
+	if not template or not frappe.db.exists("IC Quotation Template", template):
+		frappe.throw(_("Quote format not found"))
+	tmpl = frappe.get_doc("IC Quotation Template", template)
+	fields = _template_field_map(tmpl)
+	return {
+		"template": tmpl.name,
+		"template_name": tmpl.template_name,
+		"quotation_type": fields["ic_quotation_type"],
+		"fields": fields,
+		"cost_items": _template_cost_rows(tmpl),
+		"test_items": _template_test_rows(tmpl),
+		"message": _("Format loaded — edit headings and values on the form as needed."),
+	}
+
+
+@frappe.whitelist()
 def apply_quotation_template(quotation: str, template: str):
 	"""Populate quotation fields from IC Quotation Template."""
 	qt = frappe.get_doc("Quotation", quotation)
-	tmpl = frappe.get_doc("IC Quotation Template", template)
-	qt.ic_quotation_type = (
-		"Consulting" if tmpl.quotation_type == "Service" else tmpl.quotation_type
-	)
-	qt.ic_quotation_template = tmpl.name
-	qt.ic_service_family = tmpl.get("service_family")
-	qt.ic_service_name = tmpl.service_name
-	qt.ic_certification_type = tmpl.certification_type
-	qt.ic_applicable_standard = tmpl.applicable_standard
-	qt.ic_estimated_timeline = tmpl.estimated_timeline
-	qt.ic_validity_days = tmpl.validity_days
-	qt.ic_about_service = tmpl.get("about_service")
-	qt.ic_standard_narrative = tmpl.get("standard_narrative")
-	qt.ic_process_steps = tmpl.get("process_steps")
-	qt.ic_validity_text = tmpl.get("validity_text")
-	qt.ic_timeline_details = tmpl.get("timeline_details")
-	qt.ic_sample_required = tmpl.get("sample_required")
-	qt.ic_documents_required = tmpl.get("documents_required")
-	qt.ic_commercials_notes = tmpl.get("commercials_notes")
-	qt.ic_scope_of_work = tmpl.scope_of_work
-	qt.ic_deliverables = tmpl.deliverables
-	qt.ic_payment_terms = tmpl.get("payment_terms")
-	qt.ic_cancellation_policy = tmpl.get("cancellation_policy")
-	qt.ic_confidentiality = tmpl.get("confidentiality")
-	qt.ic_terms_and_conditions = tmpl.terms_and_conditions
-	qt.ic_force_majeure = tmpl.force_majeure
-	qt.ic_subject = tmpl.get("subject") or qt.ic_subject
-	qt.ic_about_testing = tmpl.get("about_testing")
-	qt.ic_applicable_standards_text = tmpl.get("applicable_standards_text")
-	qt.ic_samples_note = tmpl.get("samples_note")
-	qt.ic_gst_note = tmpl.get("gst_note")
-	qt.ic_sample_handling_policy = tmpl.get("sample_handling_policy")
+	payload = get_quotation_template_payload(template)
+	for key, val in (payload.get("fields") or {}).items():
+		if key == "ic_subject" and not val:
+			continue
+		qt.set(key, val)
 	qt.set("ic_cost_items", [])
-	for row in tmpl.cost_items or []:
-		qt.append(
-			"ic_cost_items",
-			{
-				"cost_component": row.cost_component,
-				"particulars": row.get("particulars"),
-				"description": row.description,
-				"amount": row.amount,
-				"charges_display": row.get("charges_display"),
-				"payment_destination": row.payment_destination,
-				"is_passthrough": row.is_passthrough,
-			},
-		)
+	for row in payload.get("cost_items") or []:
+		qt.append("ic_cost_items", row)
 	qt.set("ic_test_items", [])
-	for row in tmpl.test_items or []:
-		qt.append(
-			"ic_test_items",
-			{
-				"product_name": row.product_name,
-				"test_name": row.test_name,
-				"applicable_standard": row.applicable_standard,
-				"number_of_samples": row.number_of_samples,
-				"per_unit_charges": row.get("per_unit_charges"),
-				"sample_requirement": row.get("sample_requirement"),
-				"sample_type": row.sample_type,
-				"laboratory": row.laboratory,
-				"laboratory_location": row.laboratory_location,
-				"laboratory_accreditation": row.laboratory_accreditation,
-				"testing_timeline": row.testing_timeline,
-				"testing_charges": row.testing_charges,
-			},
-		)
+	for row in payload.get("test_items") or []:
+		qt.append("ic_test_items", row)
 	qt.save(ignore_permissions=True)
 	return qt.as_dict()
 
