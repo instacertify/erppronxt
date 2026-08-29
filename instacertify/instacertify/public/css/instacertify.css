@@ -569,6 +569,8 @@ body {
 .ic-explore-icon svg {
   width: 18px;
   height: 18px;
+  stroke: currentColor;
+  color: inherit;
 }
 
 .ic-explore-card-meta {
