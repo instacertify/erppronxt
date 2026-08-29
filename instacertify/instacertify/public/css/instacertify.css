@@ -21,8 +21,11 @@ html {
   --ic-muted: #5a7382;
   --ic-radius: 14px;
   --ic-radius-sm: 10px;
-  --ic-tile-min: 148px;
+  /* Tiles stretch full row; home sits flush beside the desk sidebar */
+  --ic-tile-min: 132px;
   --ic-tile-gap: 12px;
+  --ic-tile-cols: repeat(auto-fit, minmax(min(100%, var(--ic-tile-min)), 1fr));
+  --ic-home-side-pad: 4px;
   --ic-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
   --ic-shadow-hover: 0 14px 32px rgba(6, 81, 117, 0.12);
   --ic-font: "Poppins", "Segoe UI", sans-serif;
@@ -404,6 +407,9 @@ body {
 .ic-greeting {
   position: relative;
   overflow: hidden;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
   background:
     linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
   color: #fff;
@@ -477,9 +483,10 @@ body {
 
 .ic-summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
+  grid-template-columns: var(--ic-tile-cols);
   gap: var(--ic-tile-gap, 12px);
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .ic-explore-panel {
@@ -504,8 +511,9 @@ body {
 
 .ic-explore-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
+  grid-template-columns: var(--ic-tile-cols);
   gap: var(--ic-tile-gap, 12px);
+  width: 100%;
 }
 
 /* Unified square tiles — Explore + KPI + Projects share one rhythm */
@@ -787,9 +795,10 @@ body {
 
 .ic-project-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
+  grid-template-columns: var(--ic-tile-cols);
   gap: var(--ic-tile-gap, 12px);
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .ic-project-grid-board {
@@ -1421,8 +1430,9 @@ body.for-login,
 }
 .ic-lead-prompt-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
+  grid-template-columns: var(--ic-tile-cols);
   gap: var(--ic-tile-gap, 12px);
+  width: 100%;
 }
 .ic-lead-prompt {
   display: flex;
@@ -1807,9 +1817,10 @@ select.input-with-feedback {
 /* Workdesk + HR panels on home — square tile panels */
 .ic-workdesk-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: var(--ic-tile-gap, 12px);
   margin: 8px 0 18px;
+  width: 100%;
 }
 .ic-workdesk-panel,
 .ic-hr-panel {
@@ -1878,9 +1889,10 @@ select.input-with-feedback {
 }
 .ic-hr-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
   gap: 12px;
   margin-top: 12px;
+  width: 100%;
 }
 .ic-hr-columns > div {
   aspect-ratio: 1 / 1;
@@ -3250,4 +3262,173 @@ select.form-control[readonly],
   margin-top: 6px;
   font-size: 11px;
   color: #6b8492;
+}
+
+/* ——— Home / Workspaces: stretch beside sidebar, minimal side gaps ——— */
+body.full-width {
+  --page-max-width: 100% !important;
+}
+
+#ic-home-root,
+.ic-greeting,
+.ic-summary-grid,
+.ic-explore-grid,
+.ic-explore-panel,
+.ic-project-grid,
+.ic-lead-prompt-list,
+.ic-workdesk-grid,
+.ic-hr-columns,
+.ic-crm-tracker,
+.ic-lead-hub {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+/* Kill Frappe 900px gutter so content runs to the desk sidebar edge */
+[data-page-route="Workspaces"] .layout-main,
+[data-page-route="Workspaces"] .layout-main-section-wrapper,
+[data-page-route="instacertify-home"] .layout-main,
+[data-page-route="instacertify-home"] .layout-main-section-wrapper,
+body.full-width .layout-main,
+body.full-width .layout-main-section-wrapper {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-page-route="Workspaces"] .layout-main-section,
+[data-page-route="instacertify-home"] .layout-main-section,
+body.full-width .desk-page .layout-main-section {
+  max-width: none !important;
+  width: 100% !important;
+  padding-left: var(--ic-home-side-pad, 4px) !important;
+  padding-right: var(--ic-home-side-pad, 4px) !important;
+}
+
+[data-page-route="Workspaces"] .page-body.container,
+[data-page-route="Workspaces"] .container.page-body,
+[data-page-route="instacertify-home"] .page-body.container,
+[data-page-route="instacertify-home"] .container.page-body,
+body.full-width .page-body.container,
+body.full-width .container.page-body {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-page-route="Workspaces"] .page-head .container,
+[data-page-route="Workspaces"] .page-head,
+[data-page-route="instacertify-home"] .page-head .container,
+[data-page-route="instacertify-home"] .page-head,
+body.full-width .page-head .container {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: var(--ic-home-side-pad, 4px) !important;
+  padding-right: var(--ic-home-side-pad, 4px) !important;
+}
+
+[data-page-route="Workspaces"] .codex-editor,
+[data-page-route="Workspaces"] .ce-block__content,
+[data-page-route="Workspaces"] .ce-toolbar__content,
+[data-page-route="Workspaces"] .widget-group,
+[data-page-route="Workspaces"] .widget.custom-block-widget,
+[data-page-route="Workspaces"] .custom-block-widget,
+[data-page-route="instacertify-home"] .codex-editor,
+[data-page-route="instacertify-home"] .ce-block__content,
+[data-page-route="instacertify-home"] .widget-group,
+[data-page-route="instacertify-home"] .custom-block-widget,
+#ic-home-root {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+[data-page-route="Workspaces"] .ce-block__content,
+[data-page-route="Workspaces"] .ce-toolbar__content,
+[data-page-route="instacertify-home"] .ce-block__content,
+[data-page-route="instacertify-home"] .ce-toolbar__content {
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+}
+
+/* Custom HTML Block widget: drop inner side padding so greeting hugs the edge */
+[data-page-route="Workspaces"] .widget.custom-block-widget,
+[data-page-route="instacertify-home"] .widget.custom-block-widget,
+[data-page-route="Workspaces"] .custom-block-widget-box,
+[data-page-route="instacertify-home"] .custom-block-widget-box {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Workspace shortcut / number widgets — square, even horizontal spread */
+[data-page-route="Workspaces"] .widget-group .grid-col-3,
+[data-page-route="Workspaces"] .widget-group .grid-col-2,
+[data-page-route="instacertify-home"] .widget-group .grid-col-3,
+[data-page-route="instacertify-home"] .widget-group .grid-col-2,
+body.full-width .widget-group .grid-col-3,
+body.full-width .widget-group .grid-col-2 {
+  display: grid !important;
+  grid-template-columns: var(--ic-tile-cols) !important;
+  column-gap: var(--ic-tile-gap, 12px) !important;
+  row-gap: var(--ic-tile-gap, 12px) !important;
+  width: 100% !important;
+  align-items: stretch !important;
+}
+
+[data-page-route="Workspaces"] .widget.shortcut-widget-box,
+[data-page-route="Workspaces"] .widget.number-widget-box,
+[data-page-route="instacertify-home"] .widget.shortcut-widget-box,
+[data-page-route="instacertify-home"] .widget.number-widget-box,
+body.full-width .widget.shortcut-widget-box,
+body.full-width .widget.number-widget-box {
+  aspect-ratio: 1 / 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --ic-home-side-pad: 4px;
+    --ic-tile-min: 140px;
+  }
+}
+
+@media (max-width: 700px) {
+  :root {
+    --ic-tile-min: 140px;
+    --ic-home-side-pad: 6px;
+  }
+  .ic-summary-grid,
+  .ic-explore-grid,
+  .ic-project-grid,
+  .ic-lead-prompt-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .ic-summary-grid,
+  .ic-explore-grid,
+  .ic-project-grid,
+  .ic-lead-prompt-list {
+    grid-template-columns: 1fr !important;
+  }
 }

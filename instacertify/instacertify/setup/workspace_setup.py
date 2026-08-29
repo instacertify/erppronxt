@@ -659,9 +659,20 @@ _SHADOW_THEME_CSS = """
   font-family: "Poppins", "Segoe UI", sans-serif !important;
   box-sizing: border-box;
 }
+#ic-home-root {
+  width: 100% !important;
+  max-width: none !important;
+  display: block;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 0 !important;
+}
 .ic-greeting {
   position: relative;
   overflow: hidden;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
   background: linear-gradient(125deg, #0A3380 0%, #0D47A1 42%, #1565C0 78%, #f26d21 145%);
   color: #fff;
   border-radius: 14px;
