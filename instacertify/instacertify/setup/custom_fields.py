@@ -13,11 +13,11 @@ LEAD_FIELDS = [
 	{
 		"fieldname": "ic_party_name",
 		"fieldtype": "Data",
-		"label": "Name of Person / Firm",
+		"label": "Name / company",
 		"reqd": 1,
 		"in_list_view": 1,
 		"insert_after": "ic_section_capture",
-		"description": "Mandatory — person name or company / firm name",
+		"description": "Person or firm — enough to get started",
 	},
 	{
 		"fieldname": "ic_column_capture",
@@ -176,10 +176,10 @@ LEAD_FIELDS = [
 	{
 		"fieldname": "ic_call_remarks",
 		"fieldtype": "Small Text",
-		"label": "Call / Lead Remarks",
+		"label": "What they need",
 		"insert_after": "ic_column_followup",
 		"in_list_view": 1,
-		"description": "Notes from calls or lead conversations — shown on the dashboard",
+		"description": "One line is fine — fill more later",
 	},
 	{
 		"fieldname": "ic_lead_connected",

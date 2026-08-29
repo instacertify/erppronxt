@@ -265,6 +265,38 @@ def _ensure_home_html_block():
       ed.show();
       return;
     }
+    if (card.action === "quick_lead") {
+      if (window.instacertify && typeof instacertify.open_quick_lead === "function") {
+        instacertify.open_quick_lead();
+        return;
+      }
+      const ld = new frappe.ui.Dialog({
+        title: "Capture a Lead",
+        fields: [
+          {fieldname:"ic_party_name", fieldtype:"Data", label:"Name / company", reqd:1},
+          {fieldname:"mobile_no", fieldtype:"Data", label:"Mobile", options:"Phone"},
+          {fieldname:"ic_call_remarks", fieldtype:"Small Text", label:"What they need"},
+          {fieldname:"ic_next_contact_date", fieldtype:"Date", label:"Call back on",
+            default: frappe.datetime.add_days(frappe.datetime.get_today(), 1)},
+        ],
+        primary_action_label: "Save Lead",
+        primary_action(values) {
+          frappe.call({
+            method: "instacertify.crm.events.create_quick_lead",
+            args: values,
+            freeze: true,
+            callback(r) {
+              ld.hide();
+              const name = r.message && r.message.name;
+              frappe.show_alert({message: "Lead saved: " + (name||""), indicator:"green"});
+              if (name) frappe.set_route("Form", "Lead", name);
+            }
+          });
+        }
+      });
+      ld.show();
+      return;
+    }
     const route = card.route || [];
     if (!route.length) return;
     if (route[0] === "List") {
@@ -293,8 +325,8 @@ def _ensure_home_html_block():
         const count = (c.count != null)
           ? `<span class="ic-explore-count">${esc(c.count)}</span>`
           : "";
-        const actionHint = c.action
-          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
+          const actionHint = c.action
+          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : (c.action === "quick_lead" ? "Capture" : "Open"))}</span>`
           : "";
         return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
           <div class="ic-explore-card-top">${actionHint}${count}</div>

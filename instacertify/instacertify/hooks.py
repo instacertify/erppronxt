@@ -15,6 +15,10 @@ app_include_js = "/assets/instacertify/js/instacertify.js"
 web_include_css = "/assets/instacertify/css/instacertify.css"
 website_include_css = "/assets/instacertify/css/instacertify.css"
 
+doctype_list_js = {
+	"Lead": "public/js/lead_list.js",
+}
+
 # Website / portal
 website_route_rules = [
 	{"from_route": "/ic-quotation/<path:name>", "to_route": "ic_quotation"},

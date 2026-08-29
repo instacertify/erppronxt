@@ -307,12 +307,12 @@ def _ensure_lead_party_name_field():
 	cf_name = "Lead-ic_party_name"
 	meta = {
 		"fieldname": "ic_party_name",
-		"label": "Name of Person / Firm",
+		"label": "Name / company",
 		"fieldtype": "Data",
 		"insert_after": "ic_section_capture",
 		"reqd": 1,
 		"in_list_view": 1,
-		"description": "Mandatory — person name or company / firm name",
+		"description": "Person or firm — enough to get started",
 	}
 	_upsert_lead_custom_field(cf_name, meta)
 	# Ensure section exists
