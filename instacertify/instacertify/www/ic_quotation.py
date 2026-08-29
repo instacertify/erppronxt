@@ -68,6 +68,31 @@ def get_quotation(token: str):
 	status = doc.ic_workflow_status or "Draft"
 	can_decide = status in DECIDABLE
 
+	# Payment / UPI details from company settings (for portal prompt)
+	pay = {}
+	try:
+		s = frappe.get_cached_doc("IC Settings")
+		pay = {
+			"beneficiary_name": _plain(s.beneficiary_name) or "Instacertify Labs Private Limited",
+			"bank_name": _plain(s.bank_name) or "YES BANK",
+			"account_number": _plain(s.account_number) or "026485800001318",
+			"ifsc_code": _plain(s.ifsc_code) or "YESB0000264",
+			"upi_id": _plain(getattr(s, "upi_id", None)) or "yespay.bizsbiz31008@yesbankltd",
+			"upi_qr_image": getattr(s, "upi_qr_image", None)
+			or "/assets/instacertify/images/upi_payment_qr.jpg",
+			"prompt": _("Scan the UPI QR or use the UPI ID below to pay. You can also transfer to our bank account."),
+		}
+	except Exception:
+		pay = {
+			"beneficiary_name": "Instacertify Labs Private Limited",
+			"bank_name": "YES BANK",
+			"account_number": "026485800001318",
+			"ifsc_code": "YESB0000264",
+			"upi_id": "yespay.bizsbiz31008@yesbankltd",
+			"upi_qr_image": "/assets/instacertify/images/upi_payment_qr.jpg",
+			"prompt": _("Scan the UPI QR or use the UPI ID below to pay."),
+		}
+
 	# Prefer customer-facing title over internal Quotation name
 	display_ref = doc.get("customer_name") or doc.get("party_name") or "Quotation"
 	return {
@@ -94,6 +119,7 @@ def get_quotation(token: str):
 		"can_decide": 1 if can_decide else 0,
 		"is_final": 1 if status in ("Accepted", "Rejected / Lost") else 0,
 		"pdf_url": f"/api/method/instacertify.quotation.events.download_quotation_pdf?token={token}",
+		"payment": pay,
 		"portal_notice": _(
 			"This secure link is for reviewing the quotation only. You can download the PDF and send feedback — it does not provide access to Instacertify ERP."
 		),

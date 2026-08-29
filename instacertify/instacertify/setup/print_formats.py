@@ -5,6 +5,34 @@ from __future__ import annotations
 
 import frappe
 
+# Shared bank + UPI QR block (expects `s` = IC Settings in Jinja context)
+BANK_UPI_PAYMENT_HTML = """
+{%- set upi_id = s.upi_id or 'yespay.bizsbiz31008@yesbankltd' -%}
+{%- set upi_qr = s.upi_qr_image or '/assets/instacertify/images/upi_payment_qr.jpg' -%}
+<div class="ic-pay-wrap" style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+  <div style="flex:1;min-width:220px;">
+    <table class="ic-bank-tbl" style="width:100%;border-collapse:collapse;margin-top:6px;">
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Particulars</td><td style="border:1px solid #555;padding:7px 8px;"><b>Details</b></td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Beneficiary Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Bank Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_name or 'YES BANK' }}</td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Account Number</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.account_number or '026485800001318' }}</td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">IFSC Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">UPI ID</td><td style="border:1px solid #555;padding:7px 8px;"><b>{{ upi_id }}</b></td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">SWIFT Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">GSTIN</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
+      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Branch Address</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
+    </table>
+  </div>
+  <div class="ic-upi-pay" style="text-align:center;width:168px;flex-shrink:0;border:1px solid #c5d5e0;padding:8px 6px;background:#f7fbfe;border-radius:4px;">
+    <div style="font-weight:700;color:#065175;font-size:11px;margin-bottom:4px;">Pay via UPI</div>
+    <img src="{{ upi_qr }}" alt="UPI QR Code" style="width:148px;height:auto;max-width:100%;display:block;margin:0 auto;"/>
+    <div style="font-size:8.5px;margin-top:6px;word-break:break-all;line-height:1.35;"><b>UPI ID:</b> {{ upi_id }}</div>
+    <div style="font-size:8px;color:#555;margin-top:4px;line-height:1.3;">Scan this QR Code with any UPI app to pay</div>
+  </div>
+</div>
+<div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
+"""
+
 QUOTATION_HTML = """
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
 {%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
@@ -162,6 +190,10 @@ QUOTATION_HTML = """
     {{ doc.ic_terms_and_conditions or doc.terms or '' }}
   </div>
   <div class="ic-box">
+    <h3>Bank Details &amp; UPI Payment</h3>
+""" + BANK_UPI_PAYMENT_HTML + """
+  </div>
+  <div class="ic-box">
     <h3>Force Majeure</h3>
     {{ doc.ic_force_majeure or '' }}
   </div>
@@ -246,6 +278,10 @@ INVOICE_HTML = """
     </tbody>
   </table>
   <p style="text-align:right; margin-top:12px;"><b>Grand Total:</b> {{ frappe.utils.fmt_money(doc.grand_total, currency=doc.currency) }}</p>
+  <div style="margin-top:16px;padding:10px 12px;border:1px solid #d9e6ee;border-radius:6px;">
+    <div style="font-weight:700;color:#065175;margin-bottom:8px;font-size:12px;">Bank Details &amp; UPI Payment</div>
+""" + BANK_UPI_PAYMENT_HTML + """
+  </div>
   <div class="qr">
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Sales Invoice/' + doc.name) }}" alt="QR"/>
   </div>
@@ -634,17 +670,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-label">Our Banking Details</td>
       <td class="tq-value">
         <div class="tq-h">Bank Details for Payment</div>
-        <table class="tq-bank">
-          <tr><td class="k">Particulars</td><td><b>Details</b></td></tr>
-          <tr><td class="k">Beneficiary Name</td><td>{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
-          <tr><td class="k">Bank Name</td><td>{{ s.bank_name or 'YES BANK' }}</td></tr>
-          <tr><td class="k">Account Number</td><td>{{ s.account_number or '026485800001318' }}</td></tr>
-          <tr><td class="k">IFSC Code</td><td>{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
-          <tr><td class="k">SWIFT Code</td><td>{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
-          <tr><td class="k">GSTIN</td><td>{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
-          <tr><td class="k">Branch Address</td><td>{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
-        </table>
-        <div class="tq-note" style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
+""" + BANK_UPI_PAYMENT_HTML + """
       </td>
     </tr>
     <tr>
@@ -894,17 +920,7 @@ CONSULTING_QUOTATION_HTML = """
       <div class="cq-bar">OUR BANKING DETAILS FOR {{ short }}</div>
       <div class="cq-body">
         <div class="cq-h">Bank Details for Payment</div>
-        <table class="cq-bank">
-          <tr><td class="k">Particulars</td><td><b>Details</b></td></tr>
-          <tr><td class="k">Beneficiary Name</td><td>{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
-          <tr><td class="k">Bank Name</td><td>{{ s.bank_name or 'YES BANK' }}</td></tr>
-          <tr><td class="k">Account Number</td><td>{{ s.account_number or '026485800001318' }}</td></tr>
-          <tr><td class="k">IFSC Code</td><td>{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
-          <tr><td class="k">SWIFT Code</td><td>{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
-          <tr><td class="k">GSTIN</td><td>{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
-          <tr><td class="k">Branch Address</td><td>{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
-        </table>
-        <div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
+""" + BANK_UPI_PAYMENT_HTML + """
       </div>
     </div>
 

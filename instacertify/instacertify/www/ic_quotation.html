@@ -106,6 +106,26 @@
           '</td><td>' + esc(money(r.amount, currency)) + '</td></tr>').join('') +
         '</tbody></table>';
     }
+    function paymentBlock(p) {
+      if (!p) return '';
+      const qr = esc(p.upi_qr_image || '/assets/instacertify/images/upi_payment_qr.jpg');
+      return '<div style="margin-top:16px;padding:12px;border:1px solid #d9e6ee;border-radius:8px;background:#f7fbfe;">' +
+        '<h4 style="color:#065175;margin:0 0 8px;">Pay via UPI / Bank Transfer</h4>' +
+        '<p class="ic-portal-muted" style="margin:0 0 10px;">' + esc(p.prompt || 'Scan the UPI QR or transfer to our bank account.') + '</p>' +
+        '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">' +
+          '<div style="flex:1;min-width:200px;font-size:13px;line-height:1.55;">' +
+            '<div><b>Beneficiary:</b> ' + esc(p.beneficiary_name || '') + '</div>' +
+            '<div><b>Bank:</b> ' + esc(p.bank_name || '') + '</div>' +
+            '<div><b>Account:</b> ' + esc(p.account_number || '') + '</div>' +
+            '<div><b>IFSC:</b> ' + esc(p.ifsc_code || '') + '</div>' +
+            '<div><b>UPI ID:</b> ' + esc(p.upi_id || '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:center;width:160px;">' +
+            '<img src="' + qr + '" alt="UPI QR" style="width:148px;height:auto;border:1px solid #c5d5e0;background:#fff;"/>' +
+            '<div class="ic-portal-muted" style="font-size:11px;margin-top:6px;">Scan with any UPI app</div>' +
+          '</div>' +
+        '</div></div>';
+    }
     function load() {
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
@@ -128,6 +148,7 @@
             '<p><b>Pass-through:</b> ' + esc(money(d.ic_passthrough_value, d.currency)) + '</p>' +
             '<p><b>Total:</b> ' + esc(money(d.ic_total_quoted_value || d.grand_total, d.currency)) + '</p>' +
             (d.ic_payment_terms ? ('<h4 style="color:#065175;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
+            paymentBlock(d.payment) +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
 
           document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));
