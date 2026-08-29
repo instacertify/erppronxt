@@ -245,6 +245,21 @@ def get_explore_prompts() -> dict:
 		accent="teal",
 		priority=85,
 	)
+	if "gameplan" in frappe.get_installed_apps():
+		cards.append(
+			{
+				"id": "gameplan",
+				"title": _("Gameplan"),
+				"subtitle": _("Team discussions & collaboration"),
+				"route": [],
+				"doctype": None,
+				"count": None,
+				"accent": "coral",
+				"action": "open_gameplan",
+				"url": "/g",
+				"priority": 86,
+			}
+		)
 	add(
 		"invoices",
 		_("Sales Invoice"),
