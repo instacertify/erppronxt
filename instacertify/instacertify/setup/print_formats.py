@@ -5,31 +5,21 @@ from __future__ import annotations
 
 import frappe
 
-# Shared bank + UPI QR block (expects `s` = IC Settings in Jinja context)
+# Shared bank details block (expects `s` = IC Settings in Jinja context).
+# UPI ID is shown as text only — no QR image on quotation/invoice prints.
 BANK_UPI_PAYMENT_HTML = """
 {%- set upi_id = s.upi_id or 'yespay.bizsbiz31008@yesbankltd' -%}
-{%- set upi_qr = s.upi_qr_image or '/assets/instacertify/images/upi_payment_qr.jpg' -%}
-<div class="ic-pay-wrap" style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
-  <div style="flex:1;min-width:220px;">
-    <table class="ic-bank-tbl" style="width:100%;border-collapse:collapse;margin-top:6px;">
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Particulars</td><td style="border:1px solid #555;padding:7px 8px;"><b>Details</b></td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Beneficiary Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Bank Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_name or 'YES BANK' }}</td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Account Number</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.account_number or '026485800001318' }}</td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">IFSC Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">UPI ID</td><td style="border:1px solid #555;padding:7px 8px;"><b>{{ upi_id }}</b></td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">SWIFT Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">GSTIN</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
-      <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Branch Address</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
-    </table>
-  </div>
-  <div class="ic-upi-pay" style="text-align:center;width:168px;flex-shrink:0;border:1px solid #c5d5e0;padding:8px 6px;background:#f7fbfe;border-radius:4px;">
-    <div style="font-weight:700;color:#065175;font-size:11px;margin-bottom:4px;">Pay via UPI</div>
-    <img src="{{ upi_qr }}" alt="UPI QR Code" style="width:148px;height:auto;max-width:100%;display:block;margin:0 auto;"/>
-    <div style="font-size:8.5px;margin-top:6px;word-break:break-all;line-height:1.35;"><b>UPI ID:</b> {{ upi_id }}</div>
-    <div style="font-size:8px;color:#555;margin-top:4px;line-height:1.3;">Scan this QR Code with any UPI app to pay</div>
-  </div>
-</div>
+<table class="ic-bank-tbl" style="width:100%;border-collapse:collapse;margin-top:6px;">
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Particulars</td><td style="border:1px solid #555;padding:7px 8px;"><b>Details</b></td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Beneficiary Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Bank Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_name or 'YES BANK' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Account Number</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.account_number or '026485800001318' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">IFSC Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">UPI ID</td><td style="border:1px solid #555;padding:7px 8px;"><b>{{ upi_id }}</b></td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">SWIFT Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">GSTIN</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Branch Address</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
+</table>
 <div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
 """
 

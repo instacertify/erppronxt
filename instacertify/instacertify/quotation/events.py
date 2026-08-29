@@ -7,7 +7,7 @@ import secrets
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import cint, now_datetime
 
 
 def validate_quotation(doc, method=None):
@@ -86,15 +86,25 @@ def _calculate_revenue_split(doc):
 	passthrough = 0.0
 	for row in doc.get("ic_cost_items") or []:
 		amount = float(row.amount or 0)
-		is_pass = row.is_passthrough or row.payment_destination in (
-			"Payable Directly to Government",
-			"Payable Directly to Laboratory",
-			"Payable to Third Party",
-		)
+		# Prefer explicit Revenue select; fall back to checkbox / payment destination
+		treatment = (row.get("revenue_treatment") or "").strip()
+		if treatment == "Do Not Count as Revenue":
+			is_pass = True
+		elif treatment == "Counted Revenue":
+			is_pass = False
+		else:
+			is_pass = bool(row.is_passthrough) or row.payment_destination in (
+				"Payable Directly to Government",
+				"Payable Directly to Laboratory",
+				"Payable to Third Party",
+			)
 		if is_pass:
 			row.is_passthrough = 1
+			row.revenue_treatment = "Do Not Count as Revenue"
 			passthrough += amount
 		else:
+			row.is_passthrough = 0
+			row.revenue_treatment = "Counted Revenue"
 			commercial += amount
 	doc.ic_commercial_value = commercial
 	doc.ic_passthrough_value = passthrough
@@ -231,18 +241,30 @@ def _template_field_map(tmpl) -> dict:
 
 
 def _template_cost_rows(tmpl) -> list[dict]:
-	return [
-		{
-			"cost_component": row.cost_component,
-			"particulars": row.get("particulars"),
-			"description": row.description,
-			"amount": row.amount,
-			"charges_display": row.get("charges_display"),
-			"payment_destination": row.payment_destination,
-			"is_passthrough": row.is_passthrough,
-		}
-		for row in (tmpl.cost_items or [])
-	]
+	rows = []
+	for row in tmpl.cost_items or []:
+		is_pass = cint(row.is_passthrough) or row.payment_destination in (
+			"Payable Directly to Government",
+			"Payable Directly to Laboratory",
+			"Payable to Third Party",
+		)
+		treatment = (
+			row.get("revenue_treatment")
+			or ("Do Not Count as Revenue" if is_pass else "Counted Revenue")
+		)
+		rows.append(
+			{
+				"cost_component": row.cost_component,
+				"particulars": row.get("particulars"),
+				"description": row.description,
+				"amount": row.amount,
+				"charges_display": row.get("charges_display"),
+				"payment_destination": row.payment_destination,
+				"revenue_treatment": treatment,
+				"is_passthrough": 1 if is_pass else 0,
+			}
+		)
+	return rows
 
 
 def _template_test_rows(tmpl) -> list[dict]:
@@ -372,6 +394,7 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 
 	tmpl.set("cost_items", [])
 	for row in qt.get("ic_cost_items") or []:
+		is_pass = cint(row.is_passthrough) or (row.get("revenue_treatment") == "Do Not Count as Revenue")
 		tmpl.append(
 			"cost_items",
 			{
@@ -381,7 +404,9 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 				"amount": row.amount,
 				"charges_display": row.get("charges_display"),
 				"payment_destination": row.payment_destination,
-				"is_passthrough": row.is_passthrough,
+				"revenue_treatment": row.get("revenue_treatment")
+				or ("Do Not Count as Revenue" if is_pass else "Counted Revenue"),
+				"is_passthrough": 1 if is_pass else 0,
 			},
 		)
 	tmpl.set("test_items", [])

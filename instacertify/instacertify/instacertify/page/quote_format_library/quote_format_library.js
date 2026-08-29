@@ -14,11 +14,23 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 	page.main.addClass("ic-quote-lib-page");
 
 	const CATEGORIES = [
-		{ key: "Consulting", label: __("Consulting"), hint: __("BIS, TEC, WPC, consultancy packs") },
-		{ key: "Testing", label: __("Testing"), hint: __("Lab test & sample commercials") },
-		{ key: "Renewal", label: __("Renewal"), hint: __("Certificate / licence renewals") },
-		{ key: "Other", label: __("Other"), hint: __("Everything else") },
+		{ key: "Consulting", label: __("Consulting"), hint: __("BIS, TEC, WPC, consultancy packs"), slug: "consulting" },
+		{ key: "Testing", label: __("Testing"), hint: __("Lab test & sample commercials"), slug: "testing" },
+		{ key: "Renewal", label: __("Renewal"), hint: __("Certificate / licence renewals"), slug: "renewal" },
+		{ key: "Other", label: __("Other"), hint: __("Custom / miscellaneous"), slug: "other" },
 	];
+
+	function cat_slug(type) {
+		const map = {
+			Consulting: "consulting",
+			Testing: "testing",
+			Renewal: "renewal",
+			Other: "other",
+			Service: "consulting",
+			"Multiple Products / Multiple Services": "other",
+		};
+		return map[type] || "other";
+	}
 
 	page.main.html(`
 		<div class="ic-quote-lib">
@@ -171,8 +183,10 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			chips
 				.map((c) => {
 					const active = (state.category || "") === (c.key || "");
-					return `<button type="button" class="ic-quote-lib-cat${active ? " active" : ""}"
+					const slug = c.key ? cat_slug(c.key) : "all";
+					return `<button type="button" class="ic-quote-lib-cat cat-${slug}${active ? " active" : ""}"
 						data-cat="${esc(c.key)}" role="tab" aria-selected="${active ? "true" : "false"}">
+						<span class="ic-quote-lib-cat-swatch" aria-hidden="true"></span>
 						<span class="ic-quote-lib-cat-label">${esc(c.label)}</span>
 						<span class="ic-quote-lib-cat-count">${c.count}</span>
 						<span class="ic-quote-lib-cat-hint">${esc(c.hint || "")}</span>
@@ -277,9 +291,9 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 					const tagHtml = (t.tags || [])
 						.map((tag) => `<span class="ic-quote-lib-card-tag">${esc(tag)}</span>`)
 						.join("");
-					return `<article class="ic-quote-lib-card" data-name="${esc(t.name)}">
+					return `<article class="ic-quote-lib-card cat-${cat_slug(t.quotation_type)}" data-name="${esc(t.name)}">
 						<div class="ic-quote-lib-card-top">
-							<div class="ic-quote-lib-card-type">${esc(t.quotation_type)}</div>
+							<div class="ic-quote-lib-card-type cat-${cat_slug(t.quotation_type)}">${esc(t.quotation_type)}</div>
 							${active}
 						</div>
 						<h3 class="ic-quote-lib-card-name">${esc(t.template_name || t.name)}</h3>

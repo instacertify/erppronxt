@@ -117,6 +117,7 @@ def _revenue_row(particulars: str, amount: float, display: str | None = None) ->
 		"amount": amount,
 		"charges_display": display or f"₹ {amount:,.0f}/-",
 		"payment_destination": "Payable to Instacertify",
+		"revenue_treatment": "Counted Revenue",
 		"is_passthrough": 0,
 	}
 
@@ -134,6 +135,7 @@ def _passthrough_row(
 		"amount": amount,
 		"charges_display": display or "At actuals",
 		"payment_destination": destination,
+		"revenue_treatment": "Do Not Count as Revenue",
 		"is_passthrough": 1,
 	}
 

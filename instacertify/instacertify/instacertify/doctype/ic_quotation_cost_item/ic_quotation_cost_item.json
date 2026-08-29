@@ -30,7 +30,7 @@
    "fieldtype": "Data",
    "label": "Description",
    "in_list_view": 1,
-   "columns": 2
+   "columns": 1
   },
   {
    "doctype": "DocField",
@@ -60,16 +60,27 @@
    "columns": 1,
    "reqd": 1,
    "options": "Payable to Instacertify\nPayable Directly to Government\nPayable Directly to Laboratory\nPayable to Third Party",
-   "description": "Payable to Instacertify = counted revenue. Other destinations auto-mark Do Not Count as Revenue."
+   "description": "Payable to Instacertify = counted revenue. Other destinations = pass-through (do not count)."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "revenue_treatment",
+   "fieldtype": "Select",
+   "label": "Revenue",
+   "in_list_view": 1,
+   "columns": 1,
+   "reqd": 1,
+   "default": "Counted Revenue",
+   "options": "Counted Revenue\nDo Not Count as Revenue",
+   "description": "Counted Revenue = money paid to Instacertify. Do Not Count = shown to customer but paid to govt/lab/third party."
   },
   {
    "doctype": "DocField",
    "fieldname": "is_passthrough",
    "fieldtype": "Check",
    "label": "Do Not Count as Revenue",
-   "in_list_view": 1,
-   "columns": 1,
-   "description": "Tick = pass-through (shown to customer but paid to govt/lab/third party). Unticked = counted Instacertify revenue."
+   "in_list_view": 0,
+   "description": "Synced from Revenue. Tick = pass-through (not Instacertify revenue)."
   },
   {
    "doctype": "DocField",
