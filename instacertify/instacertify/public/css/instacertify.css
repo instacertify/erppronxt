@@ -1714,20 +1714,20 @@ a.ic-lead-prompt-phone:hover {
 textarea.form-control,
 select.form-control {
   border-radius: var(--ic-radius-sm) !important;
-  border: 2.5px solid #065175 !important;
-  background-color: #f7fbfe !important;
-  box-shadow: inset 0 0 0 1px rgba(6, 81, 117, 0.12) !important;
+  border: 1.5px solid #b8c5ce !important;
+  background-color: #ffffff !important;
+  box-shadow: none !important;
   color: #152833 !important;
-  transition: border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease), background-color 0.18s var(--ic-ease);
+  transition: border-color 0.15s var(--ic-ease), box-shadow 0.15s var(--ic-ease), background-color 0.15s var(--ic-ease);
 }
 
 select.form-control,
 select.input-with-feedback {
-  background-color: #e8f3f8 !important;
+  background-color: #ffffff !important;
   background-image:
-    linear-gradient(45deg, transparent 50%, #065175 50%),
-    linear-gradient(135deg, #065175 50%, transparent 50%),
-    linear-gradient(180deg, #eef6fa 0%, #ffffff 70%) !important;
+    linear-gradient(45deg, transparent 50%, #7a8f9c 50%),
+    linear-gradient(135deg, #7a8f9c 50%, transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #ffffff 100%) !important;
   background-position:
     calc(100% - 16px) calc(50% - 2px),
     calc(100% - 11px) calc(50% - 2px),
@@ -2613,15 +2613,16 @@ html, body, .desk-page, .page-container, .form-layout,
 /* ——— Always-visible fillable boxes & dropdowns (no hover required) ——— */
 :root,
 [data-theme="light"] {
-  --ic-field-border: #065175;
-  --ic-field-border-soft: #065175;
+  --ic-field-border: #b8c5ce;
+  --ic-field-border-soft: #c5d0d8;
+  --ic-field-border-hover: #065175;
   --ic-field-border-focus: #EC6820;
-  --ic-field-bg: #f7fbfe;
-  --ic-field-bg-tint: #e8f3f8;
-  --ic-field-ring: rgba(6, 81, 117, 0.18);
+  --ic-field-bg: #ffffff;
+  --ic-field-bg-tint: #ffffff;
+  --ic-field-ring: transparent;
 }
 
-/* Catch-all for Desk / dialogs / filters — solid outline, no hover needed */
+/* Rest: light grey outline — darker only on hover / focus */
 body .form-control:not([disabled]):not([readonly]),
 body .input-with-feedback:not([disabled]):not([readonly]),
 body input.form-control:not([disabled]):not([readonly]),
@@ -2636,9 +2637,27 @@ body .page-form .form-control,
 body .modal-body .form-control,
 body .grid-row-open .form-control,
 body .grid-form-body .form-control {
-  border: 2.5px solid #065175 !important;
-  background-color: #f7fbfe !important;
-  box-shadow: inset 0 0 0 1px rgba(6, 81, 117, 0.15) !important;
+  border: 1.5px solid #b8c5ce !important;
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+body .form-control:not([disabled]):not([readonly]):hover,
+body .input-with-feedback:not([disabled]):not([readonly]):hover,
+body input.form-control:not([disabled]):not([readonly]):hover,
+body textarea.form-control:not([disabled]):not([readonly]):hover,
+body select.form-control:not([disabled]):not([readonly]):hover,
+body .awesomplete > input:not([disabled]):not([readonly]):hover,
+body .control-input input:not([type="checkbox"]):not([type="radio"]):not([disabled]):not([readonly]):hover,
+body .control-input textarea:not([disabled]):not([readonly]):hover,
+body .control-input select:not([disabled]):not([readonly]):hover,
+body .filter-box .form-control:hover,
+body .page-form .form-control:hover,
+body .modal-body .form-control:hover,
+body .grid-row-open .form-control:hover,
+body .grid-form-body .form-control:hover {
+  border-color: #065175 !important;
+  box-shadow: 0 0 0 2px rgba(6, 81, 117, 0.12) !important;
 }
 
 /* Select / dropdown affordance — darker chevron area */
@@ -2649,12 +2668,12 @@ body .grid-form-body .form-control {
 .page-form select.form-control:not([disabled]):not([readonly]),
 select.input-with-feedback:not([disabled]):not([readonly]),
 .control-input-wrapper select:not([disabled]):not([readonly]) {
-  border-color: var(--ic-field-border) !important;
-  background-color: #eef6fa !important;
+  border-color: #b8c5ce !important;
+  background-color: #ffffff !important;
   background-image:
-    linear-gradient(45deg, transparent 50%, #065175 50%),
-    linear-gradient(135deg, #065175 50%, transparent 50%),
-    linear-gradient(180deg, #f3f9fc 0%, #ffffff 60%) !important;
+    linear-gradient(45deg, transparent 50%, #7a8f9c 50%),
+    linear-gradient(135deg, #7a8f9c 50%, transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #ffffff 100%) !important;
   background-position:
     calc(100% - 16px) calc(50% - 2px),
     calc(100% - 11px) calc(50% - 2px),
@@ -2664,6 +2683,17 @@ select.input-with-feedback:not([disabled]):not([readonly]),
   padding-right: 28px !important;
   appearance: none !important;
   -webkit-appearance: none !important;
+}
+
+.form-layout select.form-control:not([disabled]):not([readonly]):hover,
+.form-page select.form-control:not([disabled]):not([readonly]):hover,
+.modal-body select.form-control:not([disabled]):not([readonly]):hover,
+select.input-with-feedback:not([disabled]):not([readonly]):hover {
+  border-color: #065175 !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #065175 50%),
+    linear-gradient(135deg, #065175 50%, transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #ffffff 100%) !important;
 }
 
 /* Link field (Awesomplete) — same visible box */
@@ -2684,18 +2714,18 @@ select.input-with-feedback:not([disabled]):not([readonly]),
 .frappe-control[data-fieldtype="Long Text"] textarea,
 .frappe-control[data-fieldtype="Text"] textarea,
 .frappe-control[data-fieldtype="Code"] textarea {
-  border: 2px solid var(--ic-field-border) !important;
-  background-color: var(--ic-field-bg) !important;
+  border: 1.5px solid #b8c5ce !important;
+  background-color: #ffffff !important;
 }
 
-/* Required empty fields — orange edge so fill targets stand out more */
+/* Required empty fields — soft orange edge */
 .frappe-control[data-reqd="1"] .control-input .form-control:placeholder-shown,
 .frappe-control[data-reqd="1"] .control-input input.input-with-feedback:placeholder-shown,
 .frappe-control[data-reqd="1"] .control-input select.input-with-feedback:invalid,
 .frappe-control.reqd-empty .control-input .form-control,
 .frappe-control.has-error .control-input .form-control {
-  border-color: var(--ic-field-border-focus) !important;
-  box-shadow: inset 0 0 0 1px rgba(236, 104, 32, 0.2) !important;
+  border-color: #e8a06a !important;
+  box-shadow: none !important;
 }
 
 /* Focus — orange ring (stronger than rest; still no hover dependency) */
@@ -2739,8 +2769,13 @@ select.form-control[readonly],
 .form-grid .grid-row .form-control,
 .grid-row-open .form-section .form-control,
 .rows .grid-row .form-control {
-  border: 2px solid var(--ic-field-border) !important;
+  border: 1.5px solid #b8c5ce !important;
   background: #fff !important;
+}
+
+.grid-body .data-row .col input.form-control:hover,
+.form-grid .grid-row .form-control:hover {
+  border-color: #065175 !important;
 }
 
 /* List / filter bar dropdowns & search */
@@ -2752,7 +2787,7 @@ select.form-control[readonly],
 .sort-selector .btn-group .btn-default,
 .filter-button,
 .list-row-head .filter-x-button {
-  border: 2px solid var(--ic-field-border-soft) !important;
+  border: 1.5px solid #b8c5ce !important;
 }
 
 /* Checkbox / radio — clearer hit area without relying on hover */
@@ -2769,17 +2804,17 @@ select.form-control[readonly],
 .control-input .ql-container.ql-snow,
 .frappe-control[data-fieldtype="Text Editor"] .ql-toolbar.ql-snow,
 .frappe-control[data-fieldtype="Text Editor"] .ql-container.ql-snow {
-  border: 2px solid var(--ic-field-border) !important;
-  background: var(--ic-field-bg) !important;
+  border: 1.5px solid #b8c5ce !important;
+  background: #ffffff !important;
 }
 
 /* Attach / color / rating wrappers */
 .frappe-control[data-fieldtype="Attach"] .control-input,
 .frappe-control[data-fieldtype="Attach Image"] .control-input,
 .frappe-control[data-fieldtype="Color"] .control-input {
-  border: 2px solid var(--ic-field-border) !important;
+  border: 1.5px solid #b8c5ce !important;
   border-radius: var(--ic-radius-sm);
-  background: var(--ic-field-bg-tint);
+  background: #ffffff;
   padding: 4px;
 }
 
