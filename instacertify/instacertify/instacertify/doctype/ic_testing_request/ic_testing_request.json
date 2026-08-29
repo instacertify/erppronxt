@@ -82,8 +82,10 @@
    "fieldname": "assigned_person",
    "fieldtype": "Link",
    "options": "User",
-   "label": "Assigned Person",
-   "in_list_view": 1
+   "label": "Primary Assignee",
+   "in_list_view": 1,
+   "read_only": 1,
+   "description": "Auto-set from the Primary person in Assign People"
   },
   {
    "doctype": "DocField",
@@ -104,6 +106,20 @@
    "fieldname": "expected_completion",
    "fieldtype": "Date",
    "label": "Expected Completion"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_assignees",
+   "fieldtype": "Section Break",
+   "label": "Assigned Team — one or more people"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "ic_assignees",
+   "fieldtype": "Table",
+   "label": "Assign People",
+   "options": "IC Assignee",
+   "description": "Add everyone on this testing request. Mark one as Primary."
   },
   {
    "doctype": "DocField",
