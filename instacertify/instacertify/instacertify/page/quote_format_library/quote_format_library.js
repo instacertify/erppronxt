@@ -13,6 +13,10 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 	page.set_title(__("Quote Format Library"));
 	page.main.addClass("ic-quote-lib-page");
 
+	if (typeof instacertify !== "undefined" && instacertify.enable_full_width_desk) {
+		instacertify.enable_full_width_desk();
+	}
+
 	const CATEGORIES = [
 		{ key: "Consulting", label: __("Consulting"), hint: __("BIS, TEC, WPC, consultancy packs"), slug: "consulting" },
 		{ key: "Testing", label: __("Testing"), hint: __("Lab test & sample commercials"), slug: "testing" },
@@ -41,39 +45,47 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 
 	page.main.html(`
 		<div class="ic-quote-lib">
-			<div class="ic-quote-lib-head">
-				<div>
+			<header class="ic-quote-lib-head">
+				<div class="ic-quote-lib-head-copy">
 					<div class="ic-quote-lib-kicker">${__("Quote formats")}</div>
-					<div class="ic-quote-lib-title">${__("Library by major category")}</div>
-					<div class="ic-quote-lib-sub">${__(
-						"Templates sit under each major category. Click a template to edit it. After saving, use Print or PDF to test the layout. Default amounts and Do Not Count as Revenue lines are set on the template."
-					)}</div>
+					<h1 class="ic-quote-lib-title">${__("Format Library")}</h1>
+					<p class="ic-quote-lib-sub">${__(
+						"Browse by category, then by service family. Click a row to edit. Use Print or PDF to test."
+					)}</p>
 				</div>
-				<div class="ic-quote-lib-tools">
-					<input type="search" class="form-control" id="ic-qlib-search"
-						placeholder="${__("Search name, family, tags…")}" />
-					<button type="button" class="btn btn-default btn-sm" id="ic-qlib-dl-xlsx">${__("Excel Template")}</button>
-					<button type="button" class="btn btn-default btn-sm" id="ic-qlib-dl-csv">${__("CSV Template")}</button>
-					<button type="button" class="btn btn-default btn-sm" id="ic-qlib-import">${__("Import Spreadsheet")}</button>
-					<button type="button" class="btn btn-default btn-sm" id="ic-qlib-upload">${__("Upload Format File")}</button>
-					<button type="button" class="btn btn-default btn-sm" id="ic-qlib-list">${__("Full List")}</button>
-					<button type="button" class="btn btn-primary btn-sm" id="ic-qlib-new">${__("New Template")}</button>
-				</div>
-			</div>
-			<div class="ic-quote-lib-cats" id="ic-qlib-cats" role="tablist" aria-label="${__("Quote categories")}"></div>
-			<div class="ic-quote-lib-tag-bar" id="ic-qlib-tags" aria-label="${__("Tags")}"></div>
-			<div class="ic-quote-lib-panel">
-				<div class="ic-quote-lib-panel-head">
-					<div>
-						<div class="ic-quote-lib-panel-title" id="ic-qlib-panel-title">${__("All categories")}</div>
-						<div class="ic-quote-lib-panel-sub" id="ic-qlib-panel-sub"></div>
-					</div>
+				<div class="ic-quote-lib-toolbar">
+					<input type="search" class="form-control ic-quote-lib-search" id="ic-qlib-search"
+						placeholder="${__("Search templates…")}" />
 					<label class="ic-quote-lib-active-only">
 						<input type="checkbox" id="ic-qlib-active" checked />
 						${__("Active only")}
 					</label>
+					<div class="dropdown ic-quote-lib-manage">
+						<button type="button" class="btn btn-default btn-sm ic-qlib-manage-btn" aria-haspopup="true" aria-expanded="false">
+							${__("Manage")} ▾
+						</button>
+						<div class="dropdown-menu dropdown-menu-right ic-qlib-manage-menu" style="display:none;">
+							<a class="dropdown-item" href="#" id="ic-qlib-dl-xlsx">${__("Download Excel Template")}</a>
+							<a class="dropdown-item" href="#" id="ic-qlib-dl-csv">${__("Download CSV Template")}</a>
+							<a class="dropdown-item" href="#" id="ic-qlib-import">${__("Import Spreadsheet")}</a>
+							<a class="dropdown-item" href="#" id="ic-qlib-upload">${__("Upload Format File")}</a>
+							<div class="dropdown-divider"></div>
+							<a class="dropdown-item" href="#" id="ic-qlib-list">${__("Open Full List")}</a>
+						</div>
+					</div>
+					<button type="button" class="btn btn-primary btn-sm" id="ic-qlib-new">${__("New Template")}</button>
 				</div>
-				<div class="ic-quote-lib-sections" id="ic-qlib-grid" aria-live="polite"></div>
+			</header>
+
+			<nav class="ic-quote-lib-tabs" id="ic-qlib-cats" role="tablist" aria-label="${__("Major categories")}"></nav>
+			<div class="ic-quote-lib-tag-bar" id="ic-qlib-tags" aria-label="${__("Tags")}"></div>
+
+			<div class="ic-quote-lib-body">
+				<aside class="ic-quote-lib-rail" id="ic-qlib-rail" aria-label="${__("Jump to category")}"></aside>
+				<div class="ic-quote-lib-main">
+					<div class="ic-quote-lib-status" id="ic-qlib-status"></div>
+					<div class="ic-quote-lib-sections" id="ic-qlib-grid" aria-live="polite"></div>
+				</div>
 			</div>
 		</div>
 	`);
@@ -86,6 +98,7 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		search: "",
 		active_only: 1,
 		catalog: null,
+		collapsed: {},
 	};
 	if (frappe.route_options) {
 		frappe.route_options = null;
@@ -93,7 +106,9 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 
 	const $cats = page.main.find("#ic-qlib-cats");
 	const $tags = page.main.find("#ic-qlib-tags");
+	const $rail = page.main.find("#ic-qlib-rail");
 	const $grid = page.main.find("#ic-qlib-grid");
+	const $status = page.main.find("#ic-qlib-status");
 
 	function esc(s) {
 		return frappe.utils.escape_html(s || "");
@@ -140,6 +155,30 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			}
 			return true;
 		});
+	}
+
+	function group_by_family(rows) {
+		const map = {};
+		const order = [];
+		(rows || []).forEach((t) => {
+			const fam = (t.service_family || t.service_name || "").trim() || __("General");
+			if (!map[fam]) {
+				map[fam] = [];
+				order.push(fam);
+			}
+			map[fam].push(t);
+		});
+		order.sort((a, b) => {
+			if (a === __("General")) return 1;
+			if (b === __("General")) return -1;
+			return a.localeCompare(b);
+		});
+		return order.map((fam) => ({
+			family: fam,
+			rows: map[fam].sort((a, b) =>
+				String(a.template_name || a.name).localeCompare(String(b.template_name || b.name))
+			),
+		}));
 	}
 
 	function open_template(name) {
@@ -257,16 +296,13 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		const counts = (state.catalog && state.catalog.counts) || {};
 		const total = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
 		const chips = [
-			{
-				key: "",
-				label: __("All"),
-				hint: __("Every template under category headings"),
-				count: total,
-			},
+			{ key: "", label: __("All"), count: total, slug: "all" },
 		].concat(
 			CATEGORIES.map((c) => ({
-				...c,
+				key: c.key,
+				label: c.label,
 				count: counts[c.key] || 0,
+				slug: c.slug,
 			}))
 		);
 
@@ -274,23 +310,67 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			chips
 				.map((c) => {
 					const active = (state.category || "") === (c.key || "");
-					const slug = c.key ? cat_slug(c.key) : "all";
-					return `<button type="button" class="ic-quote-lib-cat cat-${slug}${active ? " active" : ""}"
+					return `<button type="button" class="ic-quote-lib-tab cat-${c.slug}${active ? " active" : ""}"
 						data-cat="${esc(c.key)}" role="tab" aria-selected="${active ? "true" : "false"}">
-						<span class="ic-quote-lib-cat-swatch" aria-hidden="true"></span>
-						<span class="ic-quote-lib-cat-label">${esc(c.label)}</span>
-						<span class="ic-quote-lib-cat-count">${c.count}</span>
-						<span class="ic-quote-lib-cat-hint">${esc(c.hint || "")}</span>
+						<span class="ic-quote-lib-tab-label">${esc(c.label)}</span>
+						<span class="ic-quote-lib-tab-count">${c.count}</span>
 					</button>`;
 				})
 				.join("")
 		);
 
-		$cats.find(".ic-quote-lib-cat").on("click", function () {
+		$cats.find(".ic-quote-lib-tab").on("click", function () {
 			state.category = $(this).data("cat") || "";
+			state.tag = "";
 			render_cats();
+			render_rail();
 			render_tag_bar();
 			render_templates();
+		});
+	}
+
+	function render_rail() {
+		const counts = (state.catalog && state.catalog.counts) || {};
+		const total = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
+		const items = [
+			{ key: "", label: __("All categories"), count: total, slug: "all" },
+		].concat(
+			CATEGORIES.map((c) => ({
+				key: c.key,
+				label: c.label,
+				count: counts[c.key] || 0,
+				slug: c.slug,
+				hint: c.hint,
+			}))
+		);
+
+		$rail.html(
+			`<div class="ic-quote-lib-rail-title">${__("Categories")}</div>` +
+				items
+					.map((c) => {
+						const active = (state.category || "") === (c.key || "");
+						return `<button type="button" class="ic-quote-lib-rail-item cat-${c.slug}${
+							active ? " active" : ""
+						}" data-cat="${esc(c.key)}">
+							<span class="ic-quote-lib-rail-swatch" aria-hidden="true"></span>
+							<span class="ic-quote-lib-rail-label">${esc(c.label)}</span>
+							<span class="ic-quote-lib-rail-count">${c.count}</span>
+						</button>`;
+					})
+					.join("")
+		);
+
+		$rail.find(".ic-quote-lib-rail-item").on("click", function () {
+			state.category = $(this).data("cat") || "";
+			state.tag = "";
+			render_cats();
+			render_rail();
+			render_tag_bar();
+			render_templates();
+			const $sec = $grid.find(`.ic-quote-lib-section[data-cat="${state.category}"]`);
+			if ($sec.length) {
+				$("html, body").animate({ scrollTop: $sec.offset().top - 80 }, 200);
+			}
 		});
 	}
 
@@ -304,13 +384,10 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		});
 		const tags = collect_tags(base);
 		if (!tags.length) {
-			$tags.html(
-				`<div class="ic-quote-lib-tag-empty">${__(
-					"No tags yet — add a tags column when importing CSV/Excel."
-				)}</div>`
-			);
+			$tags.html("").hide();
 			return;
 		}
+		$tags.show();
 		const chips = [
 			`<button type="button" class="ic-quote-lib-tag${state.tag ? "" : " active"}" data-tag="">${__(
 				"All tags"
@@ -323,7 +400,7 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 					}" data-tag="${esc(t.tag)}">${esc(t.tag)} <span>${t.count}</span></button>`
 			)
 		);
-		$tags.html(chips.join(""));
+		$tags.html(`<span class="ic-quote-lib-tag-label">${__("Filter by tag")}</span>` + chips.join(""));
 		$tags.find(".ic-quote-lib-tag").on("click", function () {
 			state.tag = $(this).data("tag") || "";
 			render_tag_bar();
@@ -331,76 +408,68 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		});
 	}
 
-	function card_html(t) {
+	function row_html(t) {
 		const family = t.service_family || t.service_name || "";
-		const active = cint(t.is_active)
-			? `<span class="ic-quote-lib-badge on">${__("Active")}</span>`
-			: `<span class="ic-quote-lib-badge off">${__("Inactive")}</span>`;
-		const hasFile = t.uploaded_format
-			? `<span class="ic-quote-lib-file">${__("Format file")}</span>`
-			: "";
-		const tagHtml = (t.tags || [])
-			.map((tag) => `<span class="ic-quote-lib-card-tag">${esc(tag)}</span>`)
-			.join("");
+		const active = cint(t.is_active);
 		const lines = cint(t.cost_line_count);
 		const passLines = cint(t.passthrough_line_count);
-		const amountBit =
+		const amount =
 			lines > 0
-				? `<div class="ic-quote-lib-card-amount">
-						<span>${__("Default total")}: <b>${esc(format_money(t.default_amount_total))}</b></span>
-						<span class="ic-quote-lib-card-lines">${lines} ${__("lines")}${
-						passLines
-							? ` · ${passLines} ${__("not revenue")}`
-							: ""
-				  }</span>
-					</div>`
-				: `<div class="ic-quote-lib-card-amount muted">${__("No default amounts yet — add lines when editing")}</div>`;
+				? `<span class="ic-quote-lib-row-amount">${esc(format_money(t.default_amount_total))}</span>
+					<span class="ic-quote-lib-row-lines">${lines} ${__("lines")}${
+						passLines ? ` · ${passLines} ${__("not revenue")}` : ""
+				  }</span>`
+				: `<span class="ic-quote-lib-row-amount muted">${__("No amounts")}</span>`;
+		const tagHtml = (t.tags || [])
+			.slice(0, 4)
+			.map((tag) => `<span class="ic-quote-lib-card-tag">${esc(tag)}</span>`)
+			.join("");
 
-		return `<article class="ic-quote-lib-card cat-${cat_slug(t.quotation_type)}" data-name="${esc(
+		return `<article class="ic-quote-lib-row cat-${cat_slug(t.quotation_type)}" data-name="${esc(
 			t.name
-		)}" tabindex="0" role="button" title="${__("Click to edit template")}">
-			<div class="ic-quote-lib-card-top">
-				<div class="ic-quote-lib-card-type cat-${cat_slug(t.quotation_type)}">${esc(
-					normalize_type(t.quotation_type)
-				)}</div>
-				${active}
+		)}" tabindex="0" role="button" title="${__("Click to edit")}">
+			<div class="ic-quote-lib-row-main">
+				<div class="ic-quote-lib-row-name">${esc(t.template_name || t.name)}</div>
+				<div class="ic-quote-lib-row-meta">
+					${family ? `<span>${esc(family)}</span>` : ""}
+					${active ? `<span class="ic-quote-lib-badge on">${__("Active")}</span>` : `<span class="ic-quote-lib-badge off">${__("Inactive")}</span>`}
+					${t.uploaded_format ? `<span class="ic-quote-lib-file">${__("File")}</span>` : ""}
+					${tagHtml}
+				</div>
 			</div>
-			<h3 class="ic-quote-lib-card-name">${esc(t.template_name || t.name)}</h3>
-			<div class="ic-quote-lib-card-meta">${esc(family) || "&nbsp;"}${hasFile}</div>
-			${amountBit}
-			${tagHtml ? `<div class="ic-quote-lib-card-tags">${tagHtml}</div>` : ""}
-			<div class="ic-quote-lib-card-actions">
+			<div class="ic-quote-lib-row-pricing">${amount}</div>
+			<div class="ic-quote-lib-row-actions">
 				<button type="button" class="btn btn-primary btn-xs ic-qlib-open">${__("Edit")}</button>
-				<button type="button" class="btn btn-default btn-xs ic-qlib-print">${__("Print")}</button>
-				<button type="button" class="btn btn-default btn-xs ic-qlib-pdf">${__("PDF")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-use">${__("Use")}</button>
+				<button type="button" class="btn btn-default btn-xs ic-qlib-print" title="${__("Print")}">${__("Print")}</button>
+				<button type="button" class="btn btn-default btn-xs ic-qlib-pdf" title="${__("PDF")}">${__("PDF")}</button>
 			</div>
 		</article>`;
 	}
 
-	function bind_card_actions($scope, rows) {
+	function bind_row_actions($scope, rows) {
 		$scope.find(".ic-qlib-open").on("click", function (e) {
 			e.stopPropagation();
-			open_template($(this).closest(".ic-quote-lib-card").data("name"));
+			open_template($(this).closest(".ic-quote-lib-row").data("name"));
 		});
 		$scope.find(".ic-qlib-use").on("click", function (e) {
 			e.stopPropagation();
-			const name = $(this).closest(".ic-quote-lib-card").data("name");
+			const name = $(this).closest(".ic-quote-lib-row").data("name");
 			use_template(rows.find((r) => r.name === name));
 		});
 		$scope.find(".ic-qlib-print").on("click", function (e) {
 			e.stopPropagation();
-			preview_template($(this).closest(".ic-quote-lib-card").data("name"), "print");
+			preview_template($(this).closest(".ic-quote-lib-row").data("name"), "print");
 		});
 		$scope.find(".ic-qlib-pdf").on("click", function (e) {
 			e.stopPropagation();
-			preview_template($(this).closest(".ic-quote-lib-card").data("name"), "pdf");
+			preview_template($(this).closest(".ic-quote-lib-row").data("name"), "pdf");
 		});
-		$scope.find(".ic-quote-lib-card").on("click", function (e) {
+		$scope.find(".ic-quote-lib-row").on("click", function (e) {
 			if ($(e.target).closest("button, a, .ic-quote-lib-card-tag").length) return;
 			open_template($(this).data("name"));
 		});
-		$scope.find(".ic-quote-lib-card").on("keydown", function (e) {
+		$scope.find(".ic-quote-lib-row").on("keydown", function (e) {
 			if (e.key === "Enter" || e.key === " ") {
 				e.preventDefault();
 				open_template($(this).data("name"));
@@ -412,21 +481,43 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			render_tag_bar();
 			render_templates();
 		});
+		$scope.find(".ic-qlib-toggle").on("click", function (e) {
+			e.stopPropagation();
+			const key = $(this).data("collapse");
+			state.collapsed[key] = !state.collapsed[key];
+			render_templates();
+		});
+	}
+
+	function family_block_html(catKey, group) {
+		const collapseKey = `${catKey}::${group.family}`;
+		const collapsed = !!state.collapsed[collapseKey];
+		const rowsHtml = group.rows.map(row_html).join("");
+		return `<div class="ic-quote-lib-family${collapsed ? " is-collapsed" : ""}" data-family="${esc(
+			group.family
+		)}">
+			<button type="button" class="ic-quote-lib-family-head ic-qlib-toggle" data-collapse="${esc(
+				collapseKey
+			)}">
+				<span class="ic-quote-lib-family-chevron" aria-hidden="true"></span>
+				<span class="ic-quote-lib-family-name">${esc(group.family)}</span>
+				<span class="ic-quote-lib-family-count">${group.rows.length}</span>
+			</button>
+			<div class="ic-quote-lib-list">${rowsHtml}</div>
+		</div>`;
 	}
 
 	function render_templates() {
 		const cat = state.category || "";
 		const meta = CATEGORIES.find((c) => c.key === cat);
-		page.main.find("#ic-qlib-panel-title").text(meta ? meta.label : __("All categories"));
-		let sub = meta
-			? meta.hint
-			: __("Major category headings below — click any template to edit.");
-		if (state.tag) {
-			sub = __("Filtered by tag: {0}", [state.tag]);
-		}
-		page.main.find("#ic-qlib-panel-sub").text(sub);
-
 		const rows = filtered_rows();
+
+		let status = meta
+			? __("{0} · {1} templates", [meta.label, rows.length])
+			: __("All categories · {0} templates", [rows.length]);
+		if (state.tag) status += ` · ${__("tag")}: ${state.tag}`;
+		if (state.search) status += ` · “${state.search}”`;
+		$status.text(status);
 
 		if (!rows.length) {
 			$grid.html(
@@ -450,7 +541,6 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 					rows: rows.filter((t) => normalize_type(t.quotation_type) === c.key),
 			  })).filter((s) => s.rows.length);
 
-		// Orphans not in the four majors
 		if (!cat) {
 			const known = new Set(CATEGORIES.map((c) => c.key));
 			const orphan = rows.filter((t) => !known.has(normalize_type(t.quotation_type)));
@@ -468,8 +558,9 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			sections
 				.map((sec) => {
 					const slug = cat_slug(sec.key);
-					const cards = sec.rows.map(card_html).join("");
-					return `<section class="ic-quote-lib-section cat-${slug}" data-cat="${esc(sec.key)}">
+					const families = group_by_family(sec.rows);
+					const body = families.map((g) => family_block_html(sec.key, g)).join("");
+					return `<section class="ic-quote-lib-section cat-${slug}" data-cat="${esc(sec.key)}" id="ic-qlib-sec-${slug}">
 						<header class="ic-quote-lib-section-head">
 							<div class="ic-quote-lib-section-title-row">
 								<span class="ic-quote-lib-section-swatch" aria-hidden="true"></span>
@@ -478,13 +569,13 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 							</div>
 							<p class="ic-quote-lib-section-hint">${esc(sec.hint || "")}</p>
 						</header>
-						<div class="ic-quote-lib-grid">${cards}</div>
+						<div class="ic-quote-lib-families">${body}</div>
 					</section>`;
 				})
 				.join("")
 		);
 
-		bind_card_actions($grid, rows);
+		bind_row_actions($grid, rows);
 	}
 
 	function open_new(cat) {
@@ -501,16 +592,27 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			callback(r) {
 				state.catalog = r.message || { counts: {}, templates: [] };
 				render_cats();
+				render_rail();
 				render_tag_bar();
 				render_templates();
 			},
 		});
 	}
 
-	page.main.find("#ic-qlib-dl-xlsx").on("click", () => download_template("xlsx"));
-	page.main.find("#ic-qlib-dl-csv").on("click", () => download_template("csv"));
-	page.main.find("#ic-qlib-import").on("click", open_import);
-	page.main.find("#ic-qlib-upload").on("click", () => {
+	page.main.find("#ic-qlib-dl-xlsx").on("click", (e) => {
+		e.preventDefault();
+		download_template("xlsx");
+	});
+	page.main.find("#ic-qlib-dl-csv").on("click", (e) => {
+		e.preventDefault();
+		download_template("csv");
+	});
+	page.main.find("#ic-qlib-import").on("click", (e) => {
+		e.preventDefault();
+		open_import();
+	});
+	page.main.find("#ic-qlib-upload").on("click", (e) => {
+		e.preventDefault();
 		instacertify.open_quote_format_upload({
 			quotation_type: state.category || "Consulting",
 			on_done() {
@@ -518,7 +620,8 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			},
 		});
 	});
-	page.main.find("#ic-qlib-list").on("click", () => {
+	page.main.find("#ic-qlib-list").on("click", (e) => {
+		e.preventDefault();
 		const filters = {};
 		if (state.category) filters.quotation_type = state.category;
 		frappe.set_route("List", "IC Quotation Template", filters);
@@ -528,6 +631,19 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		state.active_only = this.checked ? 1 : 0;
 		render_templates();
 	});
+	const $manageBtn = page.main.find(".ic-qlib-manage-btn");
+	const $manageMenu = page.main.find(".ic-qlib-manage-menu");
+	$manageBtn.on("click", function (e) {
+		e.stopPropagation();
+		const open = $manageMenu.is(":visible");
+		$manageMenu.toggle(!open);
+		$manageBtn.attr("aria-expanded", open ? "false" : "true");
+	});
+	$(document).on("click.ic-qlib-manage", () => {
+		$manageMenu.hide();
+		$manageBtn.attr("aria-expanded", "false");
+	});
+	$manageMenu.on("click", (e) => e.stopPropagation());
 	let timer = null;
 	page.main.find("#ic-qlib-search").on("input", function () {
 		state.search = ($(this).val() || "").trim();
