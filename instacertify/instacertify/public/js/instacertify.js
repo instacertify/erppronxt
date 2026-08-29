@@ -187,6 +187,19 @@ instacertify.enable_full_width_desk = function () {
 		document.body.classList.add("full-width");
 	}
 	$(document.body).addClass("full-width");
+	// Drop Bootstrap container gutters on the active desk page body
+	$(".page-body.container, .container.page-body").css({
+		maxWidth: "100%",
+		width: "100%",
+		paddingLeft: 0,
+		paddingRight: 0,
+		marginLeft: 0,
+		marginRight: 0,
+	});
+	$(".layout-main, .layout-main-section-wrapper, .layout-main-section").css({
+		maxWidth: "none",
+		width: "100%",
+	});
 };
 
 /** Never leave users on the generic ERPNext Home workspace (wrong landing / empty). */
