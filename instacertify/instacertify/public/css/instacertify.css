@@ -2587,3 +2587,75 @@ html, body, .desk-page, .page-container, .form-layout,
 .desk-sidebar .standard-sidebar-label {
   font-family: "Poppins", sans-serif !important;
 }
+
+/* ——— Home / Workspaces: eliminate side gutters, use full display width ——— */
+:root {
+  --ic-home-side-pad: 10px;
+}
+
+/* Remove Frappe's ~900px page max-width on home / workspaces */
+[data-page-route="Workspaces"] .layout-main,
+[data-page-route="Workspaces"] .layout-main-section-wrapper,
+[data-page-route="instacertify-home"] .layout-main,
+[data-page-route="instacertify-home"] .layout-main-section-wrapper,
+body.full-width .layout-main,
+body.full-width .layout-main-section-wrapper {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-page-route="Workspaces"] .layout-main-section,
+[data-page-route="instacertify-home"] .layout-main-section,
+body.full-width .desk-page .layout-main-section {
+  max-width: none !important;
+  width: 100% !important;
+  padding-left: var(--ic-home-side-pad) !important;
+  padding-right: var(--ic-home-side-pad) !important;
+}
+
+[data-page-route="Workspaces"] .page-head .container,
+[data-page-route="Workspaces"] .page-head,
+[data-page-route="instacertify-home"] .page-head .container,
+[data-page-route="instacertify-home"] .page-head,
+body.full-width .page-head .container {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: var(--ic-home-side-pad) !important;
+  padding-right: var(--ic-home-side-pad) !important;
+}
+
+[data-page-route="Workspaces"] .codex-editor,
+[data-page-route="Workspaces"] .ce-block__content,
+[data-page-route="Workspaces"] .ce-toolbar__content,
+[data-page-route="Workspaces"] .widget-group,
+[data-page-route="Workspaces"] .widget.custom-block-widget,
+[data-page-route="Workspaces"] .custom-block-widget,
+[data-page-route="instacertify-home"] .codex-editor,
+[data-page-route="instacertify-home"] .ce-block__content,
+[data-page-route="instacertify-home"] .widget-group,
+[data-page-route="instacertify-home"] .custom-block-widget,
+#ic-home-root {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Editor.js default content column — stretch home blocks edge-to-edge */
+[data-page-route="Workspaces"] .ce-block__content,
+[data-page-route="Workspaces"] .ce-toolbar__content,
+[data-page-route="instacertify-home"] .ce-block__content,
+[data-page-route="instacertify-home"] .ce-toolbar__content {
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --ic-home-side-pad: 12px;
+  }
+}
