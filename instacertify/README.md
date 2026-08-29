@@ -98,4 +98,13 @@ The **Connections** tab also shows counts and filtered lists (including Instacer
 
 ## Theme
 
-Desk uses a **light cool-teal hue** background (Instacertify brand soft blues), not flat white or dark mode. Cards and forms stay white for readability.
+Desk uses the Instacertify **dual-tone** palette (not flat white or dark mode):
+
+| Role | Color |
+|------|--------|
+| Light blue (canvas) | `#E7F1FC` |
+| Deep blue (primary) | `#0D47A1` |
+| Orange accent | `#F26D21` |
+| White (cards / forms) | `#FFFFFF` |
+
+Cards and forms stay white for readability.

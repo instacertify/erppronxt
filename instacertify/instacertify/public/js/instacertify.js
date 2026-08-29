@@ -2,9 +2,10 @@
 frappe.provide("instacertify");
 
 instacertify.brand = {
-	primary: "#065175",
-	accent: "#EC6820",
-	surface: "#f3f8fb",
+	primary: "#0D47A1",
+	accent: "#F26D21",
+	surface: "#E7F1FC",
+	white: "#FFFFFF",
 	logo: "/assets/instacertify/images/instacertify_logo.png",
 	icon: "/assets/instacertify/images/instacertify_icon.png",
 	app_logo: "/assets/instacertify/images/instacertify_app_logo.png",

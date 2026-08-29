@@ -15,44 +15,6 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
-	_ensure_lead_reminders_sidebar()
-	try:
-		from instacertify.setup.gameplan_access import ensure_gameplan_access
-
-		ensure_gameplan_access()
-	except Exception:
-		pass
-
-
-def _ensure_lead_reminders_sidebar():
-	"""Keep Lead Reminders in the Instacertify Home sidebar."""
-	sidebar_name = "Instacertify Home"
-	if not frappe.db.exists("Workspace Sidebar", sidebar_name):
-		return
-	if not frappe.db.exists("Page", "lead-reminders"):
-		return
-	doc = frappe.get_doc("Workspace Sidebar", sidebar_name)
-	for row in doc.items or []:
-		if (row.label or "").strip().lower() == "lead reminders" or row.link_to == "lead-reminders":
-			row.link_type = "Page"
-			row.type = "Link"
-			row.link_to = "lead-reminders"
-			row.icon = row.icon or "phone"
-			doc.flags.ignore_permissions = True
-			doc.save(ignore_permissions=True)
-			return
-	doc.append(
-		"items",
-		{
-			"label": "Lead Reminders",
-			"link_type": "Page",
-			"type": "Link",
-			"link_to": "lead-reminders",
-			"icon": "phone",
-		},
-	)
-	doc.flags.ignore_permissions = True
-	doc.save(ignore_permissions=True)
 
 
 def _ensure_home_html_block():
@@ -116,15 +78,20 @@ def _ensure_home_html_block():
   <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub">
     <div class="ic-lead-prompt-header">
       <div>
-        <div class="ic-lead-prompt-title">Lead reminders</div>
-        <div class="ic-lead-prompt-sub">Next 4 calls — soft cards side by side</div>
+        <div class="ic-lead-prompt-title">Lead reminder hub</div>
+        <div class="ic-lead-prompt-sub">Whom to call · who to connect with · customer remarks</div>
       </div>
       <div class="ic-lead-hub-actions">
         <span class="ic-lead-hub-counts" id="ic-lead-hub-counts"></span>
-        <a class="ic-view-all" id="ic-lead-show-all" href="/app/lead-reminders">Show all</a>
+        <a class="ic-view-all" href="/app/lead">Open Leads</a>
       </div>
     </div>
-    <div id="ic-lead-prompts" class="ic-lead-hub-rail"></div>
+    <div class="ic-lead-hub-legend">
+      <span class="ic-lead-hub-chip overdue">Overdue / today</span>
+      <span class="ic-lead-hub-chip upcoming">Upcoming</span>
+      <span class="ic-lead-hub-chip tip">Tap a card to open the lead and log remarks</span>
+    </div>
+    <div id="ic-lead-prompts" class="ic-lead-prompt-list"></div>
   </div>
 
   <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel">
@@ -436,48 +403,65 @@ def _ensure_home_html_block():
 
   frappe.call({
     method: "instacertify.crm.dashboard.get_lead_contact_prompts",
-    args: { limit: 4 },
+    args: { limit: 10 },
     callback(r) {
       const el = root_element.getElementById("ic-lead-prompts");
       const counts = root_element.getElementById("ic-lead-hub-counts");
       if (!el) return;
       const d = r.message || {};
-      const rows = (d.prompts || []).slice(0, 4);
+      const rows = d.prompts || [];
       if (counts) {
-        const dueN = d.due_count || 0;
-        counts.textContent = dueN ? (dueN + " due") : ((d.upcoming_count || 0) + " upcoming");
+        counts.textContent = (d.due_count || 0) + " due · " + (d.upcoming_count || 0) + " upcoming";
       }
       if (!rows.length) {
-        el.innerHTML = empty("No reminders yet. Set <b>Next Contact Date</b> on a Lead.");
+        el.innerHTML = empty("No lead reminders yet. On a Lead set <b>Next Contact Date</b>, <b>Call / Lead Remarks</b> (what the customer said), and who is assigned — they show up here.");
         return;
       }
       el.innerHTML = rows.map(row => {
         const person = esc(row.contact_person || row.title || row.name);
         const company = esc(row.company || "");
         const when = esc(row.due_label || row.ic_next_contact_date || "—");
-        const phone = esc(row.phone || "");
-        const owner = esc(row.call_with || "");
+        const remarks = esc(row.remarks || row.ic_call_remarks || "No customer remarks yet");
+        const phone = esc(row.phone || "—");
+        const phoneHref = row.phone ? ("tel:" + String(row.phone).replace(/\\s+/g, "")) : "";
+        const callWith = esc(row.call_with || "Unassigned");
+        const connected = esc(row.connected_label || (row.ic_lead_connected ? "Connected" : "Not connected yet"));
+        const connCls = row.ic_lead_connected ? "connected" : "not-connected";
         const urg = esc(row.urgency || "upcoming");
-        let note = row.has_remarks ? String(row.remarks || "") : "";
-        if (note.length > 72) note = note.slice(0, 69) + "…";
-        note = esc(note);
-        const phoneHref = row.phone ? ("tel:" + String(row.phone).replace(/\s+/g, "")) : "";
-        const phoneBit = phone
-          ? (phoneHref
-              ? `<a class="ic-lr-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
-              : `<span>${phone}</span>`)
-          : "";
-        const meta = [phoneBit, owner].filter(Boolean).join(" · ");
-        return `<a class="ic-lr-card ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
-          <div class="ic-lr-card-top"><span class="ic-lr-badge ${urg}">${when}</span></div>
-          <div class="ic-lr-card-name">${person}</div>
-          ${company ? `<div class="ic-lr-card-company">${company}</div>` : ""}
-          ${meta ? `<div class="ic-lr-card-meta">${meta}</div>` : ""}
-          ${note ? `<div class="ic-lr-card-note">${note}</div>` : ""}
+        const stage = esc(row.pipeline_stage || row.status || "");
+        const phoneBlock = phoneHref
+          ? `<a class="ic-lead-prompt-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
+          : `<span class="ic-lead-prompt-phone">${phone}</span>`;
+        return `<a class="ic-lead-prompt ic-lead-hub-card ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
+          <div class="ic-lead-prompt-top">
+            <div>
+              <div class="ic-lead-hub-kicker">Call</div>
+              <div class="ic-lead-prompt-name">${person}</div>
+              ${company ? `<div class="ic-lead-hub-company">${company}</div>` : ""}
+            </div>
+            <span class="ic-lead-prompt-when ${urg}">${when}</span>
+          </div>
+          <div class="ic-lead-hub-grid">
+            <div class="ic-lead-hub-cell">
+              <div class="ic-lead-hub-label">Phone</div>
+              <div class="ic-lead-hub-value">${phoneBlock}</div>
+            </div>
+            <div class="ic-lead-hub-cell">
+              <div class="ic-lead-hub-label">Connect with</div>
+              <div class="ic-lead-hub-value">${callWith}</div>
+            </div>
+            <div class="ic-lead-hub-cell">
+              <div class="ic-lead-hub-label">Status</div>
+              <div class="ic-lead-hub-value"><span class="ic-lead-prompt-connected ${connCls}">${connected}</span>${stage ? " · " + stage : ""}</div>
+            </div>
+          </div>
+          <div class="ic-lead-hub-remarks-wrap">
+            <div class="ic-lead-hub-label">Customer remarks</div>
+            <div class="ic-lead-prompt-remarks ${row.has_remarks ? "" : "muted"}">${remarks}</div>
+          </div>
         </a>`;
       }).join("");
     }
-  });
   });
 
   frappe.call({
@@ -651,12 +635,12 @@ _SHADOW_THEME_CSS = """
 .ic-greeting {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
+  background: linear-gradient(125deg, #0A3380 0%, #0D47A1 42%, #1565C0 78%, #f26d21 145%);
   color: #fff;
   border-radius: 14px;
   padding: 28px 28px 26px;
   margin-bottom: 20px;
-  box-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
+  box-shadow: 0 10px 28px rgba(13, 71, 161, 0.07);
 }
 .ic-greeting-brand {
   font-size: clamp(1.85rem, 3.2vw, 2.45rem);
@@ -681,7 +665,7 @@ _SHADOW_THEME_CSS = """
 .ic-lead-prompt-title, .ic-workdesk-title {
   font-family: "Poppins", sans-serif !important;
   font-weight: 700;
-  color: #065175;
+  color: #0D47A1;
   letter-spacing: -0.02em;
 }
 .ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
@@ -690,71 +674,26 @@ _SHADOW_THEME_CSS = """
 }
 .ic-lead-prompt.today, .ic-lead-hub-card.today {
   background: linear-gradient(165deg, #fff8f0 0%, #fff 55%) !important;
-  box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236,104,32,0.1) !important;
+  box-shadow: inset 4px 0 0 #F26D21, 0 10px 24px rgba(242,109,33,0.1) !important;
 }
 .ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
   background: linear-gradient(165deg, #f0f9fc 0%, #fff 55%) !important;
-  box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10,143,181,0.08) !important;
+  box-shadow: inset 4px 0 0 #1565C0, 0 10px 24px rgba(10,143,181,0.08) !important;
 }
 .ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
-.ic-lead-prompt-when.today { background: #EC6820 !important; color: #fff !important; }
-.ic-lead-prompt-when.upcoming { background: #0a8fb5 !important; color: #fff !important; }
-.ic-lead-hub-rail {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 12px !important;
-  grid-auto-rows: 1fr;
-}
-@media (max-width: 1100px) {
-  .ic-lead-hub-rail { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-}
-@media (max-width: 640px) {
-  .ic-lead-hub-rail { grid-template-columns: 1fr !important; }
-}
-.ic-lr-card {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px;
-  padding: 14px 14px 12px !important;
-  border-radius: 12px !important;
-  text-decoration: none !important;
-  color: inherit !important;
-  border: 1px solid rgba(6,81,117,0.1) !important;
-  aspect-ratio: auto !important;
-  min-height: 148px !important;
-  background: #f7fbf9 !important;
-  box-shadow: none !important;
-  transition: transform 0.15s ease, border-color 0.15s ease;
-}
-.ic-lr-card:hover { transform: translateY(-2px); border-color: rgba(6,81,117,0.22) !important; }
-.ic-lr-card.overdue { background: #fbf6f5 !important; border-left: 4px solid #c4786a !important; }
-.ic-lr-card.today { background: #fbf8f3 !important; border-left: 4px solid #d4a373 !important; }
-.ic-lr-card.upcoming { background: #f3f8fb !important; border-left: 4px solid #6a9fb5 !important; }
-.ic-lr-card-top { display:flex; justify-content:flex-end; }
-.ic-lr-badge {
-  font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;
-  background: #e4eef3; color: #3d5a66;
-}
-.ic-lr-badge.overdue { background: #f3e0dc; color: #8a4a40; }
-.ic-lr-badge.today { background: #f5e6d4; color: #8a5a2b; }
-.ic-lr-badge.upcoming { background: #d9ebf2; color: #2f6173; }
-.ic-lr-card-name { font-weight: 700; font-size: 0.92rem; color: #243b45; line-height: 1.3; }
-.ic-lr-card-company { font-size: 0.78rem; color: #6a828e; }
-.ic-lr-card-meta { font-size: 0.76rem; color: #4d6773; margin-top: 4px; }
-.ic-lr-card-note { font-size: 0.74rem; color: #5b7380; margin-top: auto; padding-top: 8px; line-height: 1.35; }
-.ic-lr-phone { color: #3d7a8c !important; font-weight: 600; text-decoration: none !important; }
+.ic-lead-prompt-when.today { background: #F26D21 !important; color: #fff !important; }
+.ic-lead-prompt-when.upcoming { background: #1565C0 !important; color: #fff !important; }
 .ic-lead-hub-counts {
-
-  background: linear-gradient(90deg, #EC6820, #c44710) !important;
+  background: linear-gradient(90deg, #F26D21, #C45512) !important;
   color: #fff !important;
   font-weight: 700 !important;
   border-radius: 8px;
   padding: 4px 10px;
 }
 .ic-lead-hub-chip.overdue { background: #c0392b !important; color: #fff !important; }
-.ic-lead-hub-chip.upcoming { background: #0a8fb5 !important; color: #fff !important; }
+.ic-lead-hub-chip.upcoming { background: #1565C0 !important; color: #fff !important; }
 .ic-lead-hub-remarks-wrap {
-  background: rgba(6,81,117,0.04);
+  background: rgba(13,71,161,0.04);
   border-radius: 10px;
   padding: 10px 12px;
   margin-top: 8px;
@@ -776,15 +715,15 @@ _SHADOW_THEME_CSS = """
 .ic-summary-card {
   justify-content: space-between !important;
   padding: 14px 12px !important;
-  border: 1px solid rgba(6,81,117,0.1) !important;
-  border-top: 4px solid #065175 !important;
-  border-left: 1px solid rgba(6,81,117,0.1) !important;
+  border: 1px solid rgba(13,71,161,0.1) !important;
+  border-top: 4px solid #0D47A1 !important;
+  border-left: 1px solid rgba(13,71,161,0.1) !important;
 }
-.ic-summary-card:nth-child(3n+1) { border-top-color: #065175 !important; }
-.ic-summary-card:nth-child(3n+2) { border-top-color: #EC6820 !important; }
-.ic-summary-card:nth-child(3n) { border-top-color: #0a8fb5 !important; }
-.ic-summary-card:nth-child(3n) .value { color: #0a8fb5 !important; }
-.ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC6820 !important; }
+.ic-summary-card:nth-child(3n+1) { border-top-color: #0D47A1 !important; }
+.ic-summary-card:nth-child(3n+2) { border-top-color: #F26D21 !important; }
+.ic-summary-card:nth-child(3n) { border-top-color: #1565C0 !important; }
+.ic-summary-card:nth-child(3n) .value { color: #1565C0 !important; }
+.ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #F26D21 !important; }
 .ic-summary-card .label {
   font-size: 0.68rem !important;
   text-transform: uppercase;
@@ -797,34 +736,34 @@ _SHADOW_THEME_CSS = """
   font-family: "Poppins", sans-serif !important;
   font-weight: 700;
   font-size: 1.05rem;
-  color: #065175;
+  color: #0D47A1;
   letter-spacing: -0.02em;
 }
 .ic-explore-sub { color: #5a6f7a; font-size: 0.86rem; margin-top: 2px; margin-bottom: 12px; }
 .ic-explore-card {
   text-align: left;
-  border: 1px solid rgba(6,81,117,0.12);
+  border: 1px solid rgba(13,71,161,0.12);
   padding: 12px;
   background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 6px 16px rgba(6,81,117,0.05);
+  box-shadow: 0 6px 16px rgba(13,71,161,0.05);
   font-family: "Poppins", sans-serif !important;
 }
-.ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,81,117,0.1); }
+.ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(13,71,161,0.1); }
 .ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
-.ic-explore-card.accent-citrus { border-top: 4px solid #EC6820; }
-.ic-explore-card.accent-teal { border-top: 4px solid #065175; }
+.ic-explore-card.accent-citrus { border-top: 4px solid #F26D21; }
+.ic-explore-card.accent-teal { border-top: 4px solid #0D47A1; }
 .ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; flex-shrink: 0; }
 .ic-explore-count {
-  background: #065175; color: #fff; font-size: 0.72rem; font-weight: 700;
+  background: #0D47A1; color: #fff; font-size: 0.72rem; font-weight: 700;
   border-radius: 8px; padding: 2px 8px;
 }
 .ic-explore-action {
-  background: #fff4ec; color: #c44710; font-size: 0.7rem; font-weight: 700;
+  background: #FFF0E8; color: #C45512; font-size: 0.7rem; font-weight: 700;
   border-radius: 6px; padding: 2px 7px; text-transform: uppercase; letter-spacing: 0.04em;
 }
-.ic-explore-card-title { font-weight: 700; color: #033447; font-size: 0.9rem; line-height: 1.25;
+.ic-explore-card-title { font-weight: 700; color: #0A3380; font-size: 0.9rem; line-height: 1.25;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ic-explore-card-sub { color: #5a6f7a; font-size: 0.74rem; margin-top: auto; padding-top: 8px; line-height: 1.3;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -838,14 +777,11 @@ _SHADOW_THEME_CSS = """
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
   gap: 12px !important;
 }
-.ic-lead-prompt-list > .ic-lead-prompt {
+.ic-lead-prompt, .ic-lead-hub-card {
   aspect-ratio: 1 / 1 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
-}
-.ic-lr-card, .ic-lead-hub-rail .ic-lr-card {
-  aspect-ratio: auto !important;
 }
 .ic-workdesk-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
@@ -900,7 +836,7 @@ def _ensure_crm_lead_tracker_block():
         labels: labels,
         datasets: [{ name: "Leads", values: values }]
       },
-      colors: colors || ["#065175", "#EC6820", "#2a9d8f", "#e9c46a", "#264653", "#f4a261"]
+      colors: colors || ["#0D47A1", "#F26D21", "#2a9d8f", "#e9c46a", "#264653", "#f4a261"]
     });
   }
   frappe.call({
@@ -939,9 +875,9 @@ def _ensure_crm_lead_tracker_block():
         }
       }
       const week = d.week_compare || [];
-      makeChart(root_element.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#065175", "#8fb6c9"]);
+      makeChart(root_element.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#0D47A1", "#90CAF9"]);
       const month = d.month_compare || [];
-      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#EC6820", "#f3b48d"]);
+      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#F26D21", "#FFAB91"]);
       const s7 = d.by_source_7d || [];
       makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count));
       const p30 = d.by_project_type_30d || [];
@@ -1032,7 +968,6 @@ def _ensure_home_workspace():
 		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 2}},
 		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
 		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
-		{"id": "sc_lead_reminders", "type": "shortcut", "data": {"shortcut_name": "Lead Reminders", "col": 2}},
 		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 2}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
@@ -1061,7 +996,6 @@ def _ensure_home_workspace():
 		{"label": "Projects", "link_to": "Project", "type": "DocType", "doc_view": "List"},
 		{"label": "Project Board", "link_to": "project-board", "type": "Page"},
 		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
-		{"label": "Lead Reminders", "link_to": "lead-reminders", "type": "Page"},
 		{"label": "Team Calendar", "link_to": "Event", "type": "DocType", "doc_view": "Calendar"},
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
@@ -1117,7 +1051,6 @@ def _ensure_home_workspace():
 		{"label": "Project", "link_type": "DocType", "link_to": "Project", "type": "Link"},
 		{"label": "Project Board (tiles)", "link_type": "Page", "link_to": "project-board", "type": "Link"},
 		{"label": "Team Collaboration", "link_type": "Page", "link_to": "team-collaboration", "type": "Link"},
-		{"label": "Lead Reminders", "link_type": "Page", "link_to": "lead-reminders", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
 		{"label": "Team Chat Messages", "link_type": "DocType", "link_to": "Project Chat Message", "type": "Link"},
 		{"label": "Project Updates", "link_type": "DocType", "link_to": "IC Project Update", "type": "Link"},

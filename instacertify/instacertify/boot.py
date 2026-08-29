@@ -8,9 +8,9 @@ import frappe
 
 def boot_session(bootinfo):
 	bootinfo["instacertify"] = {
-		"primary_color": "#065175",
-		"accent_color": "#EC6820",
-		"surface_color": "#f3f8fb",
+		"primary_color": "#0D47A1",
+		"accent_color": "#F26D21",
+		"surface_color": "#E7F1FC",
 		"theme": "light",
 		"app_name": "Instacertify",
 		"logo": "/assets/instacertify/images/instacertify_logo.png",
