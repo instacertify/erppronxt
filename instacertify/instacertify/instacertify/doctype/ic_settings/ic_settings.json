@@ -168,6 +168,22 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "upi_id",
+   "fieldtype": "Data",
+   "label": "UPI ID",
+   "default": "yespay.bizsbiz31008@yesbankltd",
+   "description": "Shown with bank details on quotations and invoices for UPI payments"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "upi_qr_image",
+   "fieldtype": "Attach Image",
+   "label": "UPI Payment QR Code",
+   "default": "/assets/instacertify/images/upi_payment_qr.jpg",
+   "description": "QR shown beside bank details on every Quote and Invoice"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_quotation",
    "fieldtype": "Section Break",
    "label": "Quotation Defaults"

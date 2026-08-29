@@ -879,6 +879,8 @@ def setup_settings():
 			doc.bank_branch_address
 			or "Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India"
 		)
+		doc.upi_id = doc.upi_id or "yespay.bizsbiz31008@yesbankltd"
+		doc.upi_qr_image = doc.upi_qr_image or "/assets/instacertify/images/upi_payment_qr.jpg"
 		if frappe.db.exists("Company", "Instacertify"):
 			doc.company = "Instacertify"
 		doc.default_terms = (
