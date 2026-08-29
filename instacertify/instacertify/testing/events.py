@@ -156,16 +156,15 @@ def _notify_status_change(doc):
 
 @frappe.whitelist()
 def share_report_with_customer(testing_request: str):
-	doc = frappe.get_doc("IC Testing Request", testing_request)
-	if not doc.test_report:
-		frappe.throw("Please upload the test report first")
-	if not doc.share_token:
-		doc.share_token = secrets.token_urlsafe(24)
-	doc.report_shared_on = now_datetime()
-	doc.status = "Report Shared with Customer"
-	doc.save(ignore_permissions=True)
-	url = frappe.utils.get_url(f"/ic-report/{doc.share_token}")
-	return {"url": url}
+	from instacertify.crm.report_share import share_from_testing_request
+
+	payload = share_from_testing_request(testing_request)
+	return {
+		"url": payload.get("share_url"),
+		"access_code": payload.get("access_code"),
+		"share_token": payload.get("share_token"),
+		"name": payload.get("name"),
+	}
 
 
 @frappe.whitelist()

@@ -231,6 +231,14 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "share_access_code",
+   "fieldtype": "Data",
+   "label": "Share Access Code",
+   "read_only": 1,
+   "description": "8-digit code the customer enters on the share link"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "qr_code",
    "fieldtype": "Attach Image",
    "label": "QR Code",

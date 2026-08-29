@@ -2546,11 +2546,18 @@ function ic_render_customer_files(frm, d) {
 			const date = (f.creation || "").toString().slice(0, 10) || "—";
 			const url = frappe.utils.escape_html(f.file_url || "#");
 			const label = ic_esc(f.label || f.file_name || f.name);
-			return `<tr class="ic-drive-row" data-cat="${frappe.utils.escape_html(cat)}">
+			const shareCell = ic_drive_share_cell(f);
+			return `<tr class="ic-drive-row" data-cat="${frappe.utils.escape_html(cat)}"
+				data-file-url="${frappe.utils.escape_html(f.file_url || "")}"
+				data-file-name="${frappe.utils.escape_html(f.file_name || f.label || "")}"
+				data-source-doctype="${frappe.utils.escape_html(srcDt)}"
+				data-source-name="${frappe.utils.escape_html(srcName)}"
+				data-title="${frappe.utils.escape_html(f.label || f.file_name || "")}">
 				<td class="ic-drive-file"><a href="${url}" target="_blank" rel="noopener">${label}</a></td>
 				<td><span class="ic-drive-cat">${ic_esc(cat)}</span></td>
 				<td>${srcLink}</td>
 				<td>${ic_esc(date)}</td>
+				<td class="ic-drive-share">${shareCell}</td>
 			</tr>`;
 		})
 		.join("");
@@ -2558,7 +2565,7 @@ function ic_render_customer_files(frm, d) {
 	const table = files.length
 		? `<div class="ic-related-table-wrap ic-drive-table-wrap"><table class="ic-related-table ic-drive-table">
 			<thead><tr>
-				<th>${__("File")}</th><th>${__("Folder")}</th><th>${__("Source")}</th><th>${__("Date")}</th>
+				<th>${__("File")}</th><th>${__("Folder")}</th><th>${__("Source")}</th><th>${__("Date")}</th><th>${__("Share Report")}</th>
 			</tr></thead>
 			<tbody>${rows}</tbody>
 		</table></div>`
@@ -2584,6 +2591,27 @@ function ic_render_customer_files(frm, d) {
 			${table}
 		</div>
 	`;
+}
+
+function ic_drive_share_cell(f) {
+	if (!f.shareable) {
+		return `<span class="text-muted">—</span>`;
+	}
+	if (f.share_url && f.access_code) {
+		return `
+			<div class="ic-report-share-meta">
+				<button type="button" class="btn btn-xs btn-default ic-copy-share-link" data-url="${frappe.utils.escape_html(
+					f.share_url
+				)}">${__("Copy link")}</button>
+				<span class="ic-report-code" title="${__("Customer access code")}">${__("Code")}: <b>${ic_esc(
+			f.access_code
+		)}</b></span>
+				<button type="button" class="btn btn-xs btn-link ic-reshare-report">${__("New code")}</button>
+			</div>`;
+	}
+	return `<button type="button" class="btn btn-xs btn-primary ic-share-report">${__(
+		"Share report"
+	)}</button>`;
 }
 
 function ic_bind_customer_file_actions(frm) {
@@ -2656,6 +2684,81 @@ function ic_bind_customer_file_actions(frm) {
 				});
 			},
 		});
+	});
+
+	const share_report = ($row, rotate) => {
+		const file_url = $row.data("file-url");
+		if (!file_url) {
+			frappe.msgprint(__("No file URL on this row"));
+			return;
+		}
+		frappe.call({
+			method: "instacertify.crm.report_share.create_customer_report_share",
+			args: {
+				customer: frm.doc.name,
+				file_url,
+				file_name: $row.data("file-name") || "",
+				source_doctype: $row.data("source-doctype") || "",
+				source_name: $row.data("source-name") || "",
+				title: $row.data("title") || "",
+				rotate_code: rotate ? 1 : 0,
+			},
+			freeze: true,
+			callback(r) {
+				const m = r.message || {};
+				frappe.msgprint({
+					title: __("Report shared with customer"),
+					indicator: "green",
+					message: `
+						<p>${__("Send both the link and the 8-digit code to the customer.")}</p>
+						<p><b>${__("Share link")}</b><br>
+							<a href="${frappe.utils.escape_html(m.share_url || "#")}" target="_blank" rel="noopener">${frappe.utils.escape_html(
+						m.share_url || ""
+					)}</a>
+							<button class="btn btn-xs btn-default ic-msg-copy-link" style="margin-left:8px">${__("Copy")}</button>
+						</p>
+						<p><b>${__("Access code")}</b>: <code style="font-size:1.2em;letter-spacing:0.12em">${frappe.utils.escape_html(
+							m.access_code || ""
+						)}</code>
+							<button class="btn btn-xs btn-default ic-msg-copy-code" style="margin-left:8px">${__("Copy")}</button>
+						</p>
+						<p class="text-muted">${__(
+							"The customer opens the link, enters this code, then can view or download the PDF."
+						)}</p>`,
+				});
+				setTimeout(() => {
+					$(".ic-msg-copy-link")
+						.off("click")
+						.on("click", () => {
+							if (m.share_url && navigator.clipboard) navigator.clipboard.writeText(m.share_url);
+							frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+						});
+					$(".ic-msg-copy-code")
+						.off("click")
+						.on("click", () => {
+							if (m.access_code && navigator.clipboard) navigator.clipboard.writeText(m.access_code);
+							frappe.show_alert({ message: __("Code copied"), indicator: "green" });
+						});
+				}, 50);
+				instacertify.load_customer_related(frm);
+			},
+		});
+	};
+
+	$wrap.find(".ic-share-report").off("click").on("click", function () {
+		share_report($(this).closest("tr"), false);
+	});
+	$wrap.find(".ic-reshare-report").off("click").on("click", function () {
+		frappe.confirm(__("Generate a new 8-digit code and share link for this report?"), () => {
+			share_report($(this).closest("tr"), true);
+		});
+	});
+	$wrap.find(".ic-copy-share-link").off("click").on("click", function () {
+		const url = $(this).data("url");
+		if (url && navigator.clipboard) {
+			navigator.clipboard.writeText(url);
+			frappe.show_alert({ message: __("Share link copied"), indicator: "green" });
+		}
 	});
 }
 
@@ -3036,7 +3139,21 @@ frappe.ui.form.on("IC Testing Request", {
 					method: "instacertify.testing.events.share_report_with_customer",
 					args: { testing_request: frm.doc.name },
 					callback(r) {
-						frappe.msgprint(`Report link: <a href="${r.message.url}" target="_blank">${r.message.url}</a>`);
+						const m = r.message || {};
+						frappe.msgprint({
+							title: __("Report shared with customer"),
+							indicator: "green",
+							message: `
+								<p>${__("Send both the link and the 8-digit code to the customer.")}</p>
+								<p><b>${__("Share link")}</b><br>
+									<a href="${frappe.utils.escape_html(m.url || "#")}" target="_blank" rel="noopener">${frappe.utils.escape_html(
+								m.url || ""
+							)}</a>
+								</p>
+								<p><b>${__("Access code")}</b>: <code style="font-size:1.2em;letter-spacing:0.12em">${frappe.utils.escape_html(
+									m.access_code || ""
+								)}</code></p>`,
+						});
 						frm.reload_doc();
 					},
 				});

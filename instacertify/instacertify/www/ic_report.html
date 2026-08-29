@@ -7,6 +7,23 @@
   <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
   <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+  <style>
+    .ic-report-pin {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 16px 0;
+    }
+    .ic-report-pin input {
+      letter-spacing: 0.35em; font-size: 1.25rem; font-weight: 600;
+      text-align: center; width: 11rem; padding: 10px 12px;
+      border: 1.5px solid #c9d3db; border-radius: 8px;
+    }
+    .ic-report-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+    .ic-report-error { color: #b42318; margin-top: 10px; font-size: 0.92rem; }
+    .ic-report-meta { color: #5a6b75; font-size: 0.92rem; margin-top: 6px; }
+    .ic-btn { display: inline-block; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; border: 0; cursor: pointer; }
+    .ic-btn-primary { background: #065175; color: #fff; }
+    .ic-btn-secondary { background: #EC6820; color: #fff; }
+    .ic-btn-ghost { background: #eef3f6; color: #065175; }
+  </style>
 </head>
 <body class="ic-portal-body">
   <div class="ic-portal-wrap">
@@ -14,23 +31,81 @@
       <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
     </div>
     <div class="ic-portal-card">
-      <h2 style="color:#0D47A1;margin-top:0;">Test Report</h2>
+      <h2 style="color:#065175;margin-top:0;">Test Report</h2>
       <div id="content">Loading…</div>
     </div>
   </div>
   <script>
     const token = {{ token|tojson }};
-    fetch('/api/method/instacertify.www.ic_report.get_report?token=' + encodeURIComponent(token))
-      .then(r => r.json()).then(r => {
-        const d = r.message;
-        if (!d) { document.getElementById('content').innerText = 'Not found'; return; }
-        document.getElementById('content').innerHTML =
-          '<p><b>' + d.title + '</b> (' + d.name + ')</p>' +
-          '<p>Product: ' + (d.product || '') + '</p>' +
-          '<p>Test: ' + (d.test_name || '') + '</p>' +
-          '<p>Status: ' + (d.status || '') + '</p>' +
-          (d.test_report ? '<p><a class="ic-btn ic-btn-primary" href="' + d.test_report + '" target="_blank">View / Download Report</a></p>' : '<p>Report not available.</p>');
+    const content = document.getElementById('content');
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+
+    function showGate(d) {
+      content.innerHTML =
+        '<p><b>' + esc(d.title || 'Test Report') + '</b></p>' +
+        (d.file_name ? '<p class="ic-report-meta">' + esc(d.file_name) + '</p>' : '') +
+        '<p class="ic-report-meta">' + esc(d.portal_notice || 'Enter the 8-digit access code to view this report.') + '</p>' +
+        '<form id="pin-form" class="ic-report-pin">' +
+          '<input id="access-code" type="text" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="········" autocomplete="one-time-code" required />' +
+          '<button type="submit" class="ic-btn ic-btn-primary">Unlock report</button>' +
+        '</form>' +
+        '<div id="pin-error" class="ic-report-error" hidden></div>';
+
+      document.getElementById('pin-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const code = (document.getElementById('access-code').value || '').replace(/\\D/g, '');
+        const err = document.getElementById('pin-error');
+        if (code.length !== 8) {
+          err.hidden = false;
+          err.textContent = 'Please enter the 8-digit numerical code.';
+          return;
+        }
+        unlock(code);
       });
+    }
+
+    function showReport(d) {
+      const url = d.file_url || d.test_report || '';
+      content.innerHTML =
+        '<p><b>' + esc(d.title || 'Test Report') + '</b></p>' +
+        (d.file_name ? '<p class="ic-report-meta">' + esc(d.file_name) + '</p>' : '') +
+        '<p class="ic-report-meta">' + esc(d.portal_notice || '') + '</p>' +
+        (url
+          ? '<div class="ic-report-actions">' +
+              '<a class="ic-btn ic-btn-primary" href="' + esc(url) + '" target="_blank" rel="noopener">View report</a>' +
+              '<a class="ic-btn ic-btn-secondary" href="' + esc(url) + '" download>Download</a>' +
+            '</div>'
+          : '<p>Report file is not available.</p>');
+    }
+
+    function unlock(code) {
+      const err = document.getElementById('pin-error');
+      fetch('/api/method/instacertify.crm.report_share.unlock_report?token=' + encodeURIComponent(token) + '&access_code=' + encodeURIComponent(code))
+        .then(r => r.json())
+        .then(r => {
+          if (r.exc || !r.message || r.message.exc) {
+            if (err) { err.hidden = false; err.textContent = 'Invalid access code. Check the 8-digit code next to the share link.'; }
+            return;
+          }
+          showReport(r.message);
+        })
+        .catch(() => {
+          if (err) { err.hidden = false; err.textContent = 'Could not unlock report. Try again.'; }
+        });
+    }
+
+    fetch('/api/method/instacertify.crm.report_share.get_report_gate?token=' + encodeURIComponent(token))
+      .then(r => r.json())
+      .then(r => {
+        if (!r.message) { content.innerText = 'Report not found'; return; }
+        showGate(r.message);
+      })
+      .catch(() => { content.innerText = 'Report not found'; });
   </script>
 </body>
 </html>

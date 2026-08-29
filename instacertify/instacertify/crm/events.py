@@ -273,6 +273,12 @@ def get_customer_history(customer: str):
 		sample_dispatches=sample_dispatches,
 		contracts=contracts,
 	)
+	try:
+		from instacertify.crm.report_share import enrich_drive_files_with_shares
+
+		drive["files"] = enrich_drive_files_with_shares(customer, drive.get("files") or [])
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "enrich drive report shares")
 
 	contacts = frappe.get_all(
 		"Dynamic Link",

@@ -3432,3 +3432,25 @@ body.full-width .widget.number-widget-box {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Customer Data Drive — report share link + 8-digit code */
+.ic-drive-share {
+  min-width: 160px;
+  vertical-align: middle;
+}
+.ic-report-share-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.ic-report-code {
+  font-size: 12px;
+  color: #065175;
+  letter-spacing: 0.04em;
+}
+.ic-report-code b {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  color: #EC6820;
+}
