@@ -81,7 +81,11 @@ def run_session_bulk_qc(target: int = 50) -> dict:
 					"customer_name": cname,
 					"customer_type": "Company",
 					"territory": frappe.db.get_value("Territory", {}, "name") or "All Territories",
-					"customer_group": frappe.db.get_value("Customer Group", {}, "name") or "All Customer Groups",
+					"customer_group": (
+						"Manufacturer"
+						if frappe.db.exists("Customer Group", "Manufacturer")
+						else (frappe.db.get_value("Customer Group", {"is_group": 0}, "name") or "All Customer Groups")
+					),
 				}
 			)
 			cust.insert(ignore_permissions=True)

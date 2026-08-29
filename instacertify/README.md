@@ -74,6 +74,14 @@ POS billing is **disabled**. Use standard Sales Invoice only. The Include Paymen
 - **Lead Source**: Google Search, Google Ads, IndiaMART, Reference, Consultant (+ more) — edit under **IC Lead Source**
 - **Project Type**: BIS, Testing, EPR, LMPC, SABER, GMARK, MSDS Authoring — edit under **IC Project Type**
 
+## Customer Groups (by category)
+
+Customer Group names match business category:
+
+- **Consultant** · **Labs** · **Manufacturer** · **Trader** · **Importer** · **Agent**
+
+New customers default to **Manufacturer** (Selling Settings). Pick the matching group on the Customer form.
+
 ## Customer Related Data
 
 Open any **Customer** → **Related Data** tab to view that customer’s:

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+from frappe.utils import cint
 
 
 ROLES = [
@@ -79,19 +80,7 @@ def ensure_masters():
 				ignore_permissions=True
 			)
 
-	if not frappe.db.exists("Customer Group", "All Customer Groups"):
-		frappe.get_doc(
-			{"doctype": "Customer Group", "customer_group_name": "All Customer Groups", "is_group": 1}
-		).insert(ignore_permissions=True)
-	if not frappe.db.exists("Customer Group", "Commercial"):
-		frappe.get_doc(
-			{
-				"doctype": "Customer Group",
-				"customer_group_name": "Commercial",
-				"parent_customer_group": "All Customer Groups",
-				"is_group": 0,
-			}
-		).insert(ignore_permissions=True)
+	ensure_customer_groups()
 
 	if not frappe.db.exists("Territory", "All Territories"):
 		frappe.get_doc(
@@ -150,6 +139,7 @@ def ensure_masters():
 def after_migrate():
 	setup_custom_fields()
 	ensure_roles()
+	ensure_masters()
 	setup_lead_sources()
 	setup_project_types()
 	setup_lead_capture_properties()
@@ -172,6 +162,57 @@ def after_migrate():
 	setup_quotation_naming_series()
 	setup_hrms_alignment()
 	frappe.db.commit()
+
+
+# Customer Groups named by business category (Instacertify CRM)
+CUSTOMER_GROUP_CATEGORIES = (
+	"Consultant",
+	"Labs",
+	"Manufacturer",
+	"Trader",
+	"Importer",
+	"Agent",
+)
+
+
+def ensure_customer_groups():
+	"""Customer Group names = business categories used across Instacertify."""
+	if not frappe.db.exists("Customer Group", "All Customer Groups"):
+		frappe.get_doc(
+			{"doctype": "Customer Group", "customer_group_name": "All Customer Groups", "is_group": 1}
+		).insert(ignore_permissions=True)
+
+	for name in CUSTOMER_GROUP_CATEGORIES:
+		if frappe.db.exists("Customer Group", name):
+			doc = frappe.get_doc("Customer Group", name)
+			changed = False
+			if doc.parent_customer_group != "All Customer Groups":
+				doc.parent_customer_group = "All Customer Groups"
+				changed = True
+			if cint(doc.is_group):
+				doc.is_group = 0
+				changed = True
+			if changed:
+				doc.save(ignore_permissions=True)
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Customer Group",
+				"customer_group_name": name,
+				"parent_customer_group": "All Customer Groups",
+				"is_group": 0,
+			}
+		).insert(ignore_permissions=True)
+
+	# Default new customers to Manufacturer when unset / legacy Commercial
+	try:
+		ss = frappe.get_single("Selling Settings")
+		current = (ss.customer_group or "").strip()
+		if not current or current in ("Commercial", "All Customer Groups"):
+			ss.customer_group = "Manufacturer"
+			ss.save(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Selling Settings customer_group")
 
 
 def setup_invoice_naming_series():
