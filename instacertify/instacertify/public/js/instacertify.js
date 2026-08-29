@@ -4136,8 +4136,14 @@ frappe.listview_settings["IC Sample Tracking"] = {
 			Discarded: "red",
 			"Sample Awaited": "blue",
 			"Sample Received": "green",
+			"Report Available": "yellow",
+			"Report Uploaded": "green",
+			"Report Shared with Customer": "blue",
 		};
-		return [__(loc || "Unset"), colors[loc] || "gray", "sample_location,=," + (doc.sample_location || "")];
+		const label = doc.status === "Report Available" || doc.status === "Report Uploaded" || doc.status === "Report Shared with Customer"
+			? doc.status
+			: (doc.sample_location || doc.status || "");
+		return [__(label || "Unset"), colors[label] || colors[loc] || "gray", "status,=," + (doc.status || "")];
 	},
 	onload(listview) {
 		const locs = [
@@ -4171,6 +4177,12 @@ frappe.ui.form.on("IC Sample Tracking", {
 		};
 		if (map[frm.doc.status] && frm.doc.sample_location !== map[frm.doc.status]) {
 			frm.set_value("sample_location", map[frm.doc.status]);
+		}
+		if (frm.doc.status === "Report Available" && !frm.doc.test_report && !frm.is_new()) {
+			frappe.show_alert({
+				message: __("Upload the test report PDF from the Report section"),
+				indicator: "orange",
+			});
 		}
 	},
 	sample_location(frm) {
@@ -4237,8 +4249,259 @@ frappe.ui.form.on("IC Sample Tracking", {
 				});
 			}, __("Location"));
 		});
+
+		if (frm.is_new()) return;
+
+		// Mark Report Available when testing is done
+		if (
+			["Testing in Progress", "At Laboratory", "Sample Dispatched to Laboratory"].includes(
+				frm.doc.status
+			)
+		) {
+			frm.add_custom_button(__("Mark Report Available"), () => {
+				frappe.call({
+					method: "instacertify.testing.events.mark_sample_report_available",
+					args: { sample: frm.doc.name },
+					freeze: true,
+					callback() {
+						frm.reload_doc().then(() => {
+							frappe.show_alert({
+								message: __("Status set to Report Available — upload the PDF report"),
+								indicator: "blue",
+							});
+							instacertify.open_sample_report_upload(frm);
+						});
+					},
+				});
+			}, __("Report"));
+		}
+
+		// Upload / replace / delete PDF once Report Available
+		if (
+			["Report Available", "Report Uploaded", "Report Shared with Customer"].includes(
+				frm.doc.status
+			)
+		) {
+			frm.set_intro(
+				frm.doc.test_report
+					? __(
+							"Test report PDF is on file. Use Report → Replace or Delete to modify it. Visible in Customer records."
+					  )
+					: __(
+							"Status is Report Available — upload the lab test report as a PDF (Report → Upload Test Report PDF)."
+					  ),
+				frm.doc.test_report ? "green" : "orange"
+			);
+
+			frm.add_custom_button(
+				frm.doc.test_report ? __("Replace Test Report PDF") : __("Upload Test Report PDF"),
+				() => instacertify.open_sample_report_upload(frm),
+				__("Report")
+			);
+
+			if (frm.doc.test_report) {
+				frm.add_custom_button(__("View Report PDF"), () => {
+					window.open(frm.doc.test_report, "_blank");
+				}, __("Report"));
+				frm.add_custom_button(__("Delete Test Report"), () => {
+					frappe.confirm(
+						__("Delete the uploaded PDF report? You can upload a new one after."),
+						() => {
+							frappe.call({
+								method: "instacertify.testing.events.delete_sample_report",
+								args: { sample: frm.doc.name },
+								freeze: true,
+								callback() {
+									frm.reload_doc();
+									frappe.show_alert({
+										message: __("Report deleted — status back to Report Available"),
+										indicator: "orange",
+									});
+								},
+							});
+						}
+					);
+				}, __("Report"));
+			}
+
+			// Auto-prompt upload when landing on Report Available with no file
+			if (frm.doc.status === "Report Available" && !frm.doc.test_report && !frm._ic_report_prompted) {
+				frm._ic_report_prompted = true;
+				setTimeout(() => instacertify.open_sample_report_upload(frm), 400);
+			}
+		}
+
+		instacertify.render_sample_report_actions(frm);
+
+		if (frm.doc.test_report) {
+			frm.dashboard.add_comment(
+				__(
+					"Test report PDF on file{0}. Visible in Customer → Data Drive / Project Records.",
+					[
+						frm.doc.report_uploaded_on
+							? ` (${frm.doc.report_uploaded_on})`
+							: "",
+					]
+				),
+				"blue",
+				true
+			);
+		}
+	},
+	test_report(frm) {
+		// Direct attach on the form also stamps + ingests via DocType validate/on_update
+		if (!frm.doc.test_report || frm.is_new()) return;
+		const name = String(frm.doc.test_report).split("?")[0].toLowerCase();
+		if (!name.endsWith(".pdf")) {
+			frappe.msgprint(__("Please upload a PDF file for the test report."));
+			frm.set_value("test_report", "");
+			return;
+		}
+		if (frm.doc.status === "Report Available") {
+			frappe.show_alert({
+				message: __("Save to stamp date/time and push report to customer records"),
+				indicator: "blue",
+			});
+		}
 	},
 });
+
+instacertify.pdf_attach_options = Object.assign({}, instacertify.attach_options || {}, {
+	restrictions: {
+		allowed_file_types: [".pdf", "application/pdf"],
+	},
+});
+
+instacertify.open_sample_report_upload = function (frm) {
+	const d = new frappe.ui.Dialog({
+		title: frm.doc.test_report
+			? __("Replace Test Report PDF")
+			: __("Upload Test Report PDF"),
+		fields: [
+			{
+				fieldname: "help",
+				fieldtype: "HTML",
+				options: `<p class="text-muted">${__(
+					"Attach the lab test report as a <b>PDF</b> only. It will be saved to Customer records with date & time. You can replace or delete it later."
+				)}</p>`,
+			},
+			{
+				fieldname: "test_report",
+				fieldtype: "Attach",
+				label: __("Test Report PDF"),
+				reqd: 1,
+				description: __("PDF only — My Device or File Library."),
+				options: instacertify.pdf_attach_options,
+			},
+		],
+		primary_action_label: frm.doc.test_report ? __("Replace") : __("Upload"),
+		primary_action(values) {
+			const file_url =
+				(d.get_value && d.get_value("test_report")) ||
+				(values && values.test_report) ||
+				"";
+			if (!file_url) {
+				frappe.msgprint(__("Please attach a PDF file first."));
+				return;
+			}
+			if (!String(file_url).split("?")[0].toLowerCase().endsWith(".pdf")) {
+				frappe.msgprint(__("Test report must be a PDF file (.pdf)."));
+				return;
+			}
+			frappe.call({
+				method: "instacertify.testing.events.upload_sample_report",
+				args: { sample: frm.doc.name, file_url },
+				freeze: true,
+				freeze_message: __("Saving PDF report to customer records…"),
+				callback(r) {
+					d.hide();
+					const m = r.message || {};
+					frappe.msgprint({
+						title: __("Report uploaded"),
+						indicator: "green",
+						message: __(
+							"PDF report saved on {0}. Available in Customer records. Use Report → Replace or Delete to modify.",
+							[m.report_uploaded_on || __("now")]
+						),
+					});
+					frm.reload_doc();
+				},
+			});
+		},
+	});
+	d.show();
+	if (instacertify.add_file_manager_hint) {
+		instacertify.add_file_manager_hint(d, "test_report");
+	}
+};
+
+instacertify.render_sample_report_actions = function (frm) {
+	if (!frm.fields_dict.report_actions_html) return;
+	const url = frm.doc.test_report;
+	const status = frm.doc.status;
+	if (
+		!["Report Available", "Report Uploaded", "Report Shared with Customer"].includes(status) &&
+		!url
+	) {
+		frm.fields_dict.report_actions_html.$wrapper.empty();
+		return;
+	}
+	const buttons = [];
+	if (!url) {
+		buttons.push(
+			`<button type="button" class="btn btn-primary btn-sm ic-upload-report-pdf">${__(
+				"Upload Test Report PDF"
+			)}</button>`
+		);
+	} else {
+		buttons.push(
+			`<a class="btn btn-default btn-sm" href="${frappe.utils.escape_html(
+				url
+			)}" target="_blank" rel="noopener">${__("Open PDF")}</a>`
+		);
+		buttons.push(
+			`<button type="button" class="btn btn-default btn-sm ic-replace-report-pdf">${__(
+				"Replace PDF"
+			)}</button>`
+		);
+		buttons.push(
+			`<button type="button" class="btn btn-danger btn-sm ic-delete-report-pdf">${__(
+				"Delete PDF"
+			)}</button>`
+		);
+	}
+	const meta = url
+		? `<div class="text-muted" style="margin-top:6px;font-size:12px;">${__(
+				"Uploaded on {0} by {1}",
+				[
+					frappe.datetime.str_to_user(frm.doc.report_uploaded_on) || "—",
+					frm.doc.report_uploaded_by || "—",
+				]
+		  )}</div>`
+		: `<div class="text-muted" style="margin-top:6px;font-size:12px;">${__(
+				"No report yet — PDF required"
+		  )}</div>`;
+	frm.fields_dict.report_actions_html.$wrapper.html(
+		`<div class="ic-report-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">${buttons.join(
+			""
+		)}</div>${meta}`
+	);
+	frm.fields_dict.report_actions_html.$wrapper
+		.find(".ic-upload-report-pdf, .ic-replace-report-pdf")
+		.on("click", () => instacertify.open_sample_report_upload(frm));
+	frm.fields_dict.report_actions_html.$wrapper.find(".ic-delete-report-pdf").on("click", () => {
+		frappe.confirm(__("Delete the uploaded PDF report?"), () => {
+			frappe.call({
+				method: "instacertify.testing.events.delete_sample_report",
+				args: { sample: frm.doc.name },
+				freeze: true,
+				callback() {
+					frm.reload_doc();
+				},
+			});
+		});
+	});
+};
 
 // Opportunity — raise ticket from deal context
 frappe.ui.form.on("Opportunity", {

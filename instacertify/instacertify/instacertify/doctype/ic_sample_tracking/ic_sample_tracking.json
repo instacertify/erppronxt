@@ -227,6 +227,50 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_report",
+   "fieldtype": "Section Break",
+   "label": "Test Report (PDF)",
+   "depends_on": "eval:in_list(['Report Available','Report Uploaded','Report Shared with Customer'], doc.status) || doc.test_report",
+   "description": "When status is Report Available, upload the lab report as PDF. You can replace or delete it anytime."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_report",
+   "fieldtype": "Attach",
+   "label": "Upload Report (PDF)",
+   "in_preview": 1,
+   "description": "PDF only — upload, replace, or clear to delete. Saved to customer records with date/time."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "report_actions_html",
+   "fieldtype": "HTML",
+   "label": "Report Actions",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_report",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "report_uploaded_on",
+   "fieldtype": "Datetime",
+   "label": "Report Uploaded On",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "report_uploaded_by",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Report Uploaded By",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_notes",
    "fieldtype": "Section Break",
    "label": "Notes"
