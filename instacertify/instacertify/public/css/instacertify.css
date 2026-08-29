@@ -1088,8 +1088,11 @@ body {
   .ic-project-grid,
   .ic-explore-grid,
   .ic-summary-grid,
-  .ic-lead-prompt-list {
+  .ic-lead-prompt-list:not(.ic-lead-followup-list) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ic-lead-followup-list {
+    grid-template-columns: 1fr;
   }
   .ic-project-board-tools .form-control {
     max-width: none;
@@ -1381,126 +1384,159 @@ body.for-login,
 
 /* Lead contact prompts on home / CRM tracker */
 .ic-lead-prompt-panel {
-  margin: 14px 0 18px;
-  padding: 16px 18px;
-  border: 1px solid rgba(6, 81, 117, 0.1);
-  border-radius: var(--ic-radius, 14px);
-  background:
-    linear-gradient(135deg, rgba(255, 241, 230, 0.55) 0%, #ffffff 42%, #f3f9fc 100%);
-  border-left: 5px solid var(--ic-accent, #EC6820);
-  box-shadow: var(--ic-shadow);
+  margin: 18px 0 22px;
+  padding: 20px 22px;
+  border: 1.5px solid #033447;
+  border-radius: 12px;
+  background: #ffffff;
+  border-left: 6px solid var(--ic-accent, #EC6820);
+  box-shadow: none;
   animation: ic-rise-in 0.6s var(--ic-rise) 0.12s both;
+}
+.ic-lead-prompt-panel.ic-lead-hub {
+  border-left-width: 8px;
+  background: #fffaf6;
 }
 .ic-lead-prompt-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 .ic-lead-prompt-title {
-  font-weight: 700;
-  color: var(--ic-primary, #065175);
-  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ic-primary-deep, #033447);
+  font-size: 1.25rem;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 .ic-lead-prompt-sub {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--ic-muted);
+  margin-top: 4px;
+  max-width: 42rem;
+  line-height: 1.35;
 }
 .ic-lead-prompt-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
-  gap: var(--ic-tile-gap, 12px);
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+/* Helpdesk / collab can stay compact; lead follow-up uses large rectangles */
+.ic-lead-prompt-list:not(.ic-lead-followup-list) {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.ic-lead-followup-list {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 980px) {
+  .ic-lead-followup-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .ic-lead-prompt {
   display: flex;
   flex-direction: column;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: auto;
+  min-height: 0;
   text-decoration: none !important;
   color: inherit;
   background: #fff;
-  border: 1px solid rgba(6, 81, 117, 0.1);
-  border-radius: var(--ic-radius-sm, 12px);
-  padding: 12px;
+  border: 1.5px solid #033447;
+  border-radius: 10px;
+  padding: 14px 16px;
   overflow: hidden;
-  transition: border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease), transform 0.18s var(--ic-ease);
+  box-shadow: none;
+  transition: border-color 0.18s var(--ic-ease), background 0.18s var(--ic-ease);
 }
 .ic-lead-prompt:hover {
-  border-color: var(--ic-primary, #065175);
-  box-shadow: var(--ic-shadow);
-  transform: translateY(-2px);
+  border-color: #022a38;
+  background: #f7fbfd;
+  box-shadow: none;
+  transform: none;
 }
 .ic-lead-prompt.overdue {
-  border-color: rgba(192, 57, 43, 0.35);
-  background: linear-gradient(180deg, #fff5f4 0%, #fff 70%);
-  box-shadow: inset 3px 0 0 var(--ic-coral);
+  border-color: #8e2a20;
+  background: #fff7f6;
+  box-shadow: inset 5px 0 0 #c0392b;
 }
 .ic-lead-prompt.today {
-  border-color: rgba(236, 104, 32, 0.4);
-  background: linear-gradient(180deg, #fff8f1 0%, #fff 70%);
-  box-shadow: inset 3px 0 0 var(--ic-accent);
+  border-color: #033447;
+  background: #fff9f4;
+  box-shadow: inset 5px 0 0 #EC6820;
 }
 .ic-lead-prompt.upcoming {
-  box-shadow: inset 3px 0 0 var(--ic-cyan);
+  border-color: #033447;
+  background: #f7fbfd;
+  box-shadow: inset 5px 0 0 #0a8fb5;
 }
-.ic-lead-prompt-top {
+.ic-lead-prompt-top,
+.ic-lead-followup-main {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   align-items: flex-start;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
 }
 .ic-lead-prompt-name {
-  font-weight: 600;
-  color: var(--ic-primary, #065175);
+  font-weight: 750;
+  font-size: 1.1rem;
+  color: var(--ic-primary-deep, #033447);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 .ic-lead-prompt-when {
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 750;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 3px 9px;
+  padding: 6px 12px;
   border-radius: 8px;
   background: var(--ic-primary-soft);
   color: var(--ic-primary);
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 .ic-lead-prompt-when.overdue {
-  background: #fde8e6;
-  color: var(--ic-coral);
+  background: #c0392b;
+  color: #fff;
 }
 .ic-lead-prompt-when.today {
-  background: #ffedd9;
-  color: var(--ic-amber);
+  background: #EC6820;
+  color: #fff;
 }
 .ic-lead-prompt-when.upcoming {
-  background: #e4f4fa;
-  color: var(--ic-cyan);
+  background: #0a8fb5;
+  color: #fff;
 }
 .ic-lead-prompt-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.8rem;
-  margin-bottom: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
   color: #5b7382;
 }
 .ic-lead-prompt-connected {
-  font-weight: 600;
-  font-size: 0.75rem;
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 .ic-lead-prompt-connected.connected { color: #1b7a4e; }
 .ic-lead-prompt-connected.not-connected { color: #b54708; }
 .ic-lead-prompt-remarks {
-  font-size: 0.85rem;
-  color: #334155;
-  line-height: 1.35;
+  font-size: 0.95rem;
+  color: #1c2f3a;
+  line-height: 1.45;
 }
 .ic-lead-prompt-empty {
   color: #5b7382;
-  font-size: 0.9rem;
-  padding: 8px 2px;
+  font-size: 0.95rem;
+  padding: 18px 14px;
+  border: 1.5px dashed #9bb4c3;
+  border-radius: 10px;
+  background: #fff;
 }
 
 /* Lead reminder hub — whom / with / remarks */
@@ -1515,18 +1551,15 @@ body.for-login,
   justify-content: flex-end;
 }
 .ic-lead-hub-counts {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--ic-accent, #EC6820);
-  background: var(--ic-accent-soft, #fff1e6);
-  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: #fff;
+  background: #c44710;
+  padding: 6px 12px;
   border-radius: 8px;
 }
 .ic-lead-hub-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 12px;
+  display: none; /* declutter — urgency is on each block */
 }
 .ic-lead-hub-chip {
   font-size: 0.72rem;
@@ -1537,12 +1570,12 @@ body.for-login,
   color: #065175;
 }
 .ic-lead-hub-chip.overdue {
-  background: #fde8e6;
-  color: #c0392b;
+  background: #c0392b;
+  color: #fff;
 }
 .ic-lead-hub-chip.upcoming {
-  background: #e4f4fa;
-  color: #0a8fb5;
+  background: #0a8fb5;
+  color: #fff;
 }
 .ic-lead-hub-chip.tip {
   background: transparent;
@@ -1550,48 +1583,58 @@ body.for-login,
   font-weight: 500;
   padding-left: 0;
 }
-.ic-lead-hub-card {
-  padding: 14px 14px 12px !important;
+.ic-lead-hub-card,
+.ic-lead-followup-block {
+  padding: 18px 18px 16px !important;
+  min-height: 168px;
+  aspect-ratio: auto !important;
 }
 .ic-lead-hub-kicker {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 750;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ic-accent, #EC6820);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 .ic-lead-hub-company {
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   color: #5b7382;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .ic-lead-hub-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 10px 0;
+  gap: 12px;
+  margin: 4px 0 12px;
 }
 .ic-lead-hub-cell {
   min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #d5e4ee;
+  border-radius: 8px;
+  background: #f8fbfd;
 }
 .ic-lead-hub-label {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 750;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #7a93a1;
-  margin-bottom: 2px;
+  color: #5a7382;
+  margin-bottom: 4px;
 }
 .ic-lead-hub-value {
-  font-size: 0.84rem;
-  font-weight: 560;
-  color: #1c2f3a;
+  font-size: 0.98rem;
+  font-weight: 650;
+  color: #152833;
   word-break: break-word;
+  line-height: 1.35;
 }
 .ic-lead-hub-remarks-wrap {
-  border-top: 1px dashed rgba(6, 81, 117, 0.12);
-  padding-top: 8px;
+  border: 1px solid #d5e4ee;
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px 14px;
   margin-top: 2px;
 }
 .ic-lead-prompt-remarks.muted {
@@ -1600,11 +1643,20 @@ body.for-login,
 }
 .ic-lead-prompt-phone {
   color: var(--ic-primary, #065175) !important;
-  font-weight: 650;
+  font-weight: 750;
+  font-size: 1.02rem;
   text-decoration: none !important;
 }
 a.ic-lead-prompt-phone:hover {
   color: var(--ic-accent, #EC6820) !important;
+}
+@media (max-width: 700px) {
+  .ic-lead-hub-grid {
+    grid-template-columns: 1fr;
+  }
+  .ic-lead-followup-block {
+    min-height: 0;
+  }
 }
 .ic-lead-form-reminder {
   margin: 0 0 14px;
@@ -1666,12 +1718,15 @@ a.ic-lead-prompt-phone:hover {
 .ic-project-card,
 .ic-summary-card,
 .ic-crm-chart-card,
-.ic-lead-prompt-panel,
 .ic-portal-card {
   border-radius: var(--ic-radius) !important;
   border: 1px solid rgba(6, 81, 117, 0.08) !important;
   box-shadow: var(--ic-shadow) !important;
   transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease);
+}
+.ic-lead-prompt-panel {
+  border-radius: 12px !important;
+  box-shadow: none !important;
 }
 
 .ic-summary-card:hover,
@@ -2426,24 +2481,33 @@ html, body, .desk-page, .page-container, .form-layout,
   letter-spacing: -0.025em;
 }
 
-/* Color-coded prompt cards */
+/* Color-coded prompt cards — inset urgency bar only, no drop shadows */
 .ic-lead-prompt.overdue,
 .ic-lead-hub-card.overdue {
-  background: linear-gradient(165deg, #fff5f4 0%, #ffffff 55%) !important;
-  border-color: rgba(192, 57, 43, 0.35) !important;
-  box-shadow: inset 4px 0 0 #c0392b, 0 10px 24px rgba(192, 57, 43, 0.08) !important;
+  background: #fff7f6 !important;
+  border-color: #8e2a20 !important;
+  box-shadow: inset 5px 0 0 #c0392b !important;
 }
 .ic-lead-prompt.today,
 .ic-lead-hub-card.today {
-  background: linear-gradient(165deg, #fff8f0 0%, #ffffff 55%) !important;
-  border-color: rgba(236, 104, 32, 0.4) !important;
-  box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236, 104, 32, 0.1) !important;
+  background: #fff9f4 !important;
+  border-color: #033447 !important;
+  box-shadow: inset 5px 0 0 #EC6820 !important;
 }
 .ic-lead-prompt.upcoming,
 .ic-lead-hub-card.upcoming {
-  background: linear-gradient(165deg, #f0f9fc 0%, #ffffff 55%) !important;
-  border-color: rgba(10, 143, 181, 0.35) !important;
-  box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10, 143, 181, 0.08) !important;
+  background: #f7fbfd !important;
+  border-color: #033447 !important;
+  box-shadow: inset 5px 0 0 #0a8fb5 !important;
+}
+.ic-lead-followup-block,
+.ic-lead-hub-card {
+  aspect-ratio: auto !important;
+  min-height: 168px !important;
+}
+.ic-lead-hub-remarks-wrap {
+  border: 1px solid #d5e4ee !important;
+  background: #fff !important;
 }
 
 .ic-lead-prompt-when.overdue {
@@ -2465,21 +2529,14 @@ html, body, .desk-page, .page-container, .form-layout,
 .ic-lead-hub-card.overdue .ic-lead-hub-kicker { color: #c0392b !important; }
 .ic-lead-hub-card.upcoming .ic-lead-hub-kicker { color: #0a8fb5 !important; }
 
-.ic-lead-hub-remarks-wrap {
-  background: rgba(6, 81, 117, 0.04);
-  border-radius: 10px;
-  border-top: none !important;
-  padding: 10px 12px !important;
-  margin-top: 8px !important;
-}
 .ic-lead-hub-card.overdue .ic-lead-hub-remarks-wrap {
-  background: rgba(192, 57, 43, 0.06);
+  border-color: rgba(192, 57, 43, 0.25) !important;
 }
 .ic-lead-hub-card.today .ic-lead-hub-remarks-wrap {
-  background: rgba(236, 104, 32, 0.07);
+  border-color: rgba(236, 104, 32, 0.3) !important;
 }
 .ic-lead-hub-card.upcoming .ic-lead-hub-remarks-wrap {
-  background: rgba(10, 143, 181, 0.07);
+  border-color: rgba(10, 143, 181, 0.25) !important;
 }
 
 .ic-lead-prompt-remarks {
