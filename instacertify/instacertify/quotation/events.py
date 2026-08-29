@@ -455,23 +455,12 @@ def _resolve_post_accept_action(doc) -> str:
 
 @frappe.whitelist(allow_guest=True)
 def customer_reject_quotation(token: str, remarks: str | None = None):
-	doc = _quotation_from_token(token)
-	name = doc.name
-	_assert_customer_can_decide(doc)
-	if not (remarks or "").strip():
-		frappe.throw(_("Please enter a reason for rejecting this quotation"))
-	values = {
-		"ic_workflow_status": "Rejected / Lost",
-		"ic_customer_remarks": remarks,
-	}
-	frappe.db.set_value("Quotation", name, values, update_modified=True)
-	doc.reload()
-	_set_workflow_state(name, "IC Rejected / Lost")
-	_notify_rejection(doc)
-	return {
-		"status": "Rejected / Lost",
-		"message": _("Rejection recorded. Our team has been notified."),
-	}
+	"""Reject is no longer offered — customers may Approve or Ask to Revise only."""
+	_quotation_from_token(token)  # validate token still exists
+	frappe.throw(
+		_("Rejecting a quotation is not available. Please Approve or Ask to Revise instead."),
+		title=_("Action not available"),
+	)
 
 
 @frappe.whitelist(allow_guest=True)

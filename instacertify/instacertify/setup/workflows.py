@@ -23,8 +23,32 @@ ACTIONS = [
 	"IC Mark Accepted",
 	"IC Request Changes",
 	"IC Revise",
-	"IC Reject",
 ]
+
+
+def _remove_reject_transitions(workflow_name: str | None = None):
+	"""Customers decide via Approve or Ask to Revise — drop Reject transitions."""
+	name = workflow_name or "IC Quotation Workflow"
+	if not frappe.db.exists("Workflow", name):
+		return
+	doc = frappe.get_doc("Workflow", name)
+	kept = [t for t in doc.transitions if (t.action or "") != "IC Reject"]
+	if len(kept) == len(doc.transitions):
+		return
+	doc.set("transitions", [])
+	for t in kept:
+		doc.append(
+			"transitions",
+			{
+				"state": t.state,
+				"action": t.action,
+				"next_state": t.next_state,
+				"allowed": t.allowed,
+				"allow_self_approval": t.get("allow_self_approval"),
+				"condition": t.get("condition"),
+			},
+		)
+	doc.save(ignore_permissions=True)
 
 
 def ensure_quotation_workflow():
@@ -42,6 +66,7 @@ def ensure_quotation_workflow():
 
 	name = "IC Quotation Workflow"
 	if frappe.db.exists("Workflow", name):
+		_remove_reject_transitions(name)
 		return
 
 	doc = frappe.get_doc(
@@ -121,12 +146,6 @@ def ensure_quotation_workflow():
 					"action": "IC Revise",
 					"next_state": "IC Draft",
 					"allowed": "IC Sales Person",
-				},
-				{
-					"state": "IC Shared with Customer",
-					"action": "IC Reject",
-					"next_state": "IC Rejected / Lost",
-					"allowed": "IC Admin",
 				},
 			],
 		}

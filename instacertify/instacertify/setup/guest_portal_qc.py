@@ -84,12 +84,12 @@ def run_guest_portal_qc() -> dict:
 			"Quotation", qtn, "ic_workflow_status", "Shared with Customer", update_modified=False
 		)
 		frappe.set_user("Guest")
-		# Reject requires remarks
+		# Reject is no longer available — Approve or Ask to Revise only
 		try:
-			customer_reject_quotation(token, remarks="")
-			fail("Guest reject without remarks allowed")
+			customer_reject_quotation(token, remarks="not allowed anymore")
+			fail("Guest reject still allowed")
 		except Exception:
-			ok("Guest reject requires remarks")
+			ok("Guest reject disabled (Approve / Ask to Revise only)")
 
 		# Feedback / revision remarks required
 		try:
@@ -97,6 +97,19 @@ def run_guest_portal_qc() -> dict:
 			fail("Empty revision remarks allowed")
 		except Exception:
 			ok("Revision remarks required")
+
+		# Ask to revise OK, then restore Shared for accept test
+		res_rev = customer_request_changes(token, remarks="Please adjust timeline — QC revise")
+		if res_rev.get("status") == "Changes Requested":
+			ok("Guest ask to revise works")
+		else:
+			fail(f"Guest revise status issue: {res_rev}")
+
+		frappe.set_user("Administrator")
+		frappe.db.set_value(
+			"Quotation", qtn, "ic_workflow_status", "Shared with Customer", update_modified=False
+		)
+		frappe.set_user("Guest")
 
 		# Accept OK
 		res = customer_accept_quotation(token, remarks="Looks good — QC accept")

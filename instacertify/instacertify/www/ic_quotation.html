@@ -32,10 +32,9 @@
       <div id="content">Loading…</div>
       <div id="msg"></div>
       <div class="ic-portal-actions" id="actions" style="display:none;">
-        <p class="ic-portal-muted">Approve, reject, or request changes — and download the PDF. This page does not provide access to the Instacertify ERP desk.</p>
+        <p class="ic-portal-muted">Approve or ask to revise — and download the PDF. This page does not provide access to the Instacertify ERP desk.</p>
         <button class="ic-btn ic-btn-primary" id="btn-accept">Approve Quotation</button>
-        <button class="ic-btn ic-btn-ghost" id="btn-reject">Reject</button>
-        <button class="ic-btn ic-btn-accent" id="btn-changes">Ask for Revision</button>
+        <button class="ic-btn ic-btn-accent" id="btn-changes">Ask to Revise</button>
         <a class="ic-btn ic-btn-ghost" id="btn-download" href="#" target="_blank" rel="noopener">Download PDF</a>
       </div>
       <div id="remarks-box" style="display:none;margin-top:12px;">
@@ -134,7 +133,6 @@
           const show = !!d.can_decide;
           document.getElementById('actions').style.display = 'flex';
           document.getElementById('btn-accept').style.display = show ? '' : 'none';
-          document.getElementById('btn-reject').style.display = show ? '' : 'none';
           document.getElementById('btn-changes').style.display = show ? '' : 'none';
           document.getElementById('remarks-box').style.display = 'none';
         }).catch(() => {
@@ -144,11 +142,8 @@
     document.getElementById('btn-accept').onclick = function () {
       openRemarks('accept', 'Optional remarks (approve)', 'Any note for Instacertify (optional)');
     };
-    document.getElementById('btn-reject').onclick = function () {
-      openRemarks('reject', 'Reason for rejection (required)', 'Please tell us why you are rejecting');
-    };
     document.getElementById('btn-changes').onclick = function () {
-      openRemarks('changes', 'Revision request', 'What should we change in the quotation?');
+      openRemarks('changes', 'Ask to revise — what should we change?', 'What should we change in the quotation?');
     };
     document.getElementById('btn-cancel-remarks').onclick = function () {
       pendingAction = null;
@@ -160,17 +155,10 @@
         showMsg('Please enter revision remarks.', false);
         return;
       }
-      if (pendingAction === 'reject' && !remarks.trim()) {
-        showMsg('Please enter a rejection reason.', false);
-        return;
-      }
       let method = 'instacertify.quotation.events.customer_accept_quotation';
       let body = {token: token, remarks: remarks};
       let okText = 'Quotation approved. Thank you!';
-      if (pendingAction === 'reject') {
-        method = 'instacertify.quotation.events.customer_reject_quotation';
-        okText = 'Quotation rejected. Our team has been notified.';
-      } else if (pendingAction === 'changes') {
+      if (pendingAction === 'changes') {
         method = 'instacertify.quotation.events.customer_request_changes';
         okText = 'Revision request submitted. We will send an updated quote.';
       }
