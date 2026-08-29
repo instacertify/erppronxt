@@ -66,6 +66,14 @@
    "fieldname": "qr_code",
    "fieldtype": "Attach Image",
    "label": "QR Code",
+   "read_only": 1,
+   "description": "Encodes unique Sample Tracking Number for 50×25 mm sticker print"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sticker_preview",
+   "fieldtype": "HTML",
+   "label": "50×25 mm Sticker Preview",
    "read_only": 1
   },
   {
