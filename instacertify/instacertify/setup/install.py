@@ -338,6 +338,7 @@ def setup_custom_fields():
 	_ensure_service_family_field()
 	_ensure_sales_invoice_quotation_link()
 	_ensure_customer_related_tab()
+	_ensure_customer_login_credentials()
 	_ensure_lead_source_link_field()
 	_ensure_lead_project_type_field()
 	_ensure_lead_party_name_field()
@@ -586,6 +587,47 @@ def _ensure_sales_invoice_quotation_link():
 		).insert(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Sales Invoice ic_quotation field")
+
+
+def _ensure_customer_login_credentials():
+	"""Section on Customer to store portal User ID + encrypted Password."""
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+	from instacertify.setup.custom_fields import CUSTOMER_FIELDS
+
+	login_fields = [
+		f
+		for f in CUSTOMER_FIELDS
+		if f.get("fieldname")
+		in (
+			"ic_section_login",
+			"ic_customer_user_id",
+			"ic_column_login",
+			"ic_customer_password",
+			"ic_login_notes",
+		)
+	]
+	if not login_fields:
+		return
+	try:
+		frappe.flags.ignore_version = True
+		create_custom_fields({"Customer": login_fields}, update=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Customer login credentials fields")
+	finally:
+		frappe.flags.ignore_version = False
+
+	# Keep Customer Team section after login notes when present
+	if frappe.db.exists("Custom Field", "Customer-ic_section_team"):
+		try:
+			frappe.db.set_value(
+				"Custom Field",
+				"Customer-ic_section_team",
+				"insert_after",
+				"ic_login_notes",
+				update_modified=False,
+			)
+		except Exception:
+			pass
 
 
 def _ensure_customer_related_tab():
