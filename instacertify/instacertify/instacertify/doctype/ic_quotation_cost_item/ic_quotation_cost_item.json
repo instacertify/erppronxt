@@ -6,27 +6,31 @@
  "fields": [
   {
    "doctype": "DocField",
-   "fieldname": "cost_component",
-   "fieldtype": "Select",
-   "label": "Cost Component",
+   "fieldname": "particulars",
+   "fieldtype": "Data",
+   "label": "Particulars / Line Name (Print)",
    "in_list_view": 1,
-   "reqd": 1,
-   "options": "Consulting Charges\nTesting Charges\nGovernment Fees\nCertification Authority Fees\nLaboratory Charges\nOther Charges"
+   "columns": 2,
+   "bold": 1,
+   "description": "Customer-facing line name on the quote. Change freely (e.g. BIS Consultancy Fee)."
   },
   {
    "doctype": "DocField",
-   "fieldname": "particulars",
+   "fieldname": "cost_component",
    "fieldtype": "Data",
-   "label": "Particulars (Print)",
+   "label": "Cost Component",
    "in_list_view": 1,
-   "description": "Printed Particulars column. Falls back to Cost Component / Description."
+   "columns": 2,
+   "reqd": 1,
+   "description": "Any name — Consulting Charges, Government Fees, or your own label."
   },
   {
    "doctype": "DocField",
    "fieldname": "description",
    "fieldtype": "Data",
    "label": "Description",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "columns": 1
   },
   {
    "doctype": "DocField",
@@ -34,6 +38,7 @@
    "fieldtype": "Currency",
    "label": "Amount",
    "in_list_view": 1,
+   "columns": 1,
    "reqd": 1,
    "options": "currency"
   },
@@ -43,7 +48,8 @@
    "fieldtype": "Data",
    "label": "Charges Display (Print)",
    "in_list_view": 1,
-   "description": "Optional print text e.g. ₹ 25,000/- per Test Report"
+   "columns": 1,
+   "description": "Optional print text e.g. ₹ 25,000/- per Test Report (overrides Amount on print)"
   },
   {
    "doctype": "DocField",
@@ -51,6 +57,7 @@
    "fieldtype": "Select",
    "label": "Payment Destination",
    "in_list_view": 1,
+   "columns": 1,
    "reqd": 1,
    "options": "Payable to Instacertify\nPayable Directly to Government\nPayable Directly to Laboratory\nPayable to Third Party",
    "description": "Payable to Instacertify = counted revenue. Other destinations = pass-through (do not count)."
@@ -61,6 +68,7 @@
    "fieldtype": "Select",
    "label": "Revenue",
    "in_list_view": 1,
+   "columns": 1,
    "reqd": 1,
    "default": "Counted Revenue",
    "options": "Counted Revenue\nDo Not Count as Revenue",

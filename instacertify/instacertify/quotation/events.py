@@ -174,10 +174,37 @@ def list_quote_formats_for_type(quotation_type: str | None = None):
 	return {"formats": out, "count": len(out), "category": quotation_type}
 
 
+_LABEL_FIELDS = (
+	"label_about",
+	"label_standard",
+	"label_process",
+	"label_validity",
+	"label_commercials",
+	"label_particulars_col",
+	"label_charges_col",
+	"label_payment_terms",
+	"label_timelines",
+	"label_sample_required",
+	"label_documents_required",
+	"label_banking",
+	"label_cancellation",
+	"label_force_majeure",
+	"label_confidentiality",
+	"label_subject",
+	"label_about_testing",
+	"label_applicable_standards",
+	"label_samples_requirements",
+	"label_deliverable",
+	"label_timeline",
+	"label_payment_term",
+	"label_sample_handling",
+)
+
+
 def _template_field_map(tmpl) -> dict:
 	"""Scalar quotation fields filled from an IC Quotation Template."""
 	qtype = "Consulting" if tmpl.quotation_type == "Service" else tmpl.quotation_type
-	return {
+	fields = {
 		"ic_quotation_type": qtype,
 		"ic_quotation_template": tmpl.name,
 		"ic_service_family": tmpl.get("service_family"),
@@ -208,6 +235,9 @@ def _template_field_map(tmpl) -> dict:
 		"ic_gst_note": tmpl.get("gst_note"),
 		"ic_sample_handling_policy": tmpl.get("sample_handling_policy"),
 	}
+	for key in _LABEL_FIELDS:
+		fields[f"ic_{key}"] = tmpl.get(key)
+	return fields
 
 
 def _template_cost_rows(tmpl) -> list[dict]:
@@ -359,6 +389,8 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 	tmpl.samples_note = qt.ic_samples_note
 	tmpl.gst_note = qt.ic_gst_note
 	tmpl.sample_handling_policy = qt.ic_sample_handling_policy
+	for key in _LABEL_FIELDS:
+		tmpl.set(key, qt.get(f"ic_{key}"))
 
 	tmpl.set("cost_items", [])
 	for row in qt.get("ic_cost_items") or []:

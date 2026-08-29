@@ -11,12 +11,21 @@
  "fields": [
   {
    "doctype": "DocField",
+   "fieldname": "section_identity",
+   "fieldtype": "Section Break",
+   "label": "1. Template Identity",
+   "description": "Name and category. This template is fully editable — change any heading, narrative, or price line below."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "template_name",
    "fieldtype": "Data",
    "label": "Template Name",
    "reqd": 1,
    "unique": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "bold": 1,
+   "description": "Displayed in Quote Format Library and when creating a quotation."
   },
   {
    "doctype": "DocField",
@@ -27,7 +36,7 @@
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "description": "Four major categories. Add many templates under each; used when creating a quote."
+   "description": "Consulting, Testing, Renewal, or Other — used when creating a quote."
   },
   {
    "doctype": "DocField",
@@ -57,54 +66,230 @@
    "fieldname": "template_notes",
    "fieldtype": "Small Text",
    "label": "Template Notes",
-   "description": "Internal note shown when selecting this template"
+   "description": "Internal note shown when selecting this template. Tags: add [Tags: bis, crs] for library filters."
   },
   {
    "doctype": "DocField",
-   "fieldname": "section_upload_library",
+   "fieldname": "edit_guide_html",
+   "fieldtype": "HTML",
+   "label": "What You Can Edit"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_print_labels",
    "fieldtype": "Section Break",
-   "label": "Upload Quote Format Library",
-   "description": "Upload PDF / DOCX / HTML quote formats and supporting template packs for this library entry."
+   "label": "2. Rename Print Field Headings",
+   "collapsible": 1,
+   "description": "Change the printed section names (ABOUT, Commercials, Payment Terms, etc.). Leave blank to use the default heading. Applied to new quotations from this template."
   },
   {
    "doctype": "DocField",
-   "fieldname": "uploaded_format",
-   "fieldtype": "Attach",
-   "label": "Primary Quote Format",
-   "description": "Main printable quote format file (PDF, DOCX, HTML)"
+   "fieldname": "label_about",
+   "fieldtype": "Data",
+   "label": "Heading: About",
+   "description": "Default: ABOUT",
+   "placeholder": "ABOUT"
   },
   {
    "doctype": "DocField",
-   "fieldname": "column_upload_library",
+   "fieldname": "label_standard",
+   "fieldtype": "Data",
+   "label": "Heading: Standard Applicable",
+   "description": "Default: STANDARD APPLICABLE",
+   "placeholder": "STANDARD APPLICABLE"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_process",
+   "fieldtype": "Data",
+   "label": "Heading: Process",
+   "description": "Default: Process",
+   "placeholder": "Process"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_validity",
+   "fieldtype": "Data",
+   "label": "Heading: Validity",
+   "description": "Default: Validity",
+   "placeholder": "Validity"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_labels_1",
    "fieldtype": "Column Break"
   },
   {
    "doctype": "DocField",
-   "fieldname": "uploaded_template_pack",
-   "fieldtype": "Attach",
-   "label": "Template Pack / Extra File",
-   "description": "Optional second file (scope sheet, annex, zip pack)"
+   "fieldname": "label_commercials",
+   "fieldtype": "Data",
+   "label": "Heading: Commercials / Pricing",
+   "description": "Default: Commercials",
+   "placeholder": "Commercials",
+   "bold": 1
   },
   {
    "doctype": "DocField",
-   "fieldname": "format_library",
-   "fieldtype": "Table",
-   "label": "Format Library Files",
-   "options": "IC Quote Format File",
-   "description": "Add multiple quote format files to this template library"
+   "fieldname": "label_particulars_col",
+   "fieldtype": "Data",
+   "label": "Pricing Column: Particulars",
+   "description": "Default: Particulars",
+   "placeholder": "Particulars"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_charges_col",
+   "fieldtype": "Data",
+   "label": "Pricing Column: Charges",
+   "description": "Default: Charges",
+   "placeholder": "Charges"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_payment_terms",
+   "fieldtype": "Data",
+   "label": "Heading: Payment Terms",
+   "placeholder": "PAYMENT TERMS"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_print_labels_more",
+   "fieldtype": "Section Break",
+   "label": "More Print Headings",
+   "collapsible": 1,
+   "collapsible_depends_on": "eval:!doc.label_timelines && !doc.label_sample_required"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_timelines",
+   "fieldtype": "Data",
+   "label": "Heading: Timelines",
+   "placeholder": "Timelines"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_sample_required",
+   "fieldtype": "Data",
+   "label": "Heading: Sample Required",
+   "placeholder": "SAMPLE REQUIRED"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_documents_required",
+   "fieldtype": "Data",
+   "label": "Heading: Documents Required",
+   "placeholder": "DOCUMENTS REQUIRED"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_banking",
+   "fieldtype": "Data",
+   "label": "Heading: Banking Details",
+   "placeholder": "OUR BANKING DETAILS"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_labels_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_cancellation",
+   "fieldtype": "Data",
+   "label": "Heading: Cancellation Policy",
+   "placeholder": "CANCELLATION & REFUND POLICY"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_force_majeure",
+   "fieldtype": "Data",
+   "label": "Heading: Force Majeure",
+   "placeholder": "FORCE MAJEURE"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_confidentiality",
+   "fieldtype": "Data",
+   "label": "Heading: Confidentiality",
+   "placeholder": "CONFIDENTIALITY & DATA PROTECTION"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_subject",
+   "fieldtype": "Data",
+   "label": "Heading: Subject (Testing)",
+   "placeholder": "Subject",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_about_testing",
+   "fieldtype": "Data",
+   "label": "Heading: About (Testing)",
+   "placeholder": "ABOUT",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_applicable_standards",
+   "fieldtype": "Data",
+   "label": "Heading: Applicable Standards (Testing)",
+   "placeholder": "Applicable Standards",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_samples_requirements",
+   "fieldtype": "Data",
+   "label": "Heading: Samples Requirements (Testing)",
+   "placeholder": "Samples Requirements",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_deliverable",
+   "fieldtype": "Data",
+   "label": "Heading: Deliverable (Testing)",
+   "placeholder": "Deliverable",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_timeline",
+   "fieldtype": "Data",
+   "label": "Heading: Timeline (Testing)",
+   "placeholder": "Timeline",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_payment_term",
+   "fieldtype": "Data",
+   "label": "Heading: Payment Term (Testing)",
+   "placeholder": "Payment Term",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_sample_handling",
+   "fieldtype": "Data",
+   "label": "Heading: Sample Handling (Testing)",
+   "placeholder": "Sample handling & disposal policy",
+   "depends_on": "eval:doc.quotation_type=='Testing'"
   },
   {
    "doctype": "DocField",
    "fieldname": "section_service",
    "fieldtype": "Section Break",
-   "label": "Service / Consulting / Renewal",
-   "depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Multiple Products / Multiple Services'], doc.quotation_type)"
+   "label": "3. Service / Consulting Basics",
+   "depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.quotation_type)"
   },
   {
    "doctype": "DocField",
    "fieldname": "service_name",
    "fieldtype": "Data",
-   "label": "Service / Consultancy Title"
+   "label": "Service / Consultancy Title",
+   "bold": 1
   },
   {
    "doctype": "DocField",
@@ -140,7 +325,9 @@
    "doctype": "DocField",
    "fieldname": "section_consulting_narrative",
    "fieldtype": "Section Break",
-   "label": "Consulting Narrative (Editable)"
+   "label": "4. Narrative Content (Editable Text)",
+   "depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.quotation_type)",
+   "description": "Edit every section body. These become the quotation narrative when the template is applied."
   },
   {
    "doctype": "DocField",
@@ -188,13 +375,14 @@
    "doctype": "DocField",
    "fieldname": "commercials_notes",
    "fieldtype": "Text Editor",
-   "label": "Commercials Notes"
+   "label": "Commercials Notes (under pricing table)"
   },
   {
    "doctype": "DocField",
    "fieldname": "section_scope",
    "fieldtype": "Section Break",
-   "label": "Scope & Deliverables"
+   "label": "5. Scope & Deliverables",
+   "depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.quotation_type)"
   },
   {
    "doctype": "DocField",
@@ -210,53 +398,19 @@
   },
   {
    "doctype": "DocField",
-   "fieldname": "section_policies",
-   "fieldtype": "Section Break",
-   "label": "Policies"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "payment_terms",
-   "fieldtype": "Text Editor",
-   "label": "Payment Terms"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "cancellation_policy",
-   "fieldtype": "Text Editor",
-   "label": "Cancellation & Refund Policy"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "confidentiality",
-   "fieldtype": "Text Editor",
-   "label": "Confidentiality & Data Protection"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "terms_and_conditions",
-   "fieldtype": "Text Editor",
-   "label": "Terms and Conditions"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "force_majeure",
-   "fieldtype": "Text Editor",
-   "label": "Force Majeure"
-  },
-  {
-   "doctype": "DocField",
    "fieldname": "section_testing_narrative",
    "fieldtype": "Section Break",
-   "label": "Testing Narrative",
-   "depends_on": "eval:doc.quotation_type=='Testing' || doc.quotation_type=='Multiple Products / Multiple Services'"
+   "label": "3. Testing Narrative (Editable)",
+   "depends_on": "eval:doc.quotation_type=='Testing'",
+   "description": "Edit testing section bodies. Rename headings in section 2 above."
   },
   {
    "doctype": "DocField",
    "fieldname": "subject",
    "fieldtype": "Data",
    "label": "Subject",
-   "default": "Testing"
+   "default": "Testing",
+   "bold": 1
   },
   {
    "doctype": "DocField",
@@ -292,21 +446,24 @@
    "doctype": "DocField",
    "fieldname": "section_cost",
    "fieldtype": "Section Break",
-   "label": "Default Cost / Commercials"
+   "label": "6. Pricing / Commercials (Fully Editable)",
+   "description": "Add or edit every price line. Type any line name in Cost Component or Particulars (Print). Set amount or free-text Charges Display. Mark pass-through lines as Do Not Count as Revenue."
   },
   {
    "doctype": "DocField",
    "fieldname": "cost_items",
    "fieldtype": "Table",
-   "label": "Cost Items",
-   "options": "IC Quotation Cost Item"
+   "label": "Cost / Price Lines",
+   "options": "IC Quotation Cost Item",
+   "description": "Particulars (Print) = customer-facing line name. Cost Component = your label (any text). Charges Display overrides Amount on the print (e.g. ₹ 25,000/- per report)."
   },
   {
    "doctype": "DocField",
    "fieldname": "section_testing",
    "fieldtype": "Section Break",
-   "label": "Default Testing Structure",
-   "depends_on": "eval:doc.quotation_type=='Testing' || doc.quotation_type=='Multiple Products / Multiple Services'"
+   "label": "7. Testing Structure / Lab Lines",
+   "depends_on": "eval:doc.quotation_type=='Testing'",
+   "description": "Default test rows applied when creating a Testing quotation from this template."
   },
   {
    "doctype": "DocField",
@@ -314,6 +471,78 @@
    "fieldtype": "Table",
    "label": "Test Items",
    "options": "IC Quotation Test Item"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_policies",
+   "fieldtype": "Section Break",
+   "label": "8. Policies & Terms (Editable)",
+   "description": "Payment terms, cancellation, confidentiality, T&Cs — all editable."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "payment_terms",
+   "fieldtype": "Text Editor",
+   "label": "Payment Terms"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "cancellation_policy",
+   "fieldtype": "Text Editor",
+   "label": "Cancellation & Refund Policy"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "confidentiality",
+   "fieldtype": "Text Editor",
+   "label": "Confidentiality & Data Protection"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "terms_and_conditions",
+   "fieldtype": "Text Editor",
+   "label": "Terms and Conditions"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "force_majeure",
+   "fieldtype": "Text Editor",
+   "label": "Force Majeure"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_upload_library",
+   "fieldtype": "Section Break",
+   "label": "9. Optional Format File Attachments",
+   "collapsible": 1,
+   "description": "Optional PDF/DOCX/HTML attachments for reference. Structured quote content is edited in the sections above — not in the uploaded file."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "uploaded_format",
+   "fieldtype": "Attach",
+   "label": "Primary Quote Format File",
+   "description": "Optional reference file (PDF, DOCX, HTML). Does not replace editable fields above."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_upload_library",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "uploaded_template_pack",
+   "fieldtype": "Attach",
+   "label": "Template Pack / Extra File",
+   "description": "Optional second file (scope sheet, annex, zip pack)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "format_library",
+   "fieldtype": "Table",
+   "label": "Format Library Files",
+   "options": "IC Quote Format File",
+   "description": "Add multiple reference format files to this template"
   }
  ],
  "permissions": [

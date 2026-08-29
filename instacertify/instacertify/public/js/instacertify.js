@@ -1363,6 +1363,12 @@ frappe.ui.form.on("Quotation", {
 				frappe.set_route("quote-format-library");
 			}, __("Actions"));
 
+			if (frm.doc.ic_quotation_template) {
+				frm.add_custom_button(__("Edit Template"), () => {
+					frappe.set_route("Form", "IC Quotation Template", frm.doc.ic_quotation_template);
+				}, __("Actions"));
+			}
+
 			frm.add_custom_button(__("New Template"), () => {
 				frappe.new_doc("IC Quotation Template", {
 					quotation_type:
@@ -3727,8 +3733,12 @@ frappe.listview_settings["IC Quotation Template"] = {
 		},
 	},
 	onload(listview) {
+		listview.page.set_title(__("Quotation Templates — Edit formats & pricing"));
 		listview.page.add_inner_button(__("Category Catalog"), () => {
 			frappe.set_route("quote-format-library");
+		});
+		listview.page.add_inner_button(__("New Template"), () => {
+			frappe.new_doc("IC Quotation Template", { is_active: 1, quotation_type: "Consulting" });
 		});
 		listview.page.add_inner_button(__("Upload Format File"), () => {
 			instacertify.open_quote_format_upload();

@@ -1,5 +1,5 @@
-// Copyright (c) Instacertify
-/** Cost lines: Counted Revenue vs Do Not Count as Revenue (pass-through). */
+# Copyright (c) Instacertify
+/** Cost lines: free-text names + Counted Revenue vs Do Not Count as Revenue. */
 
 function sync_revenue_from_treatment(cdt, cdn) {
 	const row = locals[cdt][cdn];
@@ -34,6 +34,24 @@ function sync_from_destination(cdt, cdn) {
 }
 
 frappe.ui.form.on("IC Quotation Cost Item", {
+	form_render(frm, cdt, cdn) {
+		const grid_row = frm.open_grid_row && frm.open_grid_row();
+		if (!grid_row) return;
+		const field = grid_row.get_field("cost_component");
+		if (field && field.$input) {
+			field.$input.attr(
+				"placeholder",
+				__("e.g. Consulting Charges, BIS Fee, Lab Testing…")
+			);
+		}
+		const particulars = grid_row.get_field("particulars");
+		if (particulars && particulars.$input) {
+			particulars.$input.attr(
+				"placeholder",
+				__("Printed line name — change freely")
+			);
+		}
+	},
 	revenue_treatment(frm, cdt, cdn) {
 		sync_revenue_from_treatment(cdt, cdn);
 	},
@@ -45,6 +63,9 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 	},
 	cost_component(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
+		if (row.cost_component && !row.particulars) {
+			frappe.model.set_value(cdt, cdn, "particulars", row.cost_component);
+		}
 		if (
 			["Government Fees", "Certification Authority Fees", "Laboratory Charges"].includes(
 				row.cost_component
@@ -56,6 +77,12 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 					? "Payable Directly to Laboratory"
 					: "Payable Directly to Government";
 			frappe.model.set_value(cdt, cdn, "payment_destination", dest);
+		}
+	},
+	particulars(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (row.particulars && !row.cost_component) {
+			frappe.model.set_value(cdt, cdn, "cost_component", row.particulars);
 		}
 	},
 });
