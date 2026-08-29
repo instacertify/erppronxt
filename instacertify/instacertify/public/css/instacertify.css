@@ -2279,6 +2279,56 @@ select.input-with-feedback {
   line-height: 1.55;
   color: #1f3a45;
 }
+.ic-quote-dialog-step {
+  margin: 2px 0;
+}
+.ic-new-quote-type-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.ic-new-quote-type-chip {
+  text-align: left;
+  border: 1px solid #c5d5df;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ic-new-quote-type-chip:hover {
+  border-color: #065175;
+}
+.ic-new-quote-type-chip.active {
+  border-color: #065175;
+  box-shadow: inset 0 0 0 1px #065175;
+  background: #f0f7fb;
+}
+.ic-new-quote-type-name {
+  font-weight: 650;
+  color: #065175;
+  font-size: 0.92rem;
+}
+.ic-new-quote-type-hint {
+  font-size: 11px;
+  color: #6b8492;
+  line-height: 1.35;
+}
+.ic-new-quote-format-hint {
+  margin: 4px 0 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  min-height: 1.2em;
+}
+@media (max-width: 640px) {
+  .ic-new-quote-type-chips {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 @media (max-width: 900px) {
   .ic-quote-type-grid {
     grid-template-columns: 1fr 1fr;

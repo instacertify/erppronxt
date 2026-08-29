@@ -401,12 +401,12 @@ QUOTATION_FIELDS = [
 		"fieldname": "ic_quotation_type",
 		"fieldtype": "Select",
 		"label": "Quotation Type",
-		"options": "\nConsulting\nTesting\nRenewal\nOther\nMultiple Products / Multiple Services\nService",
+		"options": "\nConsulting\nTesting\nRenewal\nOther",
 		"reqd": 1,
 		"insert_after": "ic_entry_guide",
 		"in_list_view": 1,
 		"bold": 1,
-		"description": "Required. Consulting / Service = certification quotes · Testing = lab commercials · Renewal = renewals · Multiple = mixed lines.",
+		"description": "Major category first: Consulting, Testing, Renewal, or Other — then pick a library template.",
 	},
 	{
 		"fieldname": "ic_column_break_type",
@@ -416,11 +416,11 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_quotation_template",
 		"fieldtype": "Link",
-		"label": "Quotation Template",
+		"label": "Quote Format (Library)",
 		"options": "IC Quotation Template",
 		"insert_after": "ic_column_break_type",
 		"bold": 1,
-		"description": "Optional. Filtered by type above — fills About, terms, commercials, and policies in one click.",
+		"description": "From Quote Format Library for this type. Applying a format prefills headings and commercials — edit any value on the form.",
 	},
 	# --- 2. Identity ---
 	{
@@ -524,7 +524,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "3. Consulting / Service Basics",
 		"insert_after": "ic_qr_code",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -571,7 +571,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "4. About, Standards & Process",
 		"insert_after": "ic_validity_days",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -597,7 +597,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "5. Validity, Samples & Documents",
 		"insert_after": "ic_process_steps",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -629,7 +629,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "6. Scope, Deliverables & Commercial Notes",
 		"insert_after": "ic_documents_required",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -663,7 +663,7 @@ QUOTATION_FIELDS = [
 		"label": "Cost Items / Commercials",
 		"options": "IC Quotation Cost Item",
 		"insert_after": "ic_section_costing",
-		"description": "Add each fee line (Instacertify fee vs pass-through). Totals update below.",
+		"description": "Mark each line: Counted Revenue (paid to us) or Do Not Count Revenue / pass-through (shown to customer, paid to govt/lab).",
 	},
 	{
 		"fieldname": "ic_section_cost_totals",
@@ -675,10 +675,11 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_commercial_value",
 		"fieldtype": "Currency",
-		"label": "Commercial Value",
+		"label": "Counted Revenue (to Instacertify)",
 		"read_only": 1,
 		"insert_after": "ic_section_cost_totals",
 		"options": "currency",
+		"description": "Sum of cost lines that count as our revenue (not pass-through).",
 	},
 	{
 		"fieldname": "ic_column_totals_2",
@@ -688,10 +689,11 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_passthrough_value",
 		"fieldtype": "Currency",
-		"label": "External / Pass-Through Charges",
+		"label": "Do Not Count Revenue (pass-through)",
 		"read_only": 1,
 		"insert_after": "ic_column_totals_2",
 		"options": "currency",
+		"description": "Shown to customer but paid to govt/lab/third party — not Instacertify revenue.",
 	},
 	{
 		"fieldname": "ic_column_totals_3",
