@@ -564,6 +564,86 @@ instacertify.add_helpdesk_buttons = function (frm, defaults) {
 	apple.href = "/assets/instacertify/images/apple-touch-icon.png";
 })();
 
+/** Show Workspace Shortcut icons inside tiles (Frappe stores icon but does not render it). */
+(function patchShortcutIcons() {
+	function paint() {
+		if (!window.frappe || !frappe.utils || !frappe.utils.icon) return;
+		document.querySelectorAll(".widget.shortcut-widget-box").forEach((el) => {
+			const title = el.querySelector(".widget-title");
+			if (!title || title.querySelector(".ic-shortcut-icon")) return;
+			const name = (el.getAttribute("data-widget-name") || "").trim();
+			let iconName = "file";
+			try {
+				const page = frappe.workspace && (frappe.workspace.page || frappe.workspace);
+				const items =
+					(page && page.shortcuts) ||
+					(frappe.workspace && frappe.workspace.current_page && frappe.workspace.current_page.shortcuts) ||
+					[];
+				const hit = (items || []).find(
+					(s) => (s.label || s.name || "") === name || __(s.label || "") === name
+				);
+				if (hit && hit.icon) iconName = hit.icon;
+			} catch (e) {
+				/* ignore */
+			}
+			// Fallback: map common labels
+			const map = {
+				Leads: "users",
+				Customers: "building",
+				Quotations: "file-text",
+				Projects: "briefcase",
+				"Project Board": "layout-grid",
+				"Team Collaboration": "message-circle",
+				"Team Calendar": "calendar",
+				"Testing Requests": "flask-conical",
+				Laboratories: "microscope",
+				"Quote Format Library": "book-open",
+				Samples: "package",
+				"Documents Collection Sheets": "clipboard-list",
+				"Sample Dispatch Sheets": "truck",
+				Helpdesk: "headset",
+				"Sales Invoice": "receipt",
+				"Purchase Invoice": "shopping-cart",
+				Asset: "boxes",
+				"GSTR-1": "badge-indian-rupee",
+				"GSTR-3B": "calculator",
+				"GST Settings": "settings",
+				"HRMS Lifecycle": "id-card",
+				"File Expense": "wallet",
+				"Lead Reminders": "phone",
+				"Job Applicant": "user-plus",
+				"Job Offer": "file-check",
+				Employee: "square-user-round",
+				"Employee Onboarding": "user-star",
+				"Joining Letters": "mail",
+				Attendance: "calendar-check",
+				"Leave Application": "plane",
+				"Salary Slip": "banknote",
+				"Payroll Entry": "circle-dollar-sign",
+				"Expense Claim": "wallet",
+				"Employee Separation": "log-out",
+				"Full and Final": "scale",
+			};
+			if (map[name]) iconName = map[name];
+			const wrap = document.createElement("span");
+			wrap.className = "ic-shortcut-icon";
+			wrap.setAttribute("aria-hidden", "true");
+			wrap.innerHTML = frappe.utils.icon(iconName, "md");
+			title.prepend(wrap);
+		});
+	}
+	const run = () => {
+		try {
+			paint();
+		} catch (e) {
+			/* ignore */
+		}
+	};
+	$(document).on("page-change", () => setTimeout(run, 120));
+	$(document).ready(() => setTimeout(run, 400));
+	setTimeout(run, 800);
+})();
+
 instacertify.greeting = function (fullName) {
 	const hour = moment().hour();
 	let greet = __("Good Evening");

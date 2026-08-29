@@ -546,9 +546,36 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-height: 22px;
-  margin-bottom: 6px;
+  min-height: 28px;
+  margin-bottom: 8px;
   flex-shrink: 0;
+  gap: 8px;
+}
+
+.ic-explore-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 9px;
+  background: var(--ic-primary-soft, #E7F1FC);
+  color: var(--ic-primary, #0D47A1);
+  --icon-stroke: var(--ic-primary, #0D47A1);
+}
+
+.ic-explore-icon .icon,
+.ic-explore-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ic-explore-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 .ic-explore-count {
@@ -2586,4 +2613,140 @@ html, body, .desk-page, .page-container, .form-layout,
 .page-head .title-text,
 .desk-sidebar .standard-sidebar-label {
   font-family: "Poppins", sans-serif !important;
+}
+
+/* ——— Bars & icons: consistent size, aligned columns, no wasted slots ——— */
+.body-sidebar .item-anchor,
+.desk-sidebar .item-anchor,
+.workspace-sidebar .item-anchor {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 32px !important;
+  height: auto !important;
+  padding: 4px 8px 4px 6px !important;
+  box-sizing: border-box;
+}
+
+.body-sidebar .sidebar-item-icon,
+.desk-sidebar .sidebar-item-icon,
+.workspace-sidebar .sidebar-item-icon {
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  --icon-stroke: var(--ic-primary, #0D47A1);
+}
+
+.body-sidebar .sidebar-item-icon .icon,
+.body-sidebar .sidebar-item-icon svg,
+.desk-sidebar .sidebar-item-icon .icon,
+.desk-sidebar .sidebar-item-icon svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.body-sidebar .sidebar-item-label,
+.desk-sidebar .sidebar-item-label {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.navbar .nav-item .nav-link,
+.navbar .navbar-nav .nav-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 10px !important;
+}
+
+.navbar .es-icon,
+.navbar .icon,
+.navbar svg.icon {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 auto;
+}
+
+.page-head .page-head-content,
+.page-head .container {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.page-actions .btn,
+.standard-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+/* Workspace shortcut tiles — show icon + label without wasted padding */
+.widget.shortcut-widget-box {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  min-height: 72px !important;
+  padding: 12px 14px !important;
+  gap: 6px;
+}
+
+.widget.shortcut-widget-box .widget-head {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100%;
+}
+
+.widget.shortcut-widget-box .widget-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.widget.shortcut-widget-box .ic-shortcut-icon {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--ic-primary-soft, #E7F1FC);
+  color: var(--ic-primary, #0D47A1);
+  --icon-stroke: var(--ic-primary, #0D47A1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.widget.shortcut-widget-box .ic-shortcut-icon .icon,
+.widget.shortcut-widget-box .ic-shortcut-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.widget.shortcut-widget-box .widget-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 0.92rem !important;
+  line-height: 1.25 !important;
+  min-width: 0;
+}
+
+.widget.shortcut-widget-box .widget-control {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+/* Desktop icon bar — keep module icons visible and evenly spaced */
+.desktop-icon-grid,
+.icons-tray,
+.desk-sidebar-menu {
+  gap: 8px !important;
 }

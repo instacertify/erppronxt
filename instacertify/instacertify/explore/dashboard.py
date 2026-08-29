@@ -63,11 +63,14 @@ def get_explore_prompts() -> dict:
 		action: str | None = None,
 		priority: int = 50,
 		show: bool = True,
+		icon: str | None = None,
 	):
 		if not show:
 			return
 		if doctype and not _can_read(doctype):
 			return
+		from instacertify.setup.navigation_icons import EXPLORE_ICONS
+
 		cards.append(
 			{
 				"id": card_id,
@@ -79,6 +82,7 @@ def get_explore_prompts() -> dict:
 				"accent": accent,
 				"action": action,
 				"priority": priority,
+				"icon": icon or EXPLORE_ICONS.get(card_id) or "file",
 			}
 		)
 
