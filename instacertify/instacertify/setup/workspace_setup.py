@@ -669,12 +669,13 @@ _SHADOW_THEME_CSS = """
   border-left: 8px solid #EC6820 !important;
   background: #fffaf6 !important;
   box-shadow: none !important;
-  padding: 20px 22px !important;
+  padding: 14px 16px !important;
+  margin: 12px 0 14px !important;
 }
 .ic-lead-followup-list {
   display: grid !important;
   grid-template-columns: 1fr !important;
-  gap: 14px !important;
+  gap: 10px !important;
 }
 @media (min-width: 980px) {
   .ic-lead-followup-list {
@@ -683,8 +684,9 @@ _SHADOW_THEME_CSS = """
 }
 .ic-lead-prompt, .ic-lead-hub-card, .ic-lead-followup-block {
   aspect-ratio: auto !important;
-  min-height: 168px !important;
-  padding: 18px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 12px 14px !important;
   border: 1.5px solid #033447 !important;
   border-radius: 10px !important;
   box-shadow: none !important;
@@ -720,10 +722,11 @@ _SHADOW_THEME_CSS = """
 .ic-lead-hub-grid {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 12px !important;
+  gap: 8px !important;
+  margin: 0 0 8px !important;
 }
 .ic-lead-hub-cell {
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   border: 1px solid #d5e4ee !important;
   border-radius: 8px !important;
   background: #f8fbfd !important;
@@ -742,9 +745,10 @@ _SHADOW_THEME_CSS = """
   background: #fff !important;
   border: 1px solid #d5e4ee !important;
   border-radius: 8px;
-  padding: 12px 14px;
-  margin-top: 8px;
+  padding: 8px 10px !important;
+  margin-top: 0 !important;
 }
+.ic-lead-followup-main { margin-bottom: 8px !important; }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
   display: grid !important;
@@ -834,7 +838,8 @@ _SHADOW_THEME_CSS = """
 .ic-lead-followup-block,
 .ic-lead-hub-card {
   aspect-ratio: auto !important;
-  min-height: 168px !important;
+  min-height: 0 !important;
+  height: auto !important;
   overflow: visible !important;
   display: flex !important;
   flex-direction: column !important;

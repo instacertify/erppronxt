@@ -1384,8 +1384,8 @@ body.for-login,
 
 /* Lead contact prompts on home / CRM tracker */
 .ic-lead-prompt-panel {
-  margin: 18px 0 22px;
-  padding: 20px 22px;
+  margin: 12px 0 14px;
+  padding: 14px 16px;
   border: 1.5px solid #033447;
   border-radius: 12px;
   background: #ffffff;
@@ -1401,8 +1401,8 @@ body.for-login,
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 .ic-lead-prompt-title {
   font-weight: 800;
@@ -1421,7 +1421,7 @@ body.for-login,
 .ic-lead-prompt-list {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 /* Helpdesk / collab can stay compact; lead follow-up uses large rectangles */
 .ic-lead-prompt-list:not(.ic-lead-followup-list) {
@@ -1429,7 +1429,7 @@ body.for-login,
 }
 .ic-lead-followup-list {
   grid-template-columns: 1fr;
-  gap: 14px;
+  gap: 10px;
 }
 @media (min-width: 980px) {
   .ic-lead-followup-list {
@@ -1441,12 +1441,13 @@ body.for-login,
   flex-direction: column;
   aspect-ratio: auto;
   min-height: 0;
+  height: auto;
   text-decoration: none !important;
   color: inherit;
   background: #fff;
   border: 1.5px solid #033447;
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   overflow: hidden;
   box-shadow: none;
   transition: border-color 0.18s var(--ic-ease), background 0.18s var(--ic-ease);
@@ -1476,9 +1477,9 @@ body.for-login,
 .ic-lead-followup-main {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .ic-lead-prompt-name {
   font-weight: 750;
@@ -1585,8 +1586,9 @@ body.for-login,
 }
 .ic-lead-hub-card,
 .ic-lead-followup-block {
-  padding: 18px 18px 16px !important;
-  min-height: 168px;
+  padding: 12px 14px !important;
+  min-height: 0 !important;
+  height: auto !important;
   aspect-ratio: auto !important;
 }
 .ic-lead-hub-kicker {
@@ -1595,22 +1597,22 @@ body.for-login,
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ic-accent, #EC6820);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 .ic-lead-hub-company {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   color: #5b7382;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .ic-lead-hub-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 4px 0 12px;
+  gap: 8px;
+  margin: 0 0 8px;
 }
 .ic-lead-hub-cell {
   min-width: 0;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid #d5e4ee;
   border-radius: 8px;
   background: #f8fbfd;
@@ -1634,8 +1636,8 @@ body.for-login,
   border: 1px solid #d5e4ee;
   border-radius: 8px;
   background: #fff;
-  padding: 12px 14px;
-  margin-top: 2px;
+  padding: 8px 10px;
+  margin-top: 0;
 }
 .ic-lead-prompt-remarks.muted {
   color: #8aa0ab;
@@ -2503,11 +2505,14 @@ html, body, .desk-page, .page-container, .form-layout,
 .ic-lead-followup-block,
 .ic-lead-hub-card {
   aspect-ratio: auto !important;
-  min-height: 168px !important;
+  min-height: 0 !important;
+  height: auto !important;
 }
 .ic-lead-hub-remarks-wrap {
   border: 1px solid #d5e4ee !important;
   background: #fff !important;
+  padding: 8px 10px !important;
+  margin-top: 0 !important;
 }
 
 .ic-lead-prompt-when.overdue {
