@@ -1621,8 +1621,6 @@ instacertify.render_quotation_entry_guide = function (frm) {
 		["Consulting", "Certification / consulting quote"],
 		["Testing", "Lab tests & commercials"],
 		["Renewal", "Certificate renewal"],
-		["Service", "Service delivery quote"],
-		["Multiple Products / Multiple Services", "Mixed lines"],
 		["Other", "Custom"],
 	]
 		.map(([key, hint]) => {
@@ -1899,17 +1897,12 @@ instacertify.start_new_quotation = function () {
 };
 
 instacertify.open_new_quotation_type_format_dialog = function (frm) {
+	// Four major library categories — each can have many templates
 	const TYPE_OPTIONS = [
-		{ value: "Consulting", label: __("Consulting"), hint: __("Certification / consultancy packs") },
+		{ value: "Consulting", label: __("Consulting"), hint: __("Certification & consultancy packs") },
 		{ value: "Testing", label: __("Testing"), hint: __("Lab tests & commercials") },
-		{ value: "Other", label: __("Other"), hint: __("Custom / miscellaneous") },
 		{ value: "Renewal", label: __("Renewal"), hint: __("Certificate / licence renewals") },
-		{ value: "Service", label: __("Service"), hint: __("Service delivery quotes") },
-		{
-			value: "Multiple Products / Multiple Services",
-			label: __("Multi Product / Service"),
-			hint: __("Bundled multi-line quotes"),
-		},
+		{ value: "Other", label: __("Other"), hint: __("Custom / miscellaneous quotes") },
 	];
 
 	let format_map = {};
@@ -1925,24 +1918,24 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				fieldname: "help",
 				options: `<div class="ic-quote-dialog-help">
 					<div class="ic-quote-dialog-step"><strong>${__("1.")}</strong> ${__(
-						"Choose quote type (Consulting, Testing, Other…)"
+						"Select major category: Consulting, Testing, Renewal, or Other"
 					)}</div>
 					<div class="ic-quote-dialog-step"><strong>${__("2.")}</strong> ${__(
-						"Pick a format from the Quote Format Library"
+						"Choose a template already in the library for that category"
 					)}</div>
 					<div class="ic-quote-dialog-step text-muted">${__(
-						"Headings, commercials, and terms load from the format — edit anything on the form after."
+						"After start, edit headings and mark cost lines as Counted Revenue or Do Not Count Revenue (pass-through)."
 					)}</div>
 				</div>`,
 			},
 			{
 				fieldname: "ic_quotation_type",
 				fieldtype: "Select",
-				label: __("Quote Type"),
+				label: __("Major Category"),
 				options: TYPE_OPTIONS.map((t) => t.value).join("\n"),
 				reqd: 1,
 				default: "Consulting",
-				description: __("Required first — filters formats from the library"),
+				description: __("Required first — loads templates from the Quote Format Library"),
 			},
 			{
 				fieldtype: "HTML",
@@ -1960,10 +1953,12 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 			{
 				fieldname: "ic_quotation_template",
 				fieldtype: "Select",
-				label: __("Quote Format (from library)"),
+				label: __("Template (from library)"),
 				options: "",
 				reqd: 1,
-				description: __("Suggested formats for the selected type — change type to refresh the list"),
+				description: __(
+					"Templates for this category. Admins / Ops can add more via Quote Format Library upload."
+				),
 			},
 			{
 				fieldtype: "HTML",

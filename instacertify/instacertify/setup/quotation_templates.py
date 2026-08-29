@@ -106,29 +106,340 @@ laboratories, or certification bodies. Reasonable measures shall be implemented 
 def ensure_quotation_templates():
 	_ensure_bis_crs_template()
 	_ensure_starter_templates()
+	_ensure_five_per_major_category()
 	_migrate_legacy_service_type()
 
 
+def _revenue_row(particulars: str, amount: float, display: str | None = None) -> dict:
+	return {
+		"cost_component": "Consulting Charges",
+		"particulars": particulars,
+		"amount": amount,
+		"charges_display": display or f"₹ {amount:,.0f}/-",
+		"payment_destination": "Payable to Instacertify",
+		"is_passthrough": 0,
+	}
+
+
+def _passthrough_row(
+	component: str,
+	particulars: str,
+	amount: float,
+	destination: str = "Payable Directly to Government",
+	display: str | None = None,
+) -> dict:
+	return {
+		"cost_component": component,
+		"particulars": particulars,
+		"amount": amount,
+		"charges_display": display or "At actuals",
+		"payment_destination": destination,
+		"is_passthrough": 1,
+	}
+
+
+def _ensure_five_per_major_category():
+	"""Guarantee ≥5 active templates in each major category for create-quote dropdowns."""
+	catalog = {
+		"Consulting": [
+			(
+				"CDSCO Medical Device Consultancy",
+				{
+					"service_family": "CDSCO",
+					"service_name": "CDSCO Medical Device Consultancy",
+					"certification_type": "CDSCO",
+					"applicable_standard": "MDR 2017",
+					"estimated_timeline": "6–10 weeks",
+					"validity_days": 90,
+					"about_service": "<p>CDSCO medical device registration consultancy covering classification, documentation, and portal filings.</p>",
+				},
+				[
+					_revenue_row("Consultancy Charges", 45000),
+					_passthrough_row("Government Fees", "CDSCO / Authority Fees", 15000),
+				],
+			),
+			(
+				"BEE Star Label Consultancy",
+				{
+					"service_family": "BEE",
+					"service_name": "BEE Star Label Consultancy",
+					"certification_type": "BEE",
+					"applicable_standard": "BEE Star Label",
+					"estimated_timeline": "4–6 weeks",
+					"validity_days": 90,
+					"about_service": "<p>Bureau of Energy Efficiency star labelling consultancy for covered appliances.</p>",
+				},
+				[
+					_revenue_row("Consultancy Charges", 28000),
+					_passthrough_row("Government Fees", "BEE Fees", 8000),
+				],
+			),
+		],
+		"Testing": [
+			(
+				"RF / Wireless Testing Package",
+				{
+					"service_family": "RF",
+					"service_name": "RF / Wireless Testing",
+					"subject": "Testing",
+					"applicable_standard": "ETSI / FCC RF",
+					"estimated_timeline": "5–8 working days",
+					"validity_days": 30,
+					"about_testing": "<p>RF conducted and radiated testing package for wireless products.</p>",
+				},
+				[
+					_revenue_row("Testing Coordination Charges", 12000, "₹ 12,000/-"),
+					_passthrough_row(
+						"Laboratory Charges",
+						"Lab Testing Fees",
+						85000,
+						"Payable Directly to Laboratory",
+						"₹ 85,000/-",
+					),
+				],
+				[
+					{
+						"product_name": "Wireless Product",
+						"test_name": "RF Conducted Spurious",
+						"applicable_standard": "ETSI EN 300 328",
+						"number_of_samples": 2,
+						"per_unit_charges": 25000,
+						"testing_charges": 50000,
+					}
+				],
+			),
+			(
+				"RoHS Chemical Testing",
+				{
+					"service_family": "RoHS",
+					"service_name": "RoHS Chemical Testing",
+					"subject": "Testing",
+					"applicable_standard": "RoHS Directive",
+					"estimated_timeline": "4–6 working days",
+					"validity_days": 30,
+					"about_testing": "<p>Restricted substances screening for RoHS compliance.</p>",
+				},
+				[
+					_passthrough_row(
+						"Laboratory Charges",
+						"RoHS Lab Fees",
+						18000,
+						"Payable Directly to Laboratory",
+						"₹ 18,000/-",
+					),
+				],
+				[
+					{
+						"product_name": "Product Sample",
+						"test_name": "RoHS Screening",
+						"applicable_standard": "RoHS",
+						"number_of_samples": 1,
+						"per_unit_charges": 18000,
+						"testing_charges": 18000,
+					}
+				],
+			),
+		],
+		"Renewal": [
+			(
+				"TEC Renewal Consultancy",
+				{
+					"service_family": "TEC Renewal",
+					"service_name": "TEC Approval Renewal",
+					"certification_type": "TEC Renewal",
+					"estimated_timeline": "3–5 weeks",
+					"validity_days": 90,
+					"about_service": "<p>Renewal support for TEC / MTCTE approvals nearing expiry.</p>",
+				},
+				[
+					_revenue_row("Renewal Consultancy Charges", 18000),
+					_passthrough_row("Government Fees", "TEC Renewal Fees", 7000),
+				],
+			),
+			(
+				"WPC ETA Renewal",
+				{
+					"service_family": "WPC Renewal",
+					"service_name": "WPC ETA Renewal",
+					"certification_type": "WPC ETA Renewal",
+					"estimated_timeline": "2–4 weeks",
+					"validity_days": 90,
+					"about_service": "<p>WPC ETA renewal filings and liaison.</p>",
+				},
+				[
+					_revenue_row("Renewal Consultancy Charges", 12000),
+					_passthrough_row("Government Fees", "WPC Fees", 4000),
+				],
+			),
+			(
+				"EPR Registration Renewal",
+				{
+					"service_family": "EPR Renewal",
+					"service_name": "EPR Registration Renewal",
+					"certification_type": "EPR Renewal",
+					"estimated_timeline": "2–3 weeks",
+					"validity_days": 90,
+					"about_service": "<p>EPR registration renewal and annual return support.</p>",
+				},
+				[
+					_revenue_row("Renewal Consultancy Charges", 22000),
+					_passthrough_row("Government Fees", "EPR Authority Fees", 6000),
+				],
+			),
+		],
+		"Other": [
+			(
+				"General Professional Services",
+				{
+					"service_family": "General",
+					"service_name": "General Professional Services",
+					"certification_type": "Other",
+					"estimated_timeline": "As agreed",
+					"validity_days": 60,
+					"about_service": "<p>Flexible professional services quotation for scoped advisory work.</p>",
+				},
+				[_revenue_row("Professional Charges", 25000)],
+			),
+			(
+				"Documentation & Training Pack",
+				{
+					"service_family": "Training",
+					"service_name": "Documentation & Training Pack",
+					"certification_type": "Other",
+					"estimated_timeline": "1–2 weeks",
+					"validity_days": 60,
+					"about_service": "<p>Compliance documentation packs and team training sessions.</p>",
+				},
+				[_revenue_row("Training & Documentation Charges", 35000)],
+			),
+			(
+				"Gap Assessment Audit",
+				{
+					"service_family": "Audit",
+					"service_name": "Gap Assessment Audit",
+					"certification_type": "Other",
+					"estimated_timeline": "1–3 weeks",
+					"validity_days": 45,
+					"about_service": "<p>On-site or remote gap assessment against target standards.</p>",
+				},
+				[_revenue_row("Audit / Assessment Charges", 40000)],
+			),
+			(
+				"Sample Logistics Coordination",
+				{
+					"service_family": "Logistics",
+					"service_name": "Sample Logistics Coordination",
+					"certification_type": "Other",
+					"estimated_timeline": "As required",
+					"validity_days": 30,
+					"about_service": "<p>Coordination of sample pickup, packing, and lab dispatch.</p>",
+				},
+				[
+					_revenue_row("Coordination Charges", 5000),
+					_passthrough_row(
+						"Other Charges",
+						"Courier / Freight (actuals)",
+						3000,
+						"Payable to Third Party",
+						"At actuals",
+					),
+				],
+			),
+			(
+				"Custom Compliance Scope",
+				{
+					"service_family": "Custom",
+					"service_name": "Custom Compliance Scope",
+					"certification_type": "Other",
+					"estimated_timeline": "Scoped per SOW",
+					"validity_days": 90,
+					"about_service": "<p>Blank-slate template for custom multi-scope compliance engagements.</p>",
+				},
+				[
+					_revenue_row("Professional Charges", 50000),
+					_passthrough_row("Government Fees", "Authority Fees (if any)", 10000),
+				],
+			),
+		],
+	}
+
+	for qtype, entries in catalog.items():
+		for entry in entries:
+			name = entry[0]
+			values = dict(entry[1])
+			values.update({"quotation_type": qtype, "is_active": 1})
+			cost_rows = entry[2] if len(entry) > 2 else None
+			test_rows = entry[3] if len(entry) > 3 else None
+			_upsert_template(name, values, cost_rows, test_rows)
+
+	# Top-up: if a category still has <5, clone numbered generics
+	for qtype in ("Consulting", "Testing", "Renewal", "Other"):
+		count = frappe.db.count("IC Quotation Template", {"quotation_type": qtype, "is_active": 1})
+		n = 1
+		while count < 5 and n <= 10:
+			name = f"{qtype} Library Template {n}"
+			if not frappe.db.exists("IC Quotation Template", name):
+				values = {
+					"quotation_type": qtype,
+					"service_family": qtype,
+					"is_active": 1,
+					"service_name": name,
+					"estimated_timeline": "As agreed",
+					"validity_days": 60,
+					"about_service": f"<p>Starter {qtype} template — edit headings and commercials after selection.</p>",
+				}
+				if qtype == "Testing":
+					values["about_testing"] = (
+						f"<p>Starter {qtype} testing narrative — edit as needed.</p>"
+					)
+					values["subject"] = "Testing"
+				_upsert_template(
+					name,
+					values,
+					[
+						_revenue_row(f"{qtype} Professional Charges", 15000 + n * 1000),
+						_passthrough_row(
+							"Laboratory Charges" if qtype == "Testing" else "Government Fees",
+							"External fees (pass-through)",
+							5000,
+							"Payable Directly to Laboratory"
+							if qtype == "Testing"
+							else "Payable Directly to Government",
+						),
+					],
+				)
+				count += 1
+			n += 1
+
+
 def _migrate_legacy_service_type():
-	"""Map old Service templates to Consulting where helpful."""
+	"""Map old Service / Multi templates into the four major categories."""
 	frappe.db.sql(
 		"""
 		UPDATE `tabIC Quotation Template`
 		SET quotation_type = 'Consulting'
-		WHERE quotation_type = 'Service'
+		WHERE quotation_type IN ('Service', 'Multiple Products / Multiple Services')
 		  AND IFNULL(service_family, '') NOT LIKE '%%Renewal%%'
 		  AND IFNULL(template_name, '') NOT LIKE '%%Renewal%%'
+		  AND IFNULL(template_name, '') NOT LIKE '%%Test%%'
 		"""
 	)
 	frappe.db.sql(
 		"""
 		UPDATE `tabIC Quotation Template`
 		SET quotation_type = 'Renewal'
-		WHERE quotation_type IN ('Service', 'Consulting')
+		WHERE quotation_type IN ('Service', 'Consulting', 'Other')
 		  AND (
 		    IFNULL(service_family, '') LIKE '%%Renewal%%'
 		    OR IFNULL(template_name, '') LIKE '%%Renewal%%'
 		  )
+		"""
+	)
+	frappe.db.sql(
+		"""
+		UPDATE `tabIC Quotation Template`
+		SET quotation_type = 'Other'
+		WHERE quotation_type = 'Multiple Products / Multiple Services'
 		"""
 	)
 

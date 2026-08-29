@@ -52,15 +52,16 @@
    "label": "Payment Destination",
    "in_list_view": 1,
    "reqd": 1,
-   "options": "Payable to Instacertify\nPayable Directly to Government\nPayable Directly to Laboratory\nPayable to Third Party"
+   "options": "Payable to Instacertify\nPayable Directly to Government\nPayable Directly to Laboratory\nPayable to Third Party",
+   "description": "Payable to Instacertify = counted revenue. Other destinations auto-mark Do Not Count as Revenue."
   },
   {
    "doctype": "DocField",
    "fieldname": "is_passthrough",
    "fieldtype": "Check",
-   "label": "Pass-Through",
+   "label": "Do Not Count as Revenue",
    "in_list_view": 1,
-   "description": "Not counted as Instacertify revenue"
+   "description": "Tick = pass-through (shown to customer but paid to govt/lab/third party). Unticked = counted Instacertify revenue."
   },
   {
    "doctype": "DocField",

@@ -116,11 +116,14 @@ def _ensure_qr(doc):
 
 @frappe.whitelist()
 def list_quote_formats_for_type(quotation_type: str | None = None):
-	"""Active Quote Format Library entries for a quotation type (create-quote picker)."""
+	"""Active Quote Format Library entries for a major category (create-quote picker)."""
 	quotation_type = (quotation_type or "").strip()
+	majors = {"Consulting", "Testing", "Renewal", "Other"}
 	filters: dict = {"is_active": 1}
-	if quotation_type in ("Consulting", "Service"):
-		filters["quotation_type"] = ["in", ["Consulting", "Service"]]
+	if quotation_type in majors:
+		filters["quotation_type"] = quotation_type
+	elif quotation_type == "Service":
+		filters["quotation_type"] = "Consulting"
 	elif quotation_type:
 		filters["quotation_type"] = quotation_type
 
@@ -136,7 +139,7 @@ def list_quote_formats_for_type(quotation_type: str | None = None):
 			"template_notes",
 			"uploaded_format",
 		],
-		order_by="quotation_type asc, template_name asc",
+		order_by="template_name asc",
 		limit_page_length=300,
 	)
 	out = []
@@ -158,7 +161,7 @@ def list_quote_formats_for_type(quotation_type: str | None = None):
 				"has_format_file": 1 if r.uploaded_format else 0,
 			}
 		)
-	return {"formats": out, "count": len(out)}
+	return {"formats": out, "count": len(out), "category": quotation_type}
 
 
 def _template_field_map(tmpl) -> dict:
