@@ -30,17 +30,17 @@ def _ensure_home_html_block():
   <div class="ic-explore-panel" id="ic-explore-panel">
     <div class="ic-explore-head">
       <div>
-        <div class="ic-explore-title">Explore Instacertify</div>
-        <div class="ic-explore-sub" id="ic-explore-hint">Organised in tiles — tap any square to open</div>
+        <div class="ic-explore-title">Your workspace</div>
+        <div class="ic-explore-sub" id="ic-explore-hint">Major sections for your role — tap a tile to open</div>
       </div>
     </div>
-    <div class="ic-explore-grid" id="ic-explore-grid"></div>
+    <div id="ic-explore-sections" class="ic-explore-sections"></div>
   </div>
 
   <div class="ic-summary-grid" id="ic-summary-grid"></div>
 
   <div class="ic-workdesk-grid">
-    <section class="ic-workdesk-panel">
+    <section class="ic-workdesk-panel" data-ic-vis="tasks">
       <div class="ic-workdesk-head">
         <div>
           <div class="ic-workdesk-title">My tasks</div>
@@ -50,7 +50,7 @@ def _ensure_home_html_block():
       </div>
       <div id="ic-my-tasks"></div>
     </section>
-    <section class="ic-workdesk-panel">
+    <section class="ic-workdesk-panel" data-ic-vis="calendar">
       <div class="ic-workdesk-head">
         <div>
           <div class="ic-workdesk-title">Team calendar</div>
@@ -63,7 +63,7 @@ def _ensure_home_html_block():
       </div>
       <div id="ic-my-calendar"></div>
     </section>
-    <section class="ic-workdesk-panel">
+    <section class="ic-workdesk-panel" data-ic-vis="my_leads">
       <div class="ic-workdesk-head">
         <div>
           <div class="ic-workdesk-title">My leads</div>
@@ -75,7 +75,7 @@ def _ensure_home_html_block():
     </section>
   </div>
 
-  <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub">
+  <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub" data-ic-vis="lead_hub">
     <div class="ic-lead-prompt-header">
       <div>
         <div class="ic-lead-prompt-title">Lead reminders</div>
@@ -89,7 +89,7 @@ def _ensure_home_html_block():
     <div id="ic-lead-prompts" class="ic-lead-hub-list"></div>
   </div>
 
-  <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel">
+  <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel" data-ic-vis="helpdesk">
     <div class="ic-lead-prompt-header">
       <div>
         <div class="ic-lead-prompt-title">Helpdesk</div>
@@ -103,7 +103,7 @@ def _ensure_home_html_block():
     <div id="ic-helpdesk-tickets" class="ic-lead-prompt-list"></div>
   </div>
 
-  <div class="ic-lead-prompt-panel" id="ic-collab-panel">
+  <div class="ic-lead-prompt-panel" id="ic-collab-panel" data-ic-vis="collab">
     <div class="ic-lead-prompt-header">
       <div>
         <div class="ic-lead-prompt-title">Team Collaboration</div>
@@ -114,7 +114,7 @@ def _ensure_home_html_block():
     <div id="ic-collab-recent" class="ic-lead-prompt-list"></div>
   </div>
 
-  <div class="ic-hr-panel">
+  <div class="ic-hr-panel" data-ic-vis="hrms">
     <div class="ic-workdesk-head">
       <div>
         <div class="ic-workdesk-title">My HR</div>
@@ -140,11 +140,11 @@ def _ensure_home_html_block():
     <div id="ic-hr-links" class="ic-hr-links"></div>
   </div>
 
-  <div class="ic-project-section-head">
+  <div class="ic-project-section-head" data-ic-vis="projects">
     <h3>Ongoing Projects</h3>
     <a class="ic-view-all" href="/app/project-board">Open tile board</a>
   </div>
-  <div class="ic-project-grid" id="ic-project-grid"></div>
+  <div class="ic-project-grid" id="ic-project-grid" data-ic-vis="projects"></div>
 </div>
 """
 	script = """
@@ -271,36 +271,73 @@ def _ensure_home_html_block():
     }
   }
 
+  function applyHomeVisibility(vis) {
+    const map = vis || {};
+    root_element.querySelectorAll("[data-ic-vis]").forEach((el) => {
+      const key = el.getAttribute("data-ic-vis");
+      let show = true;
+      if (key === "my_leads" || key === "lead_hub") show = !!(map.lead_hub || map.my_leads || map.crm_panels);
+      else if (key === "projects") show = !!map.projects;
+      else if (key === "hrms") show = !!map.hrms;
+      else if (key === "helpdesk") show = map.helpdesk !== false;
+      else if (key === "collab") show = !!map.collab;
+      else if (key === "tasks" || key === "calendar") show = true;
+      el.style.display = show ? "" : "none";
+    });
+  }
+
+  function renderExploreCard(c, idx, flatCards) {
+    flatCards[idx] = c;
+    const count = (c.count != null)
+      ? `<span class="ic-explore-count">${esc(c.count)}</span>`
+      : "";
+    const actionHint = c.action
+      ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
+      : "";
+    return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
+      <div class="ic-explore-card-top">${actionHint}${count}</div>
+      <div class="ic-explore-card-title">${esc(c.title)}</div>
+      <div class="ic-explore-card-sub">${esc(c.subtitle || "")}</div>
+    </button>`;
+  }
+
   frappe.call({
     method: "instacertify.explore.dashboard.get_explore_prompts",
     callback(r) {
       const d = r.message || {};
-      const grid = root_element.getElementById("ic-explore-grid");
+      const wrap = root_element.getElementById("ic-explore-sections");
       const hint = root_element.getElementById("ic-explore-hint");
       if (hint && d.hint) hint.textContent = d.hint;
-      if (!grid) return;
-      const cards = d.cards || [];
-      if (!cards.length) {
-        grid.innerHTML = empty("No explore options available for your role.");
+      applyHomeVisibility(d.visibility || {});
+      if (!wrap) return;
+      const sections = d.sections || [];
+      const flatCards = [];
+      if (!sections.length) {
+        wrap.innerHTML = empty("No workspace sections available for your role.");
         return;
       }
-      grid.innerHTML = cards.map((c, idx) => {
-        const count = (c.count != null)
-          ? `<span class="ic-explore-count">${esc(c.count)}</span>`
-          : "";
-        const actionHint = c.action
-          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
-          : "";
-        return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
-          <div class="ic-explore-card-top">${actionHint}${count}</div>
-          <div class="ic-explore-card-title">${esc(c.title)}</div>
-          <div class="ic-explore-card-sub">${esc(c.subtitle || "")}</div>
-        </button>`;
+      let idx = 0;
+      wrap.innerHTML = sections.map((sec) => {
+        const cardsHtml = (sec.cards || []).map((c) => {
+          const html = renderExploreCard(c, idx, flatCards);
+          idx += 1;
+          return html;
+        }).join("");
+        return `<section class="ic-explore-section accent-${esc(sec.accent || "teal")}" data-section="${esc(sec.id)}">
+          <div class="ic-explore-section-head">
+            <div>
+              <div class="ic-explore-section-title">${esc(sec.title)}</div>
+              <div class="ic-explore-section-sub">${esc(sec.subtitle || "")}</div>
+            </div>
+            <span class="ic-explore-section-count">${esc(sec.count || (sec.cards || []).length)} tools</span>
+          </div>
+          <div class="ic-explore-grid">${cardsHtml}</div>
+        </section>`;
       }).join("");
-      grid.querySelectorAll(".ic-explore-card").forEach((btn) => {
+      wrap.querySelectorAll(".ic-explore-card").forEach((btn) => {
         btn.addEventListener("click", () => {
           const i = parseInt(btn.getAttribute("data-idx"), 10);
-          openExploreCard(cards[i]);
+          openExploreCard(flatCards[i]);
         });
       });
     }
@@ -763,6 +800,41 @@ _SHADOW_THEME_CSS = """
   color: #5a6f7a;
 }
 .ic-summary-card .value { margin-top: auto !important; font-size: 1.6rem !important; }
+.ic-explore-sections { display: flex; flex-direction: column; gap: 18px; }
+.ic-explore-section {
+  background: #fff;
+  border: 1px solid rgba(6,81,117,0.1);
+  border-radius: 14px;
+  padding: 14px 14px 16px;
+  border-left: 4px solid #065175;
+}
+.ic-explore-section.accent-coral { border-left-color: #c0392b; }
+.ic-explore-section.accent-citrus { border-left-color: #EC6820; }
+.ic-explore-section.accent-teal { border-left-color: #065175; }
+.ic-explore-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ic-explore-section-title {
+  font-family: "Poppins", sans-serif !important;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #033447;
+  letter-spacing: -0.02em;
+}
+.ic-explore-section-sub { color: #5a6f7a; font-size: 0.82rem; margin-top: 2px; }
+.ic-explore-section-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #065175;
+  background: #e8f1f6;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
 .ic-explore-panel { margin-bottom: 20px; }
 .ic-explore-title {
   font-family: "Poppins", sans-serif !important;
