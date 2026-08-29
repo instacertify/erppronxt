@@ -728,8 +728,9 @@ _SHADOW_THEME_CSS = """
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr)) !important;
   gap: 12px !important;
+  width: 100% !important;
 }
 .ic-explore-card, .ic-summary-card {
   aspect-ratio: 1 / 1 !important;
