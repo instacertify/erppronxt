@@ -1153,6 +1153,9 @@ frappe.ui.form.on("Quotation", {
 
 				// Make Invoice the primary action after acceptance
 				frm.page.set_inner_btn_group_as_primary(__("Actions"));
+
+				// After customer approval: prompt owner to create Project / Testing Request
+				instacertify.maybe_prompt_quote_accept_followup(frm);
 			}
 
 			// Hide Sales Order — Instacertify bills from Quotation directly
@@ -1460,6 +1463,165 @@ instacertify.apply_lab_test_scope = function (frm, cdt, cdn) {
 			}
 		},
 	});
+};
+
+/** After customer approves a quote: prompt to create Project / Testing Request. */
+instacertify._accept_prompt_key = function (name) {
+	return "ic_quote_accept_prompt_dismissed:" + name;
+};
+
+instacertify.maybe_prompt_quote_accept_followup = function (frm) {
+	if (!frm || frm.is_new() || !frm.doc || !frm.doc.name) return;
+	if (frm.doc.ic_workflow_status !== "Accepted") return;
+	if (frm._ic_accept_prompt_busy) return;
+
+	const dismissKey = instacertify._accept_prompt_key(frm.doc.name);
+	try {
+		if (sessionStorage.getItem(dismissKey) === "1") return;
+	} catch (e) {
+		/* ignore */
+	}
+
+	frm._ic_accept_prompt_busy = true;
+	frappe.call({
+		method: "instacertify.quotation.events.get_quotation_accept_followup",
+		args: { quotation: frm.doc.name },
+		callback(r) {
+			frm._ic_accept_prompt_busy = false;
+			const info = r.message || {};
+			if (!info.prompt) return;
+			instacertify.show_quote_accept_followup_dialog(frm, info);
+		},
+		error() {
+			frm._ic_accept_prompt_busy = false;
+		},
+	});
+};
+
+instacertify.show_quote_accept_followup_dialog = function (frm, info) {
+	if (frm._ic_accept_prompt_dialog) return;
+
+	const needsProject = cint(info.needs_project);
+	const needsTesting = cint(info.needs_testing);
+
+	const startProject = () => {
+		frappe.call({
+			method: "instacertify.quotation.events.start_project_from_quotation",
+			args: { quotation: frm.doc.name },
+			freeze: true,
+			freeze_message: __("Creating Project..."),
+			callback(r) {
+				const created = (r.message && r.message.testing_requests) || [];
+				if (created.length) {
+					frappe.show_alert({
+						message: __("Created {0} testing request(s)", [created.length]),
+						indicator: "green",
+					});
+				}
+				if (r.message && r.message.project) {
+					frappe.set_route("Form", "Project", r.message.project);
+				} else {
+					frm.reload_doc();
+				}
+			},
+		});
+	};
+
+	const startTesting = () => {
+		frappe.call({
+			method: "instacertify.testing.events.create_testing_requests_from_quotation",
+			args: { quotation: frm.doc.name },
+			freeze: true,
+			freeze_message: __("Creating Testing Request(s)..."),
+			callback(r) {
+				const created = (r.message && r.message.created) || [];
+				const existing = (r.message && r.message.existing) || [];
+				frappe.msgprint({
+					title: __("Testing Requests"),
+					message: __(
+						"Created: {0}<br>Already linked: {1}",
+						[created.join(", ") || "—", existing.join(", ") || "—"]
+					),
+					indicator: "green",
+				});
+				if (created[0]) {
+					frappe.set_route("Form", "IC Testing Request", created[0]);
+				} else {
+					frm.reload_doc();
+				}
+			},
+		});
+	};
+
+	const dismissLater = () => {
+		try {
+			sessionStorage.setItem(instacertify._accept_prompt_key(frm.doc.name), "1");
+		} catch (e) {
+			/* ignore */
+		}
+		frappe.show_alert({
+			message: __(
+				"Reminder saved. Use Actions → Start Project or Create Testing Requests when ready."
+			),
+			indicator: "blue",
+		});
+	};
+
+	let primaryLabel = __("Create Project");
+	let primaryFn = startProject;
+	if (needsTesting && !needsProject) {
+		primaryLabel = __("Create Testing Request(s)");
+		primaryFn = startTesting;
+	} else if (needsTesting && needsProject) {
+		// Prefer testing when quote has lab lines; Project still available as secondary
+		primaryLabel = __("Create Testing Request(s)");
+		primaryFn = startTesting;
+	}
+
+	const d = new frappe.ui.Dialog({
+		title: __("Quotation approved — next step"),
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "msg",
+				options: `<div class="text-muted" style="margin-bottom: 8px;">
+					${frappe.utils.escape_html(
+						info.message ||
+							__(
+								"Customer approved this quotation. Create a Project or Testing Request to continue."
+							)
+					)}
+				</div>`,
+			},
+		],
+		primary_action_label: primaryLabel,
+		primary_action() {
+			d.hide();
+			frm._ic_accept_prompt_dialog = null;
+			primaryFn();
+		},
+		secondary_action_label: __("Later"),
+		secondary_action() {
+			d.hide();
+			frm._ic_accept_prompt_dialog = null;
+			dismissLater();
+		},
+	});
+
+	if (needsProject && needsTesting) {
+		d.add_custom_action(__("Create Project"), () => {
+			d.hide();
+			frm._ic_accept_prompt_dialog = null;
+			startProject();
+		});
+	} else if (needsProject && !needsTesting) {
+		/* primary already Create Project */
+	} else if (!needsProject && needsTesting) {
+		/* primary already Create Testing */
+	}
+
+	frm._ic_accept_prompt_dialog = d;
+	d.show();
 };
 
 // Prompt for quotation type on new — clearer type + template selection

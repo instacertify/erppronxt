@@ -381,11 +381,22 @@ def _ensure_pipeline_and_quote_accept_fields():
 					"fieldname": "ic_post_accept_action",
 					"label": "After Customer Accepts",
 					"fieldtype": "Select",
-					"options": "\nUse Company Default\nCreate Invoice\nCreate Project\nCreate Invoice and Project\nManual",
+					"options": "\nUse Company Default\nPrompt for Project / Testing\nCreate Invoice\nCreate Project\nCreate Invoice and Project\nManual",
 					"default": "Use Company Default",
 					"insert_after": "ic_customer_remarks",
 				}
 			).insert(ignore_permissions=True)
+		except Exception:
+			pass
+	else:
+		try:
+			frappe.db.set_value(
+				"Custom Field",
+				qt_cf,
+				"options",
+				"\nUse Company Default\nPrompt for Project / Testing\nCreate Invoice\nCreate Project\nCreate Invoice and Project\nManual",
+				update_modified=False,
+			)
 		except Exception:
 			pass
 	if not frappe.db.has_column("Quotation", "ic_post_accept_action"):
@@ -396,12 +407,30 @@ def _ensure_pipeline_and_quote_accept_fields():
 		except Exception:
 			pass
 
-	# Settings default
+	# Settings default — prompt owner to create Project / Testing Request
 	try:
-		if frappe.db.exists("DocType", "IC Settings") and not frappe.db.get_single_value(
-			"IC Settings", "on_quote_accept"
-		):
-			frappe.db.set_single_value("IC Settings", "on_quote_accept", "Create Invoice and Project")
+		if frappe.db.exists("DocType", "IC Settings"):
+			current = frappe.db.get_single_value("IC Settings", "on_quote_accept")
+			if not current or current == "Create Invoice and Project":
+				frappe.db.set_single_value(
+					"IC Settings", "on_quote_accept", "Prompt for Project / Testing"
+				)
+			# Keep Select options in sync on the Single
+			meta = frappe.get_meta("IC Settings")
+			df = meta.get_field("on_quote_accept")
+			if df:
+				wanted = (
+					"Prompt for Project / Testing\nCreate Invoice and Project\n"
+					"Create Invoice\nCreate Project\nManual"
+				)
+				if (df.options or "") != wanted:
+					frappe.db.set_value(
+						"DocField",
+						{"parent": "IC Settings", "fieldname": "on_quote_accept"},
+						"options",
+						wanted,
+						update_modified=False,
+					)
 	except Exception:
 		pass
 

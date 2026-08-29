@@ -416,9 +416,20 @@ def customer_accept_quotation(token: str, remarks: str | None = None):
 
 
 def process_post_accept_actions(quotation: str, action: str | None = None):
-	"""Background: create invoice/project after customer accepts (staff context)."""
+	"""Background: create invoice/project after customer accepts (staff context).
+
+	When action is Prompt / Manual, only notify — owner is prompted on Desk to
+	create a Project or Testing Request.
+	"""
 	doc = frappe.get_doc("Quotation", quotation)
 	action = action or _resolve_post_accept_action(doc)
+
+	# Always ensure owner gets a follow-up ToDo / alert to create Project / Testing
+	_ensure_accept_followup_todo(doc)
+
+	if action in ("Prompt for Project / Testing", "Manual", "Prompt"):
+		return
+
 	if action in ("Create Invoice", "Create Invoice and Project"):
 		try:
 			create_invoice_from_quotation(quotation, submit=0)
@@ -432,16 +443,6 @@ def process_post_accept_actions(quotation: str, action: str | None = None):
 			frappe.log_error(frappe.get_traceback(), "Auto project on quote accept")
 
 
-def _acceptance_payload(doc):
-	"""Internal/staff payload — not returned to guests."""
-	return {
-		"status": "Accepted",
-		"quotation": doc.name,
-		"invoice": frappe.db.get_value("Sales Invoice", {"ic_quotation": doc.name, "docstatus": ["<", 2]}, "name"),
-		"project": frappe.db.get_value("Project", {"ic_quotation": doc.name}, "name"),
-	}
-
-
 def _resolve_post_accept_action(doc) -> str:
 	choice = (doc.get("ic_post_accept_action") or "Use Company Default").strip()
 	if choice and choice not in ("Use Company Default", ""):
@@ -450,7 +451,101 @@ def _resolve_post_accept_action(doc) -> str:
 		setting = frappe.db.get_single_value("IC Settings", "on_quote_accept")
 	except Exception:
 		setting = None
-	return setting or "Create Invoice and Project"
+	return setting or "Prompt for Project / Testing"
+
+
+@frappe.whitelist()
+def get_quotation_accept_followup(quotation: str):
+	"""Desk: whether to prompt creating Project / Testing Request after approval."""
+	qt = frappe.get_doc("Quotation", quotation)
+	status = qt.ic_workflow_status or ""
+	if status != "Accepted" and qt.get("workflow_state") != "IC Accepted":
+		return {"prompt": 0}
+
+	project = frappe.db.get_value("Project", {"ic_quotation": qt.name}, "name")
+	testing = frappe.get_all(
+		"IC Testing Request",
+		filters={"quotation": qt.name},
+		pluck="name",
+		limit=5,
+	)
+	has_test_lines = bool(qt.get("ic_test_items"))
+	is_testing_quote = (qt.get("ic_quotation_type") or "").strip() in ("Testing", "Test")
+
+	needs_project = not project
+	needs_testing = (has_test_lines or is_testing_quote) and not testing
+
+	action = _resolve_post_accept_action(qt)
+
+	return {
+		"prompt": 1 if (needs_project or needs_testing) else 0,
+		"quotation": qt.name,
+		"customer": qt.party_name if qt.quotation_to == "Customer" else None,
+		"quotation_type": qt.get("ic_quotation_type"),
+		"project": project,
+		"testing_requests": testing,
+		"needs_project": 1 if needs_project else 0,
+		"needs_testing": 1 if needs_testing else 0,
+		"has_test_lines": 1 if has_test_lines else 0,
+		"action_mode": action,
+		"message": _(
+			"Customer approved quotation {0}. Create a Project and/or Testing Request to continue delivery."
+		).format(qt.name),
+	}
+
+
+def _ensure_accept_followup_todo(doc):
+	"""Assign owner a ToDo to create Project / Testing Request after approval."""
+	owner = doc.owner
+	assignee = doc.get("ic_assigned_salesperson") or owner
+	if not assignee or not frappe.db.exists("User", assignee) or assignee == "Guest":
+		assignee = owner if owner and owner != "Guest" else "Administrator"
+	if not assignee or not frappe.db.exists("User", assignee):
+		return
+
+	existing = frappe.db.get_value(
+		"ToDo",
+		{
+			"reference_type": "Quotation",
+			"reference_name": doc.name,
+			"status": "Open",
+			"allocated_to": assignee,
+		},
+		"name",
+	)
+	if existing:
+		return
+
+	try:
+		frappe.get_doc(
+			{
+				"doctype": "ToDo",
+				"allocated_to": assignee,
+				"description": _(
+					"Customer approved quotation {0}. Create a Project or Testing Request to start delivery."
+				).format(doc.name),
+				"reference_type": "Quotation",
+				"reference_name": doc.name,
+				"assigned_by": frappe.session.user
+				if frappe.session.user not in (None, "Guest")
+				else "Administrator",
+				"priority": "High",
+				"status": "Open",
+				"date": frappe.utils.today(),
+			}
+		).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Accept follow-up ToDo")
+
+
+def _acceptance_payload(doc):
+	"""Internal/staff payload — not returned to guests."""
+	return {
+		"status": "Accepted",
+		"quotation": doc.name,
+		"invoice": frappe.db.get_value("Sales Invoice", {"ic_quotation": doc.name, "docstatus": ["<", 2]}, "name"),
+		"project": frappe.db.get_value("Project", {"ic_quotation": doc.name}, "name"),
+	}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1053,9 +1148,16 @@ def _notify_share(doc):
 
 
 def _notify_acceptance(doc):
-	recipients = [doc.owner, "Administrator"]
-	assigned = frappe.db.get_value("Quotation", doc.name, "owner")
-	_send_notification("Quotation Accepted", doc, recipients + [assigned])
+	recipients = [doc.owner, "Administrator", doc.get("ic_assigned_salesperson")]
+	_send_notification(
+		_("Quotation Accepted — create Project or Testing Request"),
+		doc,
+		recipients,
+		body=_(
+			"Customer approved {0}. Open the quotation and create a Project and/or Testing Request to continue."
+		).format(doc.name),
+	)
+	_ensure_accept_followup_todo(doc)
 
 
 def _notify_changes(doc):
@@ -1081,7 +1183,7 @@ def _notify_project_assigned(project):
 	_send_notification("New Project Assigned", project, recipients)
 
 
-def _send_notification(subject, doc, recipients):
+def _send_notification(subject, doc, recipients, body: str | None = None):
 	for user in set(filter(None, recipients)):
 		if not frappe.db.exists("User", user):
 			continue
@@ -1090,12 +1192,13 @@ def _send_notification(subject, doc, recipients):
 				{
 					"doctype": "Notification Log",
 					"subject": f"{subject}: {doc.name}",
-					"email_content": f"{subject} for {doc.doctype} {doc.name}",
+					"email_content": body
+					or f"{subject} for {doc.doctype} {doc.name}",
 					"document_type": doc.doctype,
 					"document_name": doc.name,
 					"for_user": user,
 					"type": "Alert",
-					"from_user": frappe.session.user,
+					"from_user": frappe.session.user if frappe.session.user != "Guest" else "Administrator",
 				}
 			)
 			notification.insert(ignore_permissions=True)
