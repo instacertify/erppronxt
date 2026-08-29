@@ -23,8 +23,10 @@ html {
   --ic-radius-sm: 10px;
   --ic-tile-min: 148px;
   --ic-tile-gap: 12px;
-  --ic-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
-  --ic-shadow-hover: 0 14px 32px rgba(6, 81, 117, 0.12);
+  --ic-shadow: none;
+  --ic-shadow-hover: none;
+  --ic-outline: 1.5px solid #033447;
+  --ic-outline-muted: 1.5px solid #065175;
   --ic-font: "Poppins", "Segoe UI", sans-serif;
   --ic-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ic-rise: cubic-bezier(0.16, 1, 0.3, 1);
@@ -405,12 +407,13 @@ body {
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
+    linear-gradient(125deg, #033447 0%, #065175 55%, #0a8fb5 100%);
   color: #fff;
-  border-radius: var(--ic-radius);
-  padding: 28px 28px 26px;
-  margin-bottom: 20px;
-  box-shadow: var(--ic-shadow);
+  border-radius: var(--ic-radius-sm);
+  border: 1.5px solid #022a38;
+  padding: 12px 16px 12px;
+  margin-bottom: 14px;
+  box-shadow: none;
   isolation: isolate;
   animation: ic-hero-in 0.7s var(--ic-rise) both;
 }
@@ -420,36 +423,25 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 88% 20%, rgba(236, 104, 32, 0.45), transparent 42%),
-    radial-gradient(circle at 12% 90%, rgba(255, 255, 255, 0.12), transparent 40%);
+    radial-gradient(circle at 92% 30%, rgba(236, 104, 32, 0.28), transparent 38%);
   pointer-events: none;
   z-index: 0;
 }
 
 .ic-greeting::after {
-  content: "";
-  position: absolute;
-  right: -40px;
-  top: -50px;
-  width: 220px;
-  height: 220px;
-  border-radius: 40% 60% 55% 45%;
-  border: 18px solid rgba(255, 255, 255, 0.08);
-  transform: rotate(18deg);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .ic-greeting-brand {
   position: relative;
   z-index: 1;
-  font-size: clamp(1.85rem, 3.2vw, 2.45rem);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
   font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.05;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
   color: #fff;
-  margin: 0 0 8px;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  margin: 0 0 2px;
+  text-shadow: none;
 }
 
 .ic-greeting-brand span {
@@ -459,9 +451,9 @@ body {
 .ic-greeting h2 {
   position: relative;
   z-index: 1;
-  margin: 0 0 6px 0;
+  margin: 0 0 2px 0;
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 0.88rem;
   letter-spacing: -0.01em;
   color: rgba(255, 255, 255, 0.92) !important;
 }
@@ -470,7 +462,7 @@ body {
   position: relative;
   z-index: 1;
   opacity: 0.88;
-  font-size: 0.88rem;
+  font-size: 0.72rem;
   font-weight: 400;
   color: #fff;
 }
@@ -524,23 +516,25 @@ body {
 
 .ic-explore-card {
   text-align: left;
-  border: 1px solid rgba(6, 81, 117, 0.12);
+  border: 1.5px solid #033447;
   padding: 12px;
-  background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
+  background: #ffffff;
   cursor: pointer;
-  transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease);
-  box-shadow: var(--ic-shadow);
+  transition: border-color 0.18s var(--ic-ease), background 0.18s var(--ic-ease);
+  box-shadow: none;
   font-family: "Poppins", var(--ic-font);
 }
 
 .ic-explore-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(6, 81, 117, 0.1);
+  transform: none;
+  background: #f4f9fc;
+  border-color: #022a38;
+  box-shadow: none;
 }
 
-.ic-explore-card.accent-coral { border-top: 4px solid #c0392b; border-left: 1px solid rgba(6, 81, 117, 0.12); }
-.ic-explore-card.accent-citrus { border-top: 4px solid var(--ic-accent); border-left: 1px solid rgba(6, 81, 117, 0.12); }
-.ic-explore-card.accent-teal { border-top: 4px solid var(--ic-primary); border-left: 1px solid rgba(6, 81, 117, 0.12); }
+.ic-explore-card.accent-coral { border: 1.5px solid #8e2a20; border-top: 3px solid #c0392b; }
+.ic-explore-card.accent-citrus { border: 1.5px solid #033447; border-top: 3px solid var(--ic-accent-deep); }
+.ic-explore-card.accent-teal { border: 1.5px solid #033447; border-top: 3px solid var(--ic-primary-deep); }
 
 .ic-explore-card-top {
   display: flex;
@@ -595,13 +589,12 @@ body {
 }
 
 .ic-summary-card {
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbfd 100%);
+  background: #ffffff;
   padding: 14px 12px;
-  border: 1px solid rgba(6, 81, 117, 0.1);
-  border-top: 4px solid var(--ic-primary);
-  border-left: 1px solid rgba(6, 81, 117, 0.1);
-  box-shadow: var(--ic-shadow);
-  transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease), border-color 0.22s ease;
+  border: 1.5px solid #033447;
+  border-top: 3px solid var(--ic-primary-deep);
+  box-shadow: none;
+  transition: border-color 0.18s var(--ic-ease), background 0.18s var(--ic-ease);
   animation: ic-rise-in 0.55s var(--ic-rise) both;
   justify-content: space-between;
   align-items: flex-start;
@@ -647,9 +640,10 @@ body {
 .ic-summary-card:nth-child(n+9) { animation-delay: 0.28s; }
 
 .ic-summary-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--ic-shadow-hover);
-  border-color: rgba(6, 81, 117, 0.18);
+  transform: none;
+  box-shadow: none;
+  background: #f4f9fc;
+  border-color: #022a38;
 }
 
 .ic-summary-card .label {
@@ -813,21 +807,16 @@ body {
   position: relative;
   gap: 6px;
   padding: 12px;
-  border: 1px solid #d3e3ee;
-  background:
-    linear-gradient(165deg, rgba(255,255,255,0.95) 0%, rgba(243,249,252,0.98) 100%);
+  border: 1.5px solid #033447;
+  background: #ffffff;
   cursor: pointer;
   font-family: var(--ic-font);
-  transition: transform 0.2s var(--ic-ease), box-shadow 0.2s var(--ic-ease), border-color 0.2s ease;
+  box-shadow: none;
+  transition: border-color 0.18s var(--ic-ease), background 0.18s var(--ic-ease);
 }
 
 .ic-project-tile-glow {
-  position: absolute;
-  inset: -40% auto auto -20%;
-  width: 110px;
-  height: 110px;
-  background: radial-gradient(circle, rgba(6,81,117,0.12), transparent 70%);
-  pointer-events: none;
+  display: none;
 }
 
 .ic-project-tile.priority-High .ic-project-tile-glow,
