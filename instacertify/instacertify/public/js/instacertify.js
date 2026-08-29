@@ -1550,6 +1550,25 @@ frappe.ui.form.on("Customer", {
 			frm.add_custom_button(__("Open Data Drive"), () => {
 				frm.scroll_to_field("ic_customer_files_html");
 			});
+			frm.add_custom_button(__("Sync Team Access"), () => {
+				frappe.call({
+					method: "instacertify.crm.customer_permissions.sync_customer_team",
+					args: { customer: frm.doc.name },
+					freeze: true,
+					callback(r) {
+						frm.reload_doc();
+						const users = (r.message && r.message.users) || [];
+						frappe.msgprint({
+							title: __("Customer Team Access"),
+							message: __(
+								"Team members who can see all Customer Data: {0}",
+								[users.join(", ") || __("none")]
+							),
+							indicator: "green",
+						});
+					},
+				});
+			});
 		}
 	},
 });

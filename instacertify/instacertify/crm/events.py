@@ -56,12 +56,17 @@ def get_customer_history(customer: str):
 	"""Complete customer relationship overview for Customer Related Data tab."""
 	if not customer:
 		return {}
+	from instacertify.crm.customer_permissions import assert_can_read_customer_data
+
+	assert_can_read_customer_data(customer)
 
 	def list_docs(doctype, filters, fields=None, limit=100):
 		if not frappe.db.exists("DocType", doctype):
 			return []
 		try:
-			return frappe.get_list(
+			# Caller already authorized for this customer's data — avoid child DocType
+			# permission gaps (e.g. Dynamic Link) blocking the overview.
+			return frappe.get_all(
 				doctype,
 				filters=filters,
 				fields=fields or ["name", "modified"],
@@ -269,7 +274,7 @@ def get_customer_history(customer: str):
 		contracts=contracts,
 	)
 
-	contacts = frappe.get_list(
+	contacts = frappe.get_all(
 		"Dynamic Link",
 		filters={"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"},
 		fields=["parent"],
@@ -620,6 +625,9 @@ def get_customer_data_drive(customer: str):
 @frappe.whitelist()
 def ensure_customer_drive_folder(customer: str) -> str:
 	"""Ensure Home/Customer Drive/<customer> folder exists; return folder name."""
+	from instacertify.crm.customer_permissions import assert_can_read_customer_data
+
+	assert_can_read_customer_data(customer)
 	return _ensure_customer_drive_folder(customer)
 
 
@@ -663,6 +671,9 @@ def sync_customer_data_drive(customer: str):
 	"""Copy all related-record files onto the Customer Data Drive."""
 	if not customer or not frappe.db.exists("Customer", customer):
 		frappe.throw(_("Customer is required"))
+	from instacertify.crm.customer_permissions import assert_can_read_customer_data
+
+	assert_can_read_customer_data(customer)
 
 	folder = _ensure_customer_drive_folder(customer)
 	drive = get_customer_data_drive(customer)
