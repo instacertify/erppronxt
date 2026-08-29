@@ -436,10 +436,10 @@ QUOTATION_FIELDS = [
 		"fieldname": "ic_post_accept_action",
 		"fieldtype": "Select",
 		"label": "After Customer Accepts",
-		"options": "\nUse Company Default\nCreate Invoice\nCreate Project\nCreate Invoice and Project\nManual",
+		"options": "\nUse Company Default\nPrompt for Project / Testing\nCreate Invoice\nCreate Project\nCreate Invoice and Project\nManual",
 		"default": "Use Company Default",
 		"insert_after": "ic_workflow_status",
-		"description": "Auto-create invoice and/or project when the customer accepts.",
+		"description": "When the customer approves a shared quote, prompt the owner to create a Project or Testing Request (recommended).",
 	},
 	# --- Customer share (secondary) ---
 	{

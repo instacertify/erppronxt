@@ -220,9 +220,9 @@
    "fieldname": "on_quote_accept",
    "fieldtype": "Select",
    "label": "When Customer Accepts Quote",
-   "options": "Create Invoice and Project\nCreate Invoice\nCreate Project\nManual",
-   "default": "Create Invoice and Project",
-   "description": "Automatic follow-up after customer accepts via the share link"
+   "options": "Prompt for Project / Testing\nCreate Invoice and Project\nCreate Invoice\nCreate Project\nManual",
+   "default": "Prompt for Project / Testing",
+   "description": "After a shared quote is approved: prompt the owner to create a Project or Testing Request (recommended), or auto-create."
   },
   {
    "doctype": "DocField",
