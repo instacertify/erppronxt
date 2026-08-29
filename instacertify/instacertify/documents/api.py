@@ -70,15 +70,43 @@ def _assert_manager():
 	frappe.throw(_("Only managers or admin can delete or replace customer documents"))
 
 
+def _portal_base_url() -> str:
+	"""Prefer IC Settings portal base URL when set."""
+	try:
+		base = frappe.db.get_single_value("IC Settings", "portal_base_url")
+		if base:
+			return str(base).rstrip("/")
+	except Exception:
+		pass
+	return frappe.utils.get_url().rstrip("/")
+
+
+def _share_url_for(token: str) -> str:
+	return f"{_portal_base_url()}/ic-documents/{token}"
+
+
+def _row_remark(row) -> str:
+	return (row.get("remark") or row.get("description") or "").strip()
+
+
+def _entry_type(row) -> str:
+	et = (row.get("entry_type") or "Upload File").strip()
+	return et if et in ("Upload File", "Fill Field") else "Upload File"
+
+
 @frappe.whitelist()
 def share_document_request(document_request: str):
 	doc = frappe.get_doc("IC Document Request", document_request)
+	if not doc.customer:
+		frappe.throw(_("Customer is mandatory before sharing the collection sheet"))
 	if not doc.share_token:
 		doc.share_token = secrets.token_urlsafe(24)
 	doc.status = "Sent to Customer"
 	doc.sent_on = now_datetime()
+	url = _share_url_for(doc.share_token)
+	if frappe.get_meta("IC Document Request").has_field("share_url"):
+		doc.share_url = url
 	doc.save(ignore_permissions=True)
-	url = frappe.utils.get_url(f"/ic-documents/{doc.share_token}")
 	return {"url": url, "token": doc.share_token}
 
 
@@ -88,10 +116,14 @@ def get_document_checklist_templates(service_name: str | None = None):
 	filters = {"is_active": 1}
 	if service_name:
 		filters["service_name"] = service_name
+	fields = ["name", "template_name", "service_name"]
+	meta = frappe.get_meta("IC Document Checklist Template")
+	if meta.has_field("category"):
+		fields.append("category")
 	rows = frappe.get_all(
 		"IC Document Checklist Template",
 		filters=filters,
-		fields=["name", "template_name", "service_name"],
+		fields=fields,
 		order_by="template_name asc",
 		limit_page_length=200,
 	)
@@ -100,10 +132,16 @@ def get_document_checklist_templates(service_name: str | None = None):
 		label = r.template_name or r.name
 		if r.service_name:
 			label = f"{label} ({r.service_name})"
+		item_fields = ["document_name", "category", "is_mandatory"]
+		item_meta = frappe.get_meta("IC Document Checklist Item")
+		if item_meta.has_field("entry_type"):
+			item_fields.append("entry_type")
+		if item_meta.has_field("remark"):
+			item_fields.append("remark")
 		items = frappe.get_all(
 			"IC Document Checklist Item",
 			filters={"parent": r.name},
-			fields=["document_name", "category", "is_mandatory"],
+			fields=item_fields,
 			order_by="idx asc",
 		)
 		out.append(
@@ -111,8 +149,73 @@ def get_document_checklist_templates(service_name: str | None = None):
 				"name": r.name,
 				"label": label,
 				"service_name": r.service_name,
+				"category": r.get("category"),
 				"item_count": len(items),
 				"items": items,
+			}
+		)
+	return out
+
+
+@frappe.whitelist()
+def get_document_collection_library(active_only: int | bool = 1, category: str | None = None):
+	"""Catalog for Document Collection Sheet Library page."""
+	filters = {}
+	if int(active_only or 0):
+		filters["is_active"] = 1
+	if category:
+		filters["category"] = category
+	fields = ["name", "template_name", "service_name", "is_active", "modified"]
+	meta = frappe.get_meta("IC Document Checklist Template")
+	if meta.has_field("category"):
+		fields.append("category")
+	if meta.has_field("notes"):
+		fields.append("notes")
+	rows = frappe.get_all(
+		"IC Document Checklist Template",
+		filters=filters,
+		fields=fields,
+		order_by="template_name asc",
+		limit_page_length=500,
+	)
+	item_meta = frappe.get_meta("IC Document Checklist Item")
+	out = []
+	for r in rows:
+		item_fields = ["document_name", "category", "is_mandatory", "description"]
+		if item_meta.has_field("entry_type"):
+			item_fields.append("entry_type")
+		if item_meta.has_field("remark"):
+			item_fields.append("remark")
+		items = frappe.get_all(
+			"IC Document Checklist Item",
+			filters={"parent": r.name},
+			fields=item_fields,
+			order_by="idx asc",
+		)
+		uploads = sum(1 for i in items if _entry_type(i) == "Upload File")
+		fills = sum(1 for i in items if _entry_type(i) == "Fill Field")
+		out.append(
+			{
+				"name": r.name,
+				"template_name": r.template_name or r.name,
+				"service_name": r.service_name,
+				"category": r.get("category") or "General",
+				"is_active": r.is_active,
+				"notes": r.get("notes"),
+				"modified": str(r.modified or ""),
+				"item_count": len(items),
+				"upload_count": uploads,
+				"fill_count": fills,
+				"items": [
+					{
+						"document_name": i.document_name,
+						"remark": _row_remark(i),
+						"is_mandatory": i.is_mandatory,
+						"entry_type": _entry_type(i),
+						"category": i.category,
+					}
+					for i in items
+				],
 			}
 		)
 	return out
@@ -128,11 +231,14 @@ def preview_checklist_template(template: str):
 		"name": tmpl.name,
 		"template_name": tmpl.template_name,
 		"service_name": tmpl.get("service_name"),
+		"category": tmpl.get("category"),
 		"items": [
 			{
 				"document_name": row.document_name,
 				"category": row.category,
 				"is_mandatory": row.is_mandatory,
+				"remark": _row_remark(row),
+				"entry_type": _entry_type(row),
 				"description": row.get("description"),
 			}
 			for row in (tmpl.items or [])
@@ -192,11 +298,6 @@ def create_document_request_for_project(
 		if replace_items or not doc.items:
 			apply_checklist_template(doc.name, template)
 			doc.reload()
-			if frappe.get_meta("IC Document Request").has_field("checklist_template"):
-				frappe.db.set_value(
-					"IC Document Request", doc.name, "checklist_template", template, update_modified=False
-				)
-				doc.checklist_template = template
 	elif not doc.items:
 		# Sensible default checklist (documents only — sample dispatch is a separate sheet)
 		for name, cat in (
@@ -252,23 +353,162 @@ def _ensure_default_data_fields(doc):
 	doc.save(ignore_permissions=True)
 
 
+def _apply_template_rows(doc, tmpl):
+	"""Map template rows onto request items (Upload File) and data_fields (Fill Field)."""
+	doc.set("items", [])
+	if frappe.get_meta("IC Document Request").has_field("data_fields"):
+		doc.set("data_fields", [])
+	for row in tmpl.items or []:
+		remark = _row_remark(row)
+		entry = _entry_type(row)
+		if entry == "Fill Field":
+			if not frappe.get_meta("IC Document Request").has_field("data_fields"):
+				continue
+			doc.append(
+				"data_fields",
+				{
+					"field_label": row.document_name,
+					"is_mandatory": 1 if row.is_mandatory else 0,
+					"help_text": remark,
+					"field_value": "",
+				},
+			)
+		else:
+			payload = {
+				"document_name": row.document_name,
+				"category": row.category or "Customer Documents",
+				"is_mandatory": 1 if row.is_mandatory else 0,
+				"status": "Pending",
+			}
+			if frappe.get_meta("IC Document Request Item").has_field("remark"):
+				payload["remark"] = remark
+			doc.append("items", payload)
+	if frappe.get_meta("IC Document Request").has_field("checklist_template"):
+		doc.checklist_template = tmpl.name
+
+
 @frappe.whitelist()
 def apply_checklist_template(document_request: str, template: str):
 	doc = frappe.get_doc("IC Document Request", document_request)
 	tmpl = frappe.get_doc("IC Document Checklist Template", template)
-	doc.set("items", [])
-	for row in tmpl.items or []:
-		doc.append(
+	_apply_template_rows(doc, tmpl)
+	doc.save(ignore_permissions=True)
+	return doc.as_dict()
+
+
+@frappe.whitelist()
+def create_document_request_for_customer(
+	customer: str,
+	title: str | None = None,
+	template: str | None = None,
+	project: str | None = None,
+	share: int | bool = 1,
+):
+	"""Create a Documents Collection Sheet mapped to a Customer (required) from a template."""
+	if not customer:
+		frappe.throw(_("Customer is mandatory"))
+	if not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer {0} not found").format(customer))
+
+	cust_name = frappe.db.get_value("Customer", customer, "customer_name") or customer
+	doc = frappe.get_doc(
+		{
+			"doctype": "IC Document Request",
+			"title": title or f"Documents for {cust_name}",
+			"customer": customer,
+			"project": project or None,
+			"assigned_to": frappe.session.user,
+			"status": "Draft",
+		}
+	)
+	doc.insert(ignore_permissions=True)
+
+	if template:
+		if not frappe.db.exists("IC Document Checklist Template", template):
+			frappe.throw(_("Template {0} not found").format(template))
+		apply_checklist_template(doc.name, template)
+		doc.reload()
+	elif not doc.items:
+		for name, cat in (
+			("Company Registration / GST", "Customer Documents"),
+			("Product Datasheet / Specs", "Technical Documents"),
+			("Authorization Letter", "Applications"),
+		):
+			doc.append(
+				"items",
+				{"document_name": name, "category": cat, "is_mandatory": 1, "status": "Pending"},
+			)
+		doc.save(ignore_permissions=True)
+		_ensure_default_data_fields(doc)
+		doc.reload()
+
+	result = {
+		"document_request": doc.name,
+		"title": doc.title,
+		"status": doc.status,
+		"customer": doc.customer,
+		"checklist_template": doc.get("checklist_template"),
+	}
+	if int(share or 0):
+		result.update(share_document_request(doc.name))
+		doc.reload()
+		result["status"] = doc.status
+		if doc.get("share_url"):
+			result["share_url"] = doc.share_url
+	return result
+
+
+@frappe.whitelist()
+def save_document_request_as_template(
+	document_request: str,
+	template_name: str,
+	service_name: str | None = None,
+	category: str | None = None,
+):
+	"""Save an existing collection sheet as a reusable library template."""
+	name = (template_name or "").strip()
+	if not name:
+		frappe.throw(_("Template name is required"))
+	if frappe.db.exists("IC Document Checklist Template", name):
+		frappe.throw(_("Template {0} already exists").format(name), frappe.DuplicateEntryError)
+
+	doc = frappe.get_doc("IC Document Request", document_request)
+	tmpl = frappe.get_doc(
+		{
+			"doctype": "IC Document Checklist Template",
+			"template_name": name,
+			"service_name": service_name or "",
+			"category": category or "Custom",
+			"is_active": 1,
+			"notes": f"Saved from {doc.name}",
+		}
+	)
+	for row in doc.items or []:
+		tmpl.append(
 			"items",
 			{
 				"document_name": row.document_name,
-				"category": row.category,
-				"is_mandatory": row.is_mandatory,
-				"status": "Pending",
+				"remark": row.get("remark") or "",
+				"is_mandatory": 1 if row.is_mandatory else 0,
+				"entry_type": "Upload File",
+				"category": row.category or "Customer Documents",
 			},
 		)
-	doc.save(ignore_permissions=True)
-	return doc.as_dict()
+	for row in doc.get("data_fields") or []:
+		tmpl.append(
+			"items",
+			{
+				"document_name": row.field_label,
+				"remark": row.get("help_text") or "",
+				"is_mandatory": 1 if row.is_mandatory else 0,
+				"entry_type": "Fill Field",
+				"category": "Other",
+			},
+		)
+	if not tmpl.items:
+		frappe.throw(_("This sheet has no rows to save as a template"))
+	tmpl.insert(ignore_permissions=True)
+	return {"template": tmpl.name, "template_name": tmpl.template_name}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -318,12 +558,14 @@ def get_document_request_by_token(token: str):
 				"idx": row.idx,
 				"name": row.name,
 				"document_name": row.document_name,
+				"remark": row.get("remark") or "",
 				"category": row.category,
 				"is_mandatory": row.is_mandatory,
 				"status": row.status,
 				"uploaded_file": row.uploaded_file,
 				"customer_remarks": row.get("customer_remarks"),
 				"review_remarks": row.review_remarks,
+				"entry_type": "Upload File",
 			}
 			for row in doc.items
 		],

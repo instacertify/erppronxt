@@ -5,6 +5,7 @@
  "module": "Instacertify",
  "track_changes": 1,
  "title_field": "template_name",
+ "search_fields": "service_name,category",
  "fields": [
   {
    "doctype": "DocField",
@@ -24,23 +25,52 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "General\nBIS / CRS\nTEC\nWPC\nTesting\nRenewal\nCustom",
+   "default": "General",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Active",
-   "default": 1
+   "default": 1,
+   "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
   },
   {
    "doctype": "DocField",
    "fieldname": "section_items",
    "fieldtype": "Section Break",
-   "label": "Required Documents"
+   "label": "Collection Sheet Rows"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "items_help",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted\">Add each row the customer must complete. Choose <b>Upload File</b> for document uploads or <b>Fill Field</b> for text the customer types. Mark Mandatory when required.</p>"
   },
   {
    "doctype": "DocField",
    "fieldname": "items",
    "fieldtype": "Table",
-   "label": "Documents",
-   "options": "IC Document Checklist Item"
+   "label": "Rows",
+   "options": "IC Document Checklist Item",
+   "reqd": 1
   }
  ],
  "permissions": [

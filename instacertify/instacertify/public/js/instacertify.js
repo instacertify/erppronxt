@@ -742,6 +742,7 @@ instacertify.add_helpdesk_buttons = function (frm, defaults) {
 				"Quote Format Library": "book-open",
 				Samples: "package",
 				"Documents Collection Sheets": "clipboard-list",
+				"Document Collection Library": "folder-open",
 				"Sample Dispatch Sheets": "truck",
 				Helpdesk: "headset",
 				"Sales Invoice": "receipt",
@@ -3671,8 +3672,19 @@ instacertify.load_testing_request_scope_options = function (frm) {
 
 frappe.ui.form.on("IC Document Request", {
 	refresh(frm) {
+		frm.add_custom_button(__("Open Library"), () => {
+			frappe.set_route("document-collection-library");
+		});
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Send to Customer"), () => {
+				if (!frm.doc.customer) {
+					frappe.msgprint({
+						title: __("Customer required"),
+						indicator: "orange",
+						message: __("Map this sheet to a Customer before sharing."),
+					});
+					return;
+				}
 				frappe.call({
 					method: "instacertify.documents.api.share_document_request",
 					args: { document_request: frm.doc.name },
@@ -3681,7 +3693,7 @@ frappe.ui.form.on("IC Document Request", {
 						frappe.msgprint({
 							title: __("Documents Collection Sheet — customer link"),
 							message: `<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-								<p class="text-muted">${__("Customer can upload the document list and fill the Data Collection Sheet.")}</p>`,
+								<p class="text-muted">${__("Customer can upload files and fill fields on this link. Copied to clipboard when supported.")}</p>`,
 							indicator: "green",
 						});
 						if (url && navigator.clipboard) {
@@ -3691,6 +3703,70 @@ frappe.ui.form.on("IC Document Request", {
 					},
 				});
 			}, __("Actions"));
+
+			frm.add_custom_button(__("Save as Template"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "template_name",
+							fieldtype: "Data",
+							label: __("Template Name"),
+							reqd: 1,
+						},
+						{
+							fieldname: "service_name",
+							fieldtype: "Data",
+							label: __("Service"),
+						},
+						{
+							fieldname: "category",
+							fieldtype: "Select",
+							label: __("Category"),
+							options: "General\nBIS / CRS\nTEC\nWPC\nTesting\nRenewal\nCustom",
+							default: "Custom",
+						},
+					],
+					(v) => {
+						frappe.call({
+							method: "instacertify.documents.api.save_document_request_as_template",
+							args: {
+								document_request: frm.doc.name,
+								template_name: v.template_name,
+								service_name: v.service_name,
+								category: v.category,
+							},
+							freeze: true,
+							callback(r) {
+								const t = r.message && r.message.template;
+								frappe.show_alert({
+									message: __("Saved to Document Collection Library"),
+									indicator: "green",
+								});
+								if (t) {
+									frappe.set_route("Form", "IC Document Checklist Template", t);
+								}
+							},
+						});
+					},
+					__("Save collection sheet as template"),
+					__("Save")
+				);
+			}, __("Actions"));
+
+			if (frm.doc.share_url || frm.doc.share_token) {
+				frm.add_custom_button(__("Copy Share Link"), () => {
+					const url =
+						frm.doc.share_url ||
+						(window.location.origin + "/ic-documents/" + frm.doc.share_token);
+					if (navigator.clipboard) {
+						navigator.clipboard.writeText(url).then(() => {
+							frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+						});
+					} else {
+						frappe.msgprint(url);
+					}
+				}, __("Actions"));
+			}
 
 			(frm.doc.items || []).forEach((row) => {
 				if (!row.name) return;
@@ -3738,6 +3814,10 @@ frappe.ui.form.on("IC Document Request", {
 	},
 	checklist_template(frm) {
 		if (!frm.doc.checklist_template) return;
+		if (frm.is_new()) {
+			frappe.msgprint(__("Save the sheet first, then pick a template — or create from the Document Collection Library."));
+			return;
+		}
 		frappe.call({
 			method: "instacertify.documents.api.apply_checklist_template",
 			args: { document_request: frm.doc.name, template: frm.doc.checklist_template },

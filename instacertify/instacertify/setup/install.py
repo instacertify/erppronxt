@@ -161,6 +161,9 @@ def after_migrate():
 	setup_invoice_naming_series()
 	setup_quotation_naming_series()
 	setup_hrms_alignment()
+	from instacertify.setup.document_collection import ensure_document_collection_templates
+
+	ensure_document_collection_templates()
 	frappe.db.commit()
 
 
