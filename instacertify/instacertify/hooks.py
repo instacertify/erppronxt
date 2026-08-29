@@ -73,7 +73,12 @@ doc_events = {
 		"validate": "instacertify.testing.events.validate_sample",
 	},
 	"IC Testing Request": {
+		"validate": "instacertify.testing.events.validate_testing_request",
 		"on_update": "instacertify.testing.events.on_update_testing_request",
+	},
+	"Task": {
+		"validate": "instacertify.project.task_events.validate_task",
+		"on_update": "instacertify.project.task_events.on_update_task",
 	},
 	"Payment Entry": {
 		"on_submit": "instacertify.accounting.payments.on_submit_payment_entry",

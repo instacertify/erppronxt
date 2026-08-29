@@ -10,6 +10,7 @@ from pathlib import Path
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 from frappe.utils.file_manager import get_file
 
 from instacertify.utils.files import assert_internal_file
@@ -115,13 +116,22 @@ def create_laboratory_from_upload(
 	laboratory_name: str,
 	location: str | None = None,
 	accreditation_scope: str | None = None,
+	accreditation_details: str | None = None,
 	scope_file: str | None = None,
 	contact_person: str | None = None,
 	email: str | None = None,
 	phone: str | None = None,
+	city: str | None = None,
+	address: str | None = None,
+	website: str | None = None,
 	status: str = "Active",
+	import_scopes_from_file: int = 1,
 ):
-	"""Create a laboratory with name + scope text/file for the Lab Library."""
+	"""Create/update a laboratory with editable master fields + optional scope file.
+
+	If the attached scope file is CSV/Excel, its rows are imported into test_scopes
+	(unless import_scopes_from_file is 0).
+	"""
 	laboratory_name = (laboratory_name or "").strip()
 	if not laboratory_name:
 		frappe.throw(_("Laboratory Name is required"))
@@ -134,83 +144,229 @@ def create_laboratory_from_upload(
 		doc.laboratory_name = laboratory_name
 
 	doc.status = status or "Active"
-	if location:
-		doc.location = location
-	if accreditation_scope:
-		doc.accreditation_scope = accreditation_scope
+	# Always apply dialog values so edits stick on the form
+	doc.location = (location or "").strip()
+	doc.city = (city or "").strip()
+	doc.address = (address or "").strip()
+	doc.website = (website or "").strip()
+	doc.contact_person = (contact_person or "").strip()
+	doc.email = (email or "").strip()
+	doc.phone = (phone or "").strip()
+	if accreditation_scope is not None:
+		doc.accreditation_scope = _plain_text(accreditation_scope)
+	if accreditation_details is not None:
+		doc.accreditation_details = _plain_text(accreditation_details)
+
+	imported = 0
+	updated = 0
 	if scope_file:
 		scope_file = assert_internal_file(scope_file, "Laboratory scope file")
-		# Prefer scope_sheet; also keep PDF field when file is PDF
 		doc.scope_sheet = scope_file
-		if str(scope_file).lower().endswith(".pdf"):
+		name_l = str(scope_file).lower()
+		if name_l.endswith(".pdf"):
 			doc.accreditation_scope_pdf = scope_file
-	if contact_person:
-		doc.contact_person = contact_person
-	if email:
-		doc.email = email
-	if phone:
-		doc.phone = phone
+		if int(import_scopes_from_file or 0) and name_l.endswith(
+			(".csv", ".xlsx", ".xlsm", ".xls")
+		):
+			imported, updated = _apply_scope_rows_to_lab(doc, scope_file)
 
 	doc.save(ignore_permissions=False)
+	if scope_file:
+		_link_file_to_lab(scope_file, doc.name, "scope_sheet")
 	frappe.db.commit()
-	return {"laboratory": doc.name, "laboratory_name": doc.laboratory_name}
+	return {
+		"laboratory": doc.name,
+		"laboratory_name": doc.laboratory_name,
+		"scopes_imported": imported,
+		"scopes_updated": updated,
+		"scope_rows": len(doc.test_scopes or []),
+	}
+
+
+def _plain_text(value: str | None) -> str:
+	"""Strip accidental HTML wrappers from Text Editor leftovers."""
+	if not value:
+		return ""
+	text = str(value)
+	# Collapse simple paragraph wrappers from older Text Editor values when re-saving
+	if text.startswith("<") and ">" in text:
+		from frappe.utils import strip_html
+
+		text = strip_html(text)
+	return text.strip()
+
+
+def _link_file_to_lab(file_url: str, lab_name: str, fieldname: str):
+	"""Point uploaded File rows at the laboratory so Attach fields stay editable."""
+	try:
+		names = frappe.get_all("File", filters={"file_url": file_url}, pluck="name")
+		for name in names:
+			frappe.db.set_value(
+				"File",
+				name,
+				{
+					"attached_to_doctype": "IC Laboratory",
+					"attached_to_name": lab_name,
+					"attached_to_field": fieldname,
+				},
+				update_modified=False,
+			)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "link lab scope file")
+
+
+def _parse_money(value) -> float:
+	if value in (None, ""):
+		return 0.0
+	if isinstance(value, (int, float)):
+		return float(value)
+	text = str(value).strip().replace(",", "").replace("₹", "").replace("INR", "").strip()
+	if not text:
+		return 0.0
+	try:
+		return float(text)
+	except Exception:
+		return 0.0
+
+
+def _scope_row_key(test_name: str, standard: str) -> str:
+	return f"{(test_name or '').strip().casefold()}||{(standard or '').strip().casefold()}"
+
+
+def _apply_scope_rows_to_lab(doc, file_url: str) -> tuple[int, int]:
+	"""Upsert test_scopes from CSV/Excel. Returns (added, updated)."""
+	rows = _read_lab_scope_rows(file_url)
+	if not rows:
+		return 0, 0
+
+	existing = {}
+	for row in doc.get("test_scopes") or []:
+		existing[_scope_row_key(row.test_name, row.applicable_standard)] = row
+
+	added = 0
+	updated = 0
+	for item in rows:
+		test_name = item.get("test_name") or ""
+		if not test_name:
+			continue
+		standard = item.get("applicable_standard") or ""
+		key = _scope_row_key(test_name, standard)
+		payload = {
+			"test_name": test_name,
+			"applicable_standard": standard,
+			"category": item.get("category") or "",
+			"selling_price": _parse_money(item.get("selling_price")),
+			"purchase_price": _parse_money(item.get("purchase_price")),
+			"currency": item.get("currency") or "INR",
+			"is_active": item.get("is_active", 1),
+		}
+		payload["margin"] = float(payload["selling_price"] or 0) - float(payload["purchase_price"] or 0)
+		if key in existing:
+			row = existing[key]
+			for k, v in payload.items():
+				row.set(k, v)
+			updated += 1
+		else:
+			doc.append("test_scopes", payload)
+			added += 1
+	return added, updated
+
+
+def _read_lab_scope_rows(file_url: str) -> list[dict]:
+	"""Parse lab scope CSV/Excel into normalized dict rows."""
+	content, file_name = _file_bytes_from_url(file_url)
+	name_l = (file_name or file_url or "").lower()
+	raw_rows: list[dict] = []
+
+	if name_l.endswith((".xlsx", ".xlsm", ".xls")):
+		from openpyxl import load_workbook
+
+		wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+		ws = None
+		for title in ("Scopes", "Scope", "Lab Scopes", "Sheet1"):
+			if title in wb.sheetnames:
+				ws = wb[title]
+				break
+		ws = ws or wb.active
+		raw_rows = _rows_from_worksheet(ws)
+	else:
+		text = content.decode("utf-8-sig", errors="ignore")
+		try:
+			dialect = csv.Sniffer().sniff(text[:4096], delimiters=",\t;")
+		except Exception:
+			dialect = csv.excel
+		reader = csv.DictReader(io.StringIO(text), dialect=dialect)
+		for raw in reader:
+			row = _normalize_upload_row(raw)
+			if any(row.values()):
+				raw_rows.append(row)
+
+	out = []
+	for row in raw_rows:
+		test_name = _pick(row, "test_name", "test", "name", "scope", "test name")
+		if not test_name:
+			continue
+		active_raw = _pick(row, "is_active", "active")
+		is_active = 1
+		if active_raw != "":
+			is_active = 1 if str(active_raw).strip().lower() in ("1", "true", "yes", "y", "active") else 0
+		out.append(
+			{
+				"test_name": test_name,
+				"applicable_standard": _pick(
+					row, "applicable_standard", "standard", "applicable standard"
+				),
+				"category": _pick(row, "category", "type"),
+				"selling_price": _pick(
+					row, "selling_price", "price", "selling price", "rate"
+				),
+				"purchase_price": _pick(
+					row, "purchase_price", "buying_price", "cost", "buying price"
+				),
+				"currency": _pick(row, "currency") or "INR",
+				"is_active": is_active,
+			}
+		)
+	return out
+
+
+def _pick(row: dict, *keys) -> str:
+	lower = {(k or "").strip().lower(): v for k, v in (row or {}).items()}
+	for key in keys:
+		if key in lower and lower[key] not in (None, ""):
+			return str(lower[key]).strip()
+	return ""
 
 
 @frappe.whitelist()
 def import_laboratory_scopes_csv(laboratory: str, file_url: str):
-	"""Import test scope rows (name, standard, category, selling_price) from CSV/Excel-as-CSV."""
+	"""Import / upsert test scope rows from CSV or Excel into a laboratory."""
 	if not laboratory or not frappe.db.exists("IC Laboratory", laboratory):
 		frappe.throw(_("Laboratory not found"))
 	if not file_url:
-		frappe.throw(_("Select a CSV from My Device or File Library first"))
+		frappe.throw(_("Select a CSV or Excel file from My Device or File Library first"))
 
-	file_url = assert_internal_file(file_url, "CSV file")
-	_fname, content = get_file(file_url)
-	if isinstance(content, bytes):
-		text = content.decode("utf-8-sig", errors="ignore")
-	else:
-		text = str(content)
-
-	reader = csv.DictReader(io.StringIO(text))
-	if not reader.fieldnames:
-		frappe.throw(_("CSV has no header row"))
-
-	def pick(row, *keys):
-		lower = {(k or "").strip().lower(): v for k, v in row.items()}
-		for key in keys:
-			if key in lower and lower[key] not in (None, ""):
-				return str(lower[key]).strip()
-		return ""
-
+	file_url = assert_internal_file(file_url, "Scope spreadsheet")
 	doc = frappe.get_doc("IC Laboratory", laboratory)
-	added = 0
-	for row in reader:
-		test_name = pick(row, "test_name", "test", "name", "scope", "test name")
-		if not test_name:
-			continue
-		standard = pick(row, "applicable_standard", "standard", "applicable standard")
-		category = pick(row, "category", "type")
-		selling = pick(row, "selling_price", "price", "selling price", "rate")
-		purchase = pick(row, "purchase_price", "buying_price", "cost", "buying price")
-		doc.append(
-			"test_scopes",
-			{
-				"test_name": test_name,
-				"applicable_standard": standard,
-				"category": category,
-				"selling_price": float(selling or 0) if selling else 0,
-				"purchase_price": float(purchase or 0) if purchase else 0,
-				"is_active": 1,
-			},
+	added, updated = _apply_scope_rows_to_lab(doc, file_url)
+	if not added and not updated:
+		frappe.throw(
+			_(
+				"No scope rows found. Use headers like test_name, applicable_standard, category, selling_price, purchase_price."
+			)
 		)
-		added += 1
 
-	if not added:
-		frappe.throw(_("No scope rows found. Use headers like test_name, applicable_standard, selling_price."))
-
+	# Keep the latest spreadsheet on the lab for reference
+	doc.scope_sheet = file_url
 	doc.save(ignore_permissions=False)
+	_link_file_to_lab(file_url, doc.name, "scope_sheet")
 	frappe.db.commit()
-	return {"laboratory": doc.name, "added": added}
+	return {
+		"laboratory": doc.name,
+		"added": added,
+		"updated": updated,
+		"scope_rows": len(doc.test_scopes or []),
+	}
 
 
 @frappe.whitelist()
@@ -251,11 +407,35 @@ def get_quote_library_catalog():
 		order_by="quotation_type asc, template_name asc",
 		limit_page_length=500,
 	)
+	# Default amounts per template (sales-editable on the template form)
+	totals: dict[str, float] = {}
+	line_counts: dict[str, int] = {}
+	passthrough_counts: dict[str, int] = {}
+	if rows:
+		names = [r.name for r in rows]
+		cost_rows = frappe.get_all(
+			"IC Quotation Cost Item",
+			filters={"parent": ["in", names], "parenttype": "IC Quotation Template"},
+			fields=["parent", "amount", "is_passthrough", "revenue_treatment"],
+			limit_page_length=5000,
+		)
+		for c in cost_rows:
+			parent = c.parent
+			line_counts[parent] = line_counts.get(parent, 0) + 1
+			totals[parent] = totals.get(parent, 0.0) + float(c.amount or 0)
+			treatment = (c.get("revenue_treatment") or "").strip()
+			is_pass = treatment == "Do Not Count as Revenue" or cint(c.is_passthrough)
+			if is_pass:
+				passthrough_counts[parent] = passthrough_counts.get(parent, 0) + 1
+
 	counts = {}
 	for r in rows:
 		t = r.quotation_type or "Other"
 		counts[t] = counts.get(t, 0) + 1
 		r["tags"] = _parse_tags(r.get("template_notes"))
+		r["cost_line_count"] = line_counts.get(r.name, 0)
+		r["default_amount_total"] = totals.get(r.name, 0.0)
+		r["passthrough_line_count"] = passthrough_counts.get(r.name, 0)
 	return {"counts": counts, "templates": rows}
 
 
@@ -280,15 +460,64 @@ def _public_file(file_name: str, content: str | bytes, content_type: str | None 
 
 
 @frappe.whitelist()
-def download_lab_scope_template() -> dict:
-	"""Downloadable CSV template for laboratory scope row import."""
-	content = (
-		"test_name,applicable_standard,category,selling_price,purchase_price\n"
-		"EMI/EMC Radiated Emission,CISPR 32,EMC,25000,18000\n"
-		"Safety Insulation Resistance,IEC 62368-1,Safety,8000,5500\n"
-		"RF Conducted Spurious,ETSI EN 300 328,RF,15000,11000\n"
-	)
-	return _public_file("IC_Laboratory_Scope_Upload_Template.csv", content, "text/csv")
+def download_lab_scope_template(fmt: str | None = None) -> dict:
+	"""Downloadable CSV or Excel template for laboratory scope row import."""
+	fmt = (fmt or "csv").strip().lower()
+	headers = [
+		"test_name",
+		"applicable_standard",
+		"category",
+		"selling_price",
+		"purchase_price",
+		"currency",
+		"is_active",
+	]
+	samples = [
+		["EMI/EMC Radiated Emission", "CISPR 32", "EMC", 25000, 18000, "INR", 1],
+		["Safety Insulation Resistance", "IEC 62368-1", "Safety", 8000, 5500, "INR", 1],
+		["RF Conducted Spurious", "ETSI EN 300 328", "RF", 15000, 11000, "INR", 1],
+	]
+	if fmt in ("xls", "xlsx", "excel"):
+		from openpyxl import Workbook
+		from openpyxl.styles import Font
+
+		wb = Workbook()
+		ws = wb.active
+		ws.title = "Scopes"
+		ws.append(headers)
+		for cell in ws[1]:
+			cell.font = Font(bold=True)
+		for row in samples:
+			ws.append(row)
+		guide = wb.create_sheet("Instructions", 0)
+		guide["A1"] = "Instacertify Laboratory Scope Upload"
+		guide["A1"].font = Font(bold=True, size=14)
+		guide["A3"] = "1. Fill one row per accredited test on the Scopes sheet."
+		guide["A4"] = "2. Upload via Laboratory → Upload Lab / Scope, or Import Scope CSV/Excel on the form."
+		guide["A5"] = "3. Matching test_name + applicable_standard updates an existing row; new names are added."
+		guide["A6"] = "4. is_active: 1 = Active, 0 = Inactive"
+		out = io.BytesIO()
+		wb.save(out)
+		name = "IC_Laboratory_Scope_Upload_Template.xlsx"
+		existing = frappe.db.get_value("File", {"file_name": name, "is_private": 0}, "name")
+		if existing:
+			frappe.delete_doc("File", existing, ignore_permissions=True, force=True)
+		return _public_file(
+			name,
+			out.getvalue(),
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		)
+
+	buf = io.StringIO()
+	writer = csv.writer(buf)
+	writer.writerow(headers)
+	writer.writerows(samples)
+	content = ("\ufeff" + buf.getvalue()).encode("utf-8")
+	name = "IC_Laboratory_Scope_Upload_Template.csv"
+	existing = frappe.db.get_value("File", {"file_name": name, "is_private": 0}, "name")
+	if existing:
+		frappe.delete_doc("File", existing, ignore_permissions=True, force=True)
+	return _public_file(name, content, "text/csv")
 
 
 _QUOTE_TEMPLATE_HEADERS = [

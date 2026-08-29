@@ -300,10 +300,43 @@ CUSTOMER_FIELDS = [
 		"default": "0",
 	},
 	{
+		"fieldname": "ic_section_login",
+		"fieldtype": "Section Break",
+		"label": "Customer Login Credentials",
+		"insert_after": "ic_currency_manual",
+		"collapsible": 1,
+		"description": "Store the customer’s portal / portal-site user ID and password for internal reference. Password is stored encrypted.",
+	},
+	{
+		"fieldname": "ic_customer_user_id",
+		"fieldtype": "Data",
+		"label": "Customer User ID",
+		"insert_after": "ic_section_login",
+		"in_standard_filter": 1,
+	},
+	{
+		"fieldname": "ic_column_login",
+		"fieldtype": "Column Break",
+		"insert_after": "ic_customer_user_id",
+	},
+	{
+		"fieldname": "ic_customer_password",
+		"fieldtype": "Password",
+		"label": "Customer Password",
+		"insert_after": "ic_column_login",
+	},
+	{
+		"fieldname": "ic_login_notes",
+		"fieldtype": "Small Text",
+		"label": "Login Notes",
+		"insert_after": "ic_customer_password",
+		"description": "Optional — portal URL, OTP hints, or who shared these credentials",
+	},
+	{
 		"fieldname": "ic_section_team",
 		"fieldtype": "Section Break",
 		"label": "Customer Team",
-		"insert_after": "ic_currency_manual",
+		"insert_after": "ic_login_notes",
 		"collapsible": 1,
 		"description": "Any team member listed here can open this customer and see all Customer Data.",
 	},
@@ -659,12 +692,37 @@ QUOTATION_FIELDS = [
 		"insert_after": "ic_workflow_status",
 		"description": "When the customer approves a shared quote, prompt the owner to create a Project or Testing Request (recommended).",
 	},
+	{
+		"fieldname": "ic_section_assignees",
+		"fieldtype": "Section Break",
+		"label": "Assigned Team — one or more people",
+		"insert_after": "ic_post_accept_action",
+		"collapsible": 0,
+	},
+	{
+		"fieldname": "ic_assignees",
+		"fieldtype": "Table",
+		"label": "Assign People",
+		"options": "IC Assignee",
+		"insert_after": "ic_section_assignees",
+		"description": "Add everyone responsible for this quotation. Mark one as Primary.",
+	},
+	{
+		"fieldname": "ic_primary_assignee",
+		"fieldtype": "Link",
+		"label": "Primary Assignee",
+		"options": "User",
+		"insert_after": "ic_assignees",
+		"read_only": 1,
+		"in_standard_filter": 1,
+		"description": "Auto-set from the Primary assignee row.",
+	},
 	# --- Customer share (secondary) ---
 	{
 		"fieldname": "ic_section_share",
 		"fieldtype": "Section Break",
 		"label": "Customer Share Status",
-		"insert_after": "ic_post_accept_action",
+		"insert_after": "ic_primary_assignee",
 		"collapsible": 1,
 		"collapsible_depends_on": "eval:doc.ic_workflow_status!='Draft'",
 	},
@@ -1387,6 +1445,41 @@ EVENT_FIELDS = [
 	},
 ]
 
+TASK_FIELDS = [
+	{
+		"fieldname": "ic_section_assignees",
+		"fieldtype": "Section Break",
+		"label": "Assigned Team — one or more people",
+		"insert_after": "status",
+	},
+	{
+		"fieldname": "ic_assignees",
+		"fieldtype": "Table",
+		"label": "Assign People",
+		"options": "IC Assignee",
+		"insert_after": "ic_section_assignees",
+		"description": "Add everyone on this task. Mark one as Primary. Also syncs to Assign To.",
+	},
+	{
+		"fieldname": "ic_primary_assignee",
+		"fieldtype": "Link",
+		"label": "Primary Assignee",
+		"options": "User",
+		"insert_after": "ic_assignees",
+		"read_only": 1,
+		"in_standard_filter": 1,
+	},
+	{
+		"fieldname": "ic_customer",
+		"fieldtype": "Link",
+		"label": "Customer",
+		"options": "Customer",
+		"insert_after": "ic_primary_assignee",
+		"in_standard_filter": 1,
+		"description": "Optional — link a customer task to the customer record",
+	},
+]
+
 CUSTOM_FIELDS = {
 	"Lead": LEAD_FIELDS,
 	"Customer": CUSTOMER_FIELDS,
@@ -1396,4 +1489,5 @@ CUSTOM_FIELDS = {
 	"Purchase Invoice": PURCHASE_INVOICE_FIELDS,
 	"Asset": ASSET_FIELDS,
 	"Event": EVENT_FIELDS,
+	"Task": TASK_FIELDS,
 }

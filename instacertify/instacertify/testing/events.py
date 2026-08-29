@@ -47,12 +47,57 @@ def _attach_sample_qr(doc):
 		frappe.log_error(frappe.get_traceback(), "Sample QR")
 
 
+def validate_testing_request(doc, method=None):
+	from instacertify.team.assignees import sync_assignees
+
+	sync_assignees(
+		doc,
+		table_field="ic_assignees",
+		primary_field="assigned_person",
+		legacy_seed_field="assigned_person",
+		default_user=doc.owner,
+	)
+
+
 def on_update_testing_request(doc, method=None):
 	if doc.has_value_changed("status"):
 		_sync_sample_status(doc)
 		_notify_status_change(doc)
 	if doc.test_report and doc.status == "Report Available":
 		doc.db_set("status", "Report Uploaded", update_modified=False)
+	# When TR report is newly attached, push to linked samples + customer records
+	if doc.test_report and doc.has_value_changed("test_report"):
+		_propagate_report_to_samples(doc)
+		try:
+			from instacertify.crm.customer_data import ingest_sample_report
+
+			# Reuse ingest with a lightweight shim (TR shares test_report field)
+			ingest_sample_report(doc)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "ingest testing request report")
+
+
+def _propagate_report_to_samples(doc):
+	"""Copy test report onto linked Sample Tracking rows and stamp upload time."""
+	meta = frappe.get_meta("IC Sample Tracking")
+	if not meta.has_field("test_report"):
+		return
+	samples = frappe.get_all(
+		"IC Sample Tracking",
+		filters={"testing_request": doc.name},
+		pluck="name",
+	)
+	stamp = now_datetime()
+	for name in samples:
+		values = {
+			"test_report": doc.test_report,
+			"status": "Report Uploaded",
+		}
+		if meta.has_field("report_uploaded_on"):
+			values["report_uploaded_on"] = stamp
+		if meta.has_field("report_uploaded_by"):
+			values["report_uploaded_by"] = frappe.session.user
+		frappe.db.set_value("IC Sample Tracking", name, values, update_modified=True)
 
 
 def _sync_sample_status(doc):
@@ -133,7 +178,12 @@ def get_sample_custody_summary():
 
 
 def _notify_status_change(doc):
-	users = [doc.assigned_person, doc.owner, "Administrator"]
+	from instacertify.team.assignees import get_assignee_users
+
+	users = get_assignee_users(doc, primary_field="assigned_person") + [
+		doc.owner,
+		"Administrator",
+	]
 	for user in set(filter(None, users)):
 		if not frappe.db.exists("User", user):
 			continue
@@ -156,16 +206,128 @@ def _notify_status_change(doc):
 
 @frappe.whitelist()
 def share_report_with_customer(testing_request: str):
-	doc = frappe.get_doc("IC Testing Request", testing_request)
-	if not doc.test_report:
-		frappe.throw("Please upload the test report first")
-	if not doc.share_token:
-		doc.share_token = secrets.token_urlsafe(24)
-	doc.report_shared_on = now_datetime()
-	doc.status = "Report Shared with Customer"
+	from instacertify.crm.report_share import share_from_testing_request
+
+	payload = share_from_testing_request(testing_request)
+	return {
+		"url": payload.get("share_url"),
+		"access_code": payload.get("access_code"),
+		"share_token": payload.get("share_token"),
+		"name": payload.get("name"),
+	}
+
+
+@frappe.whitelist()
+def upload_sample_report(sample: str, file_url: str):
+	"""Upload / replace test report PDF on Sample Tracking when status is Report Available.
+
+	Stamps date/time, sets status to Report Uploaded, syncs linked Testing Request,
+	and writes the file into Customer records for download.
+	"""
+	from instacertify.utils.files import assert_internal_file
+
+	if not sample:
+		frappe.throw(_("Sample is required"))
+	file_url = assert_internal_file(file_url, _("Test Report PDF"))
+	_assert_pdf_report(file_url)
+
+	doc = frappe.get_doc("IC Sample Tracking", sample)
+	if doc.status not in (
+		"Report Available",
+		"Report Uploaded",
+		"Report Shared with Customer",
+		"Testing in Progress",
+		"At Laboratory",
+	):
+		frappe.throw(
+			_("Set status to Report Available before uploading the test report (current: {0})").format(
+				doc.status
+			)
+		)
+
+	doc.test_report = file_url
+	doc.report_uploaded_on = now_datetime()
+	doc.report_uploaded_by = frappe.session.user
+	doc.status = "Report Uploaded"
 	doc.save(ignore_permissions=True)
-	url = frappe.utils.get_url(f"/ic-report/{doc.share_token}")
-	return {"url": url}
+
+	# Mirror onto linked Testing Request so Share Report still works there
+	if doc.testing_request and frappe.db.exists("IC Testing Request", doc.testing_request):
+		tr = frappe.get_doc("IC Testing Request", doc.testing_request)
+		tr.test_report = file_url
+		if tr.status in (
+			"Report Available",
+			"Testing in Progress",
+			"At Laboratory",
+			"Sample Dispatched to Laboratory",
+		):
+			tr.status = "Report Uploaded"
+		tr.save(ignore_permissions=True)
+
+	# Customer records ingest runs from IC Sample Tracking.on_update
+	doc.reload()
+	return {
+		"name": doc.name,
+		"status": doc.status,
+		"test_report": doc.test_report,
+		"report_uploaded_on": str(doc.report_uploaded_on),
+		"report_uploaded_by": doc.report_uploaded_by,
+		"customer": doc.customer,
+	}
+
+
+@frappe.whitelist()
+def delete_sample_report(sample: str):
+	"""Remove the uploaded test report so a new PDF can be uploaded (status → Report Available)."""
+	doc = frappe.get_doc("IC Sample Tracking", sample)
+	if not doc.test_report:
+		frappe.throw(_("No test report to delete"))
+
+	old_url = doc.test_report
+	doc.test_report = None
+	doc.report_uploaded_on = None
+	doc.report_uploaded_by = None
+	if doc.status in ("Report Uploaded", "Report Shared with Customer"):
+		doc.status = "Report Available"
+	doc.save(ignore_permissions=True)
+
+	if doc.testing_request and frappe.db.exists("IC Testing Request", doc.testing_request):
+		tr = frappe.get_doc("IC Testing Request", doc.testing_request)
+		if (tr.test_report or "") == old_url:
+			tr.test_report = None
+			if tr.status in ("Report Uploaded", "Report Shared with Customer"):
+				tr.status = "Report Available"
+			tr.save(ignore_permissions=True)
+
+	doc.reload()
+	return {
+		"name": doc.name,
+		"status": doc.status,
+		"test_report": doc.test_report,
+		"cleared": old_url,
+	}
+
+
+def _assert_pdf_report(file_url: str):
+	"""Only accept PDF test reports."""
+	name = (file_url or "").split("?")[0].rsplit("/", 1)[-1].lower()
+	if name.endswith(".pdf"):
+		return
+	ftype = frappe.db.get_value("File", {"file_url": file_url}, "file_type") or ""
+	if str(ftype).strip().upper() == "PDF":
+		return
+	frappe.throw(_("Test report must be a PDF file (.pdf)"))
+
+
+@frappe.whitelist()
+def mark_sample_report_available(sample: str):
+	"""Mark sample as Report Available so ops can upload the lab report PDF."""
+	doc = frappe.get_doc("IC Sample Tracking", sample)
+	if doc.status == "Discarded":
+		frappe.throw(_("Cannot mark a discarded sample as Report Available"))
+	doc.status = "Report Available"
+	doc.save(ignore_permissions=True)
+	return doc.as_dict()
 
 
 @frappe.whitelist()
@@ -233,7 +395,14 @@ def create_testing_requests_from_quotation(quotation: str, project: str | None =
 			existing.append(found)
 			continue
 
+		from instacertify.team.assignees import append_assignees_from_users, get_assignee_users
+
 		title = f"{row.test_name} – {row.product_name or qt.party_name}"
+		assignees = get_assignee_users(qt, primary_field="ic_primary_assignee")
+		if not assignees:
+			seed = qt.get("ic_assigned_salesperson") or qt.owner
+			if seed:
+				assignees = [seed]
 		doc = frappe.get_doc(
 			{
 				"doctype": "IC Testing Request",
@@ -251,11 +420,12 @@ def create_testing_requests_from_quotation(quotation: str, project: str | None =
 				"suggested_selling_price": row.get("suggested_selling_price")
 				or row.get("per_unit_charges"),
 				"testing_timeline": row.testing_timeline,
-				"assigned_person": qt.get("ic_assigned_salesperson") or qt.owner,
+				"assigned_person": (assignees[0] if assignees else None),
 				"status": "Testing Request Created",
 				"priority": "Medium",
 			}
 		)
+		append_assignees_from_users(doc, assignees)
 		doc.insert(ignore_permissions=True)
 		created.append(doc.name)
 

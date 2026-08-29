@@ -21,6 +21,14 @@ def validate_quotation(doc, method=None):
 
 	apply_quotation_series(doc)
 	_apply_quotation_defaults(doc)
+	from instacertify.team.assignees import sync_assignees
+
+	sync_assignees(
+		doc,
+		table_field="ic_assignees",
+		primary_field="ic_primary_assignee",
+		default_user=doc.owner,
+	)
 	if doc.quotation_to == "Customer" and doc.party_name:
 		from instacertify.accounting.billing import apply_transaction_billing_defaults
 
@@ -243,15 +251,18 @@ def _template_field_map(tmpl) -> dict:
 def _template_cost_rows(tmpl) -> list[dict]:
 	rows = []
 	for row in tmpl.cost_items or []:
-		is_pass = cint(row.is_passthrough) or row.payment_destination in (
-			"Payable Directly to Government",
-			"Payable Directly to Laboratory",
-			"Payable to Third Party",
-		)
-		treatment = (
-			row.get("revenue_treatment")
-			or ("Do Not Count as Revenue" if is_pass else "Counted Revenue")
-		)
+		treatment = (row.get("revenue_treatment") or "").strip()
+		if treatment == "Do Not Count as Revenue":
+			is_pass = True
+		elif treatment == "Counted Revenue":
+			is_pass = False
+		else:
+			is_pass = cint(row.is_passthrough) or row.payment_destination in (
+				"Payable Directly to Government",
+				"Payable Directly to Laboratory",
+				"Payable to Third Party",
+			)
+			treatment = "Do Not Count as Revenue" if is_pass else "Counted Revenue"
 		rows.append(
 			{
 				"cost_component": row.cost_component,
@@ -337,6 +348,141 @@ def duplicate_quotation_template(template: str, new_name: str):
 	doc.template_name = name
 	doc.insert(ignore_permissions=True)
 	return {"template": doc.name}
+
+
+_PREVIEW_LEAD_NAME = "Template Preview (Internal)"
+_PREVIEW_TITLE_PREFIX = "[Template Preview]"
+
+
+def _ensure_preview_party() -> tuple[str, str]:
+	"""Return (quotation_to, party_name) for template Print/PDF previews."""
+	lead = frappe.db.get_value("Lead", {"lead_name": _PREVIEW_LEAD_NAME}, "name")
+	if not lead:
+		doc = frappe.get_doc(
+			{
+				"doctype": "Lead",
+				"lead_name": _PREVIEW_LEAD_NAME,
+				"company_name": _PREVIEW_LEAD_NAME,
+				"status": "Lead",
+				"ic_party_name": _PREVIEW_LEAD_NAME,
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		lead = doc.name
+	return "Lead", lead
+
+
+def _preview_item_code() -> str:
+	item = (
+		frappe.db.get_value("Item", {"item_code": "CONSULTING-SVC", "disabled": 0}, "name")
+		or frappe.db.get_value("Item", {"disabled": 0, "is_sales_item": 1}, "name")
+		or frappe.db.get_value("Item", {"disabled": 0}, "name")
+	)
+	if not item:
+		frappe.throw(_("Create at least one sales Item before previewing a quote template."))
+	return item
+
+
+def _preview_title(template_name: str) -> str:
+	base = f"{_PREVIEW_TITLE_PREFIX} {template_name or 'Quote'}".strip()
+	return base[:140]
+
+
+@frappe.whitelist()
+def ensure_template_preview_quotation(template: str):
+	"""Create or refresh a draft Quotation used to Print / PDF-test a template."""
+	if not template or not frappe.db.exists("IC Quotation Template", template):
+		frappe.throw(_("Quote format not found"))
+	frappe.has_permission("IC Quotation Template", "read", throw=True)
+
+	tmpl = frappe.get_doc("IC Quotation Template", template)
+	qtype = tmpl.quotation_type or "Consulting"
+	if qtype == "Service":
+		qtype = "Consulting"
+	title = _preview_title(tmpl.template_name)
+
+	existing = frappe.db.get_value(
+		"Quotation",
+		{
+			"ic_quotation_template": tmpl.name,
+			"docstatus": 0,
+			"title": title,
+		},
+		"name",
+	)
+	# Fallback: any draft preview for this template (title prefix)
+	if not existing:
+		existing = frappe.db.get_value(
+			"Quotation",
+			{
+				"ic_quotation_template": tmpl.name,
+				"docstatus": 0,
+				"title": ["like", f"{_PREVIEW_TITLE_PREFIX}%"],
+			},
+			"name",
+			order_by="modified desc",
+		)
+
+	from instacertify.utils.pdf import quotation_print_format
+
+	if existing:
+		apply_quotation_template(existing, tmpl.name)
+		qt = frappe.get_doc("Quotation", existing)
+		qt.db_set("title", title, update_modified=False)
+		fmt = quotation_print_format(qt) or "Instacertify Quotation"
+		return {
+			"quotation": qt.name,
+			"print_format": fmt,
+			"template": tmpl.name,
+			"template_name": tmpl.template_name,
+			"message": _("Preview quotation refreshed from template."),
+		}
+
+	quotation_to, party = _ensure_preview_party()
+	company = (
+		frappe.db.get_single_value("Global Defaults", "default_company")
+		or frappe.db.get_value("Company", {}, "name")
+	)
+	if not company:
+		frappe.throw(_("Set a default Company before previewing templates."))
+
+	item_code = _preview_item_code()
+	default_rate = 0.0
+	for row in tmpl.cost_items or []:
+		treatment = (row.get("revenue_treatment") or "").strip()
+		is_pass = treatment == "Do Not Count as Revenue" or cint(row.is_passthrough)
+		if not is_pass and float(row.amount or 0) > 0:
+			default_rate = float(row.amount or 0)
+			break
+	if not default_rate and tmpl.cost_items:
+		default_rate = float(tmpl.cost_items[0].amount or 0)
+
+	qt = frappe.get_doc(
+		{
+			"doctype": "Quotation",
+			"title": title,
+			"quotation_to": quotation_to,
+			"party_name": party,
+			"company": company,
+			"transaction_date": frappe.utils.today(),
+			"order_type": "Sales",
+			"ic_quotation_type": qtype,
+			"ic_quotation_template": tmpl.name,
+			"items": [{"item_code": item_code, "qty": 1, "rate": default_rate or 1}],
+		}
+	)
+	qt.insert(ignore_permissions=True)
+	apply_quotation_template(qt.name, tmpl.name)
+	qt.reload()
+	qt.db_set("title", title, update_modified=False)
+	fmt = quotation_print_format(qt) or "Instacertify Quotation"
+	return {
+		"quotation": qt.name,
+		"print_format": fmt,
+		"template": tmpl.name,
+		"template_name": tmpl.template_name,
+		"message": _("Preview quotation created from template."),
+	}
 
 
 @frappe.whitelist()
@@ -881,18 +1027,22 @@ def start_project_from_quotation(quotation: str):
 			"ic_products_services": "\n".join(products),
 			"ic_deliverables": frappe.utils.strip_html(qt.ic_deliverables or "")[:500],
 			"ic_testing_requirements": "\n".join(testing),
-			"ic_assigned_employee": qt.ic_assigned_salesperson
-			if hasattr(qt, "ic_assigned_salesperson") and qt.ic_assigned_salesperson
-			else qt.owner,
+			"ic_assigned_employee": (
+				qt.get("ic_primary_assignee")
+				or getattr(qt, "ic_assigned_salesperson", None)
+				or qt.owner
+			),
 		}
 	)
-	# Seed team: salesperson + ops manager + owner
+	# Seed team: quotation assignees first, then legacy salesperson / ops / owner
+	from instacertify.team.assignees import get_assignee_users
+
 	team_users = []
-	for u in (
+	for u in get_assignee_users(qt, primary_field="ic_primary_assignee") + [
 		getattr(qt, "ic_assigned_salesperson", None),
 		getattr(qt, "ic_assigned_operations_manager", None),
 		qt.owner,
-	):
+	]:
 		if u and u not in team_users and frappe.db.exists("User", u):
 			team_users.append(u)
 	for i, user in enumerate(team_users):
@@ -907,21 +1057,26 @@ def start_project_from_quotation(quotation: str):
 	# Map estimated end from timeline if possible
 	project.insert(ignore_permissions=True)
 
-	# Create starter tasks
+	# Create starter tasks — assign the same people
+	from instacertify.team.assignees import append_assignees_from_users
+
 	for subject in (
 		"Collect customer documents",
 		"Review technical documents",
 		"Prepare application package",
 	):
-		frappe.get_doc(
+		task = frappe.get_doc(
 			{
 				"doctype": "Task",
 				"subject": subject,
 				"project": project.name,
 				"status": "Open",
 				"priority": "Medium",
+				"ic_customer": customer,
 			}
-		).insert(ignore_permissions=True)
+		)
+		append_assignees_from_users(task, team_users)
+		task.insert(ignore_permissions=True)
 
 	_notify_project_assigned(project)
 	_advance_linked_lead(qt, "Project / Case")
@@ -1278,12 +1433,21 @@ def _notify_share(doc):
 	_send_notification("Quotation Shared", doc, recipients)
 
 
+def _quotation_notify_recipients(doc) -> list[str]:
+	from instacertify.team.assignees import get_assignee_users
+
+	return get_assignee_users(doc, primary_field="ic_primary_assignee") + [
+		doc.owner,
+		"Administrator",
+		doc.get("ic_assigned_salesperson"),
+	]
+
+
 def _notify_acceptance(doc):
-	recipients = [doc.owner, "Administrator", doc.get("ic_assigned_salesperson")]
 	_send_notification(
 		_("Quotation Accepted — create Project or Testing Request"),
 		doc,
-		recipients,
+		_quotation_notify_recipients(doc),
 		body=_(
 			"Customer approved {0}. Open the quotation and create a Project and/or Testing Request to continue."
 		).format(doc.name),
@@ -1292,18 +1456,18 @@ def _notify_acceptance(doc):
 
 
 def _notify_changes(doc):
-	_send_notification("Quotation Changes Requested", doc, [doc.owner, "Administrator"])
+	_send_notification("Quotation Changes Requested", doc, _quotation_notify_recipients(doc))
 
 
 def _notify_rejection(doc):
-	_send_notification("Quotation Rejected by Customer", doc, [doc.owner, "Administrator"])
+	_send_notification("Quotation Rejected by Customer", doc, _quotation_notify_recipients(doc))
 
 
 def _notify_revision_opened(doc):
 	_send_notification(
 		f"Quotation opened for revision (Rev {doc.ic_revision_number})",
 		doc,
-		[doc.owner, "Administrator"],
+		_quotation_notify_recipients(doc),
 	)
 
 

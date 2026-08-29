@@ -428,7 +428,7 @@ instacertify.open_quote_format_upload = function (opts) {
 	instacertify.add_file_manager_hint(d, "file");
 };
 
-/** Upload dialog → create/update IC Laboratory with name + scope file. */
+/** Upload dialog → create/update IC Laboratory with name + scope file / spreadsheet. */
 instacertify.open_laboratory_upload = function (opts) {
 	opts = opts || {};
 	const d = new frappe.ui.Dialog({
@@ -442,48 +442,96 @@ instacertify.open_laboratory_upload = function (opts) {
 				default: opts.laboratory_name || "",
 			},
 			{
+				fieldname: "status",
+				fieldtype: "Select",
+				label: __("Status"),
+				options: "Active\nInactive",
+				default: opts.status || "Active",
+			},
+			{
 				fieldname: "location",
 				fieldtype: "Data",
 				label: __("Location"),
 				default: opts.location || "",
 			},
 			{
+				fieldname: "city",
+				fieldtype: "Data",
+				label: __("City"),
+				default: opts.city || "",
+			},
+			{
+				fieldname: "address",
+				fieldtype: "Small Text",
+				label: __("Address"),
+				default: opts.address || "",
+			},
+			{
 				fieldname: "accreditation_scope",
-				fieldtype: "Text",
+				fieldtype: "Small Text",
 				label: __("Accreditation Scope (text)"),
-				description: __("Describe tests / standards covered"),
+				description: __("Describe tests / standards covered — editable later on the form"),
+				default: opts.accreditation_scope || "",
+			},
+			{
+				fieldname: "accreditation_details",
+				fieldtype: "Small Text",
+				label: __("Accreditation Details"),
+				default: opts.accreditation_details || "",
 			},
 			{
 				fieldname: "scope_file",
 				fieldtype: "Attach",
-				label: __("Scope Sheet / PDF"),
+				label: __("Scope Sheet / PDF / CSV / Excel"),
 				description: __(
-					"Select from My Device or File Library (internal drive). No web / Drive URLs."
+					"PDF attaches as scope sheet. CSV/Excel also fills the pricing table (test rows)."
 				),
 				options: instacertify.attach_options,
+			},
+			{
+				fieldname: "import_scopes_from_file",
+				fieldtype: "Check",
+				label: __("Import scope rows from CSV/Excel"),
+				default: 1,
 			},
 			{
 				fieldname: "contact_person",
 				fieldtype: "Data",
 				label: __("Contact Person"),
+				default: opts.contact_person || "",
 			},
 			{
 				fieldname: "email",
 				fieldtype: "Data",
 				label: __("Email"),
 				options: "Email",
+				default: opts.email || "",
 			},
 			{
 				fieldname: "phone",
 				fieldtype: "Data",
 				label: __("Phone"),
 				options: "Phone",
+				default: opts.phone || "",
+			},
+			{
+				fieldname: "website",
+				fieldtype: "Data",
+				label: __("Website"),
+				options: "URL",
+				default: opts.website || "",
 			},
 		],
 		primary_action_label: __("Save to Library"),
 		primary_action(values) {
+			// Attach fields can lag — read from the control directly
+			const scope_file =
+				(d.get_value && d.get_value("scope_file")) ||
+				(values && values.scope_file) ||
+				"";
+			values = Object.assign({}, values, { scope_file });
 			if (!values.accreditation_scope && !values.scope_file) {
-				frappe.msgprint(__("Add scope text or upload a scope file."));
+				frappe.msgprint(__("Add scope text or upload a scope file (PDF / CSV / Excel)."));
 				return;
 			}
 			frappe.call({
@@ -493,52 +541,85 @@ instacertify.open_laboratory_upload = function (opts) {
 				freeze_message: __("Saving laboratory…"),
 				callback(r) {
 					d.hide();
-					frappe.show_alert({
-						message: __("Laboratory saved: {0}", [r.message.laboratory_name]),
-						indicator: "green",
-					});
-					if (opts.on_done) opts.on_done(r.message.laboratory);
-					else frappe.set_route("Form", "IC Laboratory", r.message.laboratory);
+					const m = r.message || {};
+					let msg = __("Laboratory saved: {0}", [m.laboratory_name]);
+					if (m.scopes_imported || m.scopes_updated) {
+						msg +=
+							" — " +
+							__("scopes +{0} / updated {1}", [
+								m.scopes_imported || 0,
+								m.scopes_updated || 0,
+							]);
+					}
+					frappe.show_alert({ message: msg, indicator: "green" });
+					if (opts.on_done) opts.on_done(m.laboratory);
+					else frappe.set_route("Form", "IC Laboratory", m.laboratory);
 				},
 			});
 		},
 	});
+	d.$wrapper.find(".modal-footer").prepend(
+		`<span style="margin-right:auto;display:flex;gap:6px;">
+			<button type="button" class="btn btn-default btn-sm ic-dl-lab-xlsx">${__("Excel Template")}</button>
+			<button type="button" class="btn btn-default btn-sm ic-dl-lab-csv">${__("CSV Template")}</button>
+		</span>`
+	);
+	const dl = (fmt) => {
+		frappe.call({
+			method: "instacertify.setup.library_upload.download_lab_scope_template",
+			args: { fmt },
+			callback(r) {
+				const m = r.message || {};
+				if (m.file_url) window.open(m.file_url, "_blank");
+			},
+		});
+	};
+	d.$wrapper.find(".ic-dl-lab-xlsx").on("click", () => dl("xlsx"));
+	d.$wrapper.find(".ic-dl-lab-csv").on("click", () => dl("csv"));
 	d.show();
 	instacertify.add_file_manager_hint(d, "scope_file");
 };
 
 instacertify.open_lab_scope_csv_import = function (frm) {
 	const d = new frappe.ui.Dialog({
-		title: __("Import Laboratory Scope CSV"),
+		title: __("Import Laboratory Scope (CSV / Excel)"),
 		fields: [
 			{
 				fieldname: "help",
 				fieldtype: "HTML",
 				options: `<p class="text-muted">${__(
-					"CSV headers: test_name, applicable_standard, category, selling_price, purchase_price"
+					"Headers: test_name, applicable_standard, category, selling_price, purchase_price, currency, is_active. Matching test + standard updates the row."
 				)}</p>`,
 			},
 			{
 				fieldname: "file",
 				fieldtype: "Attach",
-				label: __("CSV File"),
+				label: __("CSV or Excel File"),
 				reqd: 1,
-				description: __(
-					"Select CSV from My Device or File Library (internal drive)."
-				),
+				description: __("Select from My Device or File Library (internal drive)."),
 				options: instacertify.attach_options,
 			},
 		],
 		primary_action_label: __("Import"),
 		primary_action(values) {
+			const file_url =
+				(d.get_value && d.get_value("file")) || (values && values.file) || "";
+			if (!file_url) {
+				frappe.msgprint(__("Please attach a CSV or Excel file first."));
+				return;
+			}
 			frappe.call({
 				method: "instacertify.setup.library_upload.import_laboratory_scopes_csv",
-				args: { laboratory: frm.doc.name, file_url: values.file },
+				args: { laboratory: frm.doc.name, file_url },
 				freeze: true,
 				callback(r) {
 					d.hide();
+					const m = r.message || {};
 					frappe.show_alert({
-						message: __("Added {0} scope rows", [r.message.added]),
+						message: __("Scopes: +{0} added, {1} updated", [
+							m.added || 0,
+							m.updated || 0,
+						]),
 						indicator: "green",
 					});
 					frm.reload_doc();
@@ -547,17 +628,23 @@ instacertify.open_lab_scope_csv_import = function (frm) {
 		},
 	});
 	d.$wrapper.find(".modal-footer").prepend(
-		`<button type="button" class="btn btn-default btn-sm ic-dl-scope-tpl" style="margin-right:auto;">${__("Download CSV Template")}</button>`
+		`<span style="margin-right:auto;display:flex;gap:6px;">
+			<button type="button" class="btn btn-default btn-sm ic-dl-scope-xlsx">${__("Excel Template")}</button>
+			<button type="button" class="btn btn-default btn-sm ic-dl-scope-csv">${__("CSV Template")}</button>
+		</span>`
 	);
-	d.$wrapper.find(".ic-dl-scope-tpl").on("click", () => {
+	const dl = (fmt) => {
 		frappe.call({
 			method: "instacertify.setup.library_upload.download_lab_scope_template",
+			args: { fmt },
 			callback(r) {
 				const m = r.message || {};
 				if (m.file_url) window.open(m.file_url, "_blank");
 			},
 		});
-	});
+	};
+	d.$wrapper.find(".ic-dl-scope-xlsx").on("click", () => dl("xlsx"));
+	d.$wrapper.find(".ic-dl-scope-csv").on("click", () => dl("csv"));
 	d.show();
 	instacertify.add_file_manager_hint(d, "file");
 };
@@ -1277,6 +1364,11 @@ $(document).on("page-change", function () {
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
 		instacertify.apply_quotation_naming_series(frm);
+		if (frm.fields_dict.ic_assignees) {
+			frm.add_custom_button(__("Assign Me"), () => {
+				instacertify.add_me_as_assignee(frm, "ic_assignees");
+			}, __("Actions"));
+		}
 		frm.add_custom_button(__("Upload Quote Format"), () => {
 			instacertify.open_quote_format_upload({
 				quotation_type: frm.doc.ic_quotation_type || "Consulting",
@@ -1319,7 +1411,7 @@ frappe.ui.form.on("Quotation", {
 						frappe.msgprint({
 							title: __("Customer Share Link"),
 							message: `
-								<p>${__("Customer can open this link to read, download PDF, approve, reject, or ask for revision:")}</p>
+								<p>${__("Customer can open this link to read, download PDF, approve, or ask for revision:")}</p>
 								<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
 								<p class="text-muted">${__("Copy and send this open link to the customer (email / WhatsApp).")}</p>
 							`,
@@ -1334,8 +1426,19 @@ frappe.ui.form.on("Quotation", {
 				});
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Print / PDF Options"), () => {
+				// Opens Frappe print view: format picker, letter head, page options, PDF
+				frm.print_doc();
+			}, __("Actions"));
+
 			frm.add_custom_button(__("Download PDF"), () => {
-				const fmt = frm.meta.default_print_format || "Instacertify Quotation";
+				const fmt =
+					frm.meta.default_print_format
+					|| (frm.doc.ic_quotation_type === "Testing"
+						? "Instacertify Testing Quotation"
+						: frm.doc.ic_quotation_type
+							? "Instacertify Consulting Quotation"
+							: "Instacertify Quotation");
 				const url = frappe.urllib.get_full_url(
 					"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
 						$.param({ name: frm.doc.name, print_format: fmt })
@@ -2546,11 +2649,18 @@ function ic_render_customer_files(frm, d) {
 			const date = (f.creation || "").toString().slice(0, 10) || "—";
 			const url = frappe.utils.escape_html(f.file_url || "#");
 			const label = ic_esc(f.label || f.file_name || f.name);
-			return `<tr class="ic-drive-row" data-cat="${frappe.utils.escape_html(cat)}">
+			const shareCell = ic_drive_share_cell(f);
+			return `<tr class="ic-drive-row" data-cat="${frappe.utils.escape_html(cat)}"
+				data-file-url="${frappe.utils.escape_html(f.file_url || "")}"
+				data-file-name="${frappe.utils.escape_html(f.file_name || f.label || "")}"
+				data-source-doctype="${frappe.utils.escape_html(srcDt)}"
+				data-source-name="${frappe.utils.escape_html(srcName)}"
+				data-title="${frappe.utils.escape_html(f.label || f.file_name || "")}">
 				<td class="ic-drive-file"><a href="${url}" target="_blank" rel="noopener">${label}</a></td>
 				<td><span class="ic-drive-cat">${ic_esc(cat)}</span></td>
 				<td>${srcLink}</td>
 				<td>${ic_esc(date)}</td>
+				<td class="ic-drive-share">${shareCell}</td>
 			</tr>`;
 		})
 		.join("");
@@ -2558,7 +2668,7 @@ function ic_render_customer_files(frm, d) {
 	const table = files.length
 		? `<div class="ic-related-table-wrap ic-drive-table-wrap"><table class="ic-related-table ic-drive-table">
 			<thead><tr>
-				<th>${__("File")}</th><th>${__("Folder")}</th><th>${__("Source")}</th><th>${__("Date")}</th>
+				<th>${__("File")}</th><th>${__("Folder")}</th><th>${__("Source")}</th><th>${__("Date")}</th><th>${__("Share Report")}</th>
 			</tr></thead>
 			<tbody>${rows}</tbody>
 		</table></div>`
@@ -2584,6 +2694,27 @@ function ic_render_customer_files(frm, d) {
 			${table}
 		</div>
 	`;
+}
+
+function ic_drive_share_cell(f) {
+	if (!f.shareable) {
+		return `<span class="text-muted">—</span>`;
+	}
+	if (f.share_url && f.access_code) {
+		return `
+			<div class="ic-report-share-meta">
+				<button type="button" class="btn btn-xs btn-default ic-copy-share-link" data-url="${frappe.utils.escape_html(
+					f.share_url
+				)}">${__("Copy link")}</button>
+				<span class="ic-report-code" title="${__("Customer access code")}">${__("Code")}: <b>${ic_esc(
+			f.access_code
+		)}</b></span>
+				<button type="button" class="btn btn-xs btn-link ic-reshare-report">${__("New code")}</button>
+			</div>`;
+	}
+	return `<button type="button" class="btn btn-xs btn-primary ic-share-report">${__(
+		"Share report"
+	)}</button>`;
 }
 
 function ic_bind_customer_file_actions(frm) {
@@ -2656,6 +2787,81 @@ function ic_bind_customer_file_actions(frm) {
 				});
 			},
 		});
+	});
+
+	const share_report = ($row, rotate) => {
+		const file_url = $row.data("file-url");
+		if (!file_url) {
+			frappe.msgprint(__("No file URL on this row"));
+			return;
+		}
+		frappe.call({
+			method: "instacertify.crm.report_share.create_customer_report_share",
+			args: {
+				customer: frm.doc.name,
+				file_url,
+				file_name: $row.data("file-name") || "",
+				source_doctype: $row.data("source-doctype") || "",
+				source_name: $row.data("source-name") || "",
+				title: $row.data("title") || "",
+				rotate_code: rotate ? 1 : 0,
+			},
+			freeze: true,
+			callback(r) {
+				const m = r.message || {};
+				frappe.msgprint({
+					title: __("Report shared with customer"),
+					indicator: "green",
+					message: `
+						<p>${__("Send both the link and the 8-digit code to the customer.")}</p>
+						<p><b>${__("Share link")}</b><br>
+							<a href="${frappe.utils.escape_html(m.share_url || "#")}" target="_blank" rel="noopener">${frappe.utils.escape_html(
+						m.share_url || ""
+					)}</a>
+							<button class="btn btn-xs btn-default ic-msg-copy-link" style="margin-left:8px">${__("Copy")}</button>
+						</p>
+						<p><b>${__("Access code")}</b>: <code style="font-size:1.2em;letter-spacing:0.12em">${frappe.utils.escape_html(
+							m.access_code || ""
+						)}</code>
+							<button class="btn btn-xs btn-default ic-msg-copy-code" style="margin-left:8px">${__("Copy")}</button>
+						</p>
+						<p class="text-muted">${__(
+							"The customer opens the link, enters this code, then can view or download the PDF."
+						)}</p>`,
+				});
+				setTimeout(() => {
+					$(".ic-msg-copy-link")
+						.off("click")
+						.on("click", () => {
+							if (m.share_url && navigator.clipboard) navigator.clipboard.writeText(m.share_url);
+							frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+						});
+					$(".ic-msg-copy-code")
+						.off("click")
+						.on("click", () => {
+							if (m.access_code && navigator.clipboard) navigator.clipboard.writeText(m.access_code);
+							frappe.show_alert({ message: __("Code copied"), indicator: "green" });
+						});
+				}, 50);
+				instacertify.load_customer_related(frm);
+			},
+		});
+	};
+
+	$wrap.find(".ic-share-report").off("click").on("click", function () {
+		share_report($(this).closest("tr"), false);
+	});
+	$wrap.find(".ic-reshare-report").off("click").on("click", function () {
+		frappe.confirm(__("Generate a new 8-digit code and share link for this report?"), () => {
+			share_report($(this).closest("tr"), true);
+		});
+	});
+	$wrap.find(".ic-copy-share-link").off("click").on("click", function () {
+		const url = $(this).data("url");
+		if (url && navigator.clipboard) {
+			navigator.clipboard.writeText(url);
+			frappe.show_alert({ message: __("Share link copied"), indicator: "green" });
+		}
 	});
 }
 
@@ -3024,12 +3230,63 @@ frappe.ui.form.on("Project Team Member", {
 	},
 });
 
+/** Shared multi-person assignee helpers (Quotation / Testing / Task). */
+instacertify.add_me_as_assignee = function (frm, tableField) {
+	const me = frappe.session.user;
+	const rows = frm.doc[tableField] || [];
+	if (rows.some((r) => r.user === me)) {
+		frappe.show_alert({ message: __("You are already assigned"), indicator: "blue" });
+		return;
+	}
+	frm.add_child(tableField, {
+		user: me,
+		full_name: (frappe.boot.user && frappe.boot.user.full_name) || me,
+		role: rows.length ? "Member" : "Primary",
+	});
+	frm.refresh_field(tableField);
+	frappe.show_alert({ message: __("Added — save to confirm"), indicator: "green" });
+};
+
+frappe.ui.form.on("IC Assignee", {
+	user(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (!row.user) return;
+		frappe.db.get_value("User", row.user, "full_name", (r) => {
+			if (r && r.full_name) frappe.model.set_value(cdt, cdn, "full_name", r.full_name);
+		});
+	},
+	role(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (row.role !== "Primary") return;
+		(frm.doc.ic_assignees || []).forEach((r) => {
+			if (r.name !== cdn && r.role === "Primary") {
+				frappe.model.set_value(r.doctype, r.name, "role", "Member");
+			}
+		});
+	},
+});
+
+frappe.ui.form.on("Task", {
+	refresh(frm) {
+		if (frm.fields_dict.ic_assignees) {
+			frm.add_custom_button(__("Assign Me"), () => {
+				instacertify.add_me_as_assignee(frm, "ic_assignees");
+			}, __("Actions"));
+		}
+	},
+});
+
 frappe.ui.form.on("IC Testing Request", {
 	refresh(frm) {
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
 		instacertify.load_testing_request_standard_options(frm);
 		if (frm.doc.applicable_standard) {
 			instacertify.load_testing_request_lab_offers(frm);
+		}
+		if (frm.fields_dict.ic_assignees) {
+			frm.add_custom_button(__("Assign Me"), () => {
+				instacertify.add_me_as_assignee(frm, "ic_assignees");
+			}, __("Actions"));
 		}
 		if (frm.doc.laboratory) {
 			instacertify.load_testing_request_scope_options(frm);
@@ -3045,7 +3302,21 @@ frappe.ui.form.on("IC Testing Request", {
 					method: "instacertify.testing.events.share_report_with_customer",
 					args: { testing_request: frm.doc.name },
 					callback(r) {
-						frappe.msgprint(`Report link: <a href="${r.message.url}" target="_blank">${r.message.url}</a>`);
+						const m = r.message || {};
+						frappe.msgprint({
+							title: __("Report shared with customer"),
+							indicator: "green",
+							message: `
+								<p>${__("Send both the link and the 8-digit code to the customer.")}</p>
+								<p><b>${__("Share link")}</b><br>
+									<a href="${frappe.utils.escape_html(m.url || "#")}" target="_blank" rel="noopener">${frappe.utils.escape_html(
+								m.url || ""
+							)}</a>
+								</p>
+								<p><b>${__("Access code")}</b>: <code style="font-size:1.2em;letter-spacing:0.12em">${frappe.utils.escape_html(
+									m.access_code || ""
+								)}</code></p>`,
+						});
 						frm.reload_doc();
 					},
 				});
@@ -3341,22 +3612,60 @@ frappe.ui.form.on("IC Laboratory", {
 		if (frm.is_new()) {
 			frm.set_intro(
 				__(
-					"Laboratory Library — enter Laboratory Name, Accreditation Scope, and upload Scope Sheet / Scope PDF. Add each accredited test with buying & selling prices."
+					"Laboratory Library — enter Laboratory Name, Accreditation Scope, and upload Scope Sheet / Scope PDF / CSV / Excel. Add each accredited test with buying & selling prices — all columns are editable."
 				),
 				"blue"
 			);
 		} else {
 			frm.set_intro(
 				__(
-					"Laboratory Library — buy lab services via Purchase Invoice (non-stock). Upload scope files and import CSV scope rows from Library menu."
+					"Edit any field below anytime. Upload CSV/Excel from Library to fill scope rows, or edit the pricing table directly."
 				),
 				"blue"
 			);
 		}
+		// Ensure master + attach fields stay editable (never locked after upload)
+		[
+			"laboratory_name",
+			"status",
+			"location",
+			"city",
+			"state",
+			"country",
+			"address",
+			"contact_person",
+			"email",
+			"phone",
+			"website",
+			"accreditation_details",
+			"accreditation_scope",
+			"scope_sheet",
+			"accreditation_certificate",
+			"accreditation_scope_pdf",
+			"remarks",
+			"test_scopes",
+			"supplier",
+		].forEach((f) => {
+			if (frm.fields_dict[f]) frm.set_df_property(f, "read_only", 0);
+		});
 		frm.add_custom_button(__("Upload Lab / Scope"), () => {
+			const strip = (v) =>
+				$("<div>")
+					.html(v || "")
+					.text()
+					.trim();
 			instacertify.open_laboratory_upload({
 				laboratory_name: frm.doc.laboratory_name,
 				location: frm.doc.location,
+				city: frm.doc.city,
+				address: frm.doc.address,
+				status: frm.doc.status,
+				accreditation_scope: strip(frm.doc.accreditation_scope),
+				accreditation_details: strip(frm.doc.accreditation_details),
+				contact_person: frm.doc.contact_person,
+				email: frm.doc.email,
+				phone: frm.doc.phone,
+				website: frm.doc.website,
 				on_done(name) {
 					if (name === frm.doc.name) frm.reload_doc();
 					else frappe.set_route("Form", "IC Laboratory", name);
@@ -3364,7 +3673,7 @@ frappe.ui.form.on("IC Laboratory", {
 			});
 		}, __("Library"));
 		if (!frm.is_new()) {
-			frm.add_custom_button(__("Import Scope CSV"), () => {
+			frm.add_custom_button(__("Import Scope CSV / Excel"), () => {
 				instacertify.open_lab_scope_csv_import(frm);
 			}, __("Library"));
 		}
@@ -3431,13 +3740,21 @@ frappe.ui.form.on("IC Laboratory", {
 frappe.ui.form.on("IC Laboratory Test Scope", {
 	purchase_price(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
-		row.margin = (row.selling_price || 0) - (row.purchase_price || 0);
-		frm.refresh_field("test_scopes");
+		frappe.model.set_value(
+			cdt,
+			cdn,
+			"margin",
+			(flt(row.selling_price) || 0) - (flt(row.purchase_price) || 0)
+		);
 	},
 	selling_price(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
-		row.margin = (row.selling_price || 0) - (row.purchase_price || 0);
-		frm.refresh_field("test_scopes");
+		frappe.model.set_value(
+			cdt,
+			cdn,
+			"margin",
+			(flt(row.selling_price) || 0) - (flt(row.purchase_price) || 0)
+		);
 	},
 });
 
@@ -3997,15 +4314,26 @@ frappe.listview_settings["IC Laboratory"] = {
 		listview.page.add_inner_button(__("Upload Lab / Scope"), () => {
 			instacertify.open_laboratory_upload();
 		});
-		listview.page.add_inner_button(__("Download Scope CSV Template"), () => {
+		listview.page.add_inner_button(__("Excel Template"), () => {
 			frappe.call({
 				method: "instacertify.setup.library_upload.download_lab_scope_template",
+				args: { fmt: "xlsx" },
 				callback(r) {
 					const m = r.message || {};
 					if (m.file_url) window.open(m.file_url, "_blank");
 				},
 			});
-		});
+		}, __("Templates"));
+		listview.page.add_inner_button(__("CSV Template"), () => {
+			frappe.call({
+				method: "instacertify.setup.library_upload.download_lab_scope_template",
+				args: { fmt: "csv" },
+				callback(r) {
+					const m = r.message || {};
+					if (m.file_url) window.open(m.file_url, "_blank");
+				},
+			});
+		}, __("Templates"));
 	},
 };
 
@@ -4051,8 +4379,14 @@ frappe.listview_settings["IC Sample Tracking"] = {
 			Discarded: "red",
 			"Sample Awaited": "blue",
 			"Sample Received": "green",
+			"Report Available": "yellow",
+			"Report Uploaded": "green",
+			"Report Shared with Customer": "blue",
 		};
-		return [__(loc || "Unset"), colors[loc] || "gray", "sample_location,=," + (doc.sample_location || "")];
+		const label = doc.status === "Report Available" || doc.status === "Report Uploaded" || doc.status === "Report Shared with Customer"
+			? doc.status
+			: (doc.sample_location || doc.status || "");
+		return [__(label || "Unset"), colors[label] || colors[loc] || "gray", "status,=," + (doc.status || "")];
 	},
 	onload(listview) {
 		const locs = [
@@ -4086,6 +4420,12 @@ frappe.ui.form.on("IC Sample Tracking", {
 		};
 		if (map[frm.doc.status] && frm.doc.sample_location !== map[frm.doc.status]) {
 			frm.set_value("sample_location", map[frm.doc.status]);
+		}
+		if (frm.doc.status === "Report Available" && !frm.doc.test_report && !frm.is_new()) {
+			frappe.show_alert({
+				message: __("Upload the test report PDF from the Report section"),
+				indicator: "orange",
+			});
 		}
 	},
 	sample_location(frm) {
@@ -4152,8 +4492,259 @@ frappe.ui.form.on("IC Sample Tracking", {
 				});
 			}, __("Location"));
 		});
+
+		if (frm.is_new()) return;
+
+		// Mark Report Available when testing is done
+		if (
+			["Testing in Progress", "At Laboratory", "Sample Dispatched to Laboratory"].includes(
+				frm.doc.status
+			)
+		) {
+			frm.add_custom_button(__("Mark Report Available"), () => {
+				frappe.call({
+					method: "instacertify.testing.events.mark_sample_report_available",
+					args: { sample: frm.doc.name },
+					freeze: true,
+					callback() {
+						frm.reload_doc().then(() => {
+							frappe.show_alert({
+								message: __("Status set to Report Available — upload the PDF report"),
+								indicator: "blue",
+							});
+							instacertify.open_sample_report_upload(frm);
+						});
+					},
+				});
+			}, __("Report"));
+		}
+
+		// Upload / replace / delete PDF once Report Available
+		if (
+			["Report Available", "Report Uploaded", "Report Shared with Customer"].includes(
+				frm.doc.status
+			)
+		) {
+			frm.set_intro(
+				frm.doc.test_report
+					? __(
+							"Test report PDF is on file. Use Report → Replace or Delete to modify it. Visible in Customer records."
+					  )
+					: __(
+							"Status is Report Available — upload the lab test report as a PDF (Report → Upload Test Report PDF)."
+					  ),
+				frm.doc.test_report ? "green" : "orange"
+			);
+
+			frm.add_custom_button(
+				frm.doc.test_report ? __("Replace Test Report PDF") : __("Upload Test Report PDF"),
+				() => instacertify.open_sample_report_upload(frm),
+				__("Report")
+			);
+
+			if (frm.doc.test_report) {
+				frm.add_custom_button(__("View Report PDF"), () => {
+					window.open(frm.doc.test_report, "_blank");
+				}, __("Report"));
+				frm.add_custom_button(__("Delete Test Report"), () => {
+					frappe.confirm(
+						__("Delete the uploaded PDF report? You can upload a new one after."),
+						() => {
+							frappe.call({
+								method: "instacertify.testing.events.delete_sample_report",
+								args: { sample: frm.doc.name },
+								freeze: true,
+								callback() {
+									frm.reload_doc();
+									frappe.show_alert({
+										message: __("Report deleted — status back to Report Available"),
+										indicator: "orange",
+									});
+								},
+							});
+						}
+					);
+				}, __("Report"));
+			}
+
+			// Auto-prompt upload when landing on Report Available with no file
+			if (frm.doc.status === "Report Available" && !frm.doc.test_report && !frm._ic_report_prompted) {
+				frm._ic_report_prompted = true;
+				setTimeout(() => instacertify.open_sample_report_upload(frm), 400);
+			}
+		}
+
+		instacertify.render_sample_report_actions(frm);
+
+		if (frm.doc.test_report) {
+			frm.dashboard.add_comment(
+				__(
+					"Test report PDF on file{0}. Visible in Customer → Data Drive / Project Records.",
+					[
+						frm.doc.report_uploaded_on
+							? ` (${frm.doc.report_uploaded_on})`
+							: "",
+					]
+				),
+				"blue",
+				true
+			);
+		}
+	},
+	test_report(frm) {
+		// Direct attach on the form also stamps + ingests via DocType validate/on_update
+		if (!frm.doc.test_report || frm.is_new()) return;
+		const name = String(frm.doc.test_report).split("?")[0].toLowerCase();
+		if (!name.endsWith(".pdf")) {
+			frappe.msgprint(__("Please upload a PDF file for the test report."));
+			frm.set_value("test_report", "");
+			return;
+		}
+		if (frm.doc.status === "Report Available") {
+			frappe.show_alert({
+				message: __("Save to stamp date/time and push report to customer records"),
+				indicator: "blue",
+			});
+		}
 	},
 });
+
+instacertify.pdf_attach_options = Object.assign({}, instacertify.attach_options || {}, {
+	restrictions: {
+		allowed_file_types: [".pdf", "application/pdf"],
+	},
+});
+
+instacertify.open_sample_report_upload = function (frm) {
+	const d = new frappe.ui.Dialog({
+		title: frm.doc.test_report
+			? __("Replace Test Report PDF")
+			: __("Upload Test Report PDF"),
+		fields: [
+			{
+				fieldname: "help",
+				fieldtype: "HTML",
+				options: `<p class="text-muted">${__(
+					"Attach the lab test report as a <b>PDF</b> only. It will be saved to Customer records with date & time. You can replace or delete it later."
+				)}</p>`,
+			},
+			{
+				fieldname: "test_report",
+				fieldtype: "Attach",
+				label: __("Test Report PDF"),
+				reqd: 1,
+				description: __("PDF only — My Device or File Library."),
+				options: instacertify.pdf_attach_options,
+			},
+		],
+		primary_action_label: frm.doc.test_report ? __("Replace") : __("Upload"),
+		primary_action(values) {
+			const file_url =
+				(d.get_value && d.get_value("test_report")) ||
+				(values && values.test_report) ||
+				"";
+			if (!file_url) {
+				frappe.msgprint(__("Please attach a PDF file first."));
+				return;
+			}
+			if (!String(file_url).split("?")[0].toLowerCase().endsWith(".pdf")) {
+				frappe.msgprint(__("Test report must be a PDF file (.pdf)."));
+				return;
+			}
+			frappe.call({
+				method: "instacertify.testing.events.upload_sample_report",
+				args: { sample: frm.doc.name, file_url },
+				freeze: true,
+				freeze_message: __("Saving PDF report to customer records…"),
+				callback(r) {
+					d.hide();
+					const m = r.message || {};
+					frappe.msgprint({
+						title: __("Report uploaded"),
+						indicator: "green",
+						message: __(
+							"PDF report saved on {0}. Available in Customer records. Use Report → Replace or Delete to modify.",
+							[m.report_uploaded_on || __("now")]
+						),
+					});
+					frm.reload_doc();
+				},
+			});
+		},
+	});
+	d.show();
+	if (instacertify.add_file_manager_hint) {
+		instacertify.add_file_manager_hint(d, "test_report");
+	}
+};
+
+instacertify.render_sample_report_actions = function (frm) {
+	if (!frm.fields_dict.report_actions_html) return;
+	const url = frm.doc.test_report;
+	const status = frm.doc.status;
+	if (
+		!["Report Available", "Report Uploaded", "Report Shared with Customer"].includes(status) &&
+		!url
+	) {
+		frm.fields_dict.report_actions_html.$wrapper.empty();
+		return;
+	}
+	const buttons = [];
+	if (!url) {
+		buttons.push(
+			`<button type="button" class="btn btn-primary btn-sm ic-upload-report-pdf">${__(
+				"Upload Test Report PDF"
+			)}</button>`
+		);
+	} else {
+		buttons.push(
+			`<a class="btn btn-default btn-sm" href="${frappe.utils.escape_html(
+				url
+			)}" target="_blank" rel="noopener">${__("Open PDF")}</a>`
+		);
+		buttons.push(
+			`<button type="button" class="btn btn-default btn-sm ic-replace-report-pdf">${__(
+				"Replace PDF"
+			)}</button>`
+		);
+		buttons.push(
+			`<button type="button" class="btn btn-danger btn-sm ic-delete-report-pdf">${__(
+				"Delete PDF"
+			)}</button>`
+		);
+	}
+	const meta = url
+		? `<div class="text-muted" style="margin-top:6px;font-size:12px;">${__(
+				"Uploaded on {0} by {1}",
+				[
+					frappe.datetime.str_to_user(frm.doc.report_uploaded_on) || "—",
+					frm.doc.report_uploaded_by || "—",
+				]
+		  )}</div>`
+		: `<div class="text-muted" style="margin-top:6px;font-size:12px;">${__(
+				"No report yet — PDF required"
+		  )}</div>`;
+	frm.fields_dict.report_actions_html.$wrapper.html(
+		`<div class="ic-report-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">${buttons.join(
+			""
+		)}</div>${meta}`
+	);
+	frm.fields_dict.report_actions_html.$wrapper
+		.find(".ic-upload-report-pdf, .ic-replace-report-pdf")
+		.on("click", () => instacertify.open_sample_report_upload(frm));
+	frm.fields_dict.report_actions_html.$wrapper.find(".ic-delete-report-pdf").on("click", () => {
+		frappe.confirm(__("Delete the uploaded PDF report?"), () => {
+			frappe.call({
+				method: "instacertify.testing.events.delete_sample_report",
+				args: { sample: frm.doc.name },
+				freeze: true,
+				callback() {
+					frm.reload_doc();
+				},
+			});
+		});
+	});
+};
 
 // Opportunity — raise ticket from deal context
 frappe.ui.form.on("Opportunity", {
