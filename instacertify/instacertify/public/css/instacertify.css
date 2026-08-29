@@ -1536,14 +1536,11 @@ body.for-login,
 .ic-lead-hub-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .ic-lead-hub-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
+  display: block;
+  padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(6, 81, 117, 0.12);
   text-decoration: none;
@@ -1567,15 +1564,22 @@ body.for-login,
   border-left: 4px solid #0a8fb5;
   background: #f7fbfd;
 }
-.ic-lead-hub-row-main {
-  min-width: 0;
-  flex: 1;
+.ic-lead-hub-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 .ic-lead-hub-row-name {
   font-weight: 650;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: #1c2f3a;
   line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ic-lead-hub-row-company {
   font-weight: 500;
@@ -1583,13 +1587,8 @@ body.for-login,
 }
 .ic-lead-hub-row-meta {
   margin-top: 2px;
-  font-size: 0.8rem;
-  color: #5b7382;
-}
-.ic-lead-hub-row-note {
-  margin-top: 4px;
   font-size: 0.78rem;
-  color: #3d5563;
+  color: #5b7382;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

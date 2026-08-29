@@ -421,9 +421,6 @@ def _ensure_home_html_block():
         const phoneHref = row.phone ? ("tel:" + String(row.phone).replace(/\\s+/g, "")) : "";
         const owner = esc(row.call_with || "");
         const urg = esc(row.urgency || "upcoming");
-        let note = (row.has_remarks && row.remarks) ? String(row.remarks) : "";
-        if (note.length > 90) note = note.slice(0, 87) + "…";
-        note = esc(note);
         const phoneBit = phone
           ? (phoneHref
               ? `<a class="ic-lead-hub-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
@@ -431,12 +428,11 @@ def _ensure_home_html_block():
           : "";
         const metaParts = [phoneBit, owner].filter(Boolean);
         return `<a class="ic-lead-hub-row ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
-          <div class="ic-lead-hub-row-main">
+          <div class="ic-lead-hub-row-top">
             <div class="ic-lead-hub-row-name">${person}${company ? `<span class="ic-lead-hub-row-company"> · ${company}</span>` : ""}</div>
-            ${metaParts.length ? `<div class="ic-lead-hub-row-meta">${metaParts.join(" · ")}</div>` : ""}
-            ${note ? `<div class="ic-lead-hub-row-note">${note}</div>` : ""}
+            <span class="ic-lead-prompt-when ${urg}">${when}</span>
           </div>
-          <span class="ic-lead-prompt-when ${urg}">${when}</span>
+          ${metaParts.length ? `<div class="ic-lead-hub-row-meta">${metaParts.join(" · ")}</div>` : ""}
         </a>`;
       }).join("");
     }
@@ -672,15 +668,12 @@ _SHADOW_THEME_CSS = """
 .ic-lead-hub-list {
   display: flex !important;
   flex-direction: column !important;
-  gap: 8px !important;
+  gap: 6px !important;
   grid-template-columns: none !important;
 }
 .ic-lead-hub-row {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  padding: 12px 14px !important;
+  display: block !important;
+  padding: 10px 12px !important;
   border-radius: 10px !important;
   border: 1px solid rgba(6,81,117,0.12) !important;
   text-decoration: none !important;
@@ -702,34 +695,39 @@ _SHADOW_THEME_CSS = """
   border-left: 4px solid #0a8fb5 !important;
   background: #f7fbfd !important;
 }
-.ic-lead-hub-row-main { min-width: 0; flex: 1; }
+.ic-lead-hub-row-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+}
 .ic-lead-hub-row-name {
   font-weight: 650 !important;
-  font-size: 0.95rem !important;
+  font-size: 0.92rem !important;
   color: #1c2f3a !important;
   line-height: 1.3;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ic-lead-hub-row-company { font-weight: 500 !important; color: #5b7382 !important; }
 .ic-lead-hub-row-meta {
   margin-top: 2px;
-  font-size: 0.8rem !important;
-  color: #5b7382 !important;
-}
-.ic-lead-hub-row-note {
-  margin-top: 4px;
   font-size: 0.78rem !important;
-  color: #3d5563 !important;
+  color: #5b7382 !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .ic-lead-hub-phone { color: #065175 !important; font-weight: 600; text-decoration: none !important; }
 .ic-lead-hub-row .ic-lead-prompt-when {
-  flex-shrink: 0;
-  white-space: nowrap;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
   border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 0.72rem;
+  padding: 3px 8px;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
@@ -936,16 +934,13 @@ def _ensure_crm_lead_tracker_block():
                 const phone = r.phone || r.mobile_no || "";
                 const owner = r.call_with || "";
                 const urg = r.urgency || "upcoming";
-                let note = r.has_remarks ? (r.remarks || r.ic_call_remarks || "") : "";
-                if (note && note.length > 90) note = note.slice(0, 87) + "…";
                 const meta = [phone, owner].filter(Boolean).join(" · ");
                 return `<a class="ic-lead-hub-row ${frappe.utils.escape_html(urg)}" href="/app/lead/${encodeURIComponent(r.name)}">
-                  <div class="ic-lead-hub-row-main">
+                  <div class="ic-lead-hub-row-top">
                     <div class="ic-lead-hub-row-name">${frappe.utils.escape_html(title)}</div>
-                    ${meta ? `<div class="ic-lead-hub-row-meta">${frappe.utils.escape_html(meta)}</div>` : ""}
-                    ${note ? `<div class="ic-lead-hub-row-note">${frappe.utils.escape_html(note)}</div>` : ""}
+                    <span class="ic-lead-prompt-when ${frappe.utils.escape_html(urg)}">${frappe.utils.escape_html(when)}</span>
                   </div>
-                  <span class="ic-lead-prompt-when ${frappe.utils.escape_html(urg)}">${frappe.utils.escape_html(when)}</span>
+                  ${meta ? `<div class="ic-lead-hub-row-meta">${frappe.utils.escape_html(meta)}</div>` : ""}
                 </a>`;
               }).join("") + "</div>";
           }
