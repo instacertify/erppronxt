@@ -2576,3 +2576,41 @@ html, body, .desk-page, .page-container, .form-layout,
 .desk-sidebar .standard-sidebar-label {
   font-family: "Poppins", sans-serif !important;
 }
+
+/* Zippy lead capture dialog */
+.ic-quick-lead-dialog .modal-dialog {
+  max-width: 480px;
+}
+.ic-quick-lead-dialog .modal-title {
+  font-family: "Poppins", "Segoe UI", sans-serif !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #033447;
+}
+.ic-quick-lead-hint {
+  font-family: "Poppins", "Segoe UI", sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #5b7382;
+  background: #fff8f1;
+  border-left: 4px solid #EC6820;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+}
+.ic-quick-lead-dialog .form-control {
+  border-radius: 10px !important;
+  min-height: 40px;
+  font-size: 0.98rem;
+}
+.ic-quick-lead-dialog .btn-primary {
+  background: #EC6820 !important;
+  border-color: #EC6820 !important;
+  font-weight: 650 !important;
+  border-radius: 10px !important;
+  padding: 0.5rem 1.2rem !important;
+}
+.form-intro .ic-zippy-lead-banner,
+.form-message.blue {
+  font-family: "Poppins", "Segoe UI", sans-serif;
+}

@@ -188,6 +188,135 @@ $(document).on("page-change", function () {
 	}
 });
 
+/** Quick lead capture — name + phone, optional need/source, save in seconds. */
+instacertify.open_quick_lead = function (opts) {
+	opts = opts || {};
+	const tomorrow = frappe.datetime.add_days(frappe.datetime.get_today(), 1);
+	const d = new frappe.ui.Dialog({
+		title: __("Capture a Lead"),
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "ic_zippy_hint",
+				options:
+					'<div class="ic-quick-lead-hint">Name is enough to start. Phone helps you call back. Save and keep moving.</div>',
+			},
+			{
+				fieldname: "ic_party_name",
+				fieldtype: "Data",
+				label: __("Name / company"),
+				reqd: 1,
+				default: opts.ic_party_name || "",
+			},
+			{
+				fieldname: "mobile_no",
+				fieldtype: "Data",
+				label: __("Mobile"),
+				options: "Phone",
+				default: opts.mobile_no || "",
+			},
+			{
+				fieldname: "email_id",
+				fieldtype: "Data",
+				label: __("Email (optional)"),
+				options: "Email",
+				default: opts.email_id || "",
+			},
+			{
+				fieldname: "ic_lead_source_detail",
+				fieldtype: "Link",
+				label: __("Source"),
+				options: "IC Lead Source",
+				default: opts.ic_lead_source_detail || "",
+			},
+			{
+				fieldname: "ic_project_type",
+				fieldtype: "Link",
+				label: __("Project type"),
+				options: "IC Project Type",
+				default: opts.ic_project_type || "",
+			},
+			{
+				fieldname: "ic_call_remarks",
+				fieldtype: "Small Text",
+				label: __("What they need"),
+				default: opts.ic_call_remarks || "",
+			},
+			{
+				fieldname: "ic_next_contact_date",
+				fieldtype: "Date",
+				label: __("Call back on"),
+				default: opts.ic_next_contact_date || tomorrow,
+			},
+			{
+				fieldname: "assign_to_me",
+				fieldtype: "Check",
+				label: __("Assign to me"),
+				default: 1,
+			},
+		],
+		primary_action_label: __("Save Lead"),
+		secondary_action_label: __("Save & another"),
+		primary_action(values) {
+			instacertify._save_quick_lead(d, values, { another: false, on_done: opts.on_done });
+		},
+	});
+	d.$wrapper.addClass("ic-quick-lead-dialog");
+	d.set_secondary_action(() => {
+		const values = d.get_values();
+		if (!values) return;
+		instacertify._save_quick_lead(d, values, {
+			another: true,
+			on_done: opts.on_done,
+		});
+	});
+	d.$wrapper.find(".modal-footer").prepend(
+		`<button type="button" class="btn btn-default btn-sm ic-open-full-lead" style="margin-right:auto;">${__("Full form")}</button>`
+	);
+	d.$wrapper.find(".ic-open-full-lead").on("click", () => {
+		d.hide();
+		frappe.new_doc("Lead");
+	});
+	d.show();
+	setTimeout(() => {
+		d.get_field("ic_party_name") && d.get_field("ic_party_name").$input.focus();
+	}, 200);
+};
+
+instacertify._save_quick_lead = function (dialog, values, opts) {
+	opts = opts || {};
+	frappe.call({
+		method: "instacertify.crm.events.create_quick_lead",
+		args: values,
+		freeze: true,
+		freeze_message: __("Saving lead…"),
+		callback(r) {
+			const name = r.message && r.message.name;
+			frappe.show_alert({
+				message: __("Lead saved{0}", [name ? ": " + name : " — nice!"]),
+				indicator: "green",
+			});
+			if (opts.on_done) opts.on_done(name);
+			if (opts.another) {
+				dialog.set_values({
+					ic_party_name: "",
+					mobile_no: "",
+					email_id: "",
+					ic_call_remarks: "",
+					ic_next_contact_date: frappe.datetime.add_days(frappe.datetime.get_today(), 1),
+					assign_to_me: 1,
+				});
+				setTimeout(() => {
+					dialog.get_field("ic_party_name") && dialog.get_field("ic_party_name").$input.focus();
+				}, 100);
+				return;
+			}
+			dialog.hide();
+			if (name) frappe.set_route("Form", "Lead", name);
+		},
+	});
+};
+
 /** Open a new Helpdesk Ticket with CRM context defaults. */
 instacertify.raise_helpdesk_ticket = function (defaults) {
 	defaults = defaults || {};
@@ -3089,7 +3218,7 @@ $(document).ready(function () {
 	setTimeout(tryInject, 2000);
 });
 
-// --- Lead capture: mandatory name, India-first country, editable source/type ---
+// --- Lead capture: zippy new form + quick dialog entry ---
 frappe.ui.form.on("Lead", {
 	setup(frm) {
 		frm.set_query("country", () => ({
@@ -3107,6 +3236,11 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("mobile_no", "reqd", 0);
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
+		frm.set_df_property("ic_party_name", "label", __("Name / company"));
+		frm.set_df_property("ic_party_name", "description", __("Person or firm — enough to get started"));
+		frm.set_df_property("ic_call_remarks", "label", __("What they need"));
+		frm.set_df_property("ic_call_remarks", "description", __("One line is fine"));
+		frm.set_df_property("ic_next_contact_date", "label", __("Call back on"));
 		if (!frm.doc.country && frm.is_new()) {
 			frm.set_value("country", "India");
 		}
@@ -3114,7 +3248,17 @@ frappe.ui.form.on("Lead", {
 			const party = frm.doc.company_name || frm.doc.lead_name || frm.doc.first_name;
 			if (party) frm.set_value("ic_party_name", party);
 		}
-		if (!frm.is_new()) {
+		if (frm.is_new()) {
+			instacertify.apply_zippy_lead_capture(frm);
+			if (!frm.doc.ic_next_contact_date) {
+				frm.set_value("ic_next_contact_date", frappe.datetime.add_days(frappe.datetime.get_today(), 1));
+			}
+			if (!frm.doc.ic_assigned_salesperson && frappe.session.user !== "Guest") {
+				frm.set_value("ic_assigned_salesperson", frappe.session.user);
+			}
+			frm.page.set_primary_action(__("Save Lead"), () => frm.save());
+		} else {
+			instacertify.clear_zippy_lead_capture(frm);
 			instacertify.add_helpdesk_buttons(frm, {
 				lead: frm.doc.name,
 				contact_person: frm.doc.lead_name || frm.doc.ic_party_name || frm.doc.company_name,
@@ -3165,8 +3309,90 @@ frappe.ui.form.on("Lead", {
 		if (src !== "Consultant" && src !== "Reference") {
 			frm.set_value("ic_consultant_referral", "");
 		}
+		if (frm.is_new() && !frm.__ic_lead_show_all) {
+			const need = src === "Consultant" || src === "Reference";
+			frm.toggle_display("ic_consultant_referral", need);
+		}
 	},
 });
+
+instacertify.ZIPPY_LEAD_HIDE = [
+	"salutation",
+	"first_name",
+	"middle_name",
+	"last_name",
+	"job_title",
+	"gender",
+	"source",
+	"company_name",
+	"website",
+	"industry",
+	"market_segment",
+	"territory",
+	"campaign_name",
+	"fax",
+	"whatsapp_no",
+	"phone_ext",
+	"annual_revenue",
+	"no_of_employees",
+	"image",
+	"language",
+	"disabled",
+	"ic_company_size",
+	"ic_section_company_extra",
+	"ic_factory_address",
+	"ic_gst_number",
+	"ic_state",
+	"ic_request_category",
+	"ic_expected_timeline",
+	"ic_estimated_value",
+	"ic_priority",
+	"ic_assigned_operations_manager",
+	"ic_remarks",
+	"ic_last_contacted",
+	"ic_lead_connected",
+	"ic_section_pipeline",
+	"ic_pipeline_stage",
+	"qualification_status",
+	"company",
+];
+
+instacertify.apply_zippy_lead_capture = function (frm) {
+	if (!frm.layout) return;
+	if (frm.set_intro) {
+		frm.set_intro(
+			__(
+				"Quick capture — name, phone, and what they need. Save now; add GST, factory, and pipeline later."
+			),
+			"blue"
+		);
+	}
+	const hide = !frm.__ic_lead_show_all;
+	(instacertify.ZIPPY_LEAD_HIDE || []).forEach((f) => {
+		if (frm.fields_dict[f]) frm.toggle_display(f, !hide);
+	});
+	if (frm.fields_dict.ic_consultant_referral) {
+		const src = frm.doc.ic_lead_source_detail;
+		const need = src === "Consultant" || src === "Reference";
+		frm.toggle_display("ic_consultant_referral", hide ? true : need);
+	}
+	const btnLabel = hide ? __("Show all fields") : __("Simple view");
+	frm.remove_custom_button(__("Show all fields"));
+	frm.remove_custom_button(__("Simple view"));
+	frm.add_custom_button(btnLabel, () => {
+		frm.__ic_lead_show_all = hide;
+		instacertify.apply_zippy_lead_capture(frm);
+	});
+};
+
+instacertify.clear_zippy_lead_capture = function (frm) {
+	if (frm.set_intro) frm.set_intro(null);
+	(instacertify.ZIPPY_LEAD_HIDE || []).forEach((f) => {
+		if (frm.fields_dict[f]) frm.toggle_display(f, true);
+	});
+	frm.remove_custom_button(__("Show all fields"));
+	frm.remove_custom_button(__("Simple view"));
+};
 
 // --- Project AMC on completion ---
 frappe.ui.form.on("Project", {

@@ -52,6 +52,57 @@ def _ensure_mandatory_name(doc):
 
 
 @frappe.whitelist()
+def create_quick_lead(
+	ic_party_name: str,
+	mobile_no: str | None = None,
+	email_id: str | None = None,
+	ic_lead_source_detail: str | None = None,
+	ic_project_type: str | None = None,
+	ic_call_remarks: str | None = None,
+	ic_next_contact_date: str | None = None,
+	assign_to_me: int | bool | None = 1,
+):
+	"""Zippy lead capture — name + phone is enough; the rest is optional."""
+	party = (ic_party_name or "").strip()
+	if not party:
+		frappe.throw(_("Enter a name (person or company) to save the lead"))
+
+	doc = frappe.new_doc("Lead")
+	doc.ic_party_name = party
+	doc.company_name = party
+	doc.first_name = party.split()[0][:140]
+	doc.country = "India"
+	doc.status = "Lead"
+	if hasattr(doc, "ic_pipeline_stage"):
+		doc.ic_pipeline_stage = "Lead"
+	if mobile_no:
+		doc.mobile_no = str(mobile_no).strip()
+	if email_id:
+		doc.email_id = str(email_id).strip()
+	if ic_lead_source_detail and frappe.db.exists("IC Lead Source", ic_lead_source_detail):
+		doc.ic_lead_source_detail = ic_lead_source_detail
+	if ic_project_type and frappe.db.exists("IC Project Type", ic_project_type):
+		doc.ic_project_type = ic_project_type
+	if ic_call_remarks:
+		doc.ic_call_remarks = str(ic_call_remarks).strip()
+	if ic_next_contact_date:
+		doc.ic_next_contact_date = ic_next_contact_date
+	else:
+		doc.ic_next_contact_date = frappe.utils.add_days(frappe.utils.today(), 1)
+	if frappe.utils.cint(assign_to_me) and frappe.session.user not in ("Guest", "Administrator"):
+		doc.ic_assigned_salesperson = frappe.session.user
+	elif frappe.utils.cint(assign_to_me) and frappe.session.user == "Administrator":
+		doc.ic_assigned_salesperson = frappe.session.user
+
+	doc.insert(ignore_permissions=False)
+	return {
+		"name": doc.name,
+		"ic_party_name": doc.ic_party_name,
+		"message": _("Lead saved — keep going!"),
+	}
+
+
+@frappe.whitelist()
 def get_customer_history(customer: str):
 	"""Complete customer relationship overview for Customer Related Data tab."""
 	if not customer:

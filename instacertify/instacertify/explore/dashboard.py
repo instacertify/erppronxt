@@ -84,9 +84,20 @@ def get_explore_prompts() -> dict:
 
 	# Universal — everyone with desk access
 	add(
+		"quick_lead",
+		_("Capture a Lead"),
+		_("Name + phone — save in seconds"),
+		["List", "Lead"],
+		doctype="Lead",
+		accent="coral",
+		action="quick_lead",
+		priority=5,
+		show=(is_sales or is_ops or is_admin) and _can_create("Lead"),
+	)
+	add(
 		"leads",
 		_("Leads"),
-		_("Capture & follow up prospects"),
+		_("Follow up & reminders"),
 		["List", "Lead"],
 		doctype="Lead",
 		count=_count("Lead", {"status": ["not in", ["Converted", "Do Not Contact"]]}),
