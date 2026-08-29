@@ -203,7 +203,7 @@ def share_report_with_customer(testing_request: str):
 
 @frappe.whitelist()
 def upload_sample_report(sample: str, file_url: str):
-	"""Upload test report on Sample Tracking when status is Report Available (or replace).
+	"""Upload / replace test report PDF on Sample Tracking when status is Report Available.
 
 	Stamps date/time, sets status to Report Uploaded, syncs linked Testing Request,
 	and writes the file into Customer records for download.
@@ -212,7 +212,8 @@ def upload_sample_report(sample: str, file_url: str):
 
 	if not sample:
 		frappe.throw(_("Sample is required"))
-	file_url = assert_internal_file(file_url, _("Test Report"))
+	file_url = assert_internal_file(file_url, _("Test Report PDF"))
+	_assert_pdf_report(file_url)
 
 	doc = frappe.get_doc("IC Sample Tracking", sample)
 	if doc.status not in (
@@ -238,7 +239,12 @@ def upload_sample_report(sample: str, file_url: str):
 	if doc.testing_request and frappe.db.exists("IC Testing Request", doc.testing_request):
 		tr = frappe.get_doc("IC Testing Request", doc.testing_request)
 		tr.test_report = file_url
-		if tr.status in ("Report Available", "Testing in Progress", "At Laboratory", "Sample Dispatched to Laboratory"):
+		if tr.status in (
+			"Report Available",
+			"Testing in Progress",
+			"At Laboratory",
+			"Sample Dispatched to Laboratory",
+		):
 			tr.status = "Report Uploaded"
 		tr.save(ignore_permissions=True)
 
@@ -255,8 +261,51 @@ def upload_sample_report(sample: str, file_url: str):
 
 
 @frappe.whitelist()
+def delete_sample_report(sample: str):
+	"""Remove the uploaded test report so a new PDF can be uploaded (status → Report Available)."""
+	doc = frappe.get_doc("IC Sample Tracking", sample)
+	if not doc.test_report:
+		frappe.throw(_("No test report to delete"))
+
+	old_url = doc.test_report
+	doc.test_report = None
+	doc.report_uploaded_on = None
+	doc.report_uploaded_by = None
+	if doc.status in ("Report Uploaded", "Report Shared with Customer"):
+		doc.status = "Report Available"
+	doc.save(ignore_permissions=True)
+
+	if doc.testing_request and frappe.db.exists("IC Testing Request", doc.testing_request):
+		tr = frappe.get_doc("IC Testing Request", doc.testing_request)
+		if (tr.test_report or "") == old_url:
+			tr.test_report = None
+			if tr.status in ("Report Uploaded", "Report Shared with Customer"):
+				tr.status = "Report Available"
+			tr.save(ignore_permissions=True)
+
+	doc.reload()
+	return {
+		"name": doc.name,
+		"status": doc.status,
+		"test_report": doc.test_report,
+		"cleared": old_url,
+	}
+
+
+def _assert_pdf_report(file_url: str):
+	"""Only accept PDF test reports."""
+	name = (file_url or "").split("?")[0].rsplit("/", 1)[-1].lower()
+	if name.endswith(".pdf"):
+		return
+	ftype = frappe.db.get_value("File", {"file_url": file_url}, "file_type") or ""
+	if str(ftype).strip().upper() == "PDF":
+		return
+	frappe.throw(_("Test report must be a PDF file (.pdf)"))
+
+
+@frappe.whitelist()
 def mark_sample_report_available(sample: str):
-	"""Mark sample as Report Available so ops can upload the lab report."""
+	"""Mark sample as Report Available so ops can upload the lab report PDF."""
 	doc = frappe.get_doc("IC Sample Tracking", sample)
 	if doc.status == "Discarded":
 		frappe.throw(_("Cannot mark a discarded sample as Report Available"))

@@ -51,33 +51,52 @@ class ICSampleTracking(Document):
 		self._handle_receipt_and_discard()
 		self._handle_report_upload()
 
-	def on_update(self):
-		if not self.qr_code:
-			self._ensure_qr()
-		# Push newly uploaded reports into customer records (idempotent attach)
-		if self.test_report and self.has_value_changed("test_report"):
-			try:
-				from instacertify.crm.customer_data import ingest_sample_report
-
-				ingest_sample_report(self)
-			except Exception:
-				frappe.log_error(frappe.get_traceback(), "ingest sample report")
-
 	def _handle_report_upload(self):
-		"""When a report file is attached, stamp date/time and move to Report Uploaded."""
-		if not self.test_report:
-			return
+		"""When a report file is attached/replaced/cleared, stamp or reset metadata."""
 		prev = self.get_doc_before_save()
-		prev_report = prev.test_report if prev else None
-		if self.test_report != prev_report:
+		prev_report = (prev.test_report if prev else None) or ""
+		curr_report = self.test_report or ""
+
+		# Cleared — allow delete / modify cycle
+		if prev_report and not curr_report:
+			self.report_uploaded_on = None
+			self.report_uploaded_by = None
+			if self.status in ("Report Uploaded", "Report Shared with Customer"):
+				self.status = "Report Available"
+			return
+
+		if not curr_report:
+			return
+
+		if curr_report != prev_report:
 			self.report_uploaded_on = now_datetime()
 			self.report_uploaded_by = frappe.session.user
-			if self.status in ("Report Available", "Testing in Progress", "At Laboratory"):
+			if self.status in (
+				"Report Available",
+				"Testing in Progress",
+				"At Laboratory",
+				"Sample Dispatched to Laboratory",
+			):
 				self.status = "Report Uploaded"
 		elif not self.report_uploaded_on:
 			self.report_uploaded_on = now_datetime()
 			if not self.report_uploaded_by:
 				self.report_uploaded_by = frappe.session.user
+
+	def on_update(self):
+		if not self.qr_code:
+			self._ensure_qr()
+		# Push newly uploaded / replaced reports into customer records
+		if self.has_value_changed("test_report"):
+			try:
+				from instacertify.crm.customer_data import ingest_sample_report, clear_sample_report
+
+				if self.test_report:
+					ingest_sample_report(self)
+				else:
+					clear_sample_report(self)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), "ingest sample report")
 
 	def _sync_custody(self):
 		prev = self.get_doc_before_save()

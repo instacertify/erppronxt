@@ -322,37 +322,44 @@ def ingest_sample_report(doc):
 	# Project / customer record with explicit date-time in the body
 	if frappe.db.exists("DocType", "IC Project Record") and customer:
 		subject = f"Test Report — {tracking}"
-		existing = frappe.db.exists(
+		# Upsert: one live record per sample; replace attachment when modified
+		existing = frappe.db.get_value(
 			"IC Project Record",
-			{
-				"subject": subject,
-				"attachment": file_url,
-				"customer": customer,
-			},
+			{"subject": subject, "customer": customer},
+			"name",
 		)
-		if not existing:
-			try:
-				frappe.get_doc(
-					{
-						"doctype": "IC Project Record",
-						"subject": subject,
-						"record_type": "Deliverable",
-						"customer": customer,
-						"project": doc.get("project"),
-						"category": "Test Reports",
-						"content": (
-							f"<p>Test report uploaded from <b>{frappe.utils.escape_html(doc.doctype)}</b> "
-							f"<b>{frappe.utils.escape_html(doc.name)}</b>.</p>"
-							f"<p>Uploaded on: <b>{frappe.utils.escape_html(stamp_str)}</b></p>"
-							f"<p>Uploaded by: {frappe.utils.escape_html(doc.get('report_uploaded_by') or frappe.session.user)}</p>"
-							f"<p>{frappe.utils.escape_html(doc.get('sample_description') or doc.get('test_name') or '')}</p>"
-						),
-						"attachment": file_url,
-						"recorded_by": doc.get("report_uploaded_by") or frappe.session.user,
-					}
-				).insert(ignore_permissions=True)
-			except Exception:
-				frappe.log_error(frappe.get_traceback(), "ingest_sample_report project record")
+		try:
+			content = (
+				f"<p>Test report uploaded from <b>{frappe.utils.escape_html(doc.doctype)}</b> "
+				f"<b>{frappe.utils.escape_html(doc.name)}</b>.</p>"
+				f"<p>Uploaded on: <b>{frappe.utils.escape_html(stamp_str)}</b></p>"
+				f"<p>Uploaded by: {frappe.utils.escape_html(doc.get('report_uploaded_by') or frappe.session.user)}</p>"
+				f"<p>{frappe.utils.escape_html(doc.get('sample_description') or doc.get('test_name') or '')}</p>"
+			)
+			if existing:
+				rec = frappe.get_doc("IC Project Record", existing)
+				rec.attachment = file_url
+				rec.content = content
+				rec.recorded_by = doc.get("report_uploaded_by") or frappe.session.user
+				if rec.meta.has_field("category"):
+					rec.category = "Test Reports"
+				rec.save(ignore_permissions=True)
+			else:
+				payload = {
+					"doctype": "IC Project Record",
+					"subject": subject,
+					"record_type": "Deliverable",
+					"customer": customer,
+					"project": doc.get("project"),
+					"content": content,
+					"attachment": file_url,
+					"recorded_by": doc.get("report_uploaded_by") or frappe.session.user,
+				}
+				if frappe.get_meta("IC Project Record").has_field("category"):
+					payload["category"] = "Test Reports"
+				frappe.get_doc(payload).insert(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "ingest_sample_report project record")
 
 	save_collected_data_snapshot(
 		customer,
@@ -365,6 +372,46 @@ def ingest_sample_report(doc):
 			"report_uploaded_on": stamp_str,
 			"report_uploaded_by": doc.get("report_uploaded_by") or frappe.session.user,
 			"test_report": file_url,
+			"status": doc.get("status"),
+		},
+		category="Test Reports",
+	)
+
+
+def clear_sample_report(doc):
+	"""When report is deleted on the sample, mark related project records as cleared."""
+	customer = resolve_customer(customer=doc.get("customer"), project=doc.get("project"))
+	tracking = doc.get("tracking_number") or doc.get("title") or doc.name
+	if not customer:
+		return
+	subject = f"Test Report — {tracking}"
+	if frappe.db.exists("DocType", "IC Project Record"):
+		for name in frappe.get_all(
+			"IC Project Record",
+			filters={"subject": subject, "customer": customer},
+			pluck="name",
+		):
+			try:
+				rec = frappe.get_doc("IC Project Record", name)
+				rec.attachment = None
+				rec.content = (
+					(rec.content or "")
+					+ f"<p><i>Report file cleared on {frappe.utils.escape_html(str(now_datetime()))} "
+					f"by {frappe.utils.escape_html(frappe.session.user)}.</i></p>"
+				)
+				rec.save(ignore_permissions=True)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), "clear_sample_report")
+
+	save_collected_data_snapshot(
+		customer,
+		title=f"Test Report cleared — {tracking}",
+		source_doctype=doc.doctype,
+		source_name=doc.name,
+		payload={
+			"tracking_number": doc.get("tracking_number"),
+			"cleared_on": str(now_datetime()),
+			"cleared_by": frappe.session.user,
 			"status": doc.get("status"),
 		},
 		category="Test Reports",
