@@ -78,20 +78,15 @@ def _ensure_home_html_block():
   <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub">
     <div class="ic-lead-prompt-header">
       <div>
-        <div class="ic-lead-prompt-title">Lead reminder hub</div>
-        <div class="ic-lead-prompt-sub">Whom to call · who to connect with · customer remarks</div>
+        <div class="ic-lead-prompt-title">Lead reminders</div>
+        <div class="ic-lead-prompt-sub">Who to call next</div>
       </div>
       <div class="ic-lead-hub-actions">
         <span class="ic-lead-hub-counts" id="ic-lead-hub-counts"></span>
-        <a class="ic-view-all" href="/app/lead">Open Leads</a>
+        <a class="ic-view-all" href="/app/lead">All leads</a>
       </div>
     </div>
-    <div class="ic-lead-hub-legend">
-      <span class="ic-lead-hub-chip overdue">Overdue / today</span>
-      <span class="ic-lead-hub-chip upcoming">Upcoming</span>
-      <span class="ic-lead-hub-chip tip">Tap a card to open the lead and log remarks</span>
-    </div>
-    <div id="ic-lead-prompts" class="ic-lead-prompt-list"></div>
+    <div id="ic-lead-prompts" class="ic-lead-hub-list"></div>
   </div>
 
   <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel">
@@ -403,62 +398,45 @@ def _ensure_home_html_block():
 
   frappe.call({
     method: "instacertify.crm.dashboard.get_lead_contact_prompts",
-    args: { limit: 10 },
+    args: { limit: 12 },
     callback(r) {
       const el = root_element.getElementById("ic-lead-prompts");
       const counts = root_element.getElementById("ic-lead-hub-counts");
       if (!el) return;
       const d = r.message || {};
       const rows = d.prompts || [];
+      const dueN = d.due_count || 0;
       if (counts) {
-        counts.textContent = (d.due_count || 0) + " due · " + (d.upcoming_count || 0) + " upcoming";
+        counts.textContent = dueN ? (dueN + " due") : ((d.upcoming_count || 0) + " upcoming");
       }
       if (!rows.length) {
-        el.innerHTML = empty("No lead reminders yet. On a Lead set <b>Next Contact Date</b>, <b>Call / Lead Remarks</b> (what the customer said), and who is assigned — they show up here.");
+        el.innerHTML = empty("No reminders. Set <b>Next Contact Date</b> on a Lead.");
         return;
       }
       el.innerHTML = rows.map(row => {
         const person = esc(row.contact_person || row.title || row.name);
         const company = esc(row.company || "");
         const when = esc(row.due_label || row.ic_next_contact_date || "—");
-        const remarks = esc(row.remarks || row.ic_call_remarks || "No customer remarks yet");
-        const phone = esc(row.phone || "—");
+        const phone = esc(row.phone || "");
         const phoneHref = row.phone ? ("tel:" + String(row.phone).replace(/\\s+/g, "")) : "";
-        const callWith = esc(row.call_with || "Unassigned");
-        const connected = esc(row.connected_label || (row.ic_lead_connected ? "Connected" : "Not connected yet"));
-        const connCls = row.ic_lead_connected ? "connected" : "not-connected";
+        const owner = esc(row.call_with || "");
         const urg = esc(row.urgency || "upcoming");
-        const stage = esc(row.pipeline_stage || row.status || "");
-        const phoneBlock = phoneHref
-          ? `<a class="ic-lead-prompt-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
-          : `<span class="ic-lead-prompt-phone">${phone}</span>`;
-        return `<a class="ic-lead-prompt ic-lead-hub-card ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
-          <div class="ic-lead-prompt-top">
-            <div>
-              <div class="ic-lead-hub-kicker">Call</div>
-              <div class="ic-lead-prompt-name">${person}</div>
-              ${company ? `<div class="ic-lead-hub-company">${company}</div>` : ""}
-            </div>
-            <span class="ic-lead-prompt-when ${urg}">${when}</span>
+        let note = (row.has_remarks && row.remarks) ? String(row.remarks) : "";
+        if (note.length > 90) note = note.slice(0, 87) + "…";
+        note = esc(note);
+        const phoneBit = phone
+          ? (phoneHref
+              ? `<a class="ic-lead-hub-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
+              : `<span>${phone}</span>`)
+          : "";
+        const metaParts = [phoneBit, owner].filter(Boolean);
+        return `<a class="ic-lead-hub-row ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
+          <div class="ic-lead-hub-row-main">
+            <div class="ic-lead-hub-row-name">${person}${company ? `<span class="ic-lead-hub-row-company"> · ${company}</span>` : ""}</div>
+            ${metaParts.length ? `<div class="ic-lead-hub-row-meta">${metaParts.join(" · ")}</div>` : ""}
+            ${note ? `<div class="ic-lead-hub-row-note">${note}</div>` : ""}
           </div>
-          <div class="ic-lead-hub-grid">
-            <div class="ic-lead-hub-cell">
-              <div class="ic-lead-hub-label">Phone</div>
-              <div class="ic-lead-hub-value">${phoneBlock}</div>
-            </div>
-            <div class="ic-lead-hub-cell">
-              <div class="ic-lead-hub-label">Connect with</div>
-              <div class="ic-lead-hub-value">${callWith}</div>
-            </div>
-            <div class="ic-lead-hub-cell">
-              <div class="ic-lead-hub-label">Status</div>
-              <div class="ic-lead-hub-value"><span class="ic-lead-prompt-connected ${connCls}">${connected}</span>${stage ? " · " + stage : ""}</div>
-            </div>
-          </div>
-          <div class="ic-lead-hub-remarks-wrap">
-            <div class="ic-lead-hub-label">Customer remarks</div>
-            <div class="ic-lead-prompt-remarks ${row.has_remarks ? "" : "muted"}">${remarks}</div>
-          </div>
+          <span class="ic-lead-prompt-when ${urg}">${when}</span>
         </a>`;
       }).join("");
     }
@@ -637,7 +615,7 @@ _SHADOW_THEME_CSS = """
   overflow: hidden;
   background: linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
   color: #fff;
-  border-radius: 26px;
+  border-radius: 14px;
   padding: 28px 28px 26px;
   margin-bottom: 20px;
   box-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
@@ -668,15 +646,15 @@ _SHADOW_THEME_CSS = """
   color: #065175;
   letter-spacing: -0.02em;
 }
-.ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
+.ic-lead-prompt.overdue {
   background: linear-gradient(165deg, #fff5f4 0%, #fff 55%) !important;
   box-shadow: inset 4px 0 0 #c0392b, 0 10px 24px rgba(192,57,43,0.08) !important;
 }
-.ic-lead-prompt.today, .ic-lead-hub-card.today {
+.ic-lead-prompt.today {
   background: linear-gradient(165deg, #fff8f0 0%, #fff 55%) !important;
   box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236,104,32,0.1) !important;
 }
-.ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
+.ic-lead-prompt.upcoming {
   background: linear-gradient(165deg, #f0f9fc 0%, #fff 55%) !important;
   box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10,143,181,0.08) !important;
 }
@@ -689,14 +667,70 @@ _SHADOW_THEME_CSS = """
   font-weight: 700 !important;
   border-radius: 8px;
   padding: 4px 10px;
+  font-size: 0.78rem;
 }
-.ic-lead-hub-chip.overdue { background: #c0392b !important; color: #fff !important; }
-.ic-lead-hub-chip.upcoming { background: #0a8fb5 !important; color: #fff !important; }
-.ic-lead-hub-remarks-wrap {
-  background: rgba(6,81,117,0.04);
-  border-radius: 14px;
-  padding: 10px 12px;
-  margin-top: 8px;
+.ic-lead-hub-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  grid-template-columns: none !important;
+}
+.ic-lead-hub-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(6,81,117,0.12) !important;
+  text-decoration: none !important;
+  color: inherit !important;
+  aspect-ratio: auto !important;
+  min-height: 0 !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+.ic-lead-hub-row.overdue {
+  border-left: 4px solid #c0392b !important;
+  background: #fff8f7 !important;
+}
+.ic-lead-hub-row.today {
+  border-left: 4px solid #EC6820 !important;
+  background: #fff9f4 !important;
+}
+.ic-lead-hub-row.upcoming {
+  border-left: 4px solid #0a8fb5 !important;
+  background: #f7fbfd !important;
+}
+.ic-lead-hub-row-main { min-width: 0; flex: 1; }
+.ic-lead-hub-row-name {
+  font-weight: 650 !important;
+  font-size: 0.95rem !important;
+  color: #1c2f3a !important;
+  line-height: 1.3;
+}
+.ic-lead-hub-row-company { font-weight: 500 !important; color: #5b7382 !important; }
+.ic-lead-hub-row-meta {
+  margin-top: 2px;
+  font-size: 0.8rem !important;
+  color: #5b7382 !important;
+}
+.ic-lead-hub-row-note {
+  margin-top: 4px;
+  font-size: 0.78rem !important;
+  color: #3d5563 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ic-lead-hub-phone { color: #065175 !important; font-weight: 600; text-decoration: none !important; }
+.ic-lead-hub-row .ic-lead-prompt-when {
+  flex-shrink: 0;
+  white-space: nowrap;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
@@ -709,7 +743,7 @@ _SHADOW_THEME_CSS = """
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  border-radius: 16px !important;
+  border-radius: 12px !important;
   min-height: 0 !important;
 }
 .ic-summary-card {
@@ -771,23 +805,17 @@ _SHADOW_THEME_CSS = """
   aspect-ratio: 1 / 1 !important;
   min-height: 0 !important;
   padding: 12px !important;
-  border-radius: 16px !important;
+  border-radius: 12px !important;
 }
 .ic-lead-prompt-list {
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
   gap: 12px !important;
 }
-.ic-lead-prompt, .ic-lead-hub-card {
+.ic-lead-prompt-list > .ic-lead-prompt {
   aspect-ratio: 1 / 1 !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
-  border-radius: 16px !important;
-}
-.ic-lead-prompt-panel,
-.ic-workdesk-panel,
-.ic-hr-panel {
-  border-radius: 26px !important;
 }
 .ic-workdesk-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
@@ -811,7 +839,7 @@ def _ensure_crm_lead_tracker_block():
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Status</div><div id="ic-crm-status-30"></div></div>
   </div>
   <div class="ic-crm-chart-card" style="margin-top:12px;min-height:auto;">
-    <div class="ic-crm-chart-label">Lead reminder hub · Whom to call · Connect with · Customer remarks</div>
+    <div class="ic-crm-chart-label">Lead reminders</div>
     <div id="ic-crm-leads-contact"></div>
   </div>
   <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC Renewals Due (31 days)</div><div id="ic-crm-amc-due"></div></div>
@@ -897,19 +925,29 @@ def _ensure_crm_lead_tracker_block():
         const rows = d.leads_to_contact || [];
         if (el) {
           if (!rows.length) {
-            el.innerHTML = "<div class='ic-lead-prompt-empty'>No leads due. Set Next Contact Date, Call / Lead Remarks, and Assigned Salesperson on Leads.</div>";
+            el.innerHTML = "<div class='ic-lead-prompt-empty'>No leads due. Set Next Contact Date on Leads.</div>";
           } else {
-            el.innerHTML = "<table class='ic-related-table'><thead><tr><th>Whom to call</th><th>When</th><th>Phone</th><th>Connect with</th><th>Connected</th><th>Customer remarks</th></tr></thead><tbody>" +
+            el.innerHTML = "<div class='ic-lead-hub-list'>" +
               rows.map(r => {
                 const person = r.contact_person || r.title || r.ic_party_name || r.lead_name || r.name;
                 const company = r.company || r.company_name || "";
                 const title = company ? (person + " · " + company) : person;
                 const when = r.due_label || r.ic_next_contact_date || "—";
-                const connected = r.ic_lead_connected ? "<span class='ic-lead-prompt-connected connected'>Connected</span>" : "<span class='ic-lead-prompt-connected not-connected'>Not connected</span>";
-                const remarks = r.remarks || r.ic_call_remarks || "—";
-                const callWith = r.call_with || "Unassigned";
-                return "<tr><td><a href='/app/lead/"+encodeURIComponent(r.name)+"'>"+frappe.utils.escape_html(title)+"</a></td><td><span class='ic-lead-prompt-when "+frappe.utils.escape_html(r.urgency||'')+"'>"+frappe.utils.escape_html(when)+"</span></td><td>"+frappe.utils.escape_html(r.phone||r.mobile_no||"—")+"</td><td>"+frappe.utils.escape_html(callWith)+"</td><td>"+connected+"</td><td>"+frappe.utils.escape_html(remarks)+"</td></tr>";
-              }).join("") + "</tbody></table>";
+                const phone = r.phone || r.mobile_no || "";
+                const owner = r.call_with || "";
+                const urg = r.urgency || "upcoming";
+                let note = r.has_remarks ? (r.remarks || r.ic_call_remarks || "") : "";
+                if (note && note.length > 90) note = note.slice(0, 87) + "…";
+                const meta = [phone, owner].filter(Boolean).join(" · ");
+                return `<a class="ic-lead-hub-row ${frappe.utils.escape_html(urg)}" href="/app/lead/${encodeURIComponent(r.name)}">
+                  <div class="ic-lead-hub-row-main">
+                    <div class="ic-lead-hub-row-name">${frappe.utils.escape_html(title)}</div>
+                    ${meta ? `<div class="ic-lead-hub-row-meta">${frappe.utils.escape_html(meta)}</div>` : ""}
+                    ${note ? `<div class="ic-lead-hub-row-note">${frappe.utils.escape_html(note)}</div>` : ""}
+                  </div>
+                  <span class="ic-lead-prompt-when ${frappe.utils.escape_html(urg)}">${frappe.utils.escape_html(when)}</span>
+                </a>`;
+              }).join("") + "</div>";
           }
         }
         const amc = root_element.getElementById("ic-crm-amc-due");

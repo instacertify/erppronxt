@@ -1624,8 +1624,8 @@ instacertify.render_lead_reminder_banner = function (frm) {
 	}
 
 	const person = frm.doc.ic_party_name || frm.doc.lead_name || frm.doc.company_name || frm.doc.name;
-	const phone = frm.doc.mobile_no || frm.doc.phone || frm.doc.ic_alternate_phone || "—";
-	let withUser = frm.doc.ic_assigned_salesperson || frm.doc.lead_owner || __("Unassigned");
+	const phone = frm.doc.mobile_no || frm.doc.phone || frm.doc.ic_alternate_phone || "";
+	let withUser = frm.doc.ic_assigned_salesperson || frm.doc.lead_owner || "";
 	try {
 		if (withUser && frappe.user_info) {
 			const info = frappe.user_info(withUser);
@@ -1634,18 +1634,14 @@ instacertify.render_lead_reminder_banner = function (frm) {
 	} catch (e) {
 		/* keep id */
 	}
-	const remarks = (frm.doc.ic_call_remarks || "").trim() || __("No customer remarks yet — capture what they said after the call.");
-	const connected = frm.doc.ic_lead_connected ? __("Connected") : __("Not connected yet");
 
 	const intro = `
 		<div class="ic-lead-form-reminder ${urgency === "red" ? "overdue" : urgency === "orange" ? "today" : ""}">
 			<div class="ic-lead-form-reminder-title">${__("Lead reminder")} · ${frappe.utils.escape_html(when)}</div>
-			<div class="ic-lead-form-reminder-grid">
-				<div><strong>${__("Whom to call")}</strong>${frappe.utils.escape_html(person)}</div>
-				<div><strong>${__("Phone")}</strong>${frappe.utils.escape_html(phone)}</div>
-				<div><strong>${__("Connect with")}</strong>${frappe.utils.escape_html(withUser)}</div>
-				<div><strong>${__("Status")}</strong>${frappe.utils.escape_html(connected)}</div>
-				<div style="grid-column:1/-1"><strong>${__("Customer remarks")}</strong>${frappe.utils.escape_html(remarks)}</div>
+			<div class="ic-lead-form-reminder-line">
+				${frappe.utils.escape_html(person)}
+				${phone ? " · " + frappe.utils.escape_html(phone) : ""}
+				${withUser ? " · " + frappe.utils.escape_html(withUser) : ""}
 			</div>
 		</div>
 	`;
@@ -2950,7 +2946,7 @@ frappe.ui.form.on("Lead", {
 			frm.add_custom_button(__("Open Dashboard"), () => {
 				instacertify.go_home();
 			}, __("View"));
-			frm.add_custom_button(__("Lead Reminder Hub"), () => {
+			frm.add_custom_button(__("Lead Reminders"), () => {
 				instacertify.go_home();
 			}, __("View"));
 		}

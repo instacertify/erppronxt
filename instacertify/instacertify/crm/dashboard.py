@@ -276,7 +276,7 @@ def _leads_to_contact(limit=20, include_upcoming_days=7, mine_first=True):
 
 @frappe.whitelist()
 def get_lead_contact_prompts(limit=12, mine_only=0):
-	"""Reminder hub: whom to call, who to connect with, customer remarks, due when."""
+	"""Simple lead call list: who, when, phone/owner, short note."""
 	limit = int(limit or 12)
 	rows = _leads_to_contact(limit=limit * 2 if cint(mine_only) else limit)
 	if cint(mine_only):
@@ -289,8 +289,8 @@ def get_lead_contact_prompts(limit=12, mine_only=0):
 		"upcoming": upcoming,
 		"due_count": len(due_now),
 		"upcoming_count": len(upcoming),
-		"hub_title": "Lead reminder hub",
-		"hub_sub": "Whom to call · who to connect with · customer remarks",
+		"hub_title": "Lead reminders",
+		"hub_sub": "Who to call next",
 	}
 
 
