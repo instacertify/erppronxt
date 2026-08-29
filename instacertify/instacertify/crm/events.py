@@ -202,7 +202,17 @@ def get_customer_history(customer: str):
 	documents = list_docs(
 		"IC Document Request",
 		{"customer": customer},
-		["name", "title", "status", "modified"],
+		["name", "title", "status", "modified", "company_legal_name", "gstin", "product_name"],
+	)
+	sample_dispatches = list_docs(
+		"IC Sample Dispatch Collection",
+		{"customer": customer},
+		["name", "status", "tracking_number", "courier_name", "submitted_on", "modified"],
+	)
+	contracts = list_docs(
+		"IC Contract",
+		{"customer": customer},
+		["name", "title", "status", "customer_signed_name", "accepted_on", "modified"],
 	)
 	tickets = list_docs(
 		"Helpdesk Ticket",
@@ -277,8 +287,18 @@ def get_customer_history(customer: str):
 		limit_page_length=200,
 	)
 	for f in customer_files:
+		fname = f.get("file_name") or ""
+		if fname.startswith("Collected Data-"):
+			f["category"] = "Collected Data"
+		elif fname.startswith("Documents-"):
+			f["category"] = "Documents"
+		elif fname.startswith("Samples-"):
+			f["category"] = "Samples"
+		elif fname.startswith("Contracts-"):
+			f["category"] = "Contracts"
+		else:
+			f["category"] = "Uploaded"
 		f["source"] = "Customer"
-		f["category"] = "Uploaded"
 		f["source_doctype"] = "Customer"
 		f["source_name"] = customer
 
@@ -296,6 +316,8 @@ def get_customer_history(customer: str):
 		opportunities=opportunities,
 		customer_files=customer_files,
 		project_files=project_files,
+		sample_dispatches=sample_dispatches,
+		contracts=contracts,
 	)
 
 	contacts = frappe.get_list(
@@ -373,6 +395,8 @@ def get_customer_history(customer: str):
 		"invoices": invoices,
 		"payments": payments,
 		"documents": documents,
+		"sample_dispatches": sample_dispatches,
+		"contracts": contracts,
 		"tickets": tickets,
 		"open_tickets": [
 			t for t in tickets if t.get("status") in ("Open", "In Progress", "Waiting on Customer")
@@ -455,21 +479,27 @@ def _attach_field_files(doctype: str, names: list, fieldnames: list[str], catego
 
 
 def _document_request_item_files(doc_names: list) -> list[dict]:
-	"""Files uploaded on IC Document Request Item.file_url."""
+	"""Files uploaded on IC Document Request Item.uploaded_file."""
 	out: list[dict] = []
 	if not doc_names or not frappe.db.exists("DocType", "IC Document Request Item"):
+		return out
+	meta = frappe.get_meta("IC Document Request Item")
+	file_field = "uploaded_file" if meta.has_field("uploaded_file") else (
+		"file_url" if meta.has_field("file_url") else None
+	)
+	if not file_field:
 		return out
 	try:
 		rows = frappe.get_all(
 			"IC Document Request Item",
-			filters={"parent": ["in", doc_names], "file_url": ["!=", ""]},
-			fields=["name", "parent", "document_name", "file_url", "status", "modified"],
+			filters={"parent": ["in", doc_names], file_field: ["!=", ""]},
+			fields=["name", "parent", "document_name", file_field, "status", "modified"],
 			limit_page_length=200,
 		)
 	except Exception:
 		return out
 	for r in rows:
-		url = (r.get("file_url") or "").strip()
+		url = (r.get(file_field) or "").strip()
 		if not url:
 			continue
 		fname = url.rstrip("/").split("/")[-1] or (r.get("document_name") or r.name)
@@ -504,6 +534,8 @@ def _build_customer_data_drive(
 	opportunities: list,
 	customer_files: list,
 	project_files: list,
+	sample_dispatches: list | None = None,
+	contracts: list | None = None,
 ) -> dict:
 	"""Unified drive index: every file related to this customer, by category."""
 	files: list[dict] = []
@@ -511,6 +543,11 @@ def _build_customer_data_drive(
 
 	# Prefer full project set (not only completed) for the drive index
 	project_names = [p["name"] for p in (projects or []) if p.get("name")]
+	doc_names = [d["name"] for d in (documents or []) if d.get("name")]
+	dispatch_names = [d["name"] for d in (sample_dispatches or []) if d.get("name")]
+	contract_names = [c["name"] for c in (contracts or []) if c.get("name")]
+	record_names = [r["name"] for r in (records or []) if r.get("name")]
+
 	files.extend(_files_for("Project", project_names, "Projects"))
 	files.extend(
 		_files_for("Quotation", [q["name"] for q in (quotations or [])], "Quotes")
@@ -524,37 +561,64 @@ def _build_customer_data_drive(
 	files.extend(
 		_files_for("IC Sample Tracking", [s["name"] for s in (samples or [])], "Samples")
 	)
+	files.extend(_files_for("IC Document Request", doc_names, "Documents"))
+	files.extend(_document_request_item_files(doc_names))
 	files.extend(
-		_files_for("IC Document Request", [d["name"] for d in (documents or [])], "Documents")
+		_attach_field_files(
+			"IC Document Request",
+			doc_names,
+			["pod_attachment"],
+			"Samples",
+		)
 	)
-	files.extend(_document_request_item_files([d["name"] for d in (documents or [])]))
+	files.extend(_files_for("IC Sample Dispatch Collection", dispatch_names, "Samples"))
+	files.extend(
+		_attach_field_files(
+			"IC Sample Dispatch Collection",
+			dispatch_names,
+			["pod_attachment"],
+			"Samples",
+		)
+	)
+	files.extend(_files_for("IC Contract", contract_names, "Contracts"))
 	files.extend(
 		_files_for("Helpdesk Ticket", [t["name"] for t in (tickets or [])], "Support")
 	)
+	files.extend(_files_for("IC Project Record", record_names, "Records"))
 	files.extend(
-		_files_for("IC Project Record", [r["name"] for r in (records or [])], "Records")
+		_attach_field_files(
+			"IC Project Record",
+			record_names,
+			["attachment"],
+			"Records",
+		)
 	)
 	files.extend(
 		_files_for("Opportunity", [o["name"] for o in (opportunities or [])], "Quotes")
 	)
 
-	# Deduplicate by content hash / url+name (customer copies win as Uploaded)
+	# Deduplicate by content hash / url+name (customer copies win as Uploaded / Collected Data)
 	deduped: list[dict] = []
 	seen: set[str] = set()
-	# Customer uploads first
+	priority_cats = {"Uploaded", "Collected Data"}
 	for f in files:
-		if f.get("category") != "Uploaded":
+		if f.get("category") not in priority_cats:
 			continue
 		key = f.get("content_hash") or f"{f.get('file_url')}|{f.get('file_name')}"
 		seen.add(key)
+		# Collected Data snapshots saved on Customer show as Collected Data
+		if (f.get("file_name") or "").startswith("Collected Data-"):
+			f["category"] = "Collected Data"
 		deduped.append(f)
 	for f in files:
-		if f.get("category") == "Uploaded":
+		if f.get("category") in priority_cats:
 			continue
 		key = f.get("content_hash") or f"{f.get('file_url')}|{f.get('file_name')}"
 		if key in seen:
 			continue
 		seen.add(key)
+		if (f.get("file_name") or "").startswith("Collected Data-"):
+			f["category"] = "Collected Data"
 		deduped.append(f)
 
 	# Also include any project_files already gathered that we might have missed
@@ -582,12 +646,14 @@ def _build_customer_data_drive(
 		"total": len(deduped),
 		"categories": [
 			"Uploaded",
+			"Collected Data",
 			"Projects",
 			"Quotes",
 			"Invoices",
 			"Testing",
 			"Samples",
 			"Documents",
+			"Contracts",
 			"Support",
 			"Records",
 			"Other",
