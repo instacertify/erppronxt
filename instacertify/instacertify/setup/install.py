@@ -611,13 +611,13 @@ def _ensure_customer_related_tab():
 		},
 		{
 			"fieldname": "ic_section_files",
-			"label": "Completed Project Files",
+			"label": "Customer Data Drive",
 			"fieldtype": "Section Break",
 			"insert_after": "ic_history_html",
 		},
 		{
 			"fieldname": "ic_customer_files_html",
-			"label": "Customer Files",
+			"label": "Data Drive",
 			"fieldtype": "HTML",
 			"insert_after": "ic_section_files",
 		},
