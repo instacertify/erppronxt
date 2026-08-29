@@ -809,8 +809,9 @@ _SHADOW_THEME_CSS = """
   border-radius: 12px !important;
 }
 .ic-lead-prompt-list {
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr)) !important;
   gap: 12px !important;
+  width: 100% !important;
 }
 .ic-lead-prompt, .ic-lead-hub-card {
   aspect-ratio: 1 / 1 !important;
@@ -819,8 +820,9 @@ _SHADOW_THEME_CSS = """
   flex-direction: column !important;
 }
 .ic-workdesk-grid {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
   gap: 12px !important;
+  width: 100% !important;
 }
 """
 
