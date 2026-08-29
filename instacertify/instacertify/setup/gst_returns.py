@@ -170,7 +170,7 @@ def _ensure_instacertify_sidebar_gst_links():
 				{
 					"doctype": "Workspace Sidebar",
 					"title": sidebar_name,
-					"header_icon": "file",
+					"header_icon": "layout-dashboard",
 				}
 			)
 			sb.insert(ignore_permissions=True)
@@ -181,17 +181,17 @@ def _ensure_instacertify_sidebar_gst_links():
 	existing_links = {(i.link_to or "").strip() for i in (sb.items or [])}
 
 	wanted = [
-		("Section Break", "GST & Invoicing", None),
-		("Link", "Sales Invoice", "Sales Invoice"),
-		("Link", "Payment Entry", "Payment Entry"),
-		("Link", "GSTR-1", "GSTR-1"),
-		("Link", "GSTR-3B", "GSTR 3B Report"),
-		("Link", "GST Return Log", "GST Return Log"),
-		("Link", "GST Settings", "GST Settings"),
+		("Section Break", "GST & Invoicing", None, "landmark"),
+		("Link", "Sales Invoice", "Sales Invoice", "receipt"),
+		("Link", "Payment Entry", "Payment Entry", "banknote"),
+		("Link", "GSTR-1", "GSTR-1", "badge-indian-rupee"),
+		("Link", "GSTR-3B", "GSTR 3B Report", "calculator"),
+		("Link", "GST Return Log", "GST Return Log", "file-spreadsheet"),
+		("Link", "GST Settings", "GST Settings", "settings"),
 	]
 
 	changed = False
-	for typ, label, link_to in wanted:
+	for typ, label, link_to, icon in wanted:
 		if link_to and link_to in existing_links:
 			continue
 		if typ == "Section Break" and any(
@@ -205,6 +205,7 @@ def _ensure_instacertify_sidebar_gst_links():
 			"label": label,
 			"link_type": "DocType" if link_to else None,
 			"link_to": link_to,
+			"icon": icon,
 			"child": 1 if typ == "Link" else 0,
 			"collapsible": 1 if typ == "Section Break" else 0,
 			"indent": 1 if typ == "Section Break" else 0,
@@ -221,7 +222,7 @@ def _ensure_instacertify_sidebar_gst_links():
 			sb.save(ignore_permissions=True)
 		except Exception:
 			# Fall back to SQL insert of missing Link rows only
-			for typ, label, link_to in wanted:
+			for typ, label, link_to, icon in wanted:
 				if typ != "Link" or not link_to or link_to in existing_links:
 					continue
 				if not frappe.db.exists("DocType", link_to):
@@ -236,6 +237,7 @@ def _ensure_instacertify_sidebar_gst_links():
 						"label": label,
 						"link_type": "DocType",
 						"link_to": link_to,
+						"icon": icon,
 						"child": 1,
 					}
 				).insert(ignore_permissions=True)
