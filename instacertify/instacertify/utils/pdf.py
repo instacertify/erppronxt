@@ -85,8 +85,19 @@ def quotation_print_format(doc) -> str | None:
 	return None
 
 
-def even_print_margins() -> dict:
-	"""Even A4 margins so printed PDFs align cleanly on all sides."""
+def even_print_margins(for_quote: bool = False) -> dict:
+	"""Even A4 margins so printed PDFs align cleanly on all sides.
+
+	Quotes reserve extra top space for the repeating `#header-html` letterhead.
+	"""
+	if for_quote:
+		return {
+			"page-size": "A4",
+			"margin-top": "28mm",
+			"margin-right": "12mm",
+			"margin-bottom": "14mm",
+			"margin-left": "12mm",
+		}
 	return {
 		"page-size": "A4",
 		"margin-top": "12mm",
@@ -96,19 +107,21 @@ def even_print_margins() -> dict:
 	}
 
 
-def make_pdf(html: str, options: dict | None = None) -> bytes:
+def make_pdf(html: str, options: dict | None = None, for_quote: bool = False) -> bytes:
 	"""Generate PDF bytes: try Chrome on the HTML, then inlined wkhtmltopdf."""
 	options = dict(options or {})
-	options.update(even_print_margins())
+	options.update(even_print_margins(for_quote=for_quote))
 	options.setdefault("disable-javascript", "")
 	options.setdefault("load-error-handling", "ignore")
 	options.setdefault("load-media-error-handling", "ignore")
 
 	safe_html = inline_local_assets(html)
-	# Ensure CSS page box matches engine margins (even 12mm).
+	# Ensure CSS page box matches engine margins.
 	if "@page" not in safe_html:
+		top = "28mm" if for_quote else "12mm"
+		bottom = "14mm" if for_quote else "12mm"
 		safe_html = (
-			"<style>@page{size:A4;margin:12mm}.print-format{padding:0!important;margin:0!important}</style>"
+			f"<style>@page{{size:A4;margin:{top} 12mm {bottom} 12mm}}.print-format{{padding:0!important;margin:0!important}}</style>"
 			+ safe_html
 		)
 
@@ -157,7 +170,7 @@ def get_quotation_pdf_bytes(name: str, print_format: str | None = None, no_lette
 		# Prefer HTML → make_pdf so even margins are applied consistently.
 		try:
 			html = frappe.get_print("Quotation", name, print_format=fmt, no_letterhead=no_letterhead)
-			pdf = make_pdf(html)
+			pdf = make_pdf(html, for_quote=True)
 			if pdf:
 				return pdf
 		except Exception:
