@@ -32,14 +32,13 @@ def _is_report_file(file_row: dict | None = None, *, file_url: str | None = None
 	url = (file_url or row.get("file_url") or "").lower()
 	name = (file_name or row.get("file_name") or row.get("label") or "").lower()
 	cat = category or row.get("category") or ""
-	if cat in REPORT_CATEGORIES:
-		return True
 	if "report" in name or "report" in url:
 		return True
-	if url.endswith(".pdf") and cat in {"Testing", "Samples", "Records", "Uploaded", "Documents"}:
-		# PDFs on testing/samples/records are typically reports
-		if cat in {"Testing", "Samples", "Records"}:
-			return True
+	if cat in REPORT_CATEGORIES:
+		return True
+	# Customer Data Drive PDFs (uploaded / testing / samples / records / documents)
+	if url.endswith(".pdf") or name.endswith(".pdf"):
+		return True
 	return False
 
 
