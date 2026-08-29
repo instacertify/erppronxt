@@ -1714,7 +1714,7 @@ a.ic-lead-prompt-phone:hover {
 textarea.form-control,
 select.form-control {
   border-radius: var(--ic-radius-sm) !important;
-  border: 1.5px solid #b8c5ce !important;
+  border: 1.5px solid #c9d3db !important;
   background-color: #ffffff !important;
   box-shadow: none !important;
   color: #152833 !important;
@@ -2663,8 +2663,8 @@ html, body, .desk-page, .page-container, .form-layout,
 /* ——— Always-visible fillable boxes & dropdowns (no hover required) ——— */
 :root,
 [data-theme="light"] {
-  --ic-field-border: #b8c5ce;
-  --ic-field-border-soft: #c5d0d8;
+  --ic-field-border: #c9d3db;
+  --ic-field-border-soft: #d2dbe2;
   --ic-field-border-hover: #065175;
   --ic-field-border-focus: #EC6820;
   --ic-field-bg: #ffffff;
@@ -2687,7 +2687,7 @@ body .page-form .form-control,
 body .modal-body .form-control,
 body .grid-row-open .form-control,
 body .grid-form-body .form-control {
-  border: 1.5px solid #b8c5ce !important;
+  border: 1.5px solid #c9d3db !important;
   background-color: #ffffff !important;
   box-shadow: none !important;
 }
@@ -2718,7 +2718,7 @@ body .grid-form-body .form-control:hover {
 .page-form select.form-control:not([disabled]):not([readonly]),
 select.input-with-feedback:not([disabled]):not([readonly]),
 .control-input-wrapper select:not([disabled]):not([readonly]) {
-  border-color: #b8c5ce !important;
+  border-color: #c9d3db !important;
   background-color: #ffffff !important;
   background-image:
     linear-gradient(45deg, transparent 50%, #7a8f9c 50%),
@@ -2764,7 +2764,7 @@ select.input-with-feedback:not([disabled]):not([readonly]):hover {
 .frappe-control[data-fieldtype="Long Text"] textarea,
 .frappe-control[data-fieldtype="Text"] textarea,
 .frappe-control[data-fieldtype="Code"] textarea {
-  border: 1.5px solid #b8c5ce !important;
+  border: 1.5px solid #c9d3db !important;
   background-color: #ffffff !important;
 }
 
@@ -2819,7 +2819,7 @@ select.form-control[readonly],
 .form-grid .grid-row .form-control,
 .grid-row-open .form-section .form-control,
 .rows .grid-row .form-control {
-  border: 1.5px solid #b8c5ce !important;
+  border: 1.5px solid #c9d3db !important;
   background: #fff !important;
 }
 
@@ -2837,7 +2837,7 @@ select.form-control[readonly],
 .sort-selector .btn-group .btn-default,
 .filter-button,
 .list-row-head .filter-x-button {
-  border: 1.5px solid #b8c5ce !important;
+  border: 1.5px solid #c9d3db !important;
 }
 
 /* Checkbox / radio — clearer hit area without relying on hover */
@@ -2854,7 +2854,7 @@ select.form-control[readonly],
 .control-input .ql-container.ql-snow,
 .frappe-control[data-fieldtype="Text Editor"] .ql-toolbar.ql-snow,
 .frappe-control[data-fieldtype="Text Editor"] .ql-container.ql-snow {
-  border: 1.5px solid #b8c5ce !important;
+  border: 1.5px solid #c9d3db !important;
   background: #ffffff !important;
 }
 
@@ -2862,7 +2862,7 @@ select.form-control[readonly],
 .frappe-control[data-fieldtype="Attach"] .control-input,
 .frappe-control[data-fieldtype="Attach Image"] .control-input,
 .frappe-control[data-fieldtype="Color"] .control-input {
-  border: 1.5px solid #b8c5ce !important;
+  border: 1.5px solid #c9d3db !important;
   border-radius: var(--ic-radius-sm);
   background: #ffffff;
   padding: 4px;
