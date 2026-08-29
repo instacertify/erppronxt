@@ -142,6 +142,11 @@ instacertify.go_home = function () {
 /** Land every user on Instacertify Home dashboard after login / desk boot. */
 $(document).on("app_ready", function () {
 	try {
+		instacertify.enable_full_width_desk();
+	} catch (e) {
+		/* ignore */
+	}
+	try {
 		instacertify.patch_file_uploader_for_internal_drive();
 	} catch (e) {
 		/* ignore */
@@ -170,6 +175,19 @@ $(document).on("app_ready", function () {
 		/* ignore */
 	}
 });
+
+/** Stretch desk content — removes Frappe's default ~900px page gutters so tiles can spread. */
+instacertify.enable_full_width_desk = function () {
+	try {
+		localStorage.setItem("container_full_width", "true");
+	} catch (e) {
+		/* ignore */
+	}
+	if (document.body) {
+		document.body.classList.add("full-width");
+	}
+	$(document.body).addClass("full-width");
+};
 
 /** Never leave users on the generic ERPNext Home workspace (wrong landing / empty). */
 $(document).on("page-change", function () {
@@ -3195,6 +3213,9 @@ instacertify.hide_pos_on_sales_invoice = function (frm) {
 
 // Also inject when workspace page is shown via frappe.pages
 $(document).ready(function () {
+	// Prefer full-width desk so square tiles spread across the viewing screen
+	instacertify.enable_full_width_desk();
+
 	const tryInject = () => {
 		const route = frappe.get_route_str ? frappe.get_route_str() : (frappe.get_route() || []).join("/");
 		if (!(route || "").includes("Instacertify")) return;
