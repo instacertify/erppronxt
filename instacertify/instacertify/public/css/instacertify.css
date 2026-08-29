@@ -2590,7 +2590,7 @@ html, body, .desk-page, .page-container, .form-layout,
 
 /* ——— Home / Workspaces: eliminate side gutters, use full display width ——— */
 :root {
-  --ic-home-side-pad: 10px;
+  --ic-home-side-pad: 8px;
 }
 
 /* Remove Frappe's ~900px page max-width on home / workspaces */
@@ -2613,6 +2613,21 @@ body.full-width .desk-page .layout-main-section {
   width: 100% !important;
   padding-left: var(--ic-home-side-pad) !important;
   padding-right: var(--ic-home-side-pad) !important;
+}
+
+/* Bootstrap .container on page-body caps width — force fluid on home */
+[data-page-route="Workspaces"] .page-body.container,
+[data-page-route="Workspaces"] .container.page-body,
+[data-page-route="instacertify-home"] .page-body.container,
+[data-page-route="instacertify-home"] .container.page-body,
+body.full-width .page-body.container,
+body.full-width .container.page-body {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 [data-page-route="Workspaces"] .page-head .container,
@@ -2652,10 +2667,12 @@ body.full-width .page-head .container {
   margin-left: 0 !important;
   margin-right: 0 !important;
   width: 100% !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
 }
 
 @media (min-width: 1200px) {
   :root {
-    --ic-home-side-pad: 12px;
+    --ic-home-side-pad: 10px;
   }
 }
