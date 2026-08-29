@@ -11,6 +11,10 @@ Custom Frappe app for Instacertify on ERPNext 16.33 — certification, complianc
 - `hrms` (Frappe HR — hiring → FnF) — install with:
   `bench get-app hrms --branch version-16`
   `bench --site <site> install-app hrms`
+- `gameplan` (team discussions) — install with:
+  `bench get-app gameplan --branch develop`
+  `bench --site <site> install-app gameplan`
+  Open from Desk icon, Instacertify Home sidebar, Explore tile, or `/g`
 
 ## Expenses & HRMS (last in navigation)
 

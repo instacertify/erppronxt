@@ -15,6 +15,9 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
+	from instacertify.setup.gameplan_access import ensure_gameplan_access
+
+	ensure_gameplan_access()
 
 
 def _ensure_home_html_block():
@@ -219,6 +222,10 @@ def _ensure_home_html_block():
 
   function openExploreCard(card) {
     if (!card) return;
+    if (card.action === "open_gameplan" || card.url === "/g") {
+      window.location.href = card.url || "/g";
+      return;
+    }
     if (card.action === "upload_quote_format" && window.instacertify && instacertify.open_quote_format_upload) {
       instacertify.open_quote_format_upload();
       return;
@@ -968,6 +975,7 @@ def _ensure_home_workspace():
 		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 2}},
 		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
 		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
+		{"id": "sc_gameplan", "type": "shortcut", "data": {"shortcut_name": "Gameplan", "col": 2}},
 		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 2}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
@@ -996,6 +1004,7 @@ def _ensure_home_workspace():
 		{"label": "Projects", "link_to": "Project", "type": "DocType", "doc_view": "List"},
 		{"label": "Project Board", "link_to": "project-board", "type": "Page"},
 		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
+		{"label": "Gameplan", "type": "URL", "url": "/g", "icon": "message-circle"},
 		{"label": "Team Calendar", "link_to": "Event", "type": "DocType", "doc_view": "Calendar"},
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
