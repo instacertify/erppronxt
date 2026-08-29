@@ -324,7 +324,7 @@ instacertify.open_quote_format_upload = function (opts) {
 				fieldname: "quotation_type",
 				fieldtype: "Select",
 				label: __("Quote Type"),
-				options: "Consulting\nTesting\nRenewal\nService\nOther\nMultiple Products / Multiple Services",
+				options: "Consulting\nTesting\nRenewal\nOther",
 				reqd: 1,
 				default: opts.quotation_type || "Consulting",
 			},
