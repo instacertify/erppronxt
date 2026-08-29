@@ -21,11 +21,8 @@ html {
   --ic-muted: #5a7382;
   --ic-radius: 14px;
   --ic-radius-sm: 10px;
-  /* Square tiles: min size, but always stretch (1fr) to fill the row — no empty side gap */
-  --ic-tile-min: 132px;
+  --ic-tile-min: 148px;
   --ic-tile-gap: 12px;
-  --ic-tile-cols: repeat(auto-fit, minmax(min(100%, var(--ic-tile-min)), 1fr));
-  --ic-home-side-pad: 8px;
   --ic-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
   --ic-shadow-hover: 0 14px 32px rgba(6, 81, 117, 0.12);
   --ic-font: "Poppins", "Segoe UI", sans-serif;
@@ -480,10 +477,9 @@ body {
 
 .ic-summary-grid {
   display: grid;
-  grid-template-columns: var(--ic-tile-cols);
+  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
   gap: var(--ic-tile-gap, 12px);
   margin-bottom: 20px;
-  width: 100%;
 }
 
 .ic-explore-panel {
@@ -508,9 +504,8 @@ body {
 
 .ic-explore-grid {
   display: grid;
-  grid-template-columns: var(--ic-tile-cols);
+  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
   gap: var(--ic-tile-gap, 12px);
-  width: 100%;
 }
 
 /* Unified square tiles — Explore + KPI + Projects share one rhythm */
@@ -792,10 +787,9 @@ body {
 
 .ic-project-grid {
   display: grid;
-  grid-template-columns: var(--ic-tile-cols);
+  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
   gap: var(--ic-tile-gap, 12px);
   margin-bottom: 20px;
-  width: 100%;
 }
 
 .ic-project-grid-board {
@@ -1427,9 +1421,8 @@ body.for-login,
 }
 .ic-lead-prompt-list {
   display: grid;
-  grid-template-columns: var(--ic-tile-cols);
+  grid-template-columns: repeat(auto-fill, minmax(var(--ic-tile-min, 148px), 1fr));
   gap: var(--ic-tile-gap, 12px);
-  width: 100%;
 }
 .ic-lead-prompt {
   display: flex;
@@ -1718,10 +1711,12 @@ a.ic-lead-prompt-phone:hover {
 
 .form-control,
 .input-with-feedback,
-textarea.form-control {
+textarea.form-control,
+select.form-control {
   border-radius: var(--ic-radius-sm) !important;
-  border-color: rgba(6, 81, 117, 0.14) !important;
-  transition: border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease);
+  border: 2px solid rgba(6, 81, 117, 0.45) !important;
+  background-color: #ffffff !important;
+  transition: border-color 0.18s var(--ic-ease), box-shadow 0.18s var(--ic-ease), background-color 0.18s var(--ic-ease);
 }
 
 .page-head {
@@ -1792,10 +1787,9 @@ textarea.form-control {
 /* Workdesk + HR panels on home — square tile panels */
 .ic-workdesk-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: var(--ic-tile-gap, 12px);
   margin: 8px 0 18px;
-  width: 100%;
 }
 .ic-workdesk-panel,
 .ic-hr-panel {
@@ -1864,10 +1858,9 @@ textarea.form-control {
 }
 .ic-hr-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
   gap: 12px;
   margin-top: 12px;
-  width: 100%;
 }
 .ic-hr-columns > div {
   aspect-ratio: 1 / 1;
@@ -2597,151 +2590,206 @@ html, body, .desk-page, .page-container, .form-layout,
   font-family: "Poppins", sans-serif !important;
 }
 
-/* ——— Square tiles: fill viewport width, no empty side gutters ——— */
-#ic-home-root,
-.ic-summary-grid,
-.ic-explore-grid,
-.ic-project-grid,
-.ic-lead-prompt-list,
-.ic-workdesk-grid,
-.ic-hr-columns {
-  width: 100% !important;
-  max-width: none !important;
-  box-sizing: border-box;
+/* ——— Always-visible fillable boxes & dropdowns (no hover required) ——— */
+:root,
+[data-theme="light"] {
+  --ic-field-border: #065175;
+  --ic-field-border-soft: rgba(6, 81, 117, 0.55);
+  --ic-field-border-focus: #EC6820;
+  --ic-field-bg: #ffffff;
+  --ic-field-bg-tint: #f3f9fc;
+  --ic-field-ring: rgba(6, 81, 117, 0.14);
 }
 
-/* Remove Frappe ~900px page max-width on home / workspaces */
-[data-page-route="Workspaces"] .layout-main,
-[data-page-route="Workspaces"] .layout-main-section-wrapper,
-[data-page-route="instacertify-home"] .layout-main,
-[data-page-route="instacertify-home"] .layout-main-section-wrapper,
-body.full-width .layout-main,
-body.full-width .layout-main-section-wrapper {
-  max-width: none !important;
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+/* Text / textarea / select / link / date — rest state is already bold */
+.form-layout .frappe-control:not(.hide-control) .control-input .form-control,
+.form-layout .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
+.form-layout .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
+.form-layout .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
+.form-layout .frappe-control:not(.hide-control) .control-input .awesomplete > input,
+.form-page .frappe-control:not(.hide-control) .control-input .form-control,
+.form-page .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
+.form-page .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
+.form-page .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
+.form-page .frappe-control:not(.hide-control) .control-input .awesomplete > input,
+.modal-body .frappe-control:not(.hide-control) .control-input .form-control,
+.modal-body .frappe-control:not(.hide-control) .control-input input.input-with-feedback,
+.modal-body .frappe-control:not(.hide-control) .control-input textarea.input-with-feedback,
+.modal-body .frappe-control:not(.hide-control) .control-input select.input-with-feedback,
+.modal-body .frappe-control:not(.hide-control) .control-input .awesomplete > input,
+.grid-row-open .form-control,
+.grid-form-body .form-control,
+.filter-box .form-control,
+.filter-box input.input-with-feedback,
+.filter-box select.input-with-feedback,
+.page-form .form-control,
+.dialog-assignment-section .form-control,
+.std-form-layout .form-control,
+.form-column .form-control,
+input.form-control:not([disabled]):not([readonly]),
+textarea.form-control:not([disabled]):not([readonly]),
+select.form-control:not([disabled]):not([readonly]),
+.input-with-feedback:not([disabled]):not([readonly]),
+.awesomplete > input:not([disabled]):not([readonly]),
+.datepicker input:not([disabled]):not([readonly]),
+.control-input-wrapper input:not([type="checkbox"]):not([type="radio"]):not([disabled]):not([readonly]),
+.control-input-wrapper textarea:not([disabled]):not([readonly]),
+.control-input-wrapper select:not([disabled]):not([readonly]) {
+  border: 2px solid var(--ic-field-border) !important;
+  background-color: var(--ic-field-bg) !important;
+  background-image: linear-gradient(180deg, var(--ic-field-bg-tint) 0%, var(--ic-field-bg) 55%) !important;
+  box-shadow: inset 0 0 0 1px var(--ic-field-ring) !important;
+  color: var(--ic-ink, #152833) !important;
 }
 
-[data-page-route="Workspaces"] .layout-main-section,
-[data-page-route="instacertify-home"] .layout-main-section,
-body.full-width .desk-page .layout-main-section {
-  max-width: none !important;
-  width: 100% !important;
-  padding-left: var(--ic-home-side-pad) !important;
-  padding-right: var(--ic-home-side-pad) !important;
+/* Select / dropdown affordance — darker chevron area */
+.form-layout select.form-control:not([disabled]):not([readonly]),
+.form-page select.form-control:not([disabled]):not([readonly]),
+.modal-body select.form-control:not([disabled]):not([readonly]),
+.filter-box select.form-control:not([disabled]):not([readonly]),
+.page-form select.form-control:not([disabled]):not([readonly]),
+select.input-with-feedback:not([disabled]):not([readonly]),
+.control-input-wrapper select:not([disabled]):not([readonly]) {
+  border-color: var(--ic-field-border) !important;
+  background-color: #eef6fa !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #065175 50%),
+    linear-gradient(135deg, #065175 50%, transparent 50%),
+    linear-gradient(180deg, #f3f9fc 0%, #ffffff 60%) !important;
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px),
+    0 0 !important;
+  background-size: 5px 5px, 5px 5px, 100% 100% !important;
+  background-repeat: no-repeat !important;
+  padding-right: 28px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
 }
 
-[data-page-route="Workspaces"] .page-body.container,
-[data-page-route="Workspaces"] .container.page-body,
-[data-page-route="instacertify-home"] .page-body.container,
-[data-page-route="instacertify-home"] .container.page-body,
-body.full-width .page-body.container,
-body.full-width .container.page-body {
-  max-width: 100% !important;
-  width: 100% !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+/* Link field (Awesomplete) — same visible box */
+.frappe-control[data-fieldtype="Link"] .awesomplete > input,
+.frappe-control[data-fieldtype="Dynamic Link"] .awesomplete > input,
+.frappe-control[data-fieldtype="Data"] .control-input input,
+.frappe-control[data-fieldtype="Select"] select,
+.frappe-control[data-fieldtype="Date"] input,
+.frappe-control[data-fieldtype="Datetime"] input,
+.frappe-control[data-fieldtype="Time"] input,
+.frappe-control[data-fieldtype="Int"] input,
+.frappe-control[data-fieldtype="Float"] input,
+.frappe-control[data-fieldtype="Currency"] input,
+.frappe-control[data-fieldtype="Percent"] input,
+.frappe-control[data-fieldtype="Phone"] input,
+.frappe-control[data-fieldtype="Email"] input,
+.frappe-control[data-fieldtype="Small Text"] textarea,
+.frappe-control[data-fieldtype="Long Text"] textarea,
+.frappe-control[data-fieldtype="Text"] textarea,
+.frappe-control[data-fieldtype="Code"] textarea {
+  border: 2px solid var(--ic-field-border) !important;
+  background-color: var(--ic-field-bg) !important;
 }
 
-[data-page-route="Workspaces"] .page-head .container,
-[data-page-route="Workspaces"] .page-head,
-[data-page-route="instacertify-home"] .page-head .container,
-[data-page-route="instacertify-home"] .page-head,
-body.full-width .page-head .container {
-  max-width: none !important;
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding-left: var(--ic-home-side-pad) !important;
-  padding-right: var(--ic-home-side-pad) !important;
+/* Required empty fields — orange edge so fill targets stand out more */
+.frappe-control[data-reqd="1"] .control-input .form-control:placeholder-shown,
+.frappe-control[data-reqd="1"] .control-input input.input-with-feedback:placeholder-shown,
+.frappe-control[data-reqd="1"] .control-input select.input-with-feedback:invalid,
+.frappe-control.reqd-empty .control-input .form-control,
+.frappe-control.has-error .control-input .form-control {
+  border-color: var(--ic-field-border-focus) !important;
+  box-shadow: inset 0 0 0 1px rgba(236, 104, 32, 0.2) !important;
 }
 
-[data-page-route="Workspaces"] .codex-editor,
-[data-page-route="Workspaces"] .ce-block__content,
-[data-page-route="Workspaces"] .ce-toolbar__content,
-[data-page-route="Workspaces"] .widget-group,
-[data-page-route="Workspaces"] .widget.custom-block-widget,
-[data-page-route="Workspaces"] .custom-block-widget,
-[data-page-route="instacertify-home"] .codex-editor,
-[data-page-route="instacertify-home"] .ce-block__content,
-[data-page-route="instacertify-home"] .widget-group,
-[data-page-route="instacertify-home"] .custom-block-widget,
-#ic-home-root {
-  max-width: none !important;
-  width: 100% !important;
+/* Focus — orange ring (stronger than rest; still no hover dependency) */
+.form-control:focus,
+input.form-control:focus,
+textarea.form-control:focus,
+select.form-control:focus,
+.input-with-feedback:focus,
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus,
+.awesomplete > input:focus,
+.datepicker input:focus {
+  border-color: var(--ic-field-border-focus) !important;
+  box-shadow: 0 0 0 3px rgba(236, 104, 32, 0.22) !important;
+  background-color: #fff !important;
+  outline: none !important;
 }
 
-[data-page-route="Workspaces"] .ce-block__content,
-[data-page-route="Workspaces"] .ce-toolbar__content,
-[data-page-route="instacertify-home"] .ce-block__content,
-[data-page-route="instacertify-home"] .ce-toolbar__content {
-  max-width: none !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  width: 100% !important;
-  padding-left: 4px !important;
-  padding-right: 4px !important;
+/* Read-only / disabled stay quieter so editable boxes remain the visual target */
+.form-control[disabled],
+.form-control[readonly],
+.input-with-feedback[disabled],
+.input-with-feedback[readonly],
+select.form-control[disabled],
+select.form-control[readonly],
+.frappe-control.like-disabled-input .control-value,
+.frappe-control[data-fieldtype="Read Only"] .control-value,
+.like-disabled-input {
+  border: 1px solid rgba(6, 81, 117, 0.16) !important;
+  background: #eef2f5 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #5a7382 !important;
 }
 
-/* Workspace shortcut / number widgets — square, even horizontal spread */
-[data-page-route="Workspaces"] .widget-group .grid-col-3,
-[data-page-route="Workspaces"] .widget-group .grid-col-2,
-[data-page-route="instacertify-home"] .widget-group .grid-col-3,
-[data-page-route="instacertify-home"] .widget-group .grid-col-2,
-body.full-width .widget-group .grid-col-3,
-body.full-width .widget-group .grid-col-2 {
-  display: grid !important;
-  grid-template-columns: var(--ic-tile-cols) !important;
-  column-gap: var(--ic-tile-gap, 12px) !important;
-  row-gap: var(--ic-tile-gap, 12px) !important;
-  width: 100% !important;
-  align-items: stretch !important;
+/* Child table cells — visible grid entry boxes */
+.grid-body .data-row .col input.form-control,
+.grid-body .data-row .col textarea.form-control,
+.grid-body .data-row .col select.form-control,
+.form-grid .grid-row .form-control,
+.grid-row-open .form-section .form-control,
+.rows .grid-row .form-control {
+  border: 2px solid var(--ic-field-border) !important;
+  background: #fff !important;
 }
 
-[data-page-route="Workspaces"] .widget.shortcut-widget-box,
-[data-page-route="Workspaces"] .widget.number-widget-box,
-[data-page-route="instacertify-home"] .widget.shortcut-widget-box,
-[data-page-route="instacertify-home"] .widget.number-widget-box,
-body.full-width .widget.shortcut-widget-box,
-body.full-width .widget.number-widget-box {
-  aspect-ratio: 1 / 1 !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  height: auto !important;
-  min-height: 0 !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
+/* List / filter bar dropdowns & search */
+.filter-list .form-control,
+.filter-area .form-control,
+.list-filters .form-control,
+.standard-filter-section .form-control,
+.page-form .awesomplete > input,
+.sort-selector .btn-group .btn-default,
+.filter-button,
+.list-row-head .filter-x-button {
+  border: 2px solid var(--ic-field-border-soft) !important;
 }
 
-@media (min-width: 1200px) {
-  :root {
-    --ic-home-side-pad: 10px;
-    --ic-tile-min: 140px;
-  }
+/* Checkbox / radio — clearer hit area without relying on hover */
+.frappe-control[data-fieldtype="Check"] .checkbox,
+.frappe-control input[type="checkbox"],
+.frappe-control input[type="radio"] {
+  accent-color: var(--ic-field-border);
+  outline: 2px solid rgba(6, 81, 117, 0.35);
+  outline-offset: 2px;
 }
 
-@media (max-width: 700px) {
-  :root {
-    --ic-tile-min: 140px;
-  }
-  .ic-summary-grid,
-  .ic-explore-grid,
-  .ic-project-grid,
-  .ic-lead-prompt-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
+/* MultiSelect / Tag fields */
+.frappe-control .form-control.frappe-control,
+.control-input .ql-container.ql-snow,
+.frappe-control[data-fieldtype="Text Editor"] .ql-toolbar.ql-snow,
+.frappe-control[data-fieldtype="Text Editor"] .ql-container.ql-snow {
+  border: 2px solid var(--ic-field-border) !important;
+  background: var(--ic-field-bg) !important;
 }
 
-@media (max-width: 420px) {
-  .ic-summary-grid,
-  .ic-explore-grid,
-  .ic-project-grid,
-  .ic-lead-prompt-list {
-    grid-template-columns: 1fr !important;
-  }
+/* Attach / color / rating wrappers */
+.frappe-control[data-fieldtype="Attach"] .control-input,
+.frappe-control[data-fieldtype="Attach Image"] .control-input,
+.frappe-control[data-fieldtype="Color"] .control-input {
+  border: 2px solid var(--ic-field-border) !important;
+  border-radius: var(--ic-radius-sm);
+  background: var(--ic-field-bg-tint);
+  padding: 4px;
+}
+
+/* Keep link-btn visible (not only on hover) so dropdowns are discoverable */
+.frappe-control .control-input-wrapper .link-btn,
+.frappe-control .control-input .link-btn,
+.frappe-control .btn-open,
+.frappe-control .btn-search {
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: var(--ic-field-border) !important;
 }
