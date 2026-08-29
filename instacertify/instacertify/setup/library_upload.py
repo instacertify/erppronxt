@@ -211,6 +211,31 @@ def get_library_summary():
 	}
 
 
+@frappe.whitelist()
+def get_quote_library_catalog():
+	"""Simple category catalog for Quote Format Library page."""
+	rows = frappe.get_all(
+		"IC Quotation Template",
+		fields=[
+			"name",
+			"template_name",
+			"quotation_type",
+			"service_family",
+			"service_name",
+			"is_active",
+			"uploaded_format",
+			"modified",
+		],
+		order_by="quotation_type asc, template_name asc",
+		limit_page_length=500,
+	)
+	counts = {}
+	for r in rows:
+		t = r.quotation_type or "Other"
+		counts[t] = counts.get(t, 0) + 1
+	return {"counts": counts, "templates": rows}
+
+
 def _public_file(file_name: str, content: str | bytes, content_type: str | None = None) -> dict:
 	"""Create or reuse a public File and return its URL."""
 	existing = frappe.db.get_value("File", {"file_name": file_name, "is_private": 0}, "file_url")

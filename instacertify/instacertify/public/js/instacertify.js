@@ -1228,7 +1228,7 @@ frappe.ui.form.on("Quotation", {
 			});
 		}, __("Library"));
 		frm.add_custom_button(__("Quote Format Library"), () => {
-			frappe.set_route("List", "IC Quotation Template");
+			frappe.set_route("quote-format-library");
 		}, __("Library"));
 		frm.add_custom_button(__("Upload Lab / Scope"), () => {
 			instacertify.open_laboratory_upload();
@@ -1333,9 +1333,10 @@ frappe.ui.form.on("Quotation", {
 			}, __("Actions"));
 
 			frm.add_custom_button(__("Manage Templates"), () => {
-				frappe.set_route("List", "IC Quotation Template", {
+				frappe.route_options = {
 					quotation_type: frm.doc.ic_quotation_type || undefined,
-				});
+				};
+				frappe.set_route("quote-format-library");
 			}, __("Actions"));
 
 			frm.add_custom_button(__("New Template"), () => {
@@ -3354,9 +3355,26 @@ frappe.listview_settings["IC Expense Claim"] = {
 	},
 };
 
-// Quote Format + Laboratory libraries — list upload actions
+// Quote Format + Laboratory libraries — list upload actions + category chips
 frappe.listview_settings["IC Quotation Template"] = {
+	add_fields: ["quotation_type", "service_family", "is_active", "uploaded_format"],
+	filters: [["is_active", "=", 1]],
+	get_indicator(doc) {
+		const t = doc.quotation_type || "Other";
+		const colors = {
+			Consulting: "blue",
+			Testing: "orange",
+			Renewal: "green",
+			Service: "cyan",
+			Other: "gray",
+			"Multiple Products / Multiple Services": "purple",
+		};
+		return [__(t), colors[t] || "blue", "quotation_type,=," + t];
+	},
 	onload(listview) {
+		listview.page.add_inner_button(__("Category Catalog"), () => {
+			frappe.set_route("quote-format-library");
+		});
 		listview.page.add_inner_button(__("Upload Quote Format"), () => {
 			instacertify.open_quote_format_upload();
 		});
@@ -3369,6 +3387,39 @@ frappe.listview_settings["IC Quotation Template"] = {
 				},
 			});
 		});
+
+		const cats = [
+			"",
+			"Consulting",
+			"Testing",
+			"Renewal",
+			"Service",
+			"Multiple Products / Multiple Services",
+			"Other",
+		];
+		const $bar = $(`<div class="ic-quote-lib-list-cats"></div>`);
+		cats.forEach((c) => {
+			const label = c || __("All");
+			const $btn = $(
+				`<button type="button" class="btn btn-default btn-xs">${frappe.utils.escape_html(label)}</button>`
+			);
+			$btn.on("click", () => {
+				if (!c) {
+					listview.filter_area.clear();
+					listview.filter_area.add([[listview.doctype, "is_active", "=", 1]]);
+				} else {
+					listview.filter_area.clear();
+					listview.filter_area.add([
+						[listview.doctype, "quotation_type", "=", c],
+						[listview.doctype, "is_active", "=", 1],
+					]);
+				}
+				listview.refresh();
+			});
+			$bar.append($btn);
+		});
+		listview.$result.parent().find(".ic-quote-lib-list-cats").remove();
+		listview.$result.before($bar);
 	},
 };
 
