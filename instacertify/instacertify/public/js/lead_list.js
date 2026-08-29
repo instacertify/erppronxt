@@ -7,6 +7,12 @@
 			if (typeof prev_onload === "function") {
 				prev_onload(listview);
 			}
+			if (typeof instacertify !== "undefined" && instacertify.enable_full_width_desk) {
+				instacertify.enable_full_width_desk();
+			}
+			if (listview.page && listview.page.wrapper) {
+				listview.page.wrapper.addClass("ic-lead-list-page");
+			}
 			listview.page.set_primary_action(
 				__("Quick Lead"),
 				() => {
