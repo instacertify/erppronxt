@@ -2877,3 +2877,377 @@ select.form-control[readonly],
   visibility: visible !important;
   color: var(--ic-field-border) !important;
 }
+
+/* ——— Category color code (Consulting / Testing / Renewal / Other) ——— */
+:root {
+  --ic-cat-consulting: #065175;
+  --ic-cat-consulting-bg: #e4f1f8;
+  --ic-cat-testing: #EC6820;
+  --ic-cat-testing-bg: #fff1e6;
+  --ic-cat-renewal: #1b7a4e;
+  --ic-cat-renewal-bg: #e8f6ee;
+  --ic-cat-other: #5a6382;
+  --ic-cat-other-bg: #eef0f5;
+  --ic-cat-all: #6b8492;
+  --ic-cat-all-bg: #f0f4f7;
+}
+
+/* Shared swatch */
+.ic-quote-type-swatch,
+.ic-new-quote-type-swatch,
+.ic-quote-lib-cat-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  background: currentColor;
+}
+
+.ic-quote-type-chip,
+.ic-new-quote-type-chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 2px 0;
+}
+.ic-quote-type-chip .ic-quote-type-swatch,
+.ic-new-quote-type-chip .ic-new-quote-type-swatch {
+  margin-top: 4px;
+}
+.ic-quote-type-chip .ic-quote-type-name,
+.ic-quote-type-chip .ic-quote-type-hint,
+.ic-new-quote-type-chip .ic-new-quote-type-name,
+.ic-new-quote-type-chip .ic-new-quote-type-hint {
+  width: calc(100% - 16px);
+}
+
+/* Form entry chips */
+.ic-quote-type-chip.cat-consulting { border-color: rgba(6, 81, 117, 0.35); color: var(--ic-cat-consulting); }
+.ic-quote-type-chip.cat-consulting .ic-quote-type-swatch { background: var(--ic-cat-consulting); }
+.ic-quote-type-chip.cat-consulting .ic-quote-type-name { color: var(--ic-cat-consulting); }
+.ic-quote-type-chip.cat-consulting.active {
+  background: var(--ic-cat-consulting-bg);
+  border-color: var(--ic-cat-consulting);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-consulting);
+}
+
+.ic-quote-type-chip.cat-testing { border-color: rgba(236, 104, 32, 0.4); color: var(--ic-cat-testing); }
+.ic-quote-type-chip.cat-testing .ic-quote-type-swatch { background: var(--ic-cat-testing); }
+.ic-quote-type-chip.cat-testing .ic-quote-type-name { color: var(--ic-cat-testing); }
+.ic-quote-type-chip.cat-testing.active {
+  background: var(--ic-cat-testing-bg);
+  border-color: var(--ic-cat-testing);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-testing);
+}
+
+.ic-quote-type-chip.cat-renewal { border-color: rgba(27, 122, 78, 0.4); color: var(--ic-cat-renewal); }
+.ic-quote-type-chip.cat-renewal .ic-quote-type-swatch { background: var(--ic-cat-renewal); }
+.ic-quote-type-chip.cat-renewal .ic-quote-type-name { color: var(--ic-cat-renewal); }
+.ic-quote-type-chip.cat-renewal.active {
+  background: var(--ic-cat-renewal-bg);
+  border-color: var(--ic-cat-renewal);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-renewal);
+}
+
+.ic-quote-type-chip.cat-other { border-color: rgba(90, 99, 130, 0.4); color: var(--ic-cat-other); }
+.ic-quote-type-chip.cat-other .ic-quote-type-swatch { background: var(--ic-cat-other); }
+.ic-quote-type-chip.cat-other .ic-quote-type-name { color: var(--ic-cat-other); }
+.ic-quote-type-chip.cat-other.active {
+  background: var(--ic-cat-other-bg);
+  border-color: var(--ic-cat-other);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-other);
+}
+
+/* New Quotation dialog chips */
+.ic-new-quote-type-chip.cat-consulting { border-color: rgba(6, 81, 117, 0.35); }
+.ic-new-quote-type-chip.cat-consulting .ic-new-quote-type-swatch,
+.ic-new-quote-type-chip.cat-consulting .ic-new-quote-type-name { color: var(--ic-cat-consulting); background-color: transparent; }
+.ic-new-quote-type-chip.cat-consulting .ic-new-quote-type-swatch { background: var(--ic-cat-consulting); }
+.ic-new-quote-type-chip.cat-consulting.active {
+  background: var(--ic-cat-consulting-bg);
+  border-color: var(--ic-cat-consulting);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-consulting);
+}
+
+.ic-new-quote-type-chip.cat-testing { border-color: rgba(236, 104, 32, 0.4); }
+.ic-new-quote-type-chip.cat-testing .ic-new-quote-type-name { color: var(--ic-cat-testing); }
+.ic-new-quote-type-chip.cat-testing .ic-new-quote-type-swatch { background: var(--ic-cat-testing); }
+.ic-new-quote-type-chip.cat-testing.active {
+  background: var(--ic-cat-testing-bg);
+  border-color: var(--ic-cat-testing);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-testing);
+}
+
+.ic-new-quote-type-chip.cat-renewal { border-color: rgba(27, 122, 78, 0.4); }
+.ic-new-quote-type-chip.cat-renewal .ic-new-quote-type-name { color: var(--ic-cat-renewal); }
+.ic-new-quote-type-chip.cat-renewal .ic-new-quote-type-swatch { background: var(--ic-cat-renewal); }
+.ic-new-quote-type-chip.cat-renewal.active {
+  background: var(--ic-cat-renewal-bg);
+  border-color: var(--ic-cat-renewal);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-renewal);
+}
+
+.ic-new-quote-type-chip.cat-other { border-color: rgba(90, 99, 130, 0.4); }
+.ic-new-quote-type-chip.cat-other .ic-new-quote-type-name { color: var(--ic-cat-other); }
+.ic-new-quote-type-chip.cat-other .ic-new-quote-type-swatch { background: var(--ic-cat-other); }
+.ic-new-quote-type-chip.cat-other.active {
+  background: var(--ic-cat-other-bg);
+  border-color: var(--ic-cat-other);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-other);
+}
+
+/* Quote Format Library page */
+.ic-quote-lib-page .layout-main-section { max-width: none; }
+.ic-quote-lib { padding: 4px 2px 24px; }
+.ic-quote-lib-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.ic-quote-lib-kicker {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ic-muted, #5a7382);
+  font-weight: 600;
+}
+.ic-quote-lib-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--ic-primary, #065175);
+  letter-spacing: -0.02em;
+}
+.ic-quote-lib-sub {
+  color: var(--ic-muted, #5a7382);
+  font-size: 0.92rem;
+  max-width: 52rem;
+}
+.ic-quote-lib-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ic-quote-lib-cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.ic-quote-lib-cat {
+  text-align: left;
+  border: 2px solid rgba(6, 81, 117, 0.12);
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 88px;
+  position: relative;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.ic-quote-lib-cat-swatch {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.ic-quote-lib-cat-label { font-weight: 700; font-size: 0.95rem; }
+.ic-quote-lib-cat-count { font-size: 1.25rem; font-weight: 700; }
+.ic-quote-lib-cat-hint { font-size: 11px; color: #6b8492; line-height: 1.35; }
+
+.ic-quote-lib-cat.cat-all { border-color: rgba(107, 132, 146, 0.35); }
+.ic-quote-lib-cat.cat-all .ic-quote-lib-cat-swatch { background: var(--ic-cat-all); }
+.ic-quote-lib-cat.cat-all .ic-quote-lib-cat-label,
+.ic-quote-lib-cat.cat-all .ic-quote-lib-cat-count { color: var(--ic-cat-all); }
+.ic-quote-lib-cat.cat-all.active { background: var(--ic-cat-all-bg); border-color: var(--ic-cat-all); }
+
+.ic-quote-lib-cat.cat-consulting { border-color: rgba(6, 81, 117, 0.35); }
+.ic-quote-lib-cat.cat-consulting .ic-quote-lib-cat-swatch { background: var(--ic-cat-consulting); }
+.ic-quote-lib-cat.cat-consulting .ic-quote-lib-cat-label,
+.ic-quote-lib-cat.cat-consulting .ic-quote-lib-cat-count { color: var(--ic-cat-consulting); }
+.ic-quote-lib-cat.cat-consulting.active {
+  background: var(--ic-cat-consulting-bg);
+  border-color: var(--ic-cat-consulting);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-consulting);
+}
+
+.ic-quote-lib-cat.cat-testing { border-color: rgba(236, 104, 32, 0.4); }
+.ic-quote-lib-cat.cat-testing .ic-quote-lib-cat-swatch { background: var(--ic-cat-testing); }
+.ic-quote-lib-cat.cat-testing .ic-quote-lib-cat-label,
+.ic-quote-lib-cat.cat-testing .ic-quote-lib-cat-count { color: var(--ic-cat-testing); }
+.ic-quote-lib-cat.cat-testing.active {
+  background: var(--ic-cat-testing-bg);
+  border-color: var(--ic-cat-testing);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-testing);
+}
+
+.ic-quote-lib-cat.cat-renewal { border-color: rgba(27, 122, 78, 0.4); }
+.ic-quote-lib-cat.cat-renewal .ic-quote-lib-cat-swatch { background: var(--ic-cat-renewal); }
+.ic-quote-lib-cat.cat-renewal .ic-quote-lib-cat-label,
+.ic-quote-lib-cat.cat-renewal .ic-quote-lib-cat-count { color: var(--ic-cat-renewal); }
+.ic-quote-lib-cat.cat-renewal.active {
+  background: var(--ic-cat-renewal-bg);
+  border-color: var(--ic-cat-renewal);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-renewal);
+}
+
+.ic-quote-lib-cat.cat-other { border-color: rgba(90, 99, 130, 0.4); }
+.ic-quote-lib-cat.cat-other .ic-quote-lib-cat-swatch { background: var(--ic-cat-other); }
+.ic-quote-lib-cat.cat-other .ic-quote-lib-cat-label,
+.ic-quote-lib-cat.cat-other .ic-quote-lib-cat-count { color: var(--ic-cat-other); }
+.ic-quote-lib-cat.cat-other.active {
+  background: var(--ic-cat-other-bg);
+  border-color: var(--ic-cat-other);
+  box-shadow: inset 0 0 0 1px var(--ic-cat-other);
+}
+
+.ic-quote-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ic-quote-lib-card {
+  border: 1px solid #d5e4ed;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
+  border-top: 4px solid #c9d3db;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 160px;
+}
+.ic-quote-lib-card.cat-consulting { border-top-color: var(--ic-cat-consulting); }
+.ic-quote-lib-card.cat-testing { border-top-color: var(--ic-cat-testing); }
+.ic-quote-lib-card.cat-renewal { border-top-color: var(--ic-cat-renewal); }
+.ic-quote-lib-card.cat-other { border-top-color: var(--ic-cat-other); }
+
+.ic-quote-lib-card-type {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.ic-quote-lib-card-type.cat-consulting {
+  background: var(--ic-cat-consulting-bg);
+  color: var(--ic-cat-consulting);
+}
+.ic-quote-lib-card-type.cat-testing {
+  background: var(--ic-cat-testing-bg);
+  color: var(--ic-cat-testing);
+}
+.ic-quote-lib-card-type.cat-renewal {
+  background: var(--ic-cat-renewal-bg);
+  color: var(--ic-cat-renewal);
+}
+.ic-quote-lib-card-type.cat-other {
+  background: var(--ic-cat-other-bg);
+  color: var(--ic-cat-other);
+}
+.ic-quote-lib-card-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #065175;
+}
+.ic-quote-lib-card-meta { font-size: 12px; color: #6b8492; }
+.ic-quote-lib-card-actions { margin-top: auto; display: flex; gap: 6px; }
+.ic-quote-lib-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.ic-quote-lib-badge.on { background: #e8f6ee; color: #1b7a4e; }
+.ic-quote-lib-badge.off { background: #f0f0f0; color: #777; }
+.ic-quote-lib-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.ic-quote-lib-panel-title { font-weight: 700; color: #065175; font-size: 1.1rem; }
+.ic-quote-lib-panel-sub { font-size: 12px; color: #6b8492; }
+.ic-quote-lib-tag-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.ic-quote-lib-tag {
+  border: 1px solid #c5d0d7;
+  background: #fff;
+  color: #065175;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ic-quote-lib-tag.active { background: #065175; color: #fff; border-color: #065175; }
+.ic-quote-lib-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.ic-quote-lib-card-tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: #eef4f8;
+  color: #065175;
+  cursor: pointer;
+}
+.ic-quote-lib-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 28px;
+  color: #6b8492;
+}
+
+/* List filter category buttons */
+.ic-quote-lib-list-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+.ic-list-cat-btn {
+  border: 1.5px solid #c9d3db !important;
+  background: #fff !important;
+  font-weight: 600 !important;
+}
+.ic-list-cat-btn.cat-all { color: var(--ic-cat-all) !important; border-color: rgba(107,132,146,0.45) !important; }
+.ic-list-cat-btn.cat-consulting {
+  color: var(--ic-cat-consulting) !important;
+  border-color: rgba(6, 81, 117, 0.45) !important;
+  background: var(--ic-cat-consulting-bg) !important;
+}
+.ic-list-cat-btn.cat-testing {
+  color: var(--ic-cat-testing) !important;
+  border-color: rgba(236, 104, 32, 0.5) !important;
+  background: var(--ic-cat-testing-bg) !important;
+}
+.ic-list-cat-btn.cat-renewal {
+  color: var(--ic-cat-renewal) !important;
+  border-color: rgba(27, 122, 78, 0.45) !important;
+  background: var(--ic-cat-renewal-bg) !important;
+}
+.ic-list-cat-btn.cat-other {
+  color: var(--ic-cat-other) !important;
+  border-color: rgba(90, 99, 130, 0.45) !important;
+  background: var(--ic-cat-other-bg) !important;
+}
+
+/* Legend strip for create-quote dialog */
+.ic-quote-dialog-help::after {
+  content: "Consulting = teal · Testing = orange · Renewal = green · Other = slate";
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6b8492;
+}
