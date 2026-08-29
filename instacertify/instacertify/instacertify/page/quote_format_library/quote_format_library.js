@@ -17,8 +17,6 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		{ key: "Consulting", label: __("Consulting"), hint: __("BIS, TEC, WPC, consultancy packs") },
 		{ key: "Testing", label: __("Testing"), hint: __("Lab test & sample commercials") },
 		{ key: "Renewal", label: __("Renewal"), hint: __("Certificate / licence renewals") },
-		{ key: "Service", label: __("Service"), hint: __("General service quotes") },
-		{ key: "Multiple Products / Multiple Services", label: __("Multi Product / Service"), hint: __("Bundled multi-line quotes") },
 		{ key: "Other", label: __("Other"), hint: __("Everything else") },
 	];
 
@@ -29,7 +27,7 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 					<div class="ic-quote-lib-kicker">${__("Quote formats")}</div>
 					<div class="ic-quote-lib-title">${__("Library by category")}</div>
 					<div class="ic-quote-lib-sub">${__(
-						"Browse by category and tags. Download a CSV or Excel template, fill rows, then import — or upload a single format file."
+						"Browse by category. Click Edit Template to change headings, narrative, and pricing. Or use a template in a new quotation."
 					)}</div>
 				</div>
 				<div class="ic-quote-lib-tools">
@@ -288,8 +286,8 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 						<div class="ic-quote-lib-card-meta">${esc(family) || "&nbsp;"}${hasFile}</div>
 						${tagHtml ? `<div class="ic-quote-lib-card-tags">${tagHtml}</div>` : ""}
 						<div class="ic-quote-lib-card-actions">
-							<button type="button" class="btn btn-default btn-xs ic-qlib-open">${__("Open")}</button>
-							<button type="button" class="btn btn-primary btn-xs ic-qlib-use">${__("Use in Quotation")}</button>
+							<button type="button" class="btn btn-primary btn-xs ic-qlib-open">${__("Edit Template")}</button>
+							<button type="button" class="btn btn-default btn-xs ic-qlib-use">${__("Use in Quotation")}</button>
 						</div>
 					</article>`;
 				})

@@ -679,11 +679,11 @@ TESTING_QUOTATION_HTML = """
 
   <table class="tq-grid">
     <tr>
-      <td class="tq-label">Subject</td>
+      <td class="tq-label">{{ doc.ic_label_subject or 'Subject' }}</td>
       <td class="tq-value"><b>{{ doc.ic_subject or 'Testing' }}</b></td>
     </tr>
     <tr>
-      <td class="tq-label">ABOUT</td>
+      <td class="tq-label">{{ doc.ic_label_about_testing or 'ABOUT' }}</td>
       <td class="tq-value">
         {% if doc.ic_about_testing %}
           {{ doc.ic_about_testing }}
@@ -693,7 +693,7 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Applicable Standards</td>
+      <td class="tq-label">{{ doc.ic_label_applicable_standards or 'Applicable Standards' }}</td>
       <td class="tq-value">
         {% if doc.ic_applicable_standards_text %}
           {{ doc.ic_applicable_standards_text }}
@@ -708,7 +708,7 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Samples Requirements</td>
+      <td class="tq-label">{{ doc.ic_label_samples_requirements or 'Samples Requirements' }}</td>
       <td class="tq-value">
         <div class="tq-h">Sample Required</div>
         {% for row in doc.ic_test_items or [] %}
@@ -724,9 +724,9 @@ TESTING_QUOTATION_HTML = """
 
   <table class="tq-grid" style="margin-top:-1px;">
     <tr>
-      <td class="tq-label">Commercials</td>
+      <td class="tq-label">{{ doc.ic_label_commercials or 'Commercials' }}</td>
       <td class="tq-value">
-        <div class="tq-h">Commercials</div>
+        <div class="tq-h">{{ doc.ic_label_commercials or 'Commercials' }}</div>
         <table class="tq-comm">
           <thead>
             <tr>
@@ -758,7 +758,7 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Deliverable</td>
+      <td class="tq-label">{{ doc.ic_label_deliverable or 'Deliverable' }}</td>
       <td class="tq-value">
         <div class="tq-h">Deliverables</div>
         {% if doc.ic_deliverables %}
@@ -773,9 +773,9 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Timeline</td>
+      <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
       <td class="tq-value">
-        <div class="tq-h">Timeline</div>
+        <div class="tq-h">{{ doc.ic_label_timeline or 'Timeline' }}</div>
         <ul>
           <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
           <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
@@ -784,7 +784,7 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Payment Term</td>
+      <td class="tq-label">{{ doc.ic_label_payment_term or 'Payment Term' }}</td>
       <td class="tq-value">
         <div class="tq-h">Payment Terms</div>
         {% if doc.ic_payment_terms %}
@@ -799,7 +799,7 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Sample handling &amp; disposal policy</td>
+      <td class="tq-label">{{ doc.ic_label_sample_handling or 'Sample handling & disposal policy' }}</td>
       <td class="tq-value">
         {% if doc.ic_sample_handling_policy %}
           {{ doc.ic_sample_handling_policy }}
@@ -818,14 +818,14 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">Our Banking Details</td>
+      <td class="tq-label">{{ doc.ic_label_banking or 'Our Banking Details' }}</td>
       <td class="tq-value">
         <div class="tq-h">Bank Details for Payment</div>
 """ + BANK_UPI_PAYMENT_HTML + """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">CANCELLATION AND REFUND POLICY</td>
+      <td class="tq-label">{{ doc.ic_label_cancellation or 'CANCELLATION AND REFUND POLICY' }}</td>
       <td class="tq-value">
         {% if doc.ic_cancellation_policy %}
           {{ doc.ic_cancellation_policy }}
@@ -835,7 +835,7 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">FORCE MAJEURE</td>
+      <td class="tq-label">{{ doc.ic_label_force_majeure or 'FORCE MAJEURE' }}</td>
       <td class="tq-value">
         {% if doc.ic_force_majeure %}
           {{ doc.ic_force_majeure }}
@@ -845,7 +845,7 @@ TESTING_QUOTATION_HTML = """
       </td>
     </tr>
     <tr>
-      <td class="tq-label">CONFIDENTIALITY &amp; DATA PROTECTION</td>
+      <td class="tq-label">{{ doc.ic_label_confidentiality or 'CONFIDENTIALITY & DATA PROTECTION' }}</td>
       <td class="tq-value">
         {% if doc.ic_confidentiality %}
           {{ doc.ic_confidentiality }}
@@ -962,7 +962,7 @@ CONSULTING_QUOTATION_HTML = """
 
   <div class="cq-box">
     <div class="cq-sec">
-      <div class="cq-bar">ABOUT {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_about or ('ABOUT ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_about_service %}{{ doc.ic_about_service }}
         {% else %}{{ doc.ic_scope_of_work or '' }}{% endif %}
@@ -970,7 +970,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">STANDARD APPLICABLE FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_standard or ('STANDARD APPLICABLE FOR ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_standard_narrative %}
           {{ doc.ic_standard_narrative }}
@@ -981,7 +981,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">Process for {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_process or ('Process for ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_process_steps %}{{ doc.ic_process_steps }}
         {% else %}<p></p>{% endif %}
@@ -989,7 +989,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">Validity of {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_validity or ('Validity of ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_validity_text %}{{ doc.ic_validity_text }}
         {% else %}<p></p>{% endif %}
@@ -997,14 +997,14 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">Commercials for {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_commercials or ('Commercials for ' ~ short) }}</div>
       <div class="cq-body">
-        <div class="cq-h">Commercials – {{ title }}</div>
+        <div class="cq-h">{{ doc.ic_label_commercials or ('Commercials – ' ~ title) }}</div>
         {% if doc.ic_applicable_standard %}
           <div style="margin-bottom:8px;"><b>Applicable Standard:</b> {{ doc.ic_applicable_standard }}</div>
         {% endif %}
         <table class="cq-comm">
-          <thead><tr><th>Particulars</th><th style="text-align:right;">Charges ({{ doc.currency or 'INR' }})</th></tr></thead>
+          <thead><tr><th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th><th style="text-align:right;">{{ doc.ic_label_charges_col or 'Charges' }} ({{ doc.currency or 'INR' }})</th></tr></thead>
           <tbody>
           {% for row in doc.ic_cost_items or [] %}
             <tr>
@@ -1024,7 +1024,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">PAYMENT TERMS FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_payment_terms or ('PAYMENT TERMS FOR ' ~ short) }}</div>
       <div class="cq-body">
         <div class="cq-h">Payment Terms &amp; Conditions</div>
         {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms }}
@@ -1040,7 +1040,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">Timelines for {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_timelines or ('Timelines for ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_timeline_details %}{{ doc.ic_timeline_details }}
         {% elif doc.ic_estimated_timeline %}
@@ -1050,7 +1050,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">SAMPLE REQUIRED FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_sample_required or ('SAMPLE REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
         <div class="cq-h">Sample Required</div>
         {% if doc.ic_sample_required %}{{ doc.ic_sample_required }}
@@ -1061,7 +1061,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">DOCUMENTS REQUIRED FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_documents_required or ('DOCUMENTS REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_documents_required %}{{ doc.ic_documents_required }}
         {% else %}<p></p>{% endif %}
@@ -1069,7 +1069,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">OUR BANKING DETAILS FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_banking or ('OUR BANKING DETAILS FOR ' ~ short) }}</div>
       <div class="cq-body">
         <div class="cq-h">Bank Details for Payment</div>
 """ + BANK_UPI_PAYMENT_HTML + """
@@ -1077,7 +1077,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">CANCELLATION &amp; REFUND POLICY FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_cancellation or ('CANCELLATION & REFUND POLICY FOR ' ~ short) }}</div>
       <div class="cq-body">
         <div class="cq-h">Cancellation &amp; Refund Policy</div>
         {% if doc.ic_cancellation_policy %}{{ doc.ic_cancellation_policy }}
@@ -1088,7 +1088,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">FORCE MAJEURE FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_force_majeure or ('FORCE MAJEURE FOR ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_force_majeure %}{{ doc.ic_force_majeure }}
         {% else %}
@@ -1098,7 +1098,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
 
     <div class="cq-sec">
-      <div class="cq-bar">CONFIDENTIALITY &amp; DATA PROTECTION FOR {{ short }}</div>
+      <div class="cq-bar">{{ doc.ic_label_confidentiality or ('CONFIDENTIALITY & DATA PROTECTION FOR ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_confidentiality %}{{ doc.ic_confidentiality }}
         {% else %}
