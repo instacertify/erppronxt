@@ -37,6 +37,10 @@ bench start
 bench --site instacertify.localhost execute instacertify.setup.demo_data.execute
 ```
 
+## Deploy on Hostinger
+
+Production needs a Hostinger **VPS** (Ubuntu), not shared PHP hosting. Step-by-step: **[instacertify/DEPLOY_HOSTINGER.md](./instacertify/DEPLOY_HOSTINGER.md)** — pull `main`, migrate, `bench build --app instacertify`, restart supervisor.
+
 ## What the custom app adds
 
 **Extends native ERPNext**
