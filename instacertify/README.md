@@ -51,6 +51,10 @@ Also available under the **GST India** workspace from india_compliance. Portal f
 
 POS billing is **disabled**. Use standard Sales Invoice only. The Include Payment (POS) option and all POS menu entries are removed on migrate.
 
+## Deploy on Hostinger
+
+See **[DEPLOY_HOSTINGER.md](./DEPLOY_HOSTINGER.md)** — Hostinger **VPS** (Ubuntu) only; pull `main`, `migrate`, `bench build --app instacertify`, restart supervisor. Shared PHP hosting will not run ERPNext.
+
 ## Laboratory Library (Testing pricing)
 
 1. **Instacertify Home → Laboratory Library → Register / Manage Labs** (`IC Laboratory`)
