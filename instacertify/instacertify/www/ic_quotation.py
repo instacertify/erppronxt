@@ -78,9 +78,7 @@ def get_quotation(token: str):
 			"account_number": _plain(s.account_number) or "026485800001318",
 			"ifsc_code": _plain(s.ifsc_code) or "YESB0000264",
 			"upi_id": _plain(getattr(s, "upi_id", None)) or "yespay.bizsbiz31008@yesbankltd",
-			"upi_qr_image": getattr(s, "upi_qr_image", None)
-			or "/assets/instacertify/images/upi_payment_qr.jpg",
-			"prompt": _("Scan the UPI QR or use the UPI ID below to pay. You can also transfer to our bank account."),
+			"prompt": _("Use the UPI ID below to pay, or transfer to our bank account."),
 		}
 	except Exception:
 		pay = {
@@ -89,8 +87,7 @@ def get_quotation(token: str):
 			"account_number": "026485800001318",
 			"ifsc_code": "YESB0000264",
 			"upi_id": "yespay.bizsbiz31008@yesbankltd",
-			"upi_qr_image": "/assets/instacertify/images/upi_payment_qr.jpg",
-			"prompt": _("Scan the UPI QR or use the UPI ID below to pay."),
+			"prompt": _("Use the UPI ID below to pay, or transfer to our bank account."),
 		}
 
 	# Prefer customer-facing title over internal Quotation name
