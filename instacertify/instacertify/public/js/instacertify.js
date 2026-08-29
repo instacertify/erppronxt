@@ -2041,12 +2041,21 @@ frappe.ui.form.on("Quotation", {
 frappe.ui.form.on("Customer", {
 	refresh(frm) {
 		if (!frm.doc.name || frm.is_new()) return;
+		if (frm.fields_dict.ic_section_files) {
+			frm.set_df_property("ic_section_files", "label", __("Customer Data Drive"));
+		}
 		instacertify.load_customer_related(frm);
 		instacertify.add_helpdesk_buttons(frm, {
 			customer: frm.doc.name,
 			contact_person: frm.doc.customer_name,
 			channel: "Internal",
 		});
+		if (!frm.__ic_drive_btn) {
+			frm.__ic_drive_btn = 1;
+			frm.add_custom_button(__("Open Data Drive"), () => {
+				frm.scroll_to_field("ic_customer_files_html");
+			});
+		}
 	},
 });
 
@@ -2301,52 +2310,87 @@ function ic_file_rows(files) {
 }
 
 function ic_render_customer_files(frm, d) {
-	const saved = ic_table(
-		[__("File"), __("Source"), __("Date")],
-		(d.customer_files || []).map((f) => [
-			`<a href="${frappe.utils.escape_html(f.file_url || "#")}" target="_blank" rel="noopener">${ic_esc(
-				f.file_name || f.name
-			)}</a>`,
-			__("Saved on Customer"),
-			ic_esc((f.creation || "").toString().slice(0, 10) || "—"),
-		])
-	);
-	const from_projects = ic_table(
-		[__("File"), __("Project / Record"), __("Date")],
-		ic_file_rows(d.project_files)
-	);
-	const completed_count = (d.completed_project_names || []).length;
-	const pending_count = (d.project_files || []).length;
+	const drive = d.data_drive || {};
+	const files = drive.files || [];
+	const counts = drive.counts || {};
+	const total = drive.total || files.length || 0;
+	const categories = drive.categories || [
+		"Uploaded",
+		"Projects",
+		"Quotes",
+		"Invoices",
+		"Testing",
+		"Samples",
+		"Documents",
+		"Support",
+		"Records",
+	];
+
+	const chips = [
+		`<button type="button" class="ic-drive-chip active" data-cat="all">${__("All")} (${total})</button>`,
+	]
+		.concat(
+			categories
+				.filter((c) => counts[c])
+				.map(
+					(c) =>
+						`<button type="button" class="ic-drive-chip" data-cat="${frappe.utils.escape_html(
+							c
+						)}">${frappe.utils.escape_html(c)} (${counts[c]})</button>`
+				)
+		)
+		.join("");
+
+	const rows = files
+		.map((f) => {
+			const cat = f.category || "Other";
+			const srcDt = f.source_doctype || f.source || "";
+			const srcName = f.source_name || f.project || "";
+			const srcLink =
+				srcDt && srcName && srcDt !== "Customer"
+					? ic_doc_link(srcDt, srcName)
+					: srcDt === "Customer"
+						? __("Saved on customer")
+						: ic_esc(srcDt || "—");
+			const date = (f.creation || "").toString().slice(0, 10) || "—";
+			const url = frappe.utils.escape_html(f.file_url || "#");
+			const label = ic_esc(f.label || f.file_name || f.name);
+			return `<tr class="ic-drive-row" data-cat="${frappe.utils.escape_html(cat)}">
+				<td class="ic-drive-file"><a href="${url}" target="_blank" rel="noopener">${label}</a></td>
+				<td><span class="ic-drive-cat">${ic_esc(cat)}</span></td>
+				<td>${srcLink}</td>
+				<td>${ic_esc(date)}</td>
+			</tr>`;
+		})
+		.join("");
+
+	const table = files.length
+		? `<div class="ic-related-table-wrap ic-drive-table-wrap"><table class="ic-related-table ic-drive-table">
+			<thead><tr>
+				<th>${__("File")}</th><th>${__("Folder")}</th><th>${__("Source")}</th><th>${__("Date")}</th>
+			</tr></thead>
+			<tbody>${rows}</tbody>
+		</table></div>`
+		: `<div class="ic-drive-empty">${__(
+				"No files yet. Upload here or sync from related quotes, projects, invoices, and documents."
+			)}</div>`;
 
 	return `
-		<div class="ic-customer-files">
-			<p class="text-muted" style="margin-bottom:12px;">
-				${__(
-					"Save certificates, reports, and other files from completed projects onto this customer. You can also upload files directly."
-				)}
-			</p>
-			<div class="ic-file-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-				<button type="button" class="btn btn-primary btn-sm ic-import-project-files">
-					${__("Save files from completed projects")}
-					${pending_count ? ` (${pending_count})` : ""}
-				</button>
-				<button type="button" class="btn btn-default btn-sm ic-upload-customer-file">
-					${__("Upload file to customer")}
-				</button>
+		<div class="ic-customer-drive" data-customer="${frappe.utils.escape_html(frm.doc.name)}">
+			<div class="ic-drive-header">
+				<div>
+					<div class="ic-drive-title">${__("Customer Data Drive")}</div>
+					<div class="ic-drive-sub">${__(
+						"All files related to this customer — uploads, projects, quotes, invoices, testing, documents, and support — in one place."
+					)}</div>
+				</div>
+				<div class="ic-drive-actions">
+					<button type="button" class="btn btn-primary btn-sm ic-drive-upload">${__("Upload to Drive")}</button>
+					<button type="button" class="btn btn-default btn-sm ic-drive-sync">${__("Sync related files")}</button>
+				</div>
 			</div>
-			<p class="text-muted" style="font-size:12px;margin-bottom:8px;">
-				${__("Completed projects")}: ${completed_count}
-			</p>
-			${ic_related_section(
-				__("Saved on this Customer"),
-				saved,
-				__("No files saved on this customer yet")
-			)}
-			${ic_related_section(
-				__("Available from Completed Projects"),
-				from_projects,
-				__("No files on completed projects yet")
-			)}
+			<div class="ic-drive-chips">${chips}</div>
+			${table}
 		</div>
 	`;
 }
@@ -2356,45 +2400,69 @@ function ic_bind_customer_file_actions(frm) {
 		? $(frm.fields_dict.ic_customer_files_html.wrapper)
 		: $();
 
-	$wrap.find(".ic-import-project-files").off("click").on("click", () => {
+	$wrap.find(".ic-drive-chip").off("click").on("click", function () {
+		const cat = $(this).data("cat");
+		$wrap.find(".ic-drive-chip").removeClass("active");
+		$(this).addClass("active");
+		$wrap.find(".ic-drive-row").each(function () {
+			const rowCat = $(this).data("cat");
+			$(this).toggle(cat === "all" || rowCat === cat);
+		});
+	});
+
+	$wrap.find(".ic-drive-sync").off("click").on("click", () => {
 		frappe.confirm(
 			__(
-				"Copy files from completed projects onto this customer? Existing files with the same name or content are skipped."
+				"Save all related files (projects, quotes, invoices, testing, documents, support) onto this customer's Data Drive? Duplicates are skipped."
 			),
 			() => {
 				frappe.call({
-					method: "instacertify.crm.events.import_completed_project_files",
+					method: "instacertify.crm.events.sync_customer_data_drive",
 					args: { customer: frm.doc.name },
 					freeze: true,
-					freeze_message: __("Saving project files…"),
+					freeze_message: __("Syncing Data Drive…"),
 					callback(r) {
 						const m = r.message || {};
 						frappe.show_alert({
 							message: __(
-								"Saved {0} file(s); skipped {1} (already on customer). From {2} completed project(s).",
-								[m.copied || 0, m.skipped || 0, m.projects || 0]
+								"Data Drive: saved {0} file(s), skipped {1}. Indexed {2}.",
+								[m.copied || 0, m.skipped || 0, m.total_indexed || 0]
 							),
 							indicator: m.copied ? "green" : "orange",
 						});
-						frm.reload_doc();
+						instacertify.load_customer_related(frm);
 					},
 				});
 			}
 		);
 	});
 
-	$wrap.find(".ic-upload-customer-file").off("click").on("click", () => {
-		new frappe.ui.FileUploader({
-			doctype: frm.doctype,
-			docname: frm.doc.name,
-			frm: frm,
-			folder: "Home/Attachments",
-			allow_web_link: false,
-			allow_google_drive: false,
-			upload_notes: instacertify.get_attach_upload_notes(),
-			on_success() {
-				frappe.show_alert({ message: __("File uploaded"), indicator: "green" });
-				instacertify.load_customer_related(frm);
+	// Back-compat buttons if old markup still cached
+	$wrap.find(".ic-import-project-files").off("click").on("click", () => {
+		$wrap.find(".ic-drive-sync").trigger("click");
+	});
+
+	$wrap.find(".ic-drive-upload, .ic-upload-customer-file").off("click").on("click", () => {
+		frappe.call({
+			method: "instacertify.crm.events.ensure_customer_drive_folder",
+			args: { customer: frm.doc.name },
+			callback(r) {
+				const folder = (r.message || "Home/Attachments");
+				new frappe.ui.FileUploader({
+					doctype: frm.doctype,
+					docname: frm.doc.name,
+					frm: frm,
+					folder: folder,
+					allow_web_link: false,
+					allow_google_drive: false,
+					upload_notes: instacertify.get_attach_upload_notes
+						? instacertify.get_attach_upload_notes()
+						: __("Upload from this device or File Library (internal drive)."),
+					on_success() {
+						frappe.show_alert({ message: __("Saved to Customer Data Drive"), indicator: "green" });
+						instacertify.load_customer_related(frm);
+					},
+				});
 			},
 		});
 	});

@@ -272,9 +272,30 @@ def get_customer_history(customer: str):
 			"attached_to_name": customer,
 			"is_folder": 0,
 		},
-		fields=["name", "file_name", "file_url", "creation", "content_hash"],
+		fields=["name", "file_name", "file_url", "creation", "content_hash", "file_size"],
 		order_by="creation desc",
-		limit_page_length=100,
+		limit_page_length=200,
+	)
+	for f in customer_files:
+		f["source"] = "Customer"
+		f["category"] = "Uploaded"
+		f["source_doctype"] = "Customer"
+		f["source_name"] = customer
+
+	# Full data-drive index (all related sources)
+	drive = _build_customer_data_drive(
+		customer,
+		projects=projects,
+		quotations=quotations,
+		invoices=invoices,
+		testing=testing,
+		samples=samples,
+		documents=documents,
+		tickets=tickets,
+		records=records,
+		opportunities=opportunities,
+		customer_files=customer_files,
+		project_files=project_files,
 	)
 
 	contacts = frappe.get_list(
@@ -360,10 +381,356 @@ def get_customer_history(customer: str):
 		"project_files": project_files,
 		"customer_files": customer_files,
 		"completed_project_names": completed_project_names,
+		"data_drive": drive,
 		"contacts": contact_details,
 		"amount_billed": billed,
 		"outstanding_amount": outstanding,
 		"amount_paid": paid,
+	}
+
+
+def _files_for(doctype: str, names: list, category: str, limit_each: int = 25) -> list[dict]:
+	"""Collect File attachments for a set of documents."""
+	out: list[dict] = []
+	seen: set[str] = set()
+	for name in names[:40]:
+		if not name:
+			continue
+		files = frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": doctype,
+				"attached_to_name": name,
+				"is_folder": 0,
+			},
+			fields=["name", "file_name", "file_url", "creation", "content_hash", "file_size", "is_private"],
+			order_by="creation desc",
+			limit_page_length=limit_each,
+		)
+		for f in files:
+			key = f.get("content_hash") or f"{f.get('file_url')}|{f.get('file_name')}"
+			if key in seen:
+				continue
+			seen.add(key)
+			f["source"] = doctype
+			f["category"] = category
+			f["source_doctype"] = doctype
+			f["source_name"] = name
+			out.append(f)
+	return out
+
+
+def _attach_field_files(doctype: str, names: list, fieldnames: list[str], category: str) -> list[dict]:
+	"""Pick up Attach / Attach Image field URLs that may not have a File child link."""
+	out: list[dict] = []
+	if not names or not frappe.db.exists("DocType", doctype):
+		return out
+	meta = frappe.get_meta(doctype)
+	valid = [f for f in fieldnames if meta.has_field(f)]
+	if not valid:
+		return out
+	for name in names[:40]:
+		row = frappe.db.get_value(doctype, name, valid, as_dict=True) or {}
+		for field in valid:
+			url = (row.get(field) or "").strip()
+			if not url or not (url.startswith("/") or url.startswith("http")):
+				continue
+			fname = url.rstrip("/").split("/")[-1] or field
+			out.append(
+				{
+					"name": f"{doctype}-{name}-{field}",
+					"file_name": fname,
+					"file_url": url,
+					"creation": None,
+					"content_hash": None,
+					"file_size": None,
+					"source": doctype,
+					"category": category,
+					"source_doctype": doctype,
+					"source_name": name,
+					"from_attach_field": field,
+				}
+			)
+	return out
+
+
+def _document_request_item_files(doc_names: list) -> list[dict]:
+	"""Files uploaded on IC Document Request Item.file_url."""
+	out: list[dict] = []
+	if not doc_names or not frappe.db.exists("DocType", "IC Document Request Item"):
+		return out
+	try:
+		rows = frappe.get_all(
+			"IC Document Request Item",
+			filters={"parent": ["in", doc_names], "file_url": ["!=", ""]},
+			fields=["name", "parent", "document_name", "file_url", "status", "modified"],
+			limit_page_length=200,
+		)
+	except Exception:
+		return out
+	for r in rows:
+		url = (r.get("file_url") or "").strip()
+		if not url:
+			continue
+		fname = url.rstrip("/").split("/")[-1] or (r.get("document_name") or r.name)
+		out.append(
+			{
+				"name": f"IC Document Request Item-{r.name}",
+				"file_name": fname,
+				"file_url": url,
+				"creation": r.get("modified"),
+				"content_hash": None,
+				"source": "IC Document Request",
+				"category": "Documents",
+				"source_doctype": "IC Document Request",
+				"source_name": r.get("parent"),
+				"label": r.get("document_name"),
+			}
+		)
+	return out
+
+
+def _build_customer_data_drive(
+	customer: str,
+	*,
+	projects: list,
+	quotations: list,
+	invoices: list,
+	testing: list,
+	samples: list,
+	documents: list,
+	tickets: list,
+	records: list,
+	opportunities: list,
+	customer_files: list,
+	project_files: list,
+) -> dict:
+	"""Unified drive index: every file related to this customer, by category."""
+	files: list[dict] = []
+	files.extend(customer_files or [])
+
+	# Prefer full project set (not only completed) for the drive index
+	project_names = [p["name"] for p in (projects or []) if p.get("name")]
+	files.extend(_files_for("Project", project_names, "Projects"))
+	files.extend(
+		_files_for("Quotation", [q["name"] for q in (quotations or [])], "Quotes")
+	)
+	files.extend(
+		_files_for("Sales Invoice", [i["name"] for i in (invoices or [])], "Invoices")
+	)
+	files.extend(
+		_files_for("IC Testing Request", [t["name"] for t in (testing or [])], "Testing")
+	)
+	files.extend(
+		_files_for("IC Sample Tracking", [s["name"] for s in (samples or [])], "Samples")
+	)
+	files.extend(
+		_files_for("IC Document Request", [d["name"] for d in (documents or [])], "Documents")
+	)
+	files.extend(_document_request_item_files([d["name"] for d in (documents or [])]))
+	files.extend(
+		_files_for("Helpdesk Ticket", [t["name"] for t in (tickets or [])], "Support")
+	)
+	files.extend(
+		_files_for("IC Project Record", [r["name"] for r in (records or [])], "Records")
+	)
+	files.extend(
+		_files_for("Opportunity", [o["name"] for o in (opportunities or [])], "Quotes")
+	)
+
+	# Deduplicate by content hash / url+name (customer copies win as Uploaded)
+	deduped: list[dict] = []
+	seen: set[str] = set()
+	# Customer uploads first
+	for f in files:
+		if f.get("category") != "Uploaded":
+			continue
+		key = f.get("content_hash") or f"{f.get('file_url')}|{f.get('file_name')}"
+		seen.add(key)
+		deduped.append(f)
+	for f in files:
+		if f.get("category") == "Uploaded":
+			continue
+		key = f.get("content_hash") or f"{f.get('file_url')}|{f.get('file_name')}"
+		if key in seen:
+			continue
+		seen.add(key)
+		deduped.append(f)
+
+	# Also include any project_files already gathered that we might have missed
+	for f in project_files or []:
+		key = f.get("content_hash") or f"{f.get('file_url')}|{f.get('file_name')}"
+		if key in seen:
+			continue
+		seen.add(key)
+		row = dict(f)
+		row.setdefault("category", "Projects")
+		row.setdefault("source_doctype", row.get("source") or "Project")
+		row.setdefault("source_name", row.get("project") or row.get("attached_to_name"))
+		deduped.append(row)
+
+	counts: dict[str, int] = {}
+	for f in deduped:
+		cat = f.get("category") or "Other"
+		counts[cat] = counts.get(cat, 0) + 1
+
+	deduped.sort(key=lambda x: str(x.get("creation") or ""), reverse=True)
+
+	return {
+		"files": deduped,
+		"counts": counts,
+		"total": len(deduped),
+		"categories": [
+			"Uploaded",
+			"Projects",
+			"Quotes",
+			"Invoices",
+			"Testing",
+			"Samples",
+			"Documents",
+			"Support",
+			"Records",
+			"Other",
+		],
+	}
+
+
+@frappe.whitelist()
+def get_customer_data_drive(customer: str):
+	"""Return the Customer Data Drive index (files across all related records)."""
+	hist = get_customer_history(customer)
+	return hist.get("data_drive") or {"files": [], "counts": {}, "total": 0, "categories": []}
+
+
+@frappe.whitelist()
+def ensure_customer_drive_folder(customer: str) -> str:
+	"""Ensure Home/Customer Drive/<customer> folder exists; return folder name."""
+	return _ensure_customer_drive_folder(customer)
+
+
+def _ensure_customer_drive_folder(customer: str) -> str:
+	"""Ensure Home/Customer Drive/<customer> folder exists; return folder name."""
+	root = "Home/Customer Drive"
+	if not frappe.db.exists("File", {"is_folder": 1, "name": root}):
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "File",
+					"file_name": "Customer Drive",
+					"is_folder": 1,
+					"folder": "Home",
+					"is_private": 1,
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			pass
+	# Folder names in Frappe File are path-like: Home/Customer Drive/CUST-0001
+	safe = (customer or "Customer").replace("/", "-")[:120]
+	folder = f"{root}/{safe}"
+	if not frappe.db.exists("File", {"is_folder": 1, "name": folder}):
+		try:
+			frappe.get_doc(
+				{
+					"doctype": "File",
+					"file_name": safe,
+					"is_folder": 1,
+					"folder": root,
+					"is_private": 1,
+				}
+			).insert(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Customer Drive folder")
+	return folder
+
+
+@frappe.whitelist()
+def sync_customer_data_drive(customer: str):
+	"""Copy all related-record files onto the Customer Data Drive."""
+	if not customer or not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer is required"))
+
+	folder = _ensure_customer_drive_folder(customer)
+	drive = get_customer_data_drive(customer)
+	existing_hashes = {
+		h
+		for h in frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Customer",
+				"attached_to_name": customer,
+				"is_folder": 0,
+			},
+			pluck="content_hash",
+		)
+		if h
+	}
+	existing_names = set(
+		frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Customer",
+				"attached_to_name": customer,
+				"is_folder": 0,
+			},
+			pluck="file_name",
+		)
+	)
+
+	copied = []
+	skipped = 0
+	for f in drive.get("files") or []:
+		if f.get("category") == "Uploaded" and f.get("source_doctype") == "Customer":
+			skipped += 1
+			continue
+		# Only copy real File docs (not synthetic attach-field rows)
+		if not frappe.db.exists("File", f.get("name")):
+			# Attach-field URL — create a File pointing at the same URL
+			url = f.get("file_url")
+			fname = f.get("file_name") or "file"
+			prefix = f.get("source_name") or f.get("category") or "Drive"
+			target_name = f"{prefix}-{fname}"
+			if target_name in existing_names or fname in existing_names:
+				skipped += 1
+				continue
+			if not url:
+				skipped += 1
+				continue
+			try:
+				new_file = frappe.get_doc(
+					{
+						"doctype": "File",
+						"file_name": target_name,
+						"file_url": url,
+						"is_private": 1,
+						"attached_to_doctype": "Customer",
+						"attached_to_name": customer,
+						"folder": folder,
+					}
+				)
+				new_file.insert(ignore_permissions=True)
+				existing_names.add(new_file.file_name)
+				copied.append(new_file.file_name)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), f"Drive attach copy {fname}")
+			continue
+		try:
+			prefix = f.get("source_name") or f.get("category") or ""
+			result = _copy_file_to_customer(
+				f["name"], customer, prefix, existing_hashes, existing_names, folder=folder
+			)
+			if result == "copied":
+				copied.append(f.get("file_name"))
+			else:
+				skipped += 1
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Drive sync {f.get('name')}")
+
+	return {
+		"copied": len(copied),
+		"skipped": skipped,
+		"files": copied,
+		"folder": folder,
+		"total_indexed": drive.get("total") or 0,
 	}
 
 
@@ -612,7 +979,9 @@ def get_quotation_links(quotation: str):
 	}
 
 
-def _copy_file_to_customer(src_file_name, customer, prefix, existing_hashes, existing_names):
+def _copy_file_to_customer(
+	src_file_name, customer, prefix, existing_hashes, existing_names, folder: str | None = None
+):
 	"""Attach an existing File's URL onto Customer. Returns 'copied' | 'skipped'."""
 	src = frappe.get_doc("File", src_file_name)
 	if src.content_hash and src.content_hash in existing_hashes:
@@ -629,7 +998,7 @@ def _copy_file_to_customer(src_file_name, customer, prefix, existing_hashes, exi
 			"attached_to_doctype": "Customer",
 			"attached_to_name": customer,
 			"content_hash": src.content_hash,
-			"folder": "Home/Attachments",
+			"folder": folder or "Home/Attachments",
 		}
 	)
 	new_file.insert(ignore_permissions=True)
@@ -641,102 +1010,5 @@ def _copy_file_to_customer(src_file_name, customer, prefix, existing_hashes, exi
 
 @frappe.whitelist()
 def import_completed_project_files(customer: str):
-	"""Copy attachments from completed projects onto the Customer record."""
-	if not customer or not frappe.db.exists("Customer", customer):
-		frappe.throw(_("Customer is required"))
-
-	all_p = frappe.get_all(
-		"Project",
-		filters={"customer": customer},
-		fields=["name", "status", "ic_project_stage"],
-	)
-	projects = [
-		p.name
-		for p in all_p
-		if p.status == "Completed" or p.get("ic_project_stage") == "Project Completed"
-	]
-
-	existing_hashes = {
-		h
-		for h in frappe.get_all(
-			"File",
-			filters={
-				"attached_to_doctype": "Customer",
-				"attached_to_name": customer,
-				"is_folder": 0,
-			},
-			pluck="content_hash",
-		)
-		if h
-	}
-	existing_names = set(
-		frappe.get_all(
-			"File",
-			filters={
-				"attached_to_doctype": "Customer",
-				"attached_to_name": customer,
-				"is_folder": 0,
-			},
-			pluck="file_name",
-		)
-	)
-
-	copied = []
-	skipped = 0
-	for pname in projects:
-		files = frappe.get_all(
-			"File",
-			filters={
-				"attached_to_doctype": "Project",
-				"attached_to_name": pname,
-				"is_folder": 0,
-			},
-			fields=["name", "file_name", "file_url", "content_hash", "is_private"],
-		)
-		for f in files:
-			try:
-				result = _copy_file_to_customer(
-					f.name, customer, pname, existing_hashes, existing_names
-				)
-				if result == "copied":
-					copied.append(f.file_name)
-				else:
-					skipped += 1
-			except Exception:
-				frappe.log_error(frappe.get_traceback(), f"Copy file {f.name} to customer")
-
-	# Also pull IC Project Record attachments for this customer
-	records = frappe.get_all(
-		"IC Project Record",
-		filters={"customer": customer},
-		pluck="name",
-		limit=50,
-	) if frappe.db.exists("DocType", "IC Project Record") else []
-	for rec in records:
-		files = frappe.get_all(
-			"File",
-			filters={
-				"attached_to_doctype": "IC Project Record",
-				"attached_to_name": rec,
-				"is_folder": 0,
-			},
-			fields=["name", "file_name"],
-		)
-		for f in files:
-			try:
-				result = _copy_file_to_customer(
-					f.name, customer, rec, existing_hashes, existing_names
-				)
-				if result == "copied":
-					copied.append(f.file_name)
-				else:
-					skipped += 1
-			except Exception:
-				frappe.log_error(frappe.get_traceback(), f"Copy record file {f.name} to customer")
-
-	return {
-		"copied": len(copied),
-		"skipped": skipped,
-		"projects": len(projects),
-		"files": copied,
-	}
+	"""Back-compat: sync completed project files into the Customer Data Drive."""
+	return sync_customer_data_drive(customer)

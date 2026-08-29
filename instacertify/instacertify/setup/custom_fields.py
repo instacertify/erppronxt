@@ -320,14 +320,14 @@ CUSTOMER_FIELDS = [
 	{
 		"fieldname": "ic_section_files",
 		"fieldtype": "Section Break",
-		"label": "Completed Project Files",
+		"label": "Customer Data Drive",
 		"insert_after": "ic_history_html",
 		"collapsible": 0,
 	},
 	{
 		"fieldname": "ic_customer_files_html",
 		"fieldtype": "HTML",
-		"label": "Customer Files",
+		"label": "Data Drive",
 		"insert_after": "ic_section_files",
 	},
 ]
