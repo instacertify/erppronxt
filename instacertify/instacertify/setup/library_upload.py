@@ -253,12 +253,12 @@ def download_quote_format_upload_template() -> dict:
 <title>Instacertify Quote Format Upload Template</title>
 <style>
   body { font-family: Georgia, serif; margin: 32px; color: #1a1a1a; }
-  h1 { color: #065175; margin-bottom: 4px; }
+  h1 { color: #0D47A1; margin-bottom: 4px; }
   .meta { color: #666; margin-bottom: 24px; }
   table { width: 100%; border-collapse: collapse; margin-top: 16px; }
   th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
   th { background: #f3f7fa; }
-  .note { margin-top: 28px; padding: 12px; background: #fff7f0; border-left: 4px solid #EC6820; }
+  .note { margin-top: 28px; padding: 12px; background: #FFF5EE; border-left: 4px solid #F26D21; }
 </style>
 </head>
 <body>

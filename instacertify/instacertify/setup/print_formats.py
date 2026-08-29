@@ -19,26 +19,26 @@ QUOTATION_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: #1a1a1a; font-size: 11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
-  .ic-accent { color: #EC6820; }
-  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #065175; margin-bottom: 12px; }
+  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
+  .ic-accent { color: #F26D21; }
+  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #0D47A1; margin-bottom: 12px; }
   .ic-box { border: 1px solid #d9e6ee; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
-  .ic-box h3 { margin: 0 0 8px 0; color: #065175; font-size: 13px; border-bottom: 1px solid #ecf3f7; padding-bottom: 4px; }
+  .ic-box h3 { margin: 0 0 8px 0; color: #0D47A1; font-size: 13px; border-bottom: 1px solid #E7F1FC; padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.ic-table th { background: #065175; color: #fff; padding: 6px 8px; text-align: left; font-size: 10px; }
+  table.ic-table th { background: #0D47A1; color: #fff; padding: 6px 8px; text-align: left; font-size: 10px; }
   table.ic-table td { border-bottom: 1px solid #e5eef3; padding: 6px 8px; }
-  .badge-pass { background: #fff3e8; color: #EC6820; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
-  .badge-rev { background: #e8f4fa; color: #065175; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
+  .badge-pass { background: #FFF0E8; color: #F26D21; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
+  .badge-rev { background: #e8f4fa; color: #0D47A1; padding: 2px 6px; border-radius: 10px; font-size: 9px; }
   .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; }
   .ic-qr { float: right; margin: 0 0 8px 16px; text-align: center; }
   .ic-qr img { width: 72px; height: 72px; }
   .ic-qr .cap { font-size: 8px; color: #555; }
   .ic-sign { margin-top: 28px; page-break-inside: avoid; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -200,17 +200,17 @@ INVOICE_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic-inv { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size: 11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-lh-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
+  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
   table { width:100%; border-collapse: collapse; margin-top:12px; }
-  th { background:#065175; color:#fff; padding:6px; text-align:left; }
+  th { background:#0D47A1; color:#fff; padding:6px; text-align:left; }
   td { border-bottom:1px solid #e5eef3; padding:6px; }
   .qr { text-align:right; margin-top:20px; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -267,13 +267,13 @@ SAMPLE_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:11px; text-transform:uppercase; }
   .qr img { width:90px; height:90px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -289,7 +289,7 @@ SAMPLE_HTML = """
       <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <h2 style="margin:0 0 10px; color:#065175;">Sample Tracking Label</h2>
+  <h2 style="margin:0 0 10px; color:#0D47A1;">Sample Tracking Label</h2>
   <p><b>Tracking No:</b> {{ doc.tracking_number }}</p>
   <p><b>Customer:</b> {{ doc.customer }}</p>
   <p><b>Description:</b> {{ doc.sample_description }}</p>
@@ -317,12 +317,12 @@ TESTING_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:11px; text-transform:uppercase; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -338,7 +338,7 @@ TESTING_HTML = """
       <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <h2 style="margin:0 0 10px; color:#065175;">Testing Request</h2>
+  <h2 style="margin:0 0 10px; color:#0D47A1;">Testing Request</h2>
   <p><b>{{ doc.name }}</b> — {{ doc.title }}</p>
   <p><b>Customer:</b> {{ doc.customer }} | <b>Project:</b> {{ doc.project or '' }}</p>
   <p><b>Product:</b> {{ doc.product }} | <b>Test:</b> {{ doc.test_name }}</p>
@@ -364,14 +364,14 @@ JOINING_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Georgia, 'Times New Roman', serif; font-size:12px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #EC6820; margin-bottom:14px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #F26D21; margin-bottom:14px; }
   .ic-lh-logo img { max-height:52px; max-width:300px; }
   .ic-lh-co { text-align:right; font-family: Arial, Helvetica, sans-serif; color:#222; font-size:10px; line-height:1.4; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#F26D21; font-weight:700; font-size:12px; text-transform:uppercase; }
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -390,7 +390,7 @@ JOINING_HTML = """
       <div><b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
-  <h3 style="color:#065175;">Joining Letter</h3>
+  <h3 style="color:#0D47A1;">Joining Letter</h3>
   <p>Date: {{ frappe.utils.formatdate(doc.joining_date) }}</p>
   <p>Dear <b>{{ doc.employee_name }}</b>,</p>
   {{ doc.letter_content or '<p>We are pleased to welcome you to Instacertify.</p>' }}
@@ -428,10 +428,10 @@ TESTING_QUOTATION_HTML = """
   @page { size: A4; margin: 12mm; }
   .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .tq-logo img { max-height:58px; max-width:320px; }
   .tq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .tq-co .name { color:#EC6820; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .tq-co .name { color:#F26D21; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
   .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
   .tq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 16px; color:#111; }
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
@@ -458,7 +458,7 @@ TESTING_QUOTATION_HTML = """
   .tq-stamp img { max-height:110px; max-width:140px; }
   .tq-sign { margin-top:8px; font-weight:700; }
   .tq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -725,10 +725,10 @@ CONSULTING_QUOTATION_HTML = """
   @page { size: A4; margin: 12mm; }
   .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:#222; font-size:10.5px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
-  .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .cq-logo img { max-height:58px; max-width:320px; }
   .cq-co { text-align:right; color:#222; font-size:10px; line-height:1.4; }
-  .cq-co .name { color:#EC6820; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
+  .cq-co .name { color:#F26D21; font-weight:700; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:uppercase; }
   .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-size:11px; font-weight:700; }
   .cq-title { text-align:center; font-size:22px; font-weight:700; margin:10px 0 14px; color:#111; }
   .cq-service { text-align:center; font-size:14px; font-weight:700; margin:0 0 14px; }
@@ -751,7 +751,7 @@ CONSULTING_QUOTATION_HTML = """
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
   .cq-sign { margin-top:8px; font-weight:700; }
   .cq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #D45A12 0%, #F26D21 50%, #D45A12 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -968,17 +968,17 @@ DOCUMENTS_COLLECTION_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
+  .ic-title { color:#0D47A1; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
   .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
-  .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
+  .ic-box h3 { margin:0 0 8px; color:#0D47A1; font-size:13px; border-bottom:1px solid #E7F1FC; padding-bottom:4px; }
   table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.ic-table th { background:#065175; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
+  table.ic-table th { background:#0D47A1; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:linear-gradient(90deg,#D45A12 0%,#F26D21 50%,#D45A12 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
   <div class="ic-lh">
@@ -1051,17 +1051,17 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #F26D21; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
+  .ic-title { color:#0D47A1; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
   .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
-  .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
+  .ic-box h3 { margin:0 0 8px; color:#0D47A1; font-size:13px; border-bottom:1px solid #E7F1FC; padding-bottom:4px; }
   table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; vertical-align:top; }
-  table.ic-table td:first-child { width:32%; color:#065175; font-weight:600; }
+  table.ic-table td:first-child { width:32%; color:#0D47A1; font-weight:600; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:linear-gradient(90deg,#D45A12 0%,#F26D21 50%,#D45A12 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
   <div class="ic-lh">

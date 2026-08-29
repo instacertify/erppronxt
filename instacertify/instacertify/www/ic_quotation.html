@@ -12,8 +12,8 @@
     .ic-portal-muted { color:#5b7380; font-size:0.92rem; }
     .ic-portal-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:0.95rem; }
     .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #e2eef4; padding:8px 6px; text-align:left; }
-    .ic-portal-table th { color:#065175; font-weight:600; }
-    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#e8f3f8; color:#065175; font-size:0.85rem; }
+    .ic-portal-table th { color:#0D47A1; font-weight:600; }
+    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#E7F1FC; color:#0D47A1; font-size:0.85rem; }
     .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
     .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
     .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
@@ -28,7 +28,7 @@
       <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
     </div>
     <div class="ic-portal-card" id="app">
-      <h2 style="color:#065175;margin-top:0;">Your Quotation</h2>
+      <h2 style="color:#0D47A1;margin-top:0;">Your Quotation</h2>
       <div id="content">Loading…</div>
       <div id="msg"></div>
       <div class="ic-portal-actions" id="actions" style="display:none;">
@@ -121,13 +121,13 @@
               (d.valid_till ? (' · Valid till ' + esc(d.valid_till)) : '') +
               (d.ic_estimated_timeline ? (' · Timeline: ' + esc(d.ic_estimated_timeline)) : '') + '</p>' +
             (d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
-            (d.ic_deliverables ? ('<h4 style="color:#065175;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
-            '<h4 style="color:#065175;margin-bottom:4px;">Commercials</h4>' +
+            (d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
+            '<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
             costTable(d.cost_items, d.currency) +
             '<p><b>Commercial:</b> ' + esc(money(d.ic_commercial_value, d.currency)) + '</p>' +
             '<p><b>Pass-through:</b> ' + esc(money(d.ic_passthrough_value, d.currency)) + '</p>' +
             '<p><b>Total:</b> ' + esc(money(d.ic_total_quoted_value || d.grand_total, d.currency)) + '</p>' +
-            (d.ic_payment_terms ? ('<h4 style="color:#065175;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
+            (d.ic_payment_terms ? ('<h4 style="color:#0D47A1;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
 
           document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));

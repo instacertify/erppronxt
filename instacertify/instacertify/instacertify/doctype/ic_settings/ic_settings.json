@@ -28,14 +28,14 @@
    "fieldname": "primary_color",
    "fieldtype": "Color",
    "label": "Primary Color",
-   "default": "#065175"
+   "default": "#0D47A1"
   },
   {
    "doctype": "DocField",
    "fieldname": "accent_color",
    "fieldtype": "Color",
    "label": "Accent Color",
-   "default": "#EC6820"
+   "default": "#F26D21"
   },
   {
    "doctype": "DocField",
