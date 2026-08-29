@@ -276,7 +276,7 @@ def _leads_to_contact(limit=20, include_upcoming_days=7, mine_first=True):
 
 @frappe.whitelist()
 def get_lead_contact_prompts(limit=12, mine_only=0):
-	"""Simple lead call list: who, when, phone/owner, short note."""
+	"""Reminder hub: whom to call, who to connect with, customer remarks, due when."""
 	limit = int(limit or 12)
 	rows = _leads_to_contact(limit=limit * 2 if cint(mine_only) else limit)
 	if cint(mine_only):
@@ -291,6 +291,31 @@ def get_lead_contact_prompts(limit=12, mine_only=0):
 		"upcoming_count": len(upcoming),
 		"hub_title": "Lead reminders",
 		"hub_sub": "Who to call next",
+	}
+
+
+@frappe.whitelist()
+def get_lead_reminders_page(limit=60, filter=None):
+	"""Dedicated Lead Reminders page payload."""
+	limit = max(1, min(int(limit or 60), 100))
+	data = get_lead_contact_prompts(limit=limit)
+	rows = data.get("prompts") or []
+	filt = (filter or "all").lower()
+	if filt == "due":
+		rows = [r for r in rows if r.get("urgency") in ("overdue", "today")]
+	elif filt == "upcoming":
+		rows = [r for r in rows if r.get("urgency") == "upcoming"]
+	elif filt == "mine":
+		rows = [r for r in rows if r.get("mine")]
+	return {
+		"prompts": rows,
+		"due_count": data.get("due_count") or 0,
+		"upcoming_count": data.get("upcoming_count") or 0,
+		"total": len(rows),
+		"filter": filt,
+		"hub_title": "Lead Reminders",
+		"hub_sub": "Who to call · phone · owner · remarks",
+		"me": frappe.session.user,
 	}
 
 

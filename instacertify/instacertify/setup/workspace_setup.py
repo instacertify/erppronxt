@@ -15,6 +15,44 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
+	_ensure_lead_reminders_sidebar()
+	try:
+		from instacertify.setup.gameplan_access import ensure_gameplan_access
+
+		ensure_gameplan_access()
+	except Exception:
+		pass
+
+
+def _ensure_lead_reminders_sidebar():
+	"""Keep Lead Reminders in the Instacertify Home sidebar."""
+	sidebar_name = "Instacertify Home"
+	if not frappe.db.exists("Workspace Sidebar", sidebar_name):
+		return
+	if not frappe.db.exists("Page", "lead-reminders"):
+		return
+	doc = frappe.get_doc("Workspace Sidebar", sidebar_name)
+	for row in doc.items or []:
+		if (row.label or "").strip().lower() == "lead reminders" or row.link_to == "lead-reminders":
+			row.link_type = "Page"
+			row.type = "Link"
+			row.link_to = "lead-reminders"
+			row.icon = row.icon or "phone"
+			doc.flags.ignore_permissions = True
+			doc.save(ignore_permissions=True)
+			return
+	doc.append(
+		"items",
+		{
+			"label": "Lead Reminders",
+			"link_type": "Page",
+			"type": "Link",
+			"link_to": "lead-reminders",
+			"icon": "phone",
+		},
+	)
+	doc.flags.ignore_permissions = True
+	doc.save(ignore_permissions=True)
 
 
 def _ensure_home_html_block():
@@ -30,17 +68,17 @@ def _ensure_home_html_block():
   <div class="ic-explore-panel" id="ic-explore-panel">
     <div class="ic-explore-head">
       <div>
-        <div class="ic-explore-title">Your workspace</div>
-        <div class="ic-explore-sub" id="ic-explore-hint">Major sections for your role — tap a tile to open</div>
+        <div class="ic-explore-title">Explore Instacertify</div>
+        <div class="ic-explore-sub" id="ic-explore-hint">Organised in tiles — tap any square to open</div>
       </div>
     </div>
-    <div id="ic-explore-sections" class="ic-explore-sections"></div>
+    <div class="ic-explore-grid" id="ic-explore-grid"></div>
   </div>
 
   <div class="ic-summary-grid" id="ic-summary-grid"></div>
 
   <div class="ic-workdesk-grid">
-    <section class="ic-workdesk-panel" data-ic-vis="tasks">
+    <section class="ic-workdesk-panel">
       <div class="ic-workdesk-head">
         <div>
           <div class="ic-workdesk-title">My tasks</div>
@@ -50,7 +88,7 @@ def _ensure_home_html_block():
       </div>
       <div id="ic-my-tasks"></div>
     </section>
-    <section class="ic-workdesk-panel" data-ic-vis="calendar">
+    <section class="ic-workdesk-panel">
       <div class="ic-workdesk-head">
         <div>
           <div class="ic-workdesk-title">Team calendar</div>
@@ -63,7 +101,7 @@ def _ensure_home_html_block():
       </div>
       <div id="ic-my-calendar"></div>
     </section>
-    <section class="ic-workdesk-panel" data-ic-vis="my_leads">
+    <section class="ic-workdesk-panel">
       <div class="ic-workdesk-head">
         <div>
           <div class="ic-workdesk-title">My leads</div>
@@ -75,21 +113,21 @@ def _ensure_home_html_block():
     </section>
   </div>
 
-  <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub" data-ic-vis="lead_hub">
+  <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub">
     <div class="ic-lead-prompt-header">
       <div>
         <div class="ic-lead-prompt-title">Lead reminders</div>
-        <div class="ic-lead-prompt-sub">Who to call next</div>
+        <div class="ic-lead-prompt-sub">Next 4 calls — soft cards side by side</div>
       </div>
       <div class="ic-lead-hub-actions">
         <span class="ic-lead-hub-counts" id="ic-lead-hub-counts"></span>
-        <a class="ic-view-all" href="/app/lead">All leads</a>
+        <a class="ic-view-all" id="ic-lead-show-all" href="/app/lead-reminders">Show all</a>
       </div>
     </div>
-    <div id="ic-lead-prompts" class="ic-lead-hub-list"></div>
+    <div id="ic-lead-prompts" class="ic-lead-hub-rail"></div>
   </div>
 
-  <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel" data-ic-vis="helpdesk">
+  <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel">
     <div class="ic-lead-prompt-header">
       <div>
         <div class="ic-lead-prompt-title">Helpdesk</div>
@@ -103,7 +141,7 @@ def _ensure_home_html_block():
     <div id="ic-helpdesk-tickets" class="ic-lead-prompt-list"></div>
   </div>
 
-  <div class="ic-lead-prompt-panel" id="ic-collab-panel" data-ic-vis="collab">
+  <div class="ic-lead-prompt-panel" id="ic-collab-panel">
     <div class="ic-lead-prompt-header">
       <div>
         <div class="ic-lead-prompt-title">Team Collaboration</div>
@@ -114,7 +152,7 @@ def _ensure_home_html_block():
     <div id="ic-collab-recent" class="ic-lead-prompt-list"></div>
   </div>
 
-  <div class="ic-hr-panel" data-ic-vis="hrms">
+  <div class="ic-hr-panel">
     <div class="ic-workdesk-head">
       <div>
         <div class="ic-workdesk-title">My HR</div>
@@ -140,11 +178,11 @@ def _ensure_home_html_block():
     <div id="ic-hr-links" class="ic-hr-links"></div>
   </div>
 
-  <div class="ic-project-section-head" data-ic-vis="projects">
+  <div class="ic-project-section-head">
     <h3>Ongoing Projects</h3>
     <a class="ic-view-all" href="/app/project-board">Open tile board</a>
   </div>
-  <div class="ic-project-grid" id="ic-project-grid" data-ic-vis="projects"></div>
+  <div class="ic-project-grid" id="ic-project-grid"></div>
 </div>
 """
 	script = """
@@ -271,73 +309,36 @@ def _ensure_home_html_block():
     }
   }
 
-  function applyHomeVisibility(vis) {
-    const map = vis || {};
-    root_element.querySelectorAll("[data-ic-vis]").forEach((el) => {
-      const key = el.getAttribute("data-ic-vis");
-      let show = true;
-      if (key === "my_leads" || key === "lead_hub") show = !!(map.lead_hub || map.my_leads || map.crm_panels);
-      else if (key === "projects") show = !!map.projects;
-      else if (key === "hrms") show = !!map.hrms;
-      else if (key === "helpdesk") show = map.helpdesk !== false;
-      else if (key === "collab") show = !!map.collab;
-      else if (key === "tasks" || key === "calendar") show = true;
-      el.style.display = show ? "" : "none";
-    });
-  }
-
-  function renderExploreCard(c, idx, flatCards) {
-    flatCards[idx] = c;
-    const count = (c.count != null)
-      ? `<span class="ic-explore-count">${esc(c.count)}</span>`
-      : "";
-    const actionHint = c.action
-      ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
-      : "";
-    return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
-      <div class="ic-explore-card-top">${actionHint}${count}</div>
-      <div class="ic-explore-card-title">${esc(c.title)}</div>
-      <div class="ic-explore-card-sub">${esc(c.subtitle || "")}</div>
-    </button>`;
-  }
-
   frappe.call({
     method: "instacertify.explore.dashboard.get_explore_prompts",
     callback(r) {
       const d = r.message || {};
-      const wrap = root_element.getElementById("ic-explore-sections");
+      const grid = root_element.getElementById("ic-explore-grid");
       const hint = root_element.getElementById("ic-explore-hint");
       if (hint && d.hint) hint.textContent = d.hint;
-      applyHomeVisibility(d.visibility || {});
-      if (!wrap) return;
-      const sections = d.sections || [];
-      const flatCards = [];
-      if (!sections.length) {
-        wrap.innerHTML = empty("No workspace sections available for your role.");
+      if (!grid) return;
+      const cards = d.cards || [];
+      if (!cards.length) {
+        grid.innerHTML = empty("No explore options available for your role.");
         return;
       }
-      let idx = 0;
-      wrap.innerHTML = sections.map((sec) => {
-        const cardsHtml = (sec.cards || []).map((c) => {
-          const html = renderExploreCard(c, idx, flatCards);
-          idx += 1;
-          return html;
-        }).join("");
-        return `<section class="ic-explore-section accent-${esc(sec.accent || "teal")}" data-section="${esc(sec.id)}">
-          <div class="ic-explore-section-head">
-            <div>
-              <div class="ic-explore-section-title">${esc(sec.title)}</div>
-              <div class="ic-explore-section-sub">${esc(sec.subtitle || "")}</div>
-            </div>
-            <span class="ic-explore-section-count">${esc(sec.count || (sec.cards || []).length)} tools</span>
-          </div>
-          <div class="ic-explore-grid">${cardsHtml}</div>
-        </section>`;
+      grid.innerHTML = cards.map((c, idx) => {
+        const count = (c.count != null)
+          ? `<span class="ic-explore-count">${esc(c.count)}</span>`
+          : "";
+        const actionHint = c.action
+          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
+          : "";
+        return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
+          <div class="ic-explore-card-top">${actionHint}${count}</div>
+          <div class="ic-explore-card-title">${esc(c.title)}</div>
+          <div class="ic-explore-card-sub">${esc(c.subtitle || "")}</div>
+        </button>`;
       }).join("");
-      wrap.querySelectorAll(".ic-explore-card").forEach((btn) => {
+      grid.querySelectorAll(".ic-explore-card").forEach((btn) => {
         btn.addEventListener("click", () => {
           const i = parseInt(btn.getAttribute("data-idx"), 10);
-          openExploreCard(flatCards[i]);
+          openExploreCard(cards[i]);
         });
       });
     }
@@ -435,19 +436,19 @@ def _ensure_home_html_block():
 
   frappe.call({
     method: "instacertify.crm.dashboard.get_lead_contact_prompts",
-    args: { limit: 12 },
+    args: { limit: 4 },
     callback(r) {
       const el = root_element.getElementById("ic-lead-prompts");
       const counts = root_element.getElementById("ic-lead-hub-counts");
       if (!el) return;
       const d = r.message || {};
-      const rows = d.prompts || [];
-      const dueN = d.due_count || 0;
+      const rows = (d.prompts || []).slice(0, 4);
       if (counts) {
+        const dueN = d.due_count || 0;
         counts.textContent = dueN ? (dueN + " due") : ((d.upcoming_count || 0) + " upcoming");
       }
       if (!rows.length) {
-        el.innerHTML = empty("No reminders. Set <b>Next Contact Date</b> on a Lead.");
+        el.innerHTML = empty("No reminders yet. Set <b>Next Contact Date</b> on a Lead.");
         return;
       }
       el.innerHTML = rows.map(row => {
@@ -455,24 +456,28 @@ def _ensure_home_html_block():
         const company = esc(row.company || "");
         const when = esc(row.due_label || row.ic_next_contact_date || "—");
         const phone = esc(row.phone || "");
-        const phoneHref = row.phone ? ("tel:" + String(row.phone).replace(/\\s+/g, "")) : "";
         const owner = esc(row.call_with || "");
         const urg = esc(row.urgency || "upcoming");
+        let note = row.has_remarks ? String(row.remarks || "") : "";
+        if (note.length > 72) note = note.slice(0, 69) + "…";
+        note = esc(note);
+        const phoneHref = row.phone ? ("tel:" + String(row.phone).replace(/\s+/g, "")) : "";
         const phoneBit = phone
           ? (phoneHref
-              ? `<a class="ic-lead-hub-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
+              ? `<a class="ic-lr-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
               : `<span>${phone}</span>`)
           : "";
-        const metaParts = [phoneBit, owner].filter(Boolean);
-        return `<a class="ic-lead-hub-row ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
-          <div class="ic-lead-hub-row-top">
-            <div class="ic-lead-hub-row-name">${person}${company ? `<span class="ic-lead-hub-row-company"> · ${company}</span>` : ""}</div>
-            <span class="ic-lead-prompt-when ${urg}">${when}</span>
-          </div>
-          ${metaParts.length ? `<div class="ic-lead-hub-row-meta">${metaParts.join(" · ")}</div>` : ""}
+        const meta = [phoneBit, owner].filter(Boolean).join(" · ");
+        return `<a class="ic-lr-card ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
+          <div class="ic-lr-card-top"><span class="ic-lr-badge ${urg}">${when}</span></div>
+          <div class="ic-lr-card-name">${person}</div>
+          ${company ? `<div class="ic-lr-card-company">${company}</div>` : ""}
+          ${meta ? `<div class="ic-lr-card-meta">${meta}</div>` : ""}
+          ${note ? `<div class="ic-lr-card-note">${note}</div>` : ""}
         </a>`;
       }).join("");
     }
+  });
   });
 
   frappe.call({
@@ -679,93 +684,80 @@ _SHADOW_THEME_CSS = """
   color: #065175;
   letter-spacing: -0.02em;
 }
-.ic-lead-prompt.overdue {
+.ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
   background: linear-gradient(165deg, #fff5f4 0%, #fff 55%) !important;
   box-shadow: inset 4px 0 0 #c0392b, 0 10px 24px rgba(192,57,43,0.08) !important;
 }
-.ic-lead-prompt.today {
+.ic-lead-prompt.today, .ic-lead-hub-card.today {
   background: linear-gradient(165deg, #fff8f0 0%, #fff 55%) !important;
   box-shadow: inset 4px 0 0 #EC6820, 0 10px 24px rgba(236,104,32,0.1) !important;
 }
-.ic-lead-prompt.upcoming {
+.ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
   background: linear-gradient(165deg, #f0f9fc 0%, #fff 55%) !important;
   box-shadow: inset 4px 0 0 #0a8fb5, 0 10px 24px rgba(10,143,181,0.08) !important;
 }
 .ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
 .ic-lead-prompt-when.today { background: #EC6820 !important; color: #fff !important; }
 .ic-lead-prompt-when.upcoming { background: #0a8fb5 !important; color: #fff !important; }
+.ic-lead-hub-rail {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  grid-auto-rows: 1fr;
+}
+@media (max-width: 1100px) {
+  .ic-lead-hub-rail { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 640px) {
+  .ic-lead-hub-rail { grid-template-columns: 1fr !important; }
+}
+.ic-lr-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px;
+  padding: 14px 14px 12px !important;
+  border-radius: 12px !important;
+  text-decoration: none !important;
+  color: inherit !important;
+  border: 1px solid rgba(6,81,117,0.1) !important;
+  aspect-ratio: auto !important;
+  min-height: 148px !important;
+  background: #f7fbf9 !important;
+  box-shadow: none !important;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.ic-lr-card:hover { transform: translateY(-2px); border-color: rgba(6,81,117,0.22) !important; }
+.ic-lr-card.overdue { background: #fbf6f5 !important; border-left: 4px solid #c4786a !important; }
+.ic-lr-card.today { background: #fbf8f3 !important; border-left: 4px solid #d4a373 !important; }
+.ic-lr-card.upcoming { background: #f3f8fb !important; border-left: 4px solid #6a9fb5 !important; }
+.ic-lr-card-top { display:flex; justify-content:flex-end; }
+.ic-lr-badge {
+  font-size: 0.68rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+  background: #e4eef3; color: #3d5a66;
+}
+.ic-lr-badge.overdue { background: #f3e0dc; color: #8a4a40; }
+.ic-lr-badge.today { background: #f5e6d4; color: #8a5a2b; }
+.ic-lr-badge.upcoming { background: #d9ebf2; color: #2f6173; }
+.ic-lr-card-name { font-weight: 700; font-size: 0.92rem; color: #243b45; line-height: 1.3; }
+.ic-lr-card-company { font-size: 0.78rem; color: #6a828e; }
+.ic-lr-card-meta { font-size: 0.76rem; color: #4d6773; margin-top: 4px; }
+.ic-lr-card-note { font-size: 0.74rem; color: #5b7380; margin-top: auto; padding-top: 8px; line-height: 1.35; }
+.ic-lr-phone { color: #3d7a8c !important; font-weight: 600; text-decoration: none !important; }
 .ic-lead-hub-counts {
+
   background: linear-gradient(90deg, #EC6820, #c44710) !important;
   color: #fff !important;
   font-weight: 700 !important;
   border-radius: 8px;
   padding: 4px 10px;
-  font-size: 0.78rem;
 }
-.ic-lead-hub-list {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 6px !important;
-  grid-template-columns: none !important;
-}
-.ic-lead-hub-row {
-  display: block !important;
-  padding: 10px 12px !important;
-  border-radius: 10px !important;
-  border: 1px solid rgba(6,81,117,0.12) !important;
-  text-decoration: none !important;
-  color: inherit !important;
-  aspect-ratio: auto !important;
-  min-height: 0 !important;
-  background: #fff !important;
-  box-shadow: none !important;
-}
-.ic-lead-hub-row.overdue {
-  border-left: 4px solid #c0392b !important;
-  background: #fff8f7 !important;
-}
-.ic-lead-hub-row.today {
-  border-left: 4px solid #EC6820 !important;
-  background: #fff9f4 !important;
-}
-.ic-lead-hub-row.upcoming {
-  border-left: 4px solid #0a8fb5 !important;
-  background: #f7fbfd !important;
-}
-.ic-lead-hub-row-top {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 10px !important;
-  flex-wrap: nowrap !important;
-}
-.ic-lead-hub-row-name {
-  font-weight: 650 !important;
-  font-size: 0.92rem !important;
-  color: #1c2f3a !important;
-  line-height: 1.3;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ic-lead-hub-row-company { font-weight: 500 !important; color: #5b7382 !important; }
-.ic-lead-hub-row-meta {
-  margin-top: 2px;
-  font-size: 0.78rem !important;
-  color: #5b7382 !important;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ic-lead-hub-phone { color: #065175 !important; font-weight: 600; text-decoration: none !important; }
-.ic-lead-hub-row .ic-lead-prompt-when {
-  flex-shrink: 0 !important;
-  white-space: nowrap !important;
-  border-radius: 8px;
-  padding: 3px 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
+.ic-lead-hub-chip.overdue { background: #c0392b !important; color: #fff !important; }
+.ic-lead-hub-chip.upcoming { background: #0a8fb5 !important; color: #fff !important; }
+.ic-lead-hub-remarks-wrap {
+  background: rgba(6,81,117,0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 8px;
 }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
@@ -800,41 +792,6 @@ _SHADOW_THEME_CSS = """
   color: #5a6f7a;
 }
 .ic-summary-card .value { margin-top: auto !important; font-size: 1.6rem !important; }
-.ic-explore-sections { display: flex; flex-direction: column; gap: 18px; }
-.ic-explore-section {
-  background: #fff;
-  border: 1px solid rgba(6,81,117,0.1);
-  border-radius: 14px;
-  padding: 14px 14px 16px;
-  border-left: 4px solid #065175;
-}
-.ic-explore-section.accent-coral { border-left-color: #c0392b; }
-.ic-explore-section.accent-citrus { border-left-color: #EC6820; }
-.ic-explore-section.accent-teal { border-left-color: #065175; }
-.ic-explore-section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.ic-explore-section-title {
-  font-family: "Poppins", sans-serif !important;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: #033447;
-  letter-spacing: -0.02em;
-}
-.ic-explore-section-sub { color: #5a6f7a; font-size: 0.82rem; margin-top: 2px; }
-.ic-explore-section-count {
-  flex-shrink: 0;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #065175;
-  background: #e8f1f6;
-  padding: 4px 10px;
-  border-radius: 8px;
-}
 .ic-explore-panel { margin-bottom: 20px; }
 .ic-explore-title {
   font-family: "Poppins", sans-serif !important;
@@ -887,6 +844,9 @@ _SHADOW_THEME_CSS = """
   display: flex !important;
   flex-direction: column !important;
 }
+.ic-lr-card, .ic-lead-hub-rail .ic-lr-card {
+  aspect-ratio: auto !important;
+}
 .ic-workdesk-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
   gap: 12px !important;
@@ -909,7 +869,7 @@ def _ensure_crm_lead_tracker_block():
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Status</div><div id="ic-crm-status-30"></div></div>
   </div>
   <div class="ic-crm-chart-card" style="margin-top:12px;min-height:auto;">
-    <div class="ic-crm-chart-label">Lead reminders</div>
+    <div class="ic-crm-chart-label">Lead reminder hub · Whom to call · Connect with · Customer remarks</div>
     <div id="ic-crm-leads-contact"></div>
   </div>
   <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC Renewals Due (31 days)</div><div id="ic-crm-amc-due"></div></div>
@@ -995,26 +955,19 @@ def _ensure_crm_lead_tracker_block():
         const rows = d.leads_to_contact || [];
         if (el) {
           if (!rows.length) {
-            el.innerHTML = "<div class='ic-lead-prompt-empty'>No leads due. Set Next Contact Date on Leads.</div>";
+            el.innerHTML = "<div class='ic-lead-prompt-empty'>No leads due. Set Next Contact Date, Call / Lead Remarks, and Assigned Salesperson on Leads.</div>";
           } else {
-            el.innerHTML = "<div class='ic-lead-hub-list'>" +
+            el.innerHTML = "<table class='ic-related-table'><thead><tr><th>Whom to call</th><th>When</th><th>Phone</th><th>Connect with</th><th>Connected</th><th>Customer remarks</th></tr></thead><tbody>" +
               rows.map(r => {
                 const person = r.contact_person || r.title || r.ic_party_name || r.lead_name || r.name;
                 const company = r.company || r.company_name || "";
                 const title = company ? (person + " · " + company) : person;
                 const when = r.due_label || r.ic_next_contact_date || "—";
-                const phone = r.phone || r.mobile_no || "";
-                const owner = r.call_with || "";
-                const urg = r.urgency || "upcoming";
-                const meta = [phone, owner].filter(Boolean).join(" · ");
-                return `<a class="ic-lead-hub-row ${frappe.utils.escape_html(urg)}" href="/app/lead/${encodeURIComponent(r.name)}">
-                  <div class="ic-lead-hub-row-top">
-                    <div class="ic-lead-hub-row-name">${frappe.utils.escape_html(title)}</div>
-                    <span class="ic-lead-prompt-when ${frappe.utils.escape_html(urg)}">${frappe.utils.escape_html(when)}</span>
-                  </div>
-                  ${meta ? `<div class="ic-lead-hub-row-meta">${frappe.utils.escape_html(meta)}</div>` : ""}
-                </a>`;
-              }).join("") + "</div>";
+                const connected = r.ic_lead_connected ? "<span class='ic-lead-prompt-connected connected'>Connected</span>" : "<span class='ic-lead-prompt-connected not-connected'>Not connected</span>";
+                const remarks = r.remarks || r.ic_call_remarks || "—";
+                const callWith = r.call_with || "Unassigned";
+                return "<tr><td><a href='/app/lead/"+encodeURIComponent(r.name)+"'>"+frappe.utils.escape_html(title)+"</a></td><td><span class='ic-lead-prompt-when "+frappe.utils.escape_html(r.urgency||'')+"'>"+frappe.utils.escape_html(when)+"</span></td><td>"+frappe.utils.escape_html(r.phone||r.mobile_no||"—")+"</td><td>"+frappe.utils.escape_html(callWith)+"</td><td>"+connected+"</td><td>"+frappe.utils.escape_html(remarks)+"</td></tr>";
+              }).join("") + "</tbody></table>";
           }
         }
         const amc = root_element.getElementById("ic-crm-amc-due");
@@ -1079,6 +1032,7 @@ def _ensure_home_workspace():
 		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 2}},
 		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
 		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
+		{"id": "sc_lead_reminders", "type": "shortcut", "data": {"shortcut_name": "Lead Reminders", "col": 2}},
 		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 2}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
@@ -1107,6 +1061,7 @@ def _ensure_home_workspace():
 		{"label": "Projects", "link_to": "Project", "type": "DocType", "doc_view": "List"},
 		{"label": "Project Board", "link_to": "project-board", "type": "Page"},
 		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
+		{"label": "Lead Reminders", "link_to": "lead-reminders", "type": "Page"},
 		{"label": "Team Calendar", "link_to": "Event", "type": "DocType", "doc_view": "Calendar"},
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
@@ -1162,6 +1117,7 @@ def _ensure_home_workspace():
 		{"label": "Project", "link_type": "DocType", "link_to": "Project", "type": "Link"},
 		{"label": "Project Board (tiles)", "link_type": "Page", "link_to": "project-board", "type": "Link"},
 		{"label": "Team Collaboration", "link_type": "Page", "link_to": "team-collaboration", "type": "Link"},
+		{"label": "Lead Reminders", "link_type": "Page", "link_to": "lead-reminders", "type": "Link"},
 		{"label": "Task", "link_type": "DocType", "link_to": "Task", "type": "Link"},
 		{"label": "Team Chat Messages", "link_type": "DocType", "link_to": "Project Chat Message", "type": "Link"},
 		{"label": "Project Updates", "link_type": "DocType", "link_to": "IC Project Update", "type": "Link"},
