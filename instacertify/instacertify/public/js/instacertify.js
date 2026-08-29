@@ -4286,6 +4286,10 @@ frappe.ui.form.on("Lead", {
 		}));
 	},
 	refresh(frm) {
+		instacertify.enable_full_width_desk();
+		if (frm.page && frm.page.wrapper) {
+			frm.page.wrapper.addClass("ic-lead-form-page");
+		}
 		frm.set_df_property("email_id", "reqd", 0);
 		frm.set_df_property("mobile_no", "reqd", 0);
 		frm.set_df_property("phone", "reqd", 0);

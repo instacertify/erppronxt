@@ -57,11 +57,27 @@ frappe.ui.form.on("IC Quotation Template", {
 			}, __("Actions"));
 
 			frm.add_custom_button(__("New Quotation from Template"), () => {
-				frappe.new_doc("Quotation", {
-					ic_quotation_type:
-						frm.doc.quotation_type === "Service" ? "Consulting" : frm.doc.quotation_type,
-					ic_quotation_template: frm.doc.name,
-					ic_service_family: frm.doc.service_family,
+				const qtype =
+					frm.doc.quotation_type === "Service" ? "Consulting" : frm.doc.quotation_type;
+				frappe.call({
+					method: "instacertify.quotation.events.get_quotation_template_payload",
+					args: { template: frm.doc.name },
+					freeze: true,
+					freeze_message: __("Loading quote format…"),
+					callback(r) {
+						instacertify._pending_quote_format = {
+							skip: 0,
+							quotation_type: qtype || "Consulting",
+							payload: r.message || {},
+						};
+						frappe.model.with_doctype("Quotation", () => {
+							frappe.new_doc("Quotation", {
+								ic_quotation_type: qtype,
+								ic_quotation_template: frm.doc.name,
+								ic_service_family: frm.doc.service_family,
+							});
+						});
+					},
 				});
 			}, __("Actions"));
 

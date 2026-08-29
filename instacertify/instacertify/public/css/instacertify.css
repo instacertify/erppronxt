@@ -3721,3 +3721,144 @@ body.full-width .widget.number-widget-box {
 }
 .ic-doclib-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
 .ic-doclib-empty { padding: 28px; text-align: center; color: #5b7380; }
+
+/* ——— Lead form & list: fill width beside sidebar, even spread, no empty side gaps ——— */
+body.full-width {
+  --page-max-width: 100% !important;
+}
+
+[data-page-route="Lead"] .page-body.container,
+[data-page-route="Lead"] .container.page-body,
+[data-page-route="List/Lead"] .page-body.container,
+[data-page-route="List/Lead"] .container.page-body,
+.ic-lead-form-page .page-body.container,
+.ic-lead-list-page .page-body.container {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-page-route="Lead"] .layout-main,
+[data-page-route="Lead"] .layout-main-section-wrapper,
+[data-page-route="Lead"] .layout-main-section,
+[data-page-route="List/Lead"] .layout-main,
+[data-page-route="List/Lead"] .layout-main-section-wrapper,
+[data-page-route="List/Lead"] .layout-main-section,
+.ic-lead-form-page .layout-main,
+.ic-lead-form-page .layout-main-section-wrapper,
+.ic-lead-form-page .layout-main-section,
+.ic-lead-list-page .layout-main,
+.ic-lead-list-page .layout-main-section-wrapper,
+.ic-lead-list-page .layout-main-section {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-page-route="Lead"] .page-head .container,
+[data-page-route="List/Lead"] .page-head .container,
+.ic-lead-form-page .page-head .container,
+.ic-lead-list-page .page-head .container {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+
+[data-page-route="Lead"] .std-form-layout .section-head,
+[data-page-route="Lead"] .std-form-layout .section-body,
+[data-page-route="Lead"] .form-layout .form-section,
+[data-page-route="Lead"] .form-column,
+.ic-lead-form-page .std-form-layout .section-head,
+.ic-lead-form-page .std-form-layout .section-body,
+.ic-lead-form-page .form-layout .form-section {
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-page-route="Lead"] .form-section .section-body > .row,
+.ic-lead-form-page .form-section .section-body > .row {
+  display: flex !important;
+  flex-wrap: wrap;
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-page-route="Lead"] .form-column,
+[data-page-route="Lead"] .form-column[class*="col-"],
+.ic-lead-form-page .form-column,
+.ic-lead-form-page .form-column[class*="col-"] {
+  flex: 1 1 0 !important;
+  flex-grow: 1 !important;
+  flex-basis: 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+[data-page-route="Lead"] .form-layout,
+[data-page-route="Lead"] .form-page,
+.ic-lead-form-page .form-layout,
+.ic-lead-form-page .form-page {
+  width: 100% !important;
+  max-width: none !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  box-sizing: border-box;
+}
+
+[data-page-route="List/Lead"] .frappe-list,
+.ic-lead-list-page .frappe-list {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  box-sizing: border-box;
+}
+
+.ic-lead-form-page .ic-related-section,
+.ic-lead-form-page .ic-lead-form-reminder,
+.ic-lead-form-page .form-dashboard,
+.ic-lead-form-page .form-dashboard-section,
+[data-page-route="Lead"] .ic-related-section,
+[data-page-route="Lead"] .ic-lead-form-reminder {
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box;
+}
+
+.ic-lead-form-page .ic-related-table-wrap,
+.ic-lead-form-page .ic-related-table,
+[data-page-route="Lead"] .ic-related-table-wrap,
+[data-page-route="Lead"] .ic-related-table {
+  width: 100% !important;
+}
+
+.ic-lead-form-reminder-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr)) !important;
+  width: 100%;
+}
+
+.ic-lead-list-page .list-row-container,
+.ic-lead-list-page .frappe-list,
+[data-page-route="List/Lead"] .list-row-container,
+[data-page-route="List/Lead"] .frappe-list {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+@media (max-width: 720px) {
+  [data-page-route="Lead"] .form-column,
+  .ic-lead-form-page .form-column {
+    flex: 1 1 100% !important;
+  }
+}
