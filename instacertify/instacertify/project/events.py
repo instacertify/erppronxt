@@ -201,6 +201,20 @@ def on_update_project(doc, method=None):
 	if doc.get("ic_requires_amc") and doc.get("ic_amc_contact_date"):
 		_ensure_amc_event(doc)
 
+	# Any project team member should see this customer's data
+	if doc.get("customer") and (
+		doc.has_value_changed("ic_team_members")
+		or doc.has_value_changed("ic_assigned_employee")
+		or doc.has_value_changed("customer")
+		or doc.flags.get("ic_force_customer_team_sync")
+	):
+		try:
+			from instacertify.crm.customer_permissions import apply_customer_team_access
+
+			apply_customer_team_access(doc.customer, rebuild_table=True)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Project→Customer team sync")
+
 
 def _notify_stage_change(doc):
 	users = get_project_assignee_users(doc) + [doc.owner, "Administrator"]

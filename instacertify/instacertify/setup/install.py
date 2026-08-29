@@ -593,7 +593,7 @@ def _ensure_customer_related_tab():
 	fields = [
 		{
 			"fieldname": "ic_related_tab",
-			"label": "Related Data",
+			"label": "Customer Data",
 			"fieldtype": "Tab Break",
 			"insert_after": "column_break_hdmn",
 		},

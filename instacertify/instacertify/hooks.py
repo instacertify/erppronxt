@@ -57,6 +57,7 @@ doc_events = {
 	},
 	"Customer": {
 		"validate": "instacertify.accounting.events.validate_customer",
+		"on_update": "instacertify.crm.customer_permissions.on_update_customer",
 	},
 	"Project": {
 		"validate": "instacertify.project.events.validate_project",
@@ -82,6 +83,14 @@ doc_events = {
 		"on_update": "instacertify.calendar.events.on_update_event",
 		"after_insert": "instacertify.calendar.events.after_insert_event",
 	},
+}
+
+permission_query_conditions = {
+	"Customer": "instacertify.crm.customer_permissions.get_permission_query_conditions",
+}
+
+has_permission = {
+	"Customer": "instacertify.crm.customer_permissions.has_permission",
 }
 
 # Scheduled Tasks
