@@ -3509,13 +3509,11 @@ body.full-width {
   box-sizing: border-box;
 }
 
-/* Kill Frappe 900px gutter so content runs to the desk sidebar edge */
+/* Kill Frappe 900px gutter on Home / Workspaces only — do not crush Form pages */
 [data-page-route="Workspaces"] .layout-main,
 [data-page-route="Workspaces"] .layout-main-section-wrapper,
 [data-page-route="instacertify-home"] .layout-main,
-[data-page-route="instacertify-home"] .layout-main-section-wrapper,
-body.full-width .layout-main,
-body.full-width .layout-main-section-wrapper {
+[data-page-route="instacertify-home"] .layout-main-section-wrapper {
   max-width: none !important;
   width: 100% !important;
   margin-left: 0 !important;
@@ -3523,8 +3521,7 @@ body.full-width .layout-main-section-wrapper {
 }
 
 [data-page-route="Workspaces"] .layout-main-section,
-[data-page-route="instacertify-home"] .layout-main-section,
-body.full-width .desk-page .layout-main-section {
+[data-page-route="instacertify-home"] .layout-main-section {
   max-width: none !important;
   width: 100% !important;
   padding-left: var(--ic-home-side-pad, 4px) !important;
@@ -3534,9 +3531,7 @@ body.full-width .desk-page .layout-main-section {
 [data-page-route="Workspaces"] .page-body.container,
 [data-page-route="Workspaces"] .container.page-body,
 [data-page-route="instacertify-home"] .page-body.container,
-[data-page-route="instacertify-home"] .container.page-body,
-body.full-width .page-body.container,
-body.full-width .container.page-body {
+[data-page-route="instacertify-home"] .container.page-body {
   max-width: 100% !important;
   width: 100% !important;
   padding-left: 0 !important;
@@ -3548,14 +3543,20 @@ body.full-width .container.page-body {
 [data-page-route="Workspaces"] .page-head .container,
 [data-page-route="Workspaces"] .page-head,
 [data-page-route="instacertify-home"] .page-head .container,
-[data-page-route="instacertify-home"] .page-head,
-body.full-width .page-head .container {
+[data-page-route="instacertify-home"] .page-head {
   max-width: none !important;
   width: 100% !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
   padding-left: var(--ic-home-side-pad, 4px) !important;
   padding-right: var(--ic-home-side-pad, 4px) !important;
+}
+
+/* Forms keep readable gutters beside the desk sidebar */
+body.full-width [data-page-route^="Form/"] .layout-main-section,
+body.full-width [id^="page-Form/"] .layout-main-section {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
 
 [data-page-route="Workspaces"] .codex-editor,
