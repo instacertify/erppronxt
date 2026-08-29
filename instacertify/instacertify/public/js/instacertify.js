@@ -1509,21 +1509,67 @@ frappe.ui.form.on("Quotation", {
 	onload(frm) {
 		instacertify.setup_quotation_template_filter(frm);
 		frm.wrapper && frm.wrapper.addClass("ic-quotation-form");
-		if (frm.is_new() && frm.doc.ic_quotation_template && frm.doc.ic_quotation_type) {
-			// Started from library "Use in Quotation" — apply format values once
-			if (!frm._ic_format_applied_on_load) {
-				frm._ic_format_applied_on_load = true;
-				setTimeout(() => {
-					instacertify.apply_quote_format_to_form(frm, frm.doc.ic_quotation_template);
-				}, 300);
-			}
-			return;
-		}
-		if (frm.is_new() && !frm.doc.ic_quotation_type) {
-			instacertify.open_new_quotation_type_format_dialog(frm);
+		instacertify.maybe_prompt_or_apply_quote_format(frm);
+	},
+	refresh(frm) {
+		if (frm.is_new()) {
+			instacertify.maybe_prompt_or_apply_quote_format(frm);
 		}
 	},
 });
+
+instacertify.maybe_prompt_or_apply_quote_format = function (frm) {
+	if (!frm || !frm.is_new()) return;
+
+	// Pending payload from list-view "New Quotation" picker
+	const pending = instacertify._pending_quote_format;
+	if (pending && !frm._ic_format_applied_on_load) {
+		frm._ic_format_applied_on_load = true;
+		frm._ic_type_format_prompted = true;
+		instacertify._pending_quote_format = null;
+		setTimeout(() => {
+			if (pending.skip) {
+				frm.set_value("ic_quotation_type", pending.quotation_type || "Consulting");
+				instacertify.apply_quotation_naming_series(frm);
+				instacertify.toggle_quotation_sections(frm);
+				instacertify.render_quotation_entry_guide(frm);
+				return;
+			}
+			instacertify
+				.fill_quotation_from_format_payload(frm, pending.payload || {})
+				.then(() => {
+					frappe.show_alert({
+						message: __(
+							"Format applied. Edit headings, values, and commercials on the form as needed."
+						),
+						indicator: "green",
+					});
+				});
+		}, 200);
+		return;
+	}
+
+	if (frm.doc.ic_quotation_template && frm.doc.ic_quotation_type) {
+		if (!frm._ic_format_applied_on_load) {
+			frm._ic_format_applied_on_load = true;
+			frm._ic_type_format_prompted = true;
+			setTimeout(() => {
+				instacertify.apply_quote_format_to_form(frm, frm.doc.ic_quotation_template);
+			}, 300);
+		}
+		return;
+	}
+
+	if (!frm.doc.ic_quotation_type && !frm._ic_type_format_prompted) {
+		frm._ic_type_format_prompted = true;
+		setTimeout(() => instacertify.open_new_quotation_type_format_dialog(frm), 150);
+	}
+};
+
+/** Open type → format picker, then create a new Quotation (preferred entry from list). */
+instacertify.start_new_quotation = function () {
+	instacertify.open_new_quotation_type_format_dialog(null);
+};
 
 instacertify.open_new_quotation_type_format_dialog = function (frm) {
 	const TYPE_OPTIONS = [
@@ -1540,10 +1586,12 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 	];
 
 	let format_map = {};
+	const standalone = !frm;
 
 	const d = new frappe.ui.Dialog({
 		title: __("New Quotation"),
 		size: "large",
+		static: true,
 		fields: [
 			{
 				fieldtype: "HTML",
@@ -1606,10 +1654,43 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 		primary_action(values) {
 			const skip = cint(values.skip_format);
 			if (!skip && !values.ic_quotation_template) {
-				frappe.msgprint(__("Select a quote format from the library, or check Continue without a library format."));
+				frappe.msgprint(
+					__("Select a quote format from the library, or check Continue without a library format.")
+				);
 				return;
 			}
 			const qtype = values.ic_quotation_type;
+
+			const finish_standalone = (pending) => {
+				instacertify._pending_quote_format = pending;
+				d.hide();
+				frappe.new_doc("Quotation", {
+					ic_quotation_type: qtype,
+					ic_quotation_template: skip ? "" : values.ic_quotation_template || "",
+				});
+			};
+
+			if (standalone) {
+				if (skip || !values.ic_quotation_template) {
+					finish_standalone({ skip: 1, quotation_type: qtype });
+					return;
+				}
+				frappe.call({
+					method: "instacertify.quotation.events.get_quotation_template_payload",
+					args: { template: values.ic_quotation_template },
+					freeze: true,
+					freeze_message: __("Loading quote format…"),
+					callback(r) {
+						finish_standalone({
+							skip: 0,
+							quotation_type: qtype,
+							payload: r.message || {},
+						});
+					},
+				});
+				return;
+			}
+
 			frm._ic_skip_template_apply = true;
 			frm.set_value("ic_quotation_type", qtype).then(() => {
 				instacertify.apply_quotation_naming_series(frm);
@@ -1672,25 +1753,13 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 			callback(r) {
 				const formats = (r.message && r.message.formats) || [];
 				format_map = {};
-				const options = [""].concat(
-					formats.map((f) => {
-						format_map[f.name] = f;
-						return { label: f.label, value: f.name };
-					})
-				);
-				const df = d.fields_dict.ic_quotation_template.df;
-				if (formats.length) {
-					df.options = options.map((o) => (typeof o === "string" ? o : o.value)).join("\n");
-					// Prefer Select with labels via set_data when available
-					d.set_df_property(
-						"ic_quotation_template",
-						"options",
-						[""].concat(formats.map((f) => f.name)).join("\n")
-					);
-					// Rebuild select with readable labels
-					const $sel = d.fields_dict.ic_quotation_template.$input;
-					if ($sel && $sel.length) {
-						$sel.empty();
+				formats.forEach((f) => {
+					format_map[f.name] = f;
+				});
+				const $sel = d.fields_dict.ic_quotation_template.$input;
+				if ($sel && $sel.length) {
+					$sel.empty();
+					if (formats.length) {
 						$sel.append(`<option value="">${__("— Select a format —")}</option>`);
 						formats.forEach((f) => {
 							$sel.append(
@@ -1699,26 +1768,22 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 								)}</option>`
 							);
 						});
+						$hint.html(
+							__(
+								"{0} format(s) in library for this type. Select one to prefill headings — you can edit everything after.",
+								[`<strong>${formats.length}</strong>`]
+							)
+						);
+					} else {
+						$sel.append(`<option value="">${__("No formats for this type")}</option>`);
+						$hint.html(
+							__(
+								"No active formats for this type yet. Open Quote Format Library to add one, or continue without a format."
+							)
+						);
 					}
-					d.set_value("ic_quotation_template", "");
-					$hint.html(
-						__(
-							"{0} format(s) in library for this type. Select one to prefill headings — you can edit everything after.",
-							[`<strong>${formats.length}</strong>`]
-						)
-					);
-				} else {
-					d.set_df_property("ic_quotation_template", "options", "");
-					const $sel = d.fields_dict.ic_quotation_template.$input;
-					if ($sel && $sel.length) {
-						$sel.empty().append(`<option value="">${__("No formats for this type")}</option>`);
-					}
-					$hint.html(
-						__(
-							"No active formats for this type yet. Open Quote Format Library to add one, or continue without a format."
-						)
-					);
 				}
+				d.set_value("ic_quotation_template", "");
 			},
 		});
 	}
@@ -1740,9 +1805,7 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				: "";
 			$hint.html(
 				`<strong>${frappe.utils.escape_html(f.template_name || f.name)}</strong>` +
-					(f.service_family
-						? ` · ${frappe.utils.escape_html(f.service_family)}`
-						: "") +
+					(f.service_family ? ` · ${frappe.utils.escape_html(f.service_family)}` : "") +
 					(note ? `<div class="text-muted" style="margin-top:4px;">${note}</div>` : "")
 			);
 		}
@@ -1763,6 +1826,21 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 		load_formats(d.get_value("ic_quotation_type") || "Consulting");
 	}, 50);
 };
+
+// List: primary New Quotation opens type → format picker first
+frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] || {};
+(function () {
+	const prev_onload = frappe.listview_settings["Quotation"].onload;
+	frappe.listview_settings["Quotation"].onload = function (listview) {
+		if (prev_onload) prev_onload(listview);
+		listview.page.set_primary_action(__("New Quotation"), () => {
+			instacertify.start_new_quotation();
+		});
+		listview.page.add_inner_button(__("New (type & format)"), () => {
+			instacertify.start_new_quotation();
+		});
+	};
+})();
 
 // Customer Related Data tab — full per-customer history + completed project files
 frappe.ui.form.on("Customer", {
