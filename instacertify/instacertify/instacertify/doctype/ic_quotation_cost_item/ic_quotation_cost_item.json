@@ -36,11 +36,13 @@
    "doctype": "DocField",
    "fieldname": "amount",
    "fieldtype": "Currency",
-   "label": "Amount",
+   "label": "Default Amount",
    "in_list_view": 1,
    "columns": 1,
    "reqd": 1,
-   "options": "currency"
+   "default": "0",
+   "options": "currency",
+   "description": "Default amount copied onto new quotations — sales can edit per quote."
   },
   {
    "doctype": "DocField",

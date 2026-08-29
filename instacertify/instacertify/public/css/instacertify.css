@@ -3111,6 +3111,56 @@ select.form-control[readonly],
   box-shadow: inset 0 0 0 1px var(--ic-cat-other);
 }
 
+.ic-quote-lib-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.ic-quote-lib-section-head {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(6, 81, 117, 0.12);
+}
+.ic-quote-lib-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ic-quote-lib-section-swatch {
+  width: 12px;
+  height: 28px;
+  border-radius: 4px;
+  background: #6b8492;
+  flex-shrink: 0;
+}
+.ic-quote-lib-section.cat-consulting .ic-quote-lib-section-swatch { background: var(--ic-cat-consulting); }
+.ic-quote-lib-section.cat-testing .ic-quote-lib-section-swatch { background: var(--ic-cat-testing); }
+.ic-quote-lib-section.cat-renewal .ic-quote-lib-section-swatch { background: var(--ic-cat-renewal); }
+.ic-quote-lib-section.cat-other .ic-quote-lib-section-swatch { background: var(--ic-cat-other); }
+.ic-quote-lib-section-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #065175;
+  letter-spacing: -0.01em;
+}
+.ic-quote-lib-section.cat-consulting .ic-quote-lib-section-title { color: var(--ic-cat-consulting); }
+.ic-quote-lib-section.cat-testing .ic-quote-lib-section-title { color: var(--ic-cat-testing); }
+.ic-quote-lib-section.cat-renewal .ic-quote-lib-section-title { color: var(--ic-cat-renewal); }
+.ic-quote-lib-section.cat-other .ic-quote-lib-section-title { color: var(--ic-cat-other); }
+.ic-quote-lib-section-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6b8492;
+  background: #eef4f8;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.ic-quote-lib-section-hint {
+  margin: 4px 0 0 22px;
+  font-size: 12px;
+  color: #6b8492;
+}
 .ic-quote-lib-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -3126,7 +3176,25 @@ select.form-control[readonly],
   flex-direction: column;
   gap: 6px;
   min-height: 160px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
+.ic-quote-lib-card:hover,
+.ic-quote-lib-card:focus {
+  border-color: #065175;
+  box-shadow: 0 4px 14px rgba(6, 81, 117, 0.12);
+  outline: none;
+  transform: translateY(-1px);
+}
+.ic-quote-lib-card-amount {
+  font-size: 12px;
+  color: #065175;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ic-quote-lib-card-amount.muted { color: #6b8492; }
+.ic-quote-lib-card-lines { color: #6b8492; font-size: 11px; }
 .ic-quote-lib-card.cat-consulting { border-top-color: var(--ic-cat-consulting); }
 .ic-quote-lib-card.cat-testing { border-top-color: var(--ic-cat-testing); }
 .ic-quote-lib-card.cat-renewal { border-top-color: var(--ic-cat-renewal); }
@@ -3165,7 +3233,12 @@ select.form-control[readonly],
   color: #065175;
 }
 .ic-quote-lib-card-meta { font-size: 12px; color: #6b8492; }
-.ic-quote-lib-card-actions { margin-top: auto; display: flex; gap: 6px; }
+.ic-quote-lib-card-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 .ic-quote-lib-badge {
   font-size: 10px;
   font-weight: 700;

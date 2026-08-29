@@ -3,7 +3,7 @@ frappe.ui.form.on("IC Quotation Template", {
 	refresh(frm) {
 		frm.set_intro(
 			__(
-				"Fully editable quote format — rename print headings, edit narrative text, and set every price line. Active templates appear when creating a Quotation of the same category."
+				"Fully editable quote format — rename print headings, edit narrative text, and set every price line (default amounts). Use Print / PDF to test after Save. Active templates appear when creating a Quotation of the same category."
 			),
 			"blue"
 		);
@@ -65,6 +65,14 @@ frappe.ui.form.on("IC Quotation Template", {
 				});
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Print"), () => {
+				_preview_template(frm, "print");
+			}, __("Test"));
+
+			frm.add_custom_button(__("Download PDF"), () => {
+				_preview_template(frm, "pdf");
+			}, __("Test"));
+
 			frm.add_custom_button(__("Jump to Pricing"), () => {
 				frm.scroll_to_field("cost_items");
 			});
@@ -80,6 +88,50 @@ frappe.ui.form.on("IC Quotation Template", {
 		_render_edit_guide(frm);
 	},
 });
+
+function _preview_template(frm, mode) {
+	const run = () => {
+		frappe.call({
+			method: "instacertify.quotation.events.ensure_template_preview_quotation",
+			args: { template: frm.doc.name },
+			freeze: true,
+			freeze_message: mode === "pdf" ? __("Preparing PDF…") : __("Preparing print preview…"),
+			callback(r) {
+				const m = r.message || {};
+				if (!m.quotation) {
+					frappe.msgprint(__("Could not build preview quotation."));
+					return;
+				}
+				const fmt = m.print_format || "Instacertify Quotation";
+				if (mode === "pdf") {
+					const url = frappe.urllib.get_full_url(
+						"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
+							$.param({ name: m.quotation, print_format: fmt })
+					);
+					window.open(url, "_blank");
+				} else {
+					const url = frappe.urllib.get_full_url(
+						"/printview?" +
+							$.param({
+								doctype: "Quotation",
+								name: m.quotation,
+								format: fmt,
+								no_letterhead: 0,
+								_lang: frappe.boot.lang || "en",
+							})
+					);
+					window.open(url, "_blank");
+				}
+			},
+		});
+	};
+
+	if (frm.is_dirty && frm.is_dirty()) {
+		frm.save().then(run);
+	} else {
+		run();
+	}
+}
 
 function _toggle_sections(frm) {
 	const consulting = ["Consulting", "Renewal", "Other", "Service"].includes(frm.doc.quotation_type);
@@ -109,11 +161,12 @@ function _render_edit_guide(frm) {
 			<ul style="margin:0 0 0 18px;padding:0;">
 				<li><b>${__("Section 2 — Rename headings")}</b>: ${__("Change printed names (ABOUT, Commercials, Payment Terms, column titles).")}</li>
 				<li><b>${__("Narrative sections")}</b>: ${__("Edit all body text for {0} quotes.", [__(qtype)])}</li>
-				<li><b>${__("Section 6 — Pricing")}</b>: ${__("Add/remove lines, rename each line, set amounts or free-text charges, mark revenue vs pass-through.")}</li>
+				<li><b>${__("Section 6 — Pricing")}</b>: ${__("Add default amounts the sales team can change on each quote. Set Revenue = Do Not Count as Revenue for govt/lab/third-party lines (shown on the quote, not counted as Instacertify revenue).")}</li>
 				<li><b>${__("Policies")}</b>: ${__("Payment terms, cancellation, confidentiality, T&Cs.")}</li>
+				<li><b>${__("Test")}</b>: ${__("After Save, use Test → Print or Test → Download PDF to preview the customer layout.")}</li>
 			</ul>
 			<div style="margin-top:8px;color:var(--text-muted,#6c7680);">
-				${__("After Save, use this template when creating a Quotation — all values stay editable on the quote too.")}
+				${__("Default amounts copy onto new quotations and stay editable there for the sales team.")}
 			</div>
 		</div>
 	`);

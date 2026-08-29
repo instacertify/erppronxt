@@ -10,6 +10,7 @@ from pathlib import Path
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 from frappe.utils.file_manager import get_file
 
 from instacertify.utils.files import assert_internal_file
@@ -251,11 +252,35 @@ def get_quote_library_catalog():
 		order_by="quotation_type asc, template_name asc",
 		limit_page_length=500,
 	)
+	# Default amounts per template (sales-editable on the template form)
+	totals: dict[str, float] = {}
+	line_counts: dict[str, int] = {}
+	passthrough_counts: dict[str, int] = {}
+	if rows:
+		names = [r.name for r in rows]
+		cost_rows = frappe.get_all(
+			"IC Quotation Cost Item",
+			filters={"parent": ["in", names], "parenttype": "IC Quotation Template"},
+			fields=["parent", "amount", "is_passthrough", "revenue_treatment"],
+			limit_page_length=5000,
+		)
+		for c in cost_rows:
+			parent = c.parent
+			line_counts[parent] = line_counts.get(parent, 0) + 1
+			totals[parent] = totals.get(parent, 0.0) + float(c.amount or 0)
+			treatment = (c.get("revenue_treatment") or "").strip()
+			is_pass = treatment == "Do Not Count as Revenue" or cint(c.is_passthrough)
+			if is_pass:
+				passthrough_counts[parent] = passthrough_counts.get(parent, 0) + 1
+
 	counts = {}
 	for r in rows:
 		t = r.quotation_type or "Other"
 		counts[t] = counts.get(t, 0) + 1
 		r["tags"] = _parse_tags(r.get("template_notes"))
+		r["cost_line_count"] = line_counts.get(r.name, 0)
+		r["default_amount_total"] = totals.get(r.name, 0.0)
+		r["passthrough_line_count"] = passthrough_counts.get(r.name, 0)
 	return {"counts": counts, "templates": rows}
 
 

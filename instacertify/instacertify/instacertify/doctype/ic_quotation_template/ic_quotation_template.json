@@ -447,7 +447,7 @@
    "fieldname": "section_cost",
    "fieldtype": "Section Break",
    "label": "6. Pricing / Commercials (Fully Editable)",
-   "description": "Add or edit every price line. Type any line name in Cost Component or Particulars (Print). Set amount or free-text Charges Display. Mark pass-through lines as Do Not Count as Revenue."
+   "description": "Set default amounts for sales. For each line choose Revenue: Counted Revenue (Instacertify) or Do Not Count as Revenue (shown on quote, paid to govt/lab/third party)."
   },
   {
    "doctype": "DocField",
@@ -455,7 +455,7 @@
    "fieldtype": "Table",
    "label": "Cost / Price Lines",
    "options": "IC Quotation Cost Item",
-   "description": "Particulars (Print) = customer-facing line name. Cost Component = your label (any text). Charges Display overrides Amount on the print (e.g. ₹ 25,000/- per report)."
+   "description": "Particulars (Print) = customer-facing line name. Default Amount copies to new quotes (editable by sales). Revenue column: Do Not Count as Revenue = shared on quote but excluded from Instacertify revenue."
   },
   {
    "doctype": "DocField",
