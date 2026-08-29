@@ -1155,7 +1155,7 @@ frappe.ui.form.on("Quotation", {
 				frm.page.set_inner_btn_group_as_primary(__("Actions"));
 
 				// After customer approval: prompt owner to create Project / Testing Request
-				instacertify.maybe_prompt_quote_accept_followup(frm);
+				setTimeout(() => instacertify.maybe_prompt_quote_accept_followup(frm), 400);
 			}
 
 			// Hide Sales Order — Instacertify bills from Quotation directly
@@ -1476,8 +1476,9 @@ instacertify.maybe_prompt_quote_accept_followup = function (frm) {
 	if (frm._ic_accept_prompt_busy) return;
 
 	const dismissKey = instacertify._accept_prompt_key(frm.doc.name);
+	let dismissed = false;
 	try {
-		if (sessionStorage.getItem(dismissKey) === "1") return;
+		dismissed = sessionStorage.getItem(dismissKey) === "1";
 	} catch (e) {
 		/* ignore */
 	}
@@ -1489,8 +1490,17 @@ instacertify.maybe_prompt_quote_accept_followup = function (frm) {
 		callback(r) {
 			frm._ic_accept_prompt_busy = false;
 			const info = r.message || {};
-			if (!info.prompt) return;
-			instacertify.show_quote_accept_followup_dialog(frm, info);
+			if (!info.prompt) {
+				frm.set_intro && frm.set_intro(null);
+				return;
+			}
+			const tip = __(
+				"Customer approved this quotation. Create a Project or Testing Request to continue (Actions menu, or the prompt below)."
+			);
+			frm.set_intro(tip, "orange");
+			if (!dismissed) {
+				instacertify.show_quote_accept_followup_dialog(frm, info);
+			}
 		},
 		error() {
 			frm._ic_accept_prompt_busy = false;
