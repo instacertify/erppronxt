@@ -91,14 +91,19 @@ class ICSampleTracking(Document):
 			self.dispatch_date = today()
 
 	def _ensure_qr(self):
-		from instacertify.utils.qr import generate_and_attach_qr, verification_url
+		from instacertify.utils.qr import generate_and_attach_qr, sample_qr_payload
 
+		if not self.tracking_number:
+			return
 		try:
 			generate_and_attach_qr(
 				"IC Sample Tracking",
 				self.name,
 				"qr_code",
-				verification_url("IC Sample Tracking", self.name),
+				sample_qr_payload(self.tracking_number, self.name),
+				box_size=6,
+				border=1,
 			)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Sample QR")
+
