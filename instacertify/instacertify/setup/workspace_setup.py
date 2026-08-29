@@ -15,9 +15,6 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
-	from instacertify.setup.gameplan_access import ensure_gameplan_access
-
-	ensure_gameplan_access()
 
 
 def _ensure_home_html_block():
@@ -81,20 +78,15 @@ def _ensure_home_html_block():
   <div class="ic-lead-prompt-panel ic-lead-hub" id="ic-lead-hub">
     <div class="ic-lead-prompt-header">
       <div>
-        <div class="ic-lead-prompt-title">Lead reminder hub</div>
-        <div class="ic-lead-prompt-sub">Whom to call · who to connect with · customer remarks</div>
+        <div class="ic-lead-prompt-title">Lead follow-up</div>
+        <div class="ic-lead-prompt-sub">Who to call, phone, owner, and customer remarks — tap a block to open</div>
       </div>
       <div class="ic-lead-hub-actions">
         <span class="ic-lead-hub-counts" id="ic-lead-hub-counts"></span>
         <a class="ic-view-all" href="/app/lead">Open Leads</a>
       </div>
     </div>
-    <div class="ic-lead-hub-legend">
-      <span class="ic-lead-hub-chip overdue">Overdue / today</span>
-      <span class="ic-lead-hub-chip upcoming">Upcoming</span>
-      <span class="ic-lead-hub-chip tip">Tap a card to open the lead and log remarks</span>
-    </div>
-    <div id="ic-lead-prompts" class="ic-lead-prompt-list"></div>
+    <div id="ic-lead-prompts" class="ic-lead-prompt-list ic-lead-followup-list"></div>
   </div>
 
   <div class="ic-lead-prompt-panel" id="ic-helpdesk-panel">
@@ -222,10 +214,6 @@ def _ensure_home_html_block():
 
   function openExploreCard(card) {
     if (!card) return;
-    if (card.action === "open_gameplan" || card.url === "/g") {
-      window.location.href = card.url || "/g";
-      return;
-    }
     if (card.action === "upload_quote_format" && window.instacertify && instacertify.open_quote_format_upload) {
       instacertify.open_quote_format_upload();
       return;
@@ -272,38 +260,6 @@ def _ensure_home_html_block():
       ed.show();
       return;
     }
-    if (card.action === "quick_lead") {
-      if (window.instacertify && typeof instacertify.open_quick_lead === "function") {
-        instacertify.open_quick_lead();
-        return;
-      }
-      const ld = new frappe.ui.Dialog({
-        title: "Capture a Lead",
-        fields: [
-          {fieldname:"ic_party_name", fieldtype:"Data", label:"Name / company", reqd:1},
-          {fieldname:"mobile_no", fieldtype:"Data", label:"Mobile", options:"Phone"},
-          {fieldname:"ic_call_remarks", fieldtype:"Small Text", label:"What they need"},
-          {fieldname:"ic_next_contact_date", fieldtype:"Date", label:"Call back on",
-            default: frappe.datetime.add_days(frappe.datetime.get_today(), 1)},
-        ],
-        primary_action_label: "Save Lead",
-        primary_action(values) {
-          frappe.call({
-            method: "instacertify.crm.events.create_quick_lead",
-            args: values,
-            freeze: true,
-            callback(r) {
-              ld.hide();
-              const name = r.message && r.message.name;
-              frappe.show_alert({message: "Lead saved: " + (name||""), indicator:"green"});
-              if (name) frappe.set_route("Form", "Lead", name);
-            }
-          });
-        }
-      });
-      ld.show();
-      return;
-    }
     const route = card.route || [];
     if (!route.length) return;
     if (route[0] === "List") {
@@ -332,8 +288,8 @@ def _ensure_home_html_block():
         const count = (c.count != null)
           ? `<span class="ic-explore-count">${esc(c.count)}</span>`
           : "";
-          const actionHint = c.action
-          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : (c.action === "quick_lead" ? "Capture" : "Open"))}</span>`
+        const actionHint = c.action
+          ? `<span class="ic-explore-action">${c.action.indexOf("upload") === 0 ? "Upload" : (c.action === "new_expense" ? "File" : "Open")}</span>`
           : "";
         return `<button type="button" class="ic-explore-card accent-${esc(c.accent || "teal")}" data-idx="${idx}">
           <div class="ic-explore-card-top">${actionHint}${count}</div>
@@ -471,10 +427,10 @@ def _ensure_home_html_block():
         const phoneBlock = phoneHref
           ? `<a class="ic-lead-prompt-phone" href="${phoneHref}" onclick="event.stopPropagation()">${phone}</a>`
           : `<span class="ic-lead-prompt-phone">${phone}</span>`;
-        return `<a class="ic-lead-prompt ic-lead-hub-card ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
-          <div class="ic-lead-prompt-top">
-            <div>
-              <div class="ic-lead-hub-kicker">Call</div>
+        return `<a class="ic-lead-prompt ic-lead-hub-card ic-lead-followup-block ${urg}" href="/app/lead/${encodeURIComponent(row.name)}">
+          <div class="ic-lead-followup-main">
+            <div class="ic-lead-followup-who">
+              <div class="ic-lead-hub-kicker">${urg === "overdue" || urg === "today" ? "Due now" : "Upcoming"}</div>
               <div class="ic-lead-prompt-name">${person}</div>
               ${company ? `<div class="ic-lead-hub-company">${company}</div>` : ""}
             </div>
@@ -486,7 +442,7 @@ def _ensure_home_html_block():
               <div class="ic-lead-hub-value">${phoneBlock}</div>
             </div>
             <div class="ic-lead-hub-cell">
-              <div class="ic-lead-hub-label">Connect with</div>
+              <div class="ic-lead-hub-label">Owner / connect with</div>
               <div class="ic-lead-hub-value">${callWith}</div>
             </div>
             <div class="ic-lead-hub-cell">
@@ -674,73 +630,125 @@ _SHADOW_THEME_CSS = """
 .ic-greeting {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(125deg, #033447 0%, #065175 55%, #0a8fb5 100%);
+  background: linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec6820 145%);
   color: #fff;
-  border-radius: 10px;
-  border: 1.5px solid #022a38;
-  padding: 12px 16px;
-  margin-bottom: 14px;
-  box-shadow: none;
+  border-radius: 14px;
+  padding: 28px 28px 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 28px rgba(6, 81, 117, 0.07);
 }
 .ic-greeting-brand {
-  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-size: clamp(1.85rem, 3.2vw, 2.45rem);
   font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
   color: #fff;
-  margin: 0 0 2px;
+  margin: 0 0 8px;
   font-family: "Poppins", sans-serif !important;
 }
 .ic-greeting-brand span { color: #ffd7b8; }
 .ic-greeting h2 {
-  margin: 0 0 2px;
+  margin: 0 0 6px;
   font-weight: 500;
-  font-size: 0.88rem;
+  font-size: 1.05rem;
   color: rgba(255,255,255,0.92) !important;
   font-family: "Poppins", sans-serif !important;
 }
-.ic-greeting .ic-datetime { opacity: 0.88; font-size: 0.72rem; color: #fff; }
+.ic-greeting .ic-datetime { opacity: 0.88; font-size: 0.88rem; color: #fff; }
 
 /* Colorful prompts inside shadow (critical path; full CSS also imported) */
 .ic-lead-prompt-title, .ic-workdesk-title {
   font-family: "Poppins", sans-serif !important;
-  font-weight: 700;
-  color: #065175;
+  font-weight: 800;
+  color: #033447;
   letter-spacing: -0.02em;
+  font-size: 1.2rem;
+}
+.ic-lead-prompt-panel.ic-lead-hub {
+  border: 1.5px solid #033447 !important;
+  border-left: 8px solid #EC6820 !important;
+  background: #fffaf6 !important;
+  box-shadow: none !important;
+  padding: 14px 16px !important;
+  margin: 12px 0 14px !important;
+}
+.ic-lead-followup-list {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+@media (min-width: 980px) {
+  .ic-lead-followup-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+.ic-lead-prompt, .ic-lead-hub-card, .ic-lead-followup-block {
+  aspect-ratio: auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 12px 14px !important;
+  border: 1.5px solid #033447 !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
 }
 .ic-lead-prompt.overdue, .ic-lead-hub-card.overdue {
-  background: #fff5f4 !important;
-  border: 1.5px solid #8e2a20 !important;
-  box-shadow: inset 3px 0 0 #c0392b !important;
+  background: #fff7f6 !important;
+  border-color: #8e2a20 !important;
+  box-shadow: inset 5px 0 0 #c0392b !important;
 }
 .ic-lead-prompt.today, .ic-lead-hub-card.today {
-  background: #fff8f0 !important;
-  border: 1.5px solid #033447 !important;
-  box-shadow: inset 3px 0 0 #EC6820 !important;
+  background: #fff9f4 !important;
+  border-color: #033447 !important;
+  box-shadow: inset 5px 0 0 #EC6820 !important;
 }
 .ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
-  background: #f0f9fc !important;
-  border: 1.5px solid #033447 !important;
-  box-shadow: inset 3px 0 0 #0a8fb5 !important;
+  background: #f7fbfd !important;
+  border-color: #033447 !important;
+  box-shadow: inset 5px 0 0 #0a8fb5 !important;
 }
 .ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
 .ic-lead-prompt-when.today { background: #EC6820 !important; color: #fff !important; }
 .ic-lead-prompt-when.upcoming { background: #0a8fb5 !important; color: #fff !important; }
 .ic-lead-hub-counts {
-  background: linear-gradient(90deg, #EC6820, #c44710) !important;
+  background: #c44710 !important;
   color: #fff !important;
-  font-weight: 700 !important;
+  font-weight: 750 !important;
   border-radius: 8px;
-  padding: 4px 10px;
+  padding: 6px 12px;
 }
+.ic-lead-hub-legend { display: none !important; }
 .ic-lead-hub-chip.overdue { background: #c0392b !important; color: #fff !important; }
 .ic-lead-hub-chip.upcoming { background: #0a8fb5 !important; color: #fff !important; }
-.ic-lead-hub-remarks-wrap {
-  background: rgba(6,81,117,0.04);
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-top: 8px;
+.ic-lead-hub-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 0 8px !important;
 }
+.ic-lead-hub-cell {
+  padding: 8px 10px !important;
+  border: 1px solid #d5e4ee !important;
+  border-radius: 8px !important;
+  background: #f8fbfd !important;
+}
+.ic-lead-hub-label {
+  font-size: 0.72rem !important;
+  font-weight: 750 !important;
+}
+.ic-lead-hub-value, .ic-lead-prompt-name {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #152833 !important;
+}
+.ic-lead-prompt-name { font-size: 1.1rem !important; color: #033447 !important; }
+.ic-lead-hub-remarks-wrap {
+  background: #fff !important;
+  border: 1px solid #d5e4ee !important;
+  border-radius: 8px;
+  padding: 8px 10px !important;
+  margin-top: 0 !important;
+}
+.ic-lead-followup-main { margin-bottom: 8px !important; }
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
   display: grid !important;
@@ -758,14 +766,13 @@ _SHADOW_THEME_CSS = """
 .ic-summary-card {
   justify-content: space-between !important;
   padding: 14px 12px !important;
-  border: 1.5px solid #033447 !important;
-  border-top: 3px solid #033447 !important;
-  box-shadow: none !important;
-  background: #fff !important;
+  border: 1px solid rgba(6,81,117,0.1) !important;
+  border-top: 4px solid #065175 !important;
+  border-left: 1px solid rgba(6,81,117,0.1) !important;
 }
-.ic-summary-card:nth-child(3n+1) { border-top-color: #033447 !important; }
-.ic-summary-card:nth-child(3n+2) { border-top-color: #c44710 !important; }
-.ic-summary-card:nth-child(3n) { border-top-color: #066a88 !important; }
+.ic-summary-card:nth-child(3n+1) { border-top-color: #065175 !important; }
+.ic-summary-card:nth-child(3n+2) { border-top-color: #EC6820 !important; }
+.ic-summary-card:nth-child(3n) { border-top-color: #0a8fb5 !important; }
 .ic-summary-card:nth-child(3n) .value { color: #0a8fb5 !important; }
 .ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC6820 !important; }
 .ic-summary-card .label {
@@ -786,18 +793,18 @@ _SHADOW_THEME_CSS = """
 .ic-explore-sub { color: #5a6f7a; font-size: 0.86rem; margin-top: 2px; margin-bottom: 12px; }
 .ic-explore-card {
   text-align: left;
-  border: 1.5px solid #033447;
+  border: 1px solid rgba(6,81,117,0.12);
   padding: 12px;
-  background: #ffffff;
+  background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
   cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease;
-  box-shadow: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 6px 16px rgba(6,81,117,0.05);
   font-family: "Poppins", sans-serif !important;
 }
-.ic-explore-card:hover { transform: none; background: #f4f9fc; border-color: #022a38; box-shadow: none; }
-.ic-explore-card.accent-coral { border: 1.5px solid #8e2a20; border-top: 3px solid #c0392b; }
-.ic-explore-card.accent-citrus { border: 1.5px solid #033447; border-top: 3px solid #c44710; }
-.ic-explore-card.accent-teal { border: 1.5px solid #033447; border-top: 3px solid #033447; }
+.ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(6,81,117,0.1); }
+.ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
+.ic-explore-card.accent-citrus { border-top: 4px solid #EC6820; }
+.ic-explore-card.accent-teal { border-top: 4px solid #065175; }
 .ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 22px; margin-bottom: 6px; flex-shrink: 0; }
 .ic-explore-count {
   background: #065175; color: #fff; font-size: 0.72rem; font-weight: 700;
@@ -817,15 +824,33 @@ _SHADOW_THEME_CSS = """
   padding: 12px !important;
   border-radius: 12px !important;
 }
-.ic-lead-prompt-list {
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+.ic-lead-prompt-list:not(.ic-lead-followup-list) {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
   gap: 12px !important;
 }
-.ic-lead-prompt, .ic-lead-hub-card {
-  aspect-ratio: 1 / 1 !important;
+.ic-lead-prompt-list:not(.ic-lead-followup-list) .ic-lead-prompt {
+  aspect-ratio: auto !important;
+  min-height: 120px !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+}
+.ic-lead-followup-block,
+.ic-lead-hub-card {
+  aspect-ratio: auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+@media (max-width: 700px) {
+  .ic-lead-hub-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ic-lead-followup-list {
+    grid-template-columns: 1fr !important;
+  }
 }
 .ic-workdesk-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)) !important;
@@ -1012,7 +1037,6 @@ def _ensure_home_workspace():
 		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 2}},
 		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
 		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
-		{"id": "sc_gameplan", "type": "shortcut", "data": {"shortcut_name": "Gameplan", "col": 2}},
 		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
 		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 2}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
@@ -1041,7 +1065,6 @@ def _ensure_home_workspace():
 		{"label": "Projects", "link_to": "Project", "type": "DocType", "doc_view": "List"},
 		{"label": "Project Board", "link_to": "project-board", "type": "Page"},
 		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
-		{"label": "Gameplan", "type": "URL", "url": "/g", "icon": "message-circle"},
 		{"label": "Team Calendar", "link_to": "Event", "type": "DocType", "doc_view": "Calendar"},
 		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
