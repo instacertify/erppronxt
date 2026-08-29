@@ -1,0 +1,305 @@
+{
+ "name": "IC Contract",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "module": "Instacertify",
+ "track_changes": 1,
+ "title_field": "title",
+ "search_fields": "party_name,customer,lead,quotation,status",
+ "allow_rename": 0,
+ "is_submittable": 0,
+ "engine": "InnoDB",
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "CTR-.YYYY.-.####",
+   "default": "CTR-.YYYY.-.####",
+   "reqd": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "column_break_top",
+   "fieldtype": "Column Break",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nShared with Customer\nAccepted\nCancelled",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "reqd": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "revision_number",
+   "fieldtype": "Int",
+   "label": "Revision",
+   "default": "0",
+   "read_only": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "share_token",
+   "fieldtype": "Data",
+   "label": "Share Token",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "section_party",
+   "fieldtype": "Section Break",
+   "label": "Party & Links",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "label": "Party Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "options": "Lead",
+   "label": "Lead",
+   "in_standard_filter": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "label": "Customer",
+   "in_standard_filter": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "column_break_party",
+   "fieldtype": "Column Break",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "options": "Quotation",
+   "label": "Quotation",
+   "in_standard_filter": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "default": "INR",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "commercial_value",
+   "fieldtype": "Currency",
+   "label": "Commercial Value",
+   "options": "currency",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "section_terms",
+   "fieldtype": "Section Break",
+   "label": "Contract Terms (from Quotation)",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "scope_of_work",
+   "fieldtype": "Text Editor",
+   "label": "Scope of Work",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "deliverables",
+   "fieldtype": "Text Editor",
+   "label": "Deliverables",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "payment_terms",
+   "fieldtype": "Text Editor",
+   "label": "Payment Terms",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "terms_and_conditions",
+   "fieldtype": "Text Editor",
+   "label": "Terms and Conditions",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "cancellation_policy",
+   "fieldtype": "Text Editor",
+   "label": "Cancellation Policy",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "confidentiality",
+   "fieldtype": "Text Editor",
+   "label": "Confidentiality",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "force_majeure",
+   "fieldtype": "Text Editor",
+   "label": "Force Majeure",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "contract_body",
+   "fieldtype": "Text Editor",
+   "label": "Full Contract Body",
+   "description": "Editable contract text shared with the customer. Defaults from quotation terms.",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "section_share",
+   "fieldtype": "Section Break",
+   "label": "Share & Signature",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "shared_on",
+   "fieldtype": "Datetime",
+   "label": "Shared On",
+   "read_only": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "accepted_on",
+   "fieldtype": "Datetime",
+   "label": "Accepted On",
+   "read_only": 1,
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "column_break_sign",
+   "fieldtype": "Column Break",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "customer_signed_name",
+   "fieldtype": "Data",
+   "label": "Customer Signed Name",
+   "read_only": 1,
+   "description": "Name typed by the customer to accept / sign the contract",
+   "doctype": "DocField"
+  },
+  {
+   "fieldname": "customer_remarks",
+   "fieldtype": "Small Text",
+   "label": "Customer Remarks",
+   "read_only": 1,
+   "doctype": "DocField"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "doctype": "DocPerm",
+   "report": 1
+  },
+  {
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "doctype": "DocPerm",
+   "report": 1
+  },
+  {
+   "role": "IC Sales Person",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "doctype": "DocPerm",
+   "report": 1
+  },
+  {
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "doctype": "DocPerm",
+   "report": 1
+  },
+  {
+   "role": "IC Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "doctype": "DocPerm",
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "email": 1,
+   "doctype": "DocPerm",
+   "report": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "doctype": "DocPerm",
+   "report": 1
+  }
+ ],
+ "doctype": "DocType",
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

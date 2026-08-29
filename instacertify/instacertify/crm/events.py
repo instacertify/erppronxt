@@ -427,6 +427,11 @@ def get_lead_history(lead: str):
 		{"lead": lead} if frappe.get_meta("IC Document Request").has_field("lead") else {"name": "__none__"},
 		["name", "title", "status", "modified"],
 	)
+	contracts = list_docs(
+		"IC Contract",
+		{"lead": lead},
+		["name", "title", "status", "quotation", "customer_signed_name", "accepted_on", "modified"],
+	)
 
 	return {
 		"lead": lead_doc,
@@ -437,6 +442,7 @@ def get_lead_history(lead: str):
 		"invoices": invoices,
 		"tickets": tickets,
 		"documents": documents,
+		"contracts": contracts,
 		"accepted_quotations": [q for q in quotations if q.get("ic_workflow_status") == "Accepted"],
 		"open_quotations": [
 			q

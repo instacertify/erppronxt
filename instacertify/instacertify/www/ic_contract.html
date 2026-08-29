@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Instacertify Contract</title>
+  <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
+  <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
+  <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+  <style>
+    .ic-portal-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    .ic-portal-muted { color:#5b7380; font-size:0.92rem; }
+    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#e8f3f8; color:#065175; font-size:0.85rem; }
+    .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
+    .ic-section { margin-top:14px; }
+    .ic-section h4 { color:#065175; margin:0 0 6px; }
+    .ic-section div { white-space:pre-wrap; line-height:1.45; }
+    #msg { margin-top:12px; padding:10px 12px; border-radius:10px; display:none; }
+    #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
+    #msg.err { display:block; background:#fdecea; color:#b42318; }
+    #sign-box { display:none; margin-top:14px; padding:14px; border:1px solid #cfe0ea; border-radius:14px; background:#f8fbfd; }
+    #sign-box input, #sign-box textarea {
+      width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:10px; margin-top:6px; box-sizing:border-box;
+    }
+  </style>
+</head>
+<body class="ic-portal-body">
+  <div class="ic-portal-wrap">
+    <div class="ic-portal-brand" style="margin-bottom:14px;">
+      <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+    </div>
+    <div class="ic-portal-card" id="app">
+      <h2 style="color:#065175;margin-top:0;">Service Contract</h2>
+      <div id="content">Loading…</div>
+      <div id="msg"></div>
+      <div class="ic-portal-actions" id="actions" style="display:none;">
+        <a class="ic-btn ic-btn-ghost" id="btn-download" href="#" target="_blank" rel="noopener">Download Contract</a>
+        <button class="ic-btn ic-btn-primary" id="btn-sign">Accept &amp; Sign</button>
+      </div>
+      <div id="sign-box">
+        <p class="ic-portal-muted">Type your full name to accept and sign this contract. This acts as your electronic signature.</p>
+        <label class="ic-portal-muted" for="signer-name">Your full name</label>
+        <input id="signer-name" type="text" autocomplete="name" placeholder="Enter your full name"/>
+        <label class="ic-portal-muted" for="signer-remarks" style="display:block;margin-top:10px;">Remarks (optional)</label>
+        <textarea id="signer-remarks" rows="3" placeholder="Optional note"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+          <button class="ic-btn ic-btn-primary" id="btn-submit-sign">Confirm Acceptance</button>
+          <button class="ic-btn ic-btn-ghost" id="btn-cancel-sign">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const token = {{ token|tojson }};
+    const csrf = {{ csrf_token|tojson }};
+
+    function esc(v) {
+      const d = document.createElement('div');
+      d.textContent = v == null ? '' : String(v);
+      return d.innerHTML;
+    }
+    function money(v, c) {
+      const n = Number(v || 0);
+      return n.toLocaleString(undefined, {maximumFractionDigits: 2}) + (c ? (' ' + c) : '');
+    }
+    function showMsg(text, ok) {
+      const el = document.getElementById('msg');
+      el.className = ok ? 'ok' : 'err';
+      el.textContent = text;
+    }
+    function section(title, text) {
+      if (!text) return '';
+      return '<div class="ic-section"><h4>' + esc(title) + '</h4><div>' + esc(text) + '</div></div>';
+    }
+    function post(method, body) {
+      return fetch('/api/method/' + method, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
+        body: JSON.stringify(body || {})
+      }).then(async (r) => {
+        const data = await r.json();
+        if (data.exc || data._server_messages) {
+          let msg = 'Something went wrong.';
+          try {
+            const sm = JSON.parse(data._server_messages || '[]');
+            if (sm[0]) msg = JSON.parse(sm[0]).message || msg;
+          } catch (e) {}
+          throw new Error(msg);
+        }
+        return data.message;
+      });
+    }
+    function load() {
+      fetch('/api/method/instacertify.contract.events.get_contract?token=' + encodeURIComponent(token))
+        .then(r => r.json()).then(r => {
+          const d = r.message;
+          if (!d) { document.getElementById('content').innerHTML = 'Contract not found.'; return; }
+          const statusCls = d.is_accepted ? 'accepted' : '';
+          document.getElementById('content').innerHTML =
+            (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
+            '<p><b>' + esc(d.title || 'Contract') + '</b> · ' + esc(d.reference || '') +
+            ' · Rev ' + esc(d.revision_number || 0) +
+            ' · <span class="ic-status-pill ' + statusCls + '">' + esc(d.status || '') + '</span></p>' +
+            '<p>Party: <b>' + esc(d.party_name || '') + '</b></p>' +
+            '<p><b>Commercial value:</b> ' + esc(money(d.commercial_value, d.currency)) + '</p>' +
+            section('Scope of Work', d.scope_of_work) +
+            section('Deliverables', d.deliverables) +
+            section('Payment Terms', d.payment_terms) +
+            section('Terms and Conditions', d.terms_and_conditions) +
+            section('Cancellation Policy', d.cancellation_policy) +
+            section('Confidentiality', d.confidentiality) +
+            section('Force Majeure', d.force_majeure) +
+            ((!d.scope_of_work && !d.terms_and_conditions && d.contract_body)
+              ? section('Contract', d.contract_body) : '') +
+            (d.is_accepted
+              ? ('<p class="ic-portal-muted" style="margin-top:14px;"><b>Signed by:</b> ' +
+                 esc(d.customer_signed_name || '') +
+                 (d.accepted_on ? (' · ' + esc(d.accepted_on)) : '') + '</p>')
+              : '');
+
+          document.getElementById('btn-download').href = d.pdf_url ||
+            ('/api/method/instacertify.contract.events.download_contract_pdf?token=' + encodeURIComponent(token));
+          document.getElementById('actions').style.display = 'flex';
+          document.getElementById('btn-sign').style.display = d.can_sign ? '' : 'none';
+          document.getElementById('sign-box').style.display = 'none';
+        }).catch(() => {
+          document.getElementById('content').innerHTML = 'Unable to load contract.';
+        });
+    }
+    document.getElementById('btn-sign').onclick = function () {
+      document.getElementById('sign-box').style.display = 'block';
+      document.getElementById('signer-name').focus();
+    };
+    document.getElementById('btn-cancel-sign').onclick = function () {
+      document.getElementById('sign-box').style.display = 'none';
+    };
+    document.getElementById('btn-submit-sign').onclick = function () {
+      const name = (document.getElementById('signer-name').value || '').trim();
+      const remarks = (document.getElementById('signer-remarks').value || '').trim();
+      if (name.length < 2) {
+        showMsg('Please type your full name to accept and sign.', false);
+        return;
+      }
+      post('instacertify.contract.events.customer_accept_contract', {
+        token: token,
+        customer_name: name,
+        remarks: remarks || null
+      }).then((res) => {
+        showMsg((res && res.message) || 'Contract accepted. Thank you.', true);
+        document.getElementById('sign-box').style.display = 'none';
+        load();
+      }).catch((err) => {
+        showMsg(err.message || 'Could not accept contract.', false);
+      });
+    };
+    load();
+  </script>
+</body>
+</html>
