@@ -13,12 +13,29 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Autocomplete",
+   "label": "Applicable Standard",
+   "in_list_view": 1,
+   "reqd": 1,
+   "description": "Enter the test standard — then pick which lab to use (same standard may be offered by multiple labs at different prices)"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_offer",
+   "fieldtype": "Autocomplete",
+   "label": "Lab Offer (price compare)",
+   "in_list_view": 1,
+   "description": "Labs that offer this standard with their selling price — select one"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "laboratory",
    "fieldtype": "Link",
    "options": "IC Laboratory",
    "label": "Laboratory",
    "in_list_view": 1,
-   "description": "Pick a registered lab from the Laboratory Library"
+   "description": "Filled when you pick a Lab Offer (or pick lab first, then Lab Test / Pricing)"
   },
   {
    "doctype": "DocField",
@@ -41,14 +58,6 @@
    "fieldname": "test_name",
    "fieldtype": "Data",
    "label": "Testing",
-   "in_list_view": 1,
-   "reqd": 1
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "applicable_standard",
-   "fieldtype": "Data",
-   "label": "Applicable Standard",
    "in_list_view": 1,
    "reqd": 1
   },

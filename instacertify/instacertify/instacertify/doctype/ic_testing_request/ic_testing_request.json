@@ -128,8 +128,16 @@
   {
    "doctype": "DocField",
    "fieldname": "applicable_standard",
-   "fieldtype": "Data",
-   "label": "Applicable Standard"
+   "fieldtype": "Autocomplete",
+   "label": "Applicable Standard",
+   "description": "Same standard can be available from multiple labs — pick a Lab Offer below"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_offer",
+   "fieldtype": "Autocomplete",
+   "label": "Lab Offer (price compare)",
+   "description": "Labs offering this standard at different prices — select one"
   },
   {
    "doctype": "DocField",
@@ -149,7 +157,7 @@
    "fieldtype": "Link",
    "options": "IC Laboratory",
    "label": "Laboratory",
-   "description": "Assign from Laboratory Library (Active labs)"
+   "description": "Filled from Lab Offer, or pick an Active lab manually"
   },
   {
    "doctype": "DocField",
