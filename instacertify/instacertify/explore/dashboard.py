@@ -280,21 +280,21 @@ def get_explore_prompts() -> dict:
 		priority=91,
 		show=is_ops or is_admin,
 	)
-	# Expenses & HRMS — always last in Explore
+	# HRMS — one tab for hiring → salary slips → expenses
 	add(
 		"hr_lifecycle",
-		_("HRMS (Hiring → FnF)"),
-		_("Applicant · onboarding · payroll · exit"),
-		["List", "Employee"],
-		doctype="Employee",
+		_("HRMS"),
+		_("Hiring · salary slips · expenses · exit"),
+		["hrms"],
 		accent="teal",
+		action="open_hrms",
 		priority=98,
 		show=_can_read("Employee") or is_admin,
 	)
 	add(
 		"expenses",
 		_("File an Expense"),
-		_("Travel · petty · office expenses"),
+		_("Travel · petty · office — also in HRMS"),
 		["List", "IC Expense Claim"],
 		doctype="IC Expense Claim",
 		count=_count("IC Expense Claim", {"owner": frappe.session.user, "status": ["in", ["Draft", "Submitted"]]}),

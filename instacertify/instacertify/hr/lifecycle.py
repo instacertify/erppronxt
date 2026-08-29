@@ -159,8 +159,7 @@ def get_employee_lifecycle(employee: str | None = None) -> dict:
 		"employee": emp,
 		"stages": stages,
 		"note": _(
-			"Expenses and HRMS are kept at the end of Instacertify navigation. "
-			"Complete the employee journey from Hiring through Full and Final settlement."
+			"All employee work lives under the HRMS tab — Hiring through salary slips, expenses, and Full & Final."
 		),
 	}
 
@@ -197,5 +196,5 @@ def ensure_hrms_alignment():
 	from instacertify.setup.workspace_setup import ensure_hrms_expenses_workspace
 
 	ensure_hrms_expenses_workspace()
-	report["ok"].append("HRMS & Expenses workspace")
+	report["ok"].append("HRMS workspace")
 	return report
