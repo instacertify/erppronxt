@@ -26,6 +26,7 @@ website_route_rules = [
 	{"from_route": "/ic-documents/<path:name>", "to_route": "ic_documents"},
 	{"from_route": "/ic-dispatch/<path:name>", "to_route": "ic_dispatch"},
 	{"from_route": "/ic-report/<path:name>", "to_route": "ic_report"},
+	{"from_route": "/ic-verify/sample/<path:name>", "to_route": "ic_verify"},
 	{"from_route": "/ic-verify/<path:doctype>/<path:name>", "to_route": "ic_verify"},
 ]
 

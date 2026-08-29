@@ -18,7 +18,11 @@
       {% if valid %}
         <p style="color:#1e7a4c;font-weight:600;">Verified authentic Instacertify record</p>
         <p><b>Type:</b> {{ doctype }}</p>
+        {% if details.tracking_number %}
+        <p><b>Sample Tracking No:</b> <code style="font-size:1.05rem;">{{ details.tracking_number }}</code></p>
+        {% endif %}
         <p><b>Title:</b> {{ details.title }}</p>
+        {% if details.customer %}<p><b>Customer:</b> {{ details.customer }}</p>{% endif %}
         <p><b>Status:</b> {{ details.status }}</p>
         <p><b>Last Updated:</b> {{ details.modified }}</p>
       {% else %}

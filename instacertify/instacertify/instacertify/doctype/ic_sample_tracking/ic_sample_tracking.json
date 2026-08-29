@@ -66,6 +66,14 @@
    "fieldname": "qr_code",
    "fieldtype": "Attach Image",
    "label": "QR Code",
+   "read_only": 1,
+   "description": "Encodes unique Sample Tracking Number for 8mm thermal sticker print"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sticker_preview",
+   "fieldtype": "HTML",
+   "label": "8mm Sticker Preview",
    "read_only": 1
   },
   {

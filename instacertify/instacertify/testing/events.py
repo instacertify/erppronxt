@@ -31,17 +31,19 @@ def validate_sample(doc, method=None):
 
 
 def _attach_sample_qr(doc):
-	from instacertify.utils.qr import generate_and_attach_qr, verification_url
+	from instacertify.utils.qr import generate_and_attach_qr, sample_qr_payload
 
 	try:
 		# Save first if new
-		if doc.is_new():
+		if doc.is_new() or not doc.tracking_number:
 			return
 		generate_and_attach_qr(
 			"IC Sample Tracking",
 			doc.name,
 			"qr_code",
-			verification_url("IC Sample Tracking", doc.name),
+			sample_qr_payload(doc.tracking_number, doc.name),
+			box_size=6,
+			border=1,
 		)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Sample QR")
@@ -57,6 +59,59 @@ def validate_testing_request(doc, method=None):
 		legacy_seed_field="assigned_person",
 		default_user=doc.owner,
 	)
+
+
+@frappe.whitelist()
+def regenerate_sample_qr(sample: str):
+	"""Force-regenerate QR so it encodes the unique sample tracking number."""
+	doc = frappe.get_doc("IC Sample Tracking", sample)
+	if not doc.tracking_number:
+		frappe.throw(_("Sample has no tracking number yet — save the sample first"))
+	_attach_sample_qr(doc)
+	doc.reload()
+	return {"qr_code": doc.qr_code, "tracking_number": doc.tracking_number}
+
+
+@frappe.whitelist()
+def download_sample_sticker_8mm(sample: str):
+	"""Download a PNG sticker (8mm height) with QR + sample tracking number aligned for thermal print."""
+	doc = frappe.get_doc("IC Sample Tracking", sample)
+	if not doc.tracking_number:
+		frappe.throw(_("Sample has no tracking number yet — save the sample first"))
+	from instacertify.utils.qr import render_sample_sticker_8mm_png, sample_qr_payload
+
+	payload = sample_qr_payload(doc.tracking_number, doc.name)
+	png = render_sample_sticker_8mm_png(doc.tracking_number, payload)
+	fname = f"sample-sticker-8mm-{doc.tracking_number}.png".replace("/", "-")
+	# Persist as public file for print / thermal driver pickup
+	existing = frappe.db.get_value(
+		"File",
+		{
+			"file_name": fname,
+			"attached_to_doctype": "IC Sample Tracking",
+			"attached_to_name": doc.name,
+		},
+		"name",
+	)
+	if existing:
+		frappe.delete_doc("File", existing, ignore_permissions=True, force=True)
+	file_doc = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": fname,
+			"content": png,
+			"is_private": 0,
+			"attached_to_doctype": "IC Sample Tracking",
+			"attached_to_name": doc.name,
+		}
+	)
+	file_doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {
+		"file_url": file_doc.file_url,
+		"tracking_number": doc.tracking_number,
+		"file_name": fname,
+	}
 
 
 def on_update_testing_request(doc, method=None):

@@ -453,6 +453,8 @@ SAMPLE_HTML = """
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
+{%- set trk = doc.tracking_number or doc.name -%}
+{%- set qr_payload = trk + '\\n' + (frappe.utils.get_url()|string).rstrip('/') + '/ic-verify/sample/' + trk -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
@@ -462,7 +464,9 @@ SAMPLE_HTML = """
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
   .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
-  .qr img { width:90px; height:90px; }
+  .qr-block { display:flex; align-items:center; gap:14px; margin-top:12px; }
+  .qr-block img { width:90px; height:90px; image-rendering: pixelated; }
+  .qr-block .trk { font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size:14px; font-weight:700; color:#065175; letter-spacing:0.02em; }
   .ic-footer-bar {
     background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
@@ -476,21 +480,97 @@ SAMPLE_HTML = """
     <div class="ic-lh-co">
       <div class="name">{{ legal }}</div>
       <div>{{ address }}</div>
-      <div>☎ {{ phone }} · ✉ {{ email }}</div>
+      <div>{{ phone }} · {{ email }}</div>
       <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
     </div>
   </div>
   <h2 style="margin:0 0 10px; color:#065175;">Sample Tracking Label</h2>
-  <p><b>Tracking No:</b> {{ doc.tracking_number }}</p>
+  <p><b>Sample Tracking No:</b> <span style="font-family:monospace;font-size:13px;">{{ trk }}</span></p>
   <p><b>Customer:</b> {{ doc.customer }}</p>
   <p><b>Description:</b> {{ doc.sample_description }}</p>
   <p><b>Status:</b> {{ doc.status }}</p>
   <p><b>Qty:</b> {{ doc.quantity }} &nbsp; <b>Condition:</b> {{ doc.sample_condition or '' }}</p>
-  <div class="qr">
-    {% if doc.qr_code %}<img src="{{ doc.qr_code }}" alt="QR"/>{% else %}
-    <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Sample Tracking/' + doc.name) }}" alt="QR"/>{% endif %}
+  <div class="qr-block">
+    <img src="{{ get_qr_code_data_uri(qr_payload, 5, 1) }}" alt="QR {{ trk }}"/>
+    <div>
+      <div style="font-size:10px;color:#666;">Scan / Sample No.</div>
+      <div class="trk">{{ trk }}</div>
+    </div>
   </div>
   <div class="ic-footer-bar">www.instacertify.com</div>
+</div>
+"""
+
+# 8mm-high thermal sticker: QR + unique sample tracking number, side-by-side
+SAMPLE_STICKER_8MM_HTML = """
+{%- set trk = doc.tracking_number or doc.name -%}
+{%- set qr_payload = trk + '\\n' + (frappe.utils.get_url()|string).rstrip('/') + '/ic-verify/sample/' + trk -%}
+<style>
+  @page {
+    size: 32mm 8mm;
+    margin: 0;
+  }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 32mm;
+    height: 8mm;
+    overflow: hidden;
+    background: #fff;
+  }
+  .print-format, .print-format-gutter {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+  .sticker {
+    box-sizing: border-box;
+    width: 32mm;
+    height: 8mm;
+    padding: 0.35mm 0.5mm;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.7mm;
+    font-family: 'DejaVu Sans Mono', 'Courier New', monospace;
+    color: #000;
+    background: #fff;
+    overflow: hidden;
+  }
+  .sticker img {
+    width: 7.2mm;
+    height: 7.2mm;
+    flex: 0 0 7.2mm;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .sticker .trk {
+    flex: 1 1 auto;
+    font-size: 2.35mm;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+  .sticker .lbl {
+    display: block;
+    font-size: 1.35mm;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 0.15mm;
+  }
+</style>
+<div class="sticker">
+  <img src="{{ get_qr_code_data_uri(qr_payload, 6, 1) }}" alt="{{ trk }}"/>
+  <div class="trk">
+    <span class="lbl">Sample</span>
+    {{ trk }}
+  </div>
 </div>
 """
 
@@ -1363,6 +1443,7 @@ def ensure_print_formats():
 		("Instacertify Testing Quotation", "Quotation", TESTING_QUOTATION_HTML),
 		("Instacertify Sales Invoice", "Sales Invoice", INVOICE_HTML),
 		("Instacertify Sample Label", "IC Sample Tracking", SAMPLE_HTML),
+		("Instacertify Sample Sticker 8mm", "IC Sample Tracking", SAMPLE_STICKER_8MM_HTML),
 		("Instacertify Testing Request", "IC Testing Request", TESTING_HTML),
 		("Instacertify Joining Letter", "IC Joining Letter", JOINING_HTML),
 		("Instacertify Documents Collection Sheet", "IC Document Request", DOCUMENTS_COLLECTION_HTML),
