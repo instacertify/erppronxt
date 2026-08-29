@@ -190,10 +190,35 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		if (!row) return;
 		const qtype =
 			row.quotation_type === "Service" ? "Consulting" : row.quotation_type || "Consulting";
-		frappe.new_doc("Quotation", {
-			ic_quotation_type: qtype,
-			ic_quotation_template: row.name,
-			ic_service_family: row.service_family,
+		// Prefetch payload, then open a new Quotation — never call apply on unsaved new- names
+		frappe.call({
+			method: "instacertify.quotation.events.get_quotation_template_payload",
+			args: { template: row.name },
+			freeze: true,
+			freeze_message: __("Loading quote format…"),
+			callback(r) {
+				instacertify._pending_quote_format = {
+					skip: 0,
+					quotation_type: qtype,
+					payload: r.message || {},
+				};
+				frappe.model.with_doctype("Quotation", () => {
+					frappe.new_doc("Quotation", {
+						ic_quotation_type: qtype,
+						ic_quotation_template: row.name,
+						ic_service_family: row.service_family,
+					});
+				});
+			},
+			error() {
+				frappe.msgprint({
+					title: __("Could not load format"),
+					indicator: "red",
+					message: __(
+						"Could not load this template. Try Edit, or open New Quotation from the list."
+					),
+				});
+			},
 		});
 	}
 
