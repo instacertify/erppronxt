@@ -11,6 +11,8 @@ from frappe.utils import cint, now_datetime
 
 
 def validate_quotation(doc, method=None):
+	if not (doc.get("party_name") or "").strip():
+		frappe.throw(_("Customer / Party Name is mandatory to generate a quotation"))
 	_calculate_test_line_totals(doc)
 	_calculate_revenue_split(doc)
 	if not doc.ic_revision_number and doc.ic_revision_number != 0:
@@ -23,11 +25,12 @@ def validate_quotation(doc, method=None):
 	_apply_quotation_defaults(doc)
 	from instacertify.team.assignees import sync_assignees
 
+	# Assignees optional — do not auto-seed owner
 	sync_assignees(
 		doc,
 		table_field="ic_assignees",
 		primary_field="ic_primary_assignee",
-		default_user=doc.owner,
+		default_user=None,
 	)
 	if doc.quotation_to == "Customer" and doc.party_name:
 		from instacertify.accounting.billing import apply_transaction_billing_defaults
@@ -48,6 +51,7 @@ def before_insert_quotation(doc, method=None):
 	from instacertify.setup.naming_series import apply_quotation_series
 
 	apply_quotation_series(doc)
+	_apply_quotation_defaults(doc)
 
 
 def _calculate_test_line_totals(doc):
@@ -60,12 +64,33 @@ def _calculate_test_line_totals(doc):
 
 
 def _apply_quotation_defaults(doc):
+	from instacertify.setup.quotation_billing import PAYMENT_TEMPLATE_NAME, ensure_payment_terms_advance
+
+	try:
+		ensure_payment_terms_advance()
+	except Exception:
+		pass
+
+	if doc.meta.has_field("payment_terms_template") and not doc.get("payment_terms_template"):
+		if frappe.db.exists("Payment Terms Template", PAYMENT_TEMPLATE_NAME):
+			doc.payment_terms_template = PAYMENT_TEMPLATE_NAME
+
 	try:
 		settings = frappe.get_cached_doc("IC Settings")
 	except Exception:
+		settings = None
+
+	short_advance = "100% Advance"
+	if not doc.ic_payment_terms:
+		if settings and settings.get("default_payment_terms"):
+			# Prefer short default; strip long HTML lists to a single line when possible
+			raw = frappe.utils.strip_html(settings.default_payment_terms or "").strip()
+			doc.ic_payment_terms = raw if raw and len(raw) < 80 else short_advance
+		else:
+			doc.ic_payment_terms = short_advance
+
+	if not settings:
 		return
-	if not doc.ic_payment_terms and settings.get("default_payment_terms"):
-		doc.ic_payment_terms = settings.default_payment_terms
 	if doc.ic_quotation_type == "Testing":
 		if not doc.ic_sample_handling_policy and settings.get("default_sample_handling"):
 			doc.ic_sample_handling_policy = settings.default_sample_handling

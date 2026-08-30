@@ -405,23 +405,43 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Check",
 		"label": "Currency Manually Set",
 		"insert_after": "currency",
-		"description": "Stops auto USD/INR switch from customer country. Clear to re-enable auto billing currency.",
 		"default": "0",
+		"hidden": 1,
 	},
 	{
 		"fieldname": "ic_tax_manual",
 		"fieldtype": "Check",
 		"label": "Tax Template Manually Set",
 		"insert_after": "taxes_and_charges",
-		"description": "Stops auto GST In-state / Out-state / Export tax template selection.",
 		"default": "0",
+		"hidden": 1,
+	},
+	# Tax & Payment next to Order Type
+	{
+		"fieldname": "ic_section_tax_payment",
+		"fieldtype": "Section Break",
+		"label": "Tax & Payment",
+		"insert_after": "order_type",
+		"collapsible": 0,
+	},
+	{
+		"fieldname": "ic_tax_payment_note",
+		"fieldtype": "HTML",
+		"label": "Tax Payment Note",
+		"insert_after": "ic_section_tax_payment",
+		"options": (
+			'<p class="text-muted" style="margin:0;">'
+			"GST maps from customer state (In-state / Out-state / Overseas). "
+			"Payment Term defaults to <b>100% Advance</b> — edit if needed."
+			"</p>"
+		),
 	},
 	# --- 1. Setup: type + template side-by-side (stretched selects) ---
 	{
 		"fieldname": "ic_section_type",
 		"fieldtype": "Section Break",
 		"label": "1. Quotation Setup — Type & Template",
-		"insert_after": "order_type",
+		"insert_after": "ic_tax_payment_note",
 		"collapsible": 0,
 	},
 	{
@@ -439,7 +459,6 @@ QUOTATION_FIELDS = [
 		"insert_after": "ic_entry_guide",
 		"in_list_view": 1,
 		"bold": 1,
-		"description": "Major category first: Consulting, Testing, Renewal, or Other — then pick a library template.",
 	},
 	{
 		"fieldname": "ic_column_break_type",
@@ -453,7 +472,6 @@ QUOTATION_FIELDS = [
 		"options": "IC Quotation Template",
 		"insert_after": "ic_column_break_type",
 		"bold": 1,
-		"description": "From Quote Format Library for this type. Applying a format prefills headings and commercials — edit any value on the form.",
 	},
 	# --- Print field heading overrides (from template; fully editable) ---
 	{
@@ -690,39 +708,13 @@ QUOTATION_FIELDS = [
 		"options": "\nUse Company Default\nPrompt for Project / Testing\nCreate Invoice\nCreate Project\nCreate Invoice and Project\nManual",
 		"default": "Use Company Default",
 		"insert_after": "ic_workflow_status",
-		"description": "When the customer approves a shared quote, prompt the owner to create a Project or Testing Request (recommended).",
-	},
-	{
-		"fieldname": "ic_section_assignees",
-		"fieldtype": "Section Break",
-		"label": "Assigned Team — one or more people",
-		"insert_after": "ic_post_accept_action",
-		"collapsible": 0,
-	},
-	{
-		"fieldname": "ic_assignees",
-		"fieldtype": "Table",
-		"label": "Assign People",
-		"options": "IC Assignee",
-		"insert_after": "ic_section_assignees",
-		"description": "Add everyone responsible for this quotation. Mark one as Primary.",
-	},
-	{
-		"fieldname": "ic_primary_assignee",
-		"fieldtype": "Link",
-		"label": "Primary Assignee",
-		"options": "User",
-		"insert_after": "ic_assignees",
-		"read_only": 1,
-		"in_standard_filter": 1,
-		"description": "Auto-set from the Primary assignee row.",
 	},
 	# --- Customer share (secondary) ---
 	{
 		"fieldname": "ic_section_share",
 		"fieldtype": "Section Break",
 		"label": "Customer Share Status",
-		"insert_after": "ic_primary_assignee",
+		"insert_after": "ic_post_accept_action",
 		"collapsible": 1,
 		"collapsible_depends_on": "eval:doc.ic_workflow_status!='Draft'",
 	},
@@ -1018,7 +1010,6 @@ QUOTATION_FIELDS = [
 		"label": "Commercials / Test Entries",
 		"options": "IC Quotation Test Item",
 		"insert_after": "ic_section_test_lines",
-		"description": "Add one row per test. Select Laboratory → then Lab Test Scope (prices fill from the lab library).",
 	},
 	{
 		"fieldname": "ic_sample_handling_policy",
@@ -1032,7 +1023,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "8. Payment, Cancellation & Confidentiality",
 		"insert_after": "ic_sample_handling_policy",
-		"collapsible": 0,
+		"collapsible": 1,
 	},
 	{
 		"fieldname": "ic_payment_terms",
@@ -1072,7 +1063,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "9. Terms & Force Majeure",
 		"insert_after": "ic_products",
-		"collapsible": 0,
+		"collapsible": 1,
 	},
 	{
 		"fieldname": "ic_terms_and_conditions",
@@ -1093,11 +1084,41 @@ QUOTATION_FIELDS = [
 		"options": "Quotation",
 		"insert_after": "ic_force_majeure",
 	},
+	# Optional assignees — Additional / More Information
+	{
+		"fieldname": "ic_tab_more_info",
+		"fieldtype": "Tab Break",
+		"label": "Additional Information",
+		"insert_after": "ic_parent_quotation",
+	},
+	{
+		"fieldname": "ic_section_assignees",
+		"fieldtype": "Section Break",
+		"label": "Assigned Team (optional)",
+		"insert_after": "ic_tab_more_info",
+		"collapsible": 1,
+	},
+	{
+		"fieldname": "ic_assignees",
+		"fieldtype": "Table",
+		"label": "Assign People",
+		"options": "IC Assignee",
+		"insert_after": "ic_section_assignees",
+	},
+	{
+		"fieldname": "ic_primary_assignee",
+		"fieldtype": "Link",
+		"label": "Primary Assignee",
+		"options": "User",
+		"insert_after": "ic_assignees",
+		"read_only": 1,
+		"in_standard_filter": 1,
+	},
 	{
 		"fieldname": "ic_links_tab",
 		"fieldtype": "Tab Break",
 		"label": "Linked Records",
-		"insert_after": "ic_parent_quotation",
+		"insert_after": "ic_primary_assignee",
 	},
 	{
 		"fieldname": "ic_section_links",

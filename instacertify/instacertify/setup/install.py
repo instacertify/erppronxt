@@ -81,6 +81,12 @@ def after_install():
 	setup_gst()
 	setup_disable_pos()
 	setup_gst_returns()
+	from instacertify.setup.quotation_billing import ensure_quotation_billing_defaults
+
+	try:
+		ensure_quotation_billing_defaults()
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure_quotation_billing_defaults install")
 	frappe.db.commit()
 
 
@@ -179,6 +185,12 @@ def after_migrate():
 	from instacertify.setup.document_collection import ensure_document_collection_templates
 
 	ensure_document_collection_templates()
+	from instacertify.setup.quotation_billing import ensure_quotation_billing_defaults
+
+	try:
+		ensure_quotation_billing_defaults()
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure_quotation_billing_defaults")
 	frappe.db.commit()
 
 
@@ -990,12 +1002,7 @@ def setup_settings():
 			"acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, "
 			"laboratory delays, or certification authority actions.</p>"
 		)
-		doc.default_payment_terms = (
-			doc.default_payment_terms
-			or "<ul><li>100% Advance Payment is required to initiate the testing process.</li>"
-			"<li>Testing will commence upon receipt of the payment and sample.</li>"
-			"<li>Any additional testing or charges, if applicable, shall be communicated separately.</li></ul>"
-		)
+		doc.default_payment_terms = doc.default_payment_terms or "100% Advance"
 		doc.header_image = "/assets/instacertify/images/instacertify_letterhead.png"
 		doc.logo = "/assets/instacertify/images/instacertify_logo.png"
 		doc.stamp_image = doc.stamp_image or "/assets/instacertify/images/instacertify_stamp.png"

@@ -1837,6 +1837,15 @@ $(document).on("page-change", function () {
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
 		instacertify.apply_quotation_naming_series(frm);
+		frm.set_df_property("party_name", "reqd", 1);
+		if (frm.is_new()) {
+			if (!frm.doc.payment_terms_template) {
+				frm.set_value("payment_terms_template", "100% Advance");
+			}
+			if (!frm.doc.ic_payment_terms) {
+				frm.set_value("ic_payment_terms", "100% Advance");
+			}
+		}
 		if (frm.fields_dict.ic_assignees) {
 			frm.add_custom_button(__("Assign Me"), () => {
 				instacertify.add_me_as_assignee(frm, "ic_assignees");
@@ -2181,47 +2190,27 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 instacertify.QUOTATION_TYPE_HELP = {
 	Consulting: {
 		title: "Consulting / Certification",
-		steps: [
-			"Quote type + library format are chosen first — edit title, standards, and headings below",
-			"Enter commercials in Cost Items",
-			"Review payment terms → Share with Customer",
-		],
+		steps: ["Pick format → fill commercials → Share"],
 	},
 	Service: {
 		title: "Service",
-		steps: [
-			"Confirm the library format title, timeline, and cost lines (all editable)",
-			"Adjust commercials as needed",
-			"Share with Customer when ready",
-		],
+		steps: ["Confirm format → adjust commercials → Share"],
 	},
 	Testing: {
 		title: "Testing",
-		steps: [
-			"Format may prefill testing notes — open Test Lines for Laboratory & Lab Test Scope",
-			"Charges fill from the lab library; adjust samples if needed",
-			"Share with Customer when ready",
-		],
+		steps: ["Lab / scope lines → adjust samples → Share"],
 	},
 	Renewal: {
 		title: "Renewal",
-		steps: [
-			"Confirm renewal format headings from the library",
-			"Update validity / commercial lines",
-			"Share with Customer",
-		],
+		steps: ["Confirm format → update commercials → Share"],
 	},
 	Other: {
 		title: "Other",
-		steps: ["Edit service basics from the format (or fill blank)", "Add cost lines", "Share when ready"],
+		steps: ["Fill basics → commercials → Share"],
 	},
 	"Multiple Products / Multiple Services": {
 		title: "Multiple Products / Services",
-		steps: [
-			"Fill consulting and/or testing sections as needed",
-			"Add product rows under Multi-Product lines",
-			"Share when ready",
-		],
+		steps: ["Fill sections → product rows → Share"],
 	},
 };
 
@@ -2231,9 +2220,9 @@ instacertify.render_quotation_entry_guide = function (frm) {
 	const t = frm.doc.ic_quotation_type;
 	const help = instacertify.QUOTATION_TYPE_HELP[t];
 	const type_chips = [
-		["Consulting", "Certification / consulting quote"],
-		["Testing", "Lab tests & commercials"],
-		["Renewal", "Certificate renewal"],
+		["Consulting", "Certification"],
+		["Testing", "Lab tests"],
+		["Renewal", "Renewal"],
 		["Other", "Custom"],
 	]
 		.map(([key, hint]) => {
@@ -2251,19 +2240,16 @@ instacertify.render_quotation_entry_guide = function (frm) {
 		? `<ol class="ic-quote-steps">${help.steps
 				.map((s) => `<li>${frappe.utils.escape_html(s)}</li>`)
 				.join("")}</ol>`
-		: `<p class="ic-quote-guide-empty">${__("Select a Quotation Type to see the entry steps.")}</p>`;
+		: `<p class="ic-quote-guide-empty">${__("Select Quotation Type")}</p>`;
 
 	wrap.html(`
 		<div class="ic-quote-entry">
 			<div class="ic-quote-entry-head">
 				<div>
-					<div class="ic-quote-entry-kicker">${__("Data entry")}</div>
+					<div class="ic-quote-entry-kicker">${__("Quote")}</div>
 					<div class="ic-quote-entry-title">${
-						help ? frappe.utils.escape_html(help.title) : __("Choose quotation type")
+						help ? frappe.utils.escape_html(help.title) : __("Choose type")
 					}</div>
-					<div class="ic-quote-entry-sub">${__(
-						"Type and template are the first two fields — everything else opens from there."
-					)}</div>
 				</div>
 			</div>
 			<div class="ic-quote-type-grid">${type_chips}</div>
@@ -5118,8 +5104,10 @@ frappe.ui.form.on("Customer", {
 
 frappe.ui.form.on("Quotation", {
 	party_name(frm) {
-		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) return;
-		instacertify.apply_billing_currency(frm, frm.doc.party_name);
+		if (!frm.doc.party_name) return;
+		if (frm.doc.quotation_to === "Customer") {
+			instacertify.apply_billing_currency(frm, frm.doc.party_name);
+		}
 	},
 	currency(frm) {
 		if (!frm.doc.currency || instacertify._auto_setting_currency) return;
@@ -5131,6 +5119,11 @@ frappe.ui.form.on("Quotation", {
 		if (instacertify._auto_setting_currency) return;
 		if (frm.doc.taxes_and_charges && !frm.doc.ic_tax_manual) {
 			frm.set_value("ic_tax_manual", 1);
+		}
+	},
+	validate(frm) {
+		if (!(frm.doc.party_name || "").trim()) {
+			frappe.throw(__("Customer / Party Name is mandatory to generate a quotation"));
 		}
 	},
 });
