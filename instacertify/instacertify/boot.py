@@ -56,3 +56,13 @@ def boot_session(bootinfo):
 			}
 	except Exception:
 		pass
+
+	# Fix missing Contact.is_billing_contact (breaks Quotation customer select)
+	try:
+		if not frappe.db.has_column("Contact", "is_billing_contact"):
+			from instacertify.setup.quotation_billing import ensure_contact_billing_field
+
+			ensure_contact_billing_field()
+			frappe.db.commit()
+	except Exception:
+		pass

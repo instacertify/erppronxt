@@ -172,13 +172,23 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 
 	Respects ic_currency_manual so users can switch back to INR or any other currency.
 	"""
+	try:
+		from instacertify.setup.quotation_billing import ensure_contact_billing_field
+
+		ensure_contact_billing_field()
+	except Exception:
+		pass
+
 	customer = doc.get(customer_field) or (
 		doc.get("party_name") if doc.doctype == "Quotation" and doc.get("quotation_to") == "Customer" else None
 	)
 	if not customer:
 		return
 
-	_ensure_company_address_on_transaction(doc)
+	try:
+		_ensure_company_address_on_transaction(doc)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure company address on transaction")
 
 	country = get_customer_country(customer)
 	suggested = default_currency_for_country(country)
@@ -191,7 +201,10 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 				doc.currency = suggested
 				_set_conversion_rate(doc)
 
-	_apply_gst_tax_template(doc, customer, country)
+	try:
+		_apply_gst_tax_template(doc, customer, country)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "apply GST tax template")
 
 
 def _ensure_company_address_on_transaction(doc):
