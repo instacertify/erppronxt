@@ -3453,6 +3453,17 @@ frappe.ui.form.on("IC Testing Request", {
 			frm.add_custom_button(__("Create / Sync Samples"), () => {
 				instacertify.ensure_testing_request_samples(frm, { force_sync: 1 });
 			}, __("Samples"));
+			frm.add_custom_button(__("Print Sample QR Labels"), () => {
+				frappe.call({
+					method: "instacertify.testing.events.get_testing_request_sample_labels",
+					args: { testing_request: frm.doc.name },
+					freeze: true,
+					freeze_message: __("Preparing sample QR labels…"),
+					callback(r) {
+						instacertify.show_testing_request_sample_qr_dialog(r.message || {});
+					},
+				});
+			}, __("Samples"));
 			frm.add_custom_button(__("Open Sample List"), () => {
 				frappe.set_route("List", "IC Sample Tracking", {
 					testing_request: frm.doc.name,
@@ -5096,6 +5107,146 @@ instacertify.render_sample_sticker_preview = function (frm, fileUrl) {
 			</div>
 		</div>
 	`);
+};
+
+instacertify.print_sample_qr_labels = function (labels) {
+	if (!labels || !labels.length) return;
+	const sheets = labels
+		.map((lab) => {
+			const qr = lab.qr_data_uri || lab.qr_code || "";
+			const trk = lab.tracking_number || lab.name || "";
+			return `<div class="sheet">
+				<div class="sticker">
+					${qr ? `<img class="qr" src="${frappe.utils.escape_html(qr)}" alt="QR"/>` : ""}
+					<div class="meta">
+						<div class="lbl">SAMPLE</div>
+						<div class="trk">${frappe.utils.escape_html(trk)}</div>
+						<div class="info">For more information visit<br><b>www.instacertify.com</b></div>
+					</div>
+				</div>
+			</div>`;
+		})
+		.join("");
+	const w = window.open("", "_blank");
+	if (!w) {
+		frappe.msgprint(__("Please allow pop-ups to print sample QR labels."));
+		return;
+	}
+	w.document.write(`<!doctype html><html><head><title>Sample QR Labels</title>
+		<style>
+			@page { size: 50mm 25mm; margin: 0; }
+			html, body { margin: 0; padding: 0; background: #fff; }
+			.sheet { page-break-after: always; width: 50mm; height: 25mm; }
+			.sheet:last-child { page-break-after: auto; }
+			.sticker {
+				box-sizing: border-box; width: 50mm; height: 25mm;
+				padding: 1.2mm 1.4mm; display: flex; align-items: center; gap: 1.6mm;
+				font-family: Arial, Helvetica, sans-serif; color: #000;
+			}
+			.sticker img.qr { width: 18mm; height: 18mm; image-rendering: pixelated; }
+			.sticker .meta { flex: 1; min-width: 0; }
+			.sticker .lbl { font-size: 2.1mm; font-weight: 700; letter-spacing: .06em; color: #333; }
+			.sticker .trk { font-family: monospace; font-size: 3.1mm; font-weight: 700; word-break: break-all; margin: 0.6mm 0; }
+			.sticker .info { font-size: 1.85mm; line-height: 1.25; color: #222; }
+			@media screen {
+				body { padding: 16px; background: #eef2f5; }
+				.sheet {
+					page-break-after: auto; margin: 0 auto 12px; background: #fff;
+					box-shadow: 0 2px 8px rgba(0,0,0,.12); border: 1px solid #cfd8dc;
+				}
+			}
+		</style></head><body>${sheets}
+		<script>window.onload=function(){setTimeout(function(){window.print()},250)}</script>
+		</body></html>`);
+	w.document.close();
+};
+
+instacertify.show_testing_request_sample_qr_dialog = function (payload) {
+	const labels = (payload && payload.labels) || [];
+	if (!labels.length) {
+		frappe.msgprint({
+			title: __("No samples"),
+			message: __("No sample tracking numbers were found for QR labels."),
+			indicator: "orange",
+		});
+		return;
+	}
+	const cards = labels
+		.map((lab) => {
+			const qr = lab.qr_data_uri || lab.qr_code || "";
+			const trk = lab.tracking_number || lab.name || "";
+			const sticker = lab.sticker_url
+				? `<img class="ic-ts-qr-sticker" src="${frappe.utils.escape_html(lab.sticker_url)}" alt="50×25 sticker"/>`
+				: "";
+			return `<div class="ic-ts-qr-card" data-sample="${frappe.utils.escape_html(lab.name)}">
+				<div class="ic-ts-qr-label">
+					${
+						qr
+							? `<img class="ic-ts-qr-img" src="${frappe.utils.escape_html(qr)}" alt="QR ${frappe.utils.escape_html(
+									trk
+							  )}"/>`
+							: ""
+					}
+					<div class="ic-ts-qr-meta">
+						<div class="ic-ts-qr-kicker">${__("Sample")}</div>
+						<div class="ic-ts-qr-code">${frappe.utils.escape_html(trk)}</div>
+						<div class="ic-ts-qr-info">${__("For more information visit")}<br><b>www.instacertify.com</b></div>
+					</div>
+				</div>
+				${sticker}
+				<div class="ic-ts-qr-actions">
+					<button type="button" class="btn btn-xs btn-primary ic-ts-print-one" data-sample="${frappe.utils.escape_html(
+						lab.name
+					)}">${__("Print")}</button>
+					${
+						lab.sticker_url
+							? `<a class="btn btn-xs btn-default" href="${frappe.utils.escape_html(
+									lab.sticker_url
+							  )}" target="_blank" download>${__("PNG")}</a>`
+							: ""
+					}
+					<a class="btn btn-xs btn-default" href="/app/ic-sample-tracking/${encodeURIComponent(lab.name)}">${__(
+						"Open"
+					)}</a>
+				</div>
+			</div>`;
+		})
+		.join("");
+
+	const d = new frappe.ui.Dialog({
+		title: __("Printable Sample QR — {0}", [(payload && payload.testing_request) || ""]),
+		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "labels",
+				options: `
+					<div class="ic-ts-qr-dialog">
+						<div class="ic-ts-qr-intro">
+							${__("Unique QR for each sample. Includes sample code and")}
+							<b>www.instacertify.com</b>.
+							${payload.test_name ? ` · ${frappe.utils.escape_html(payload.test_name)}` : ""}
+						</div>
+						<div class="ic-ts-qr-grid">${cards}</div>
+					</div>
+				`,
+			},
+		],
+		primary_action_label: __("Print all labels"),
+		primary_action() {
+			instacertify.print_sample_qr_labels(labels);
+		},
+		secondary_action_label: __("Done"),
+		secondary_action() {
+			d.hide();
+		},
+	});
+	d.$body.find(".ic-ts-print-one").on("click", function () {
+		const name = $(this).data("sample");
+		const lab = labels.find((x) => x.name === name);
+		if (lab) instacertify.print_sample_qr_labels([lab]);
+	});
+	d.show();
 };
 
 frappe.ui.form.on("IC Sample Tracking", {

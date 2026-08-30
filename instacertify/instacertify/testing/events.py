@@ -134,6 +134,69 @@ def download_sample_sticker_8mm(sample: str):
 	return download_sample_sticker_50x25(sample)
 
 
+@frappe.whitelist()
+def get_testing_request_sample_labels(testing_request: str):
+	"""Unique printable QR labels for every sample on a Testing Request.
+
+	Each label includes:
+	- QR (unique sample tracking code + verify URL)
+	- Sample tracking number
+	- “For more information visit www.instacertify.com”
+	"""
+	from instacertify.utils.qr import get_qr_code_data_uri, sample_qr_payload
+
+	if not testing_request or not frappe.db.exists("IC Testing Request", testing_request):
+		frappe.throw(_("Testing Request not found"))
+
+	samples = get_samples_for_testing_request(testing_request)
+	labels = []
+	for row in samples:
+		doc = frappe.get_doc("IC Sample Tracking", row.name)
+		if not doc.tracking_number:
+			continue
+		if not doc.qr_code:
+			_attach_sample_qr(doc)
+			doc.reload()
+		payload = sample_qr_payload(doc.tracking_number, doc.name)
+		qr_uri = get_qr_code_data_uri(payload, box_size=6, border=1)
+		# Also prepare 50×25 PNG for download/print
+		sticker = None
+		try:
+			sticker = download_sample_sticker_50x25(doc.name)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "sample sticker for TR labels")
+		labels.append(
+			{
+				"name": doc.name,
+				"tracking_number": doc.tracking_number,
+				"sample_description": doc.sample_description,
+				"qr_code": doc.qr_code,
+				"qr_data_uri": qr_uri,
+				"sticker_url": (sticker or {}).get("file_url"),
+				"website": "www.instacertify.com",
+				"info_line": "For more information visit",
+				"print_format": "Instacertify Sample Sticker 50x25mm",
+			}
+		)
+
+	tr = frappe.db.get_value(
+		"IC Testing Request",
+		testing_request,
+		["name", "title", "customer", "test_name", "applicable_standard", "laboratory"],
+		as_dict=True,
+	) or {}
+	return {
+		"testing_request": testing_request,
+		"title": tr.get("title") or testing_request,
+		"customer": tr.get("customer"),
+		"test_name": tr.get("test_name"),
+		"applicable_standard": tr.get("applicable_standard"),
+		"laboratory": tr.get("laboratory"),
+		"labels": labels,
+		"count": len(labels),
+	}
+
+
 def on_update_testing_request(doc, method=None):
 	# Keep Sample Tracking rows in lockstep with this Testing Request
 	try:
@@ -456,6 +519,7 @@ def create_testing_and_samples(
 		"samples": bundle.get("samples") or [],
 		"created_samples": bundle.get("created") or [],
 		"reused_samples": (linked.get("linked") if linked else []) or [],
+		"sample_labels": get_testing_request_sample_labels(tr.name),
 	}
 
 

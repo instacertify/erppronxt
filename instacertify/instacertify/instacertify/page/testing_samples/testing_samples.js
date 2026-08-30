@@ -780,13 +780,30 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				state.focus_tr = m.testing_request || "";
 				state.expanded[m.testing_request] = true;
 				frappe.show_alert({
-					message: __("Created {0} — manage sample journey below", [m.testing_request]),
+					message: __("Created {0} — printable sample QR labels ready", [m.testing_request]),
 					indicator: "green",
 				});
 				if (customer) {
 					filter_customer.set_value(customer);
 					state.filter_customer = customer;
 				}
+				const labels_payload = m.sample_labels || null;
+				const open_labels = () => {
+					if (labels_payload && (labels_payload.labels || []).length) {
+						instacertify.show_testing_request_sample_qr_dialog(labels_payload);
+					} else if (m.testing_request) {
+						frappe.call({
+							method: "instacertify.testing.events.get_testing_request_sample_labels",
+							args: { testing_request: m.testing_request },
+							freeze: true,
+							freeze_message: __("Preparing sample QR labels…"),
+							callback(lr) {
+								instacertify.show_testing_request_sample_qr_dialog(lr.message || {});
+							},
+						});
+					}
+				};
+				open_labels();
 				switch_tab("manage");
 			},
 		});
@@ -946,6 +963,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<td class="ic-ts-money ic-ts-money-buy">${frappe.utils.escape_html(buy)}</td>
 							<td style="text-align:center"><span class="ic-ts-count">${samples.length}</span></td>
 							<td>
+								<button type="button" class="btn btn-xs btn-default ic-ts-print-qr" data-tr="${frappe.utils.escape_html(
+									tr.name
+								)}">${__("QR")}</button>
 								<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
 									tr.name
 								)}">${__("Open")}</a>
@@ -1015,6 +1035,19 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			if (loc && loc !== current) {
 				set_location(sample, loc);
 			}
+		});
+		$board.find(".ic-ts-print-qr").on("click", function (e) {
+			e.stopPropagation();
+			const tr_name = $(this).data("tr");
+			frappe.call({
+				method: "instacertify.testing.events.get_testing_request_sample_labels",
+				args: { testing_request: tr_name },
+				freeze: true,
+				freeze_message: __("Loading sample QR labels…"),
+				callback(r) {
+					instacertify.show_testing_request_sample_qr_dialog(r.message || {});
+				},
+			});
 		});
 
 		if (state.focus_tr) {

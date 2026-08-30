@@ -4432,6 +4432,80 @@ body.full-width {
   font-size: 15px;
 }
 
+/* Sample QR label dialog after Generate */
+.ic-ts-qr-dialog { padding: 2px 2px 8px; }
+.ic-ts-qr-intro {
+  font-size: 13px;
+  color: var(--ic-muted, #5a7382);
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.ic-ts-qr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.ic-ts-qr-card {
+  border: 1px solid #d5e4ee;
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ic-ts-qr-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px dashed #90a4ae;
+  border-radius: 8px;
+  background: #fafcfe;
+  min-height: 88px;
+}
+.ic-ts-qr-img {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  image-rendering: pixelated;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+}
+.ic-ts-qr-sticker {
+  height: 64px;
+  width: auto;
+  image-rendering: pixelated;
+  border: 1px solid #ddd;
+  background: #fff;
+  align-self: flex-start;
+}
+.ic-ts-qr-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #607d8b;
+}
+.ic-ts-qr-code {
+  font-family: ui-monospace, "DejaVu Sans Mono", monospace;
+  font-weight: 700;
+  font-size: 13px;
+  color: #152833;
+  margin: 4px 0 6px;
+  word-break: break-all;
+}
+.ic-ts-qr-info {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #333;
+}
+.ic-ts-qr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 @media (max-width: 720px) {
   .ic-ts-tab { flex: 1 1 auto; }
   .ic-ts-detail-inner { padding-left: 12px; }
