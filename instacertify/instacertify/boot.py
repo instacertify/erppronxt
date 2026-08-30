@@ -21,9 +21,12 @@ def boot_session(bootinfo):
 	}
 	# Soft-brand desk — light hue only
 	try:
-		bootinfo["sitename"] = "Instacertify ERP"
+		bootinfo["sitename"] = "Instacertify"
 		bootinfo["app_logo_url"] = "/assets/instacertify/images/favicon-48.png"
 		bootinfo["desk_theme"] = "light"
+		# Browser / PWA-facing identity in boot payload
+		bootinfo["favicon"] = "/assets/instacertify/images/favicon-32.png"
+		bootinfo["app_name"] = "Instacertify"
 	except Exception:
 		pass
 
