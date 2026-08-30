@@ -778,9 +778,10 @@ _SHADOW_THEME_CSS = """
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.05;
-  color: #fff;
+  color: #EC6820;
   margin: 0 0 8px;
   font-family: "Poppins", sans-serif !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
 }
 .ic-home-brand-icon {
   width: 48px;
@@ -793,7 +794,7 @@ _SHADOW_THEME_CSS = """
 }
 .ic-greeting-brand-text,
 .ic-greeting-brand-text span,
-.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #ffffff !important; }
+.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #EC6820 !important; }
 .ic-greeting h2 {
   margin: 0 0 6px;
   font-weight: 500;

@@ -456,9 +456,9 @@ body {
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.05;
-  color: #fff;
+  color: var(--ic-accent, #EC6820);
   margin: 0 0 8px;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
 }
 
 .ic-home-brand-icon {
@@ -474,7 +474,7 @@ body {
 .ic-greeting-brand-text,
 .ic-greeting-brand-text span,
 .ic-greeting-brand > span:not(.ic-greeting-brand-text) {
-  color: #ffffff !important;
+  color: var(--ic-accent, #EC6820) !important;
 }
 
 .ic-greeting h2 {
