@@ -414,12 +414,19 @@ def create_testing_and_samples(
 	quotation: str | None = None,
 	title: str | None = None,
 	reuse_samples: str | list | None = None,
+	library_buying_price: float | None = None,
+	suggested_selling_price: float | None = None,
+	price_currency: str | None = None,
 ):
 	"""One-shot: create Testing Request from lab library pricing + linked samples.
 
 	reuse_samples: optional list (or JSON) of existing IC Sample Tracking names to
 	link to this TR. Allowed only when those samples already belong to the same
 	laboratory (one sample → multiple tests at same lab only).
+
+	library_buying_price / suggested_selling_price / price_currency: optional overrides
+	from the Generate page so case handlers can set the buy/sell record used for
+	lab purchase invoices and customer billing.
 	"""
 	from frappe.utils import cint, flt
 	import json
@@ -436,6 +443,7 @@ def create_testing_and_samples(
 	needed = max(cint(number_of_samples) or 1, 1)
 	buying = 0
 	selling = 0
+	currency = (price_currency or "").strip() or "INR"
 	scope_label = ""
 	lab_loc = ""
 
@@ -461,6 +469,8 @@ def create_testing_and_samples(
 			if detail:
 				buying = flt(detail.get("purchase_price") or detail.get("buying_price"))
 				selling = flt(detail.get("selling_price"))
+				if detail.get("currency"):
+					currency = detail.get("currency") or currency
 				scope_label = detail.get("label") or detail.get("scope_label") or ""
 				lab_scope_row = detail.get("name") or detail.get("scope_row") or lab_scope_row
 				if not test_name:
@@ -471,6 +481,16 @@ def create_testing_and_samples(
 					laboratory = detail.get("laboratory") or laboratory
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "create_testing_and_samples lab resolve")
+
+	# Case-handler overrides from Generate page
+	if library_buying_price is not None and str(library_buying_price) != "":
+		buying = flt(library_buying_price)
+	if suggested_selling_price is not None and str(suggested_selling_price) != "":
+		selling = flt(suggested_selling_price)
+	if price_currency:
+		currency = str(price_currency).strip() or currency
+	if currency and not frappe.db.exists("Currency", currency):
+		frappe.throw(_("Currency {0} not found").format(currency))
 
 	if laboratory and frappe.db.exists("IC Laboratory", laboratory):
 		lab_loc = frappe.db.get_value("IC Laboratory", laboratory, "location") or ""
@@ -488,6 +508,8 @@ def create_testing_and_samples(
 		"library_buying_price": buying,
 		"status": "Sample Awaited",
 	}
+	if frappe.get_meta("IC Testing Request").has_field("price_currency"):
+		payload["price_currency"] = currency
 	for key, val in {
 		"project": project,
 		"quotation": quotation,

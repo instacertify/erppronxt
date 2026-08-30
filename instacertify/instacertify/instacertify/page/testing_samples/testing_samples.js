@@ -328,6 +328,23 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						<div class="ic-ts-summary-body" id="ic-ts-summary-body">
 							<div class="text-muted">${__("Select customer, test, standard and laboratory.")}</div>
 						</div>
+						<div class="ic-ts-price-edit" id="ic-ts-price-edit" hidden>
+							<div class="ic-ts-section-title" style="margin:10px 0 6px">${__("Buying / Selling (editable)")}</div>
+							<div class="ic-ts-card-sub" style="margin:0 0 8px">${__(
+								"Stored on the Testing Request for lab buy invoices and customer sell records."
+							)}</div>
+							<div class="ic-ts-price-grid">
+								<label>${__("Buying")}
+									<input type="number" step="0.01" min="0" class="form-control input-sm" id="ic-ts-buy-price"/>
+								</label>
+								<label>${__("Selling")}
+									<input type="number" step="0.01" min="0" class="form-control input-sm" id="ic-ts-sell-price"/>
+								</label>
+								<label>${__("Currency")}
+									<input type="text" class="form-control input-sm" id="ic-ts-price-currency" placeholder="INR"/>
+								</label>
+							</div>
+						</div>
 						<button type="button" class="btn btn-primary btn-block ic-ts-btn-create" id="ic-ts-generate" disabled>
 							${__("Generate Testing Request + Samples")}
 						</button>
@@ -395,6 +412,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		expanded: {},
 		tab: "generate",
 		focus_tr: "",
+		buy_price: null,
+		sell_price: null,
+		price_currency: "INR",
 		manage_page_size: 20,
 		manage_visible: 20,
 	};
@@ -606,10 +626,6 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				__("Contact"),
 				[offer.contact_person, offer.contact_designation].filter(Boolean).join(" · ") || "—",
 			]);
-			rows.push([
-				__("Buying"),
-				format_currency(offer.purchase_price || 0, offer.currency || "INR"),
-			]);
 		}
 		const html = rows
 			.map(
@@ -620,6 +636,27 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			)
 			.join("");
 		page.main.find("#ic-ts-summary-body").html(html);
+		const $price = page.main.find("#ic-ts-price-edit");
+		if (offer) {
+			$price.prop("hidden", false);
+			if (state.buy_price == null) {
+				state.buy_price = flt(offer.purchase_price || 0);
+			}
+			if (state.sell_price == null) {
+				state.sell_price = flt(offer.selling_price || 0);
+			}
+			if (!state.price_currency) {
+				state.price_currency = offer.currency || "INR";
+			}
+			page.main.find("#ic-ts-buy-price").val(state.buy_price);
+			page.main.find("#ic-ts-sell-price").val(state.sell_price);
+			page.main.find("#ic-ts-price-currency").val(state.price_currency || "INR");
+		} else {
+			$price.prop("hidden", true);
+			state.buy_price = null;
+			state.sell_price = null;
+			state.price_currency = "INR";
+		}
 		page.main.find("#ic-ts-generate").prop("disabled", !(state.customer && state.selected_offer));
 	}
 
@@ -826,6 +863,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		state.lab_scope_row = offer.scope_row;
 		state.lab_offer = offer.value;
 		state.reuse_samples = [];
+		state.buy_price = flt(offer.purchase_price || 0);
+		state.sell_price = flt(offer.selling_price || 0);
+		state.price_currency = offer.currency || "INR";
 		if (offer.test_name) {
 			state.test_name = offer.test_name;
 			form.set_value("test_name", offer.test_name);
@@ -839,7 +879,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		set_step(4);
 		update_summary();
 		frappe.show_alert({
-			message: __("Lab selected — optionally reuse same-lab samples, then generate"),
+			message: __("Lab selected — edit buying/selling if needed, then generate"),
 			indicator: "green",
 		});
 	}
@@ -917,6 +957,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			return;
 		}
 		const offer = state.selected_offer;
+		const buy = flt(page.main.find("#ic-ts-buy-price").val());
+		const sell = flt(page.main.find("#ic-ts-sell-price").val());
+		const currency = (page.main.find("#ic-ts-price-currency").val() || "INR").trim() || "INR";
+		state.buy_price = buy;
+		state.sell_price = sell;
+		state.price_currency = currency;
 		frappe.call({
 			method: "instacertify.testing.events.create_testing_and_samples",
 			args: {
@@ -930,6 +976,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				lab_offer: offer.value || "",
 				number_of_samples: cint(form.get_value("number_of_samples")) || 1,
 				reuse_samples: state.reuse_samples || [],
+				library_buying_price: buy,
+				suggested_selling_price: sell,
+				price_currency: currency,
 			},
 			freeze: true,
 			freeze_message: __("Generating Testing Request and samples…"),
@@ -973,9 +1022,14 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 										message: `<p><a href="${frappe.utils.escape_html(
 											url
 										)}" target="_blank">${frappe.utils.escape_html(url)}</a></p>
-										<p><a href="/app/ic-test-request-form/${encodeURIComponent(
+										<p>
+										<a class="btn btn-xs btn-primary" href="/app/ic-test-request-form/${encodeURIComponent(
 											x.name
-										)}">${__("Open TRF (staff fill / generate PDF)")}</a></p>`,
+										)}">${__("Open TRF")}</a>
+										<a class="btn btn-xs btn-default" href="/app/ic-test-request-form/${encodeURIComponent(
+											x.name
+										)}">${__("Edit TRF")}</a>
+										</p>`,
 										indicator: "green",
 									});
 								},
@@ -1188,13 +1242,6 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								<button type="button" class="btn btn-xs btn-default ic-ts-print-qr-direct" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" title="${__("Print 50×25 mm QR labels")}">${__("Print")}</button>
-								<button type="button" class="btn btn-xs btn-default ic-ts-edit-price" data-tr="${frappe.utils.escape_html(
-									tr.name
-								)}" data-buy="${frappe.utils.escape_html(String(tr.library_buying_price ?? ""))}" data-sell="${frappe.utils.escape_html(
-									String(tr.suggested_selling_price ?? "")
-								)}" data-currency="${frappe.utils.escape_html(
-									tr.price_currency || "INR"
-								)}" title="${__("Edit buying / selling price")}">${__("Edit Price")}</button>
 								<button type="button" class="btn btn-xs btn-default ic-ts-trf-link" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" data-trf="${frappe.utils.escape_html(tr.trf_name || "")}" data-url="${frappe.utils.escape_html(
@@ -1212,6 +1259,13 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								)}" data-trf="${frappe.utils.escape_html(tr.trf_name || "")}" data-pdf="${frappe.utils.escape_html(
 									tr.trf_pdf_file || ""
 								)}" title="${__("Download TRF PDF")}">${__("TRF PDF")}</button>
+								<button type="button" class="btn btn-xs btn-default ic-ts-edit-price" data-tr="${frappe.utils.escape_html(
+									tr.name
+								)}" data-buy="${frappe.utils.escape_html(String(tr.library_buying_price ?? ""))}" data-sell="${frappe.utils.escape_html(
+									String(tr.suggested_selling_price ?? "")
+								)}" data-currency="${frappe.utils.escape_html(
+									tr.price_currency || "INR"
+								)}" title="${__("Edit buying / selling price")}">${__("Edit Price")}</button>
 								<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
 									tr.name
 								)}">${__("Open")}</a>
@@ -1639,6 +1693,11 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		switch_tab($(this).data("tab"));
 	});
 	page.main.find("#ic-ts-generate").on("click", generate);
+	page.main.find("#ic-ts-buy-price, #ic-ts-sell-price, #ic-ts-price-currency").on("change input", function () {
+		state.buy_price = flt(page.main.find("#ic-ts-buy-price").val());
+		state.sell_price = flt(page.main.find("#ic-ts-sell-price").val());
+		state.price_currency = (page.main.find("#ic-ts-price-currency").val() || "INR").trim() || "INR";
+	});
 	page.main.find("#ic-ts-refresh").on("click", refresh_manage);
 	page.main.find("#ic-ts-labs").on("click", () => frappe.set_route("List", "IC Laboratory"));
 	page.main.find("#ic-ts-goto-generate").on("click", () => switch_tab("generate"));

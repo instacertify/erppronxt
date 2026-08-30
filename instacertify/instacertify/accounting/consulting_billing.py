@@ -361,11 +361,18 @@ def create_lab_purchase_invoice(
 
 	company = frappe.db.get_single_value("Global Defaults", "default_company") or "Instacertify"
 	rate = flt(amount)
-	if not rate and testing_request:
-		# Prefer lab library buying price when available on TR
-		rate = flt(
-			frappe.db.get_value("IC Testing Request", testing_request, "suggested_selling_price")
-		)
+	currency = None
+	if testing_request and frappe.db.exists("IC Testing Request", testing_request):
+		tr_prices = frappe.db.get_value(
+			"IC Testing Request",
+			testing_request,
+			["library_buying_price", "suggested_selling_price", "price_currency"],
+			as_dict=True,
+		) or {}
+		if not rate:
+			# Buy from lab → use buying price (not selling)
+			rate = flt(tr_prices.get("library_buying_price") or 0)
+		currency = tr_prices.get("price_currency") or None
 	if not rate:
 		rate = 0
 
@@ -399,6 +406,10 @@ def create_lab_purchase_invoice(
 			],
 		}
 	)
+	if currency and pi.meta.has_field("currency"):
+		pi.currency = currency
+		if pi.meta.has_field("price_list_currency"):
+			pi.price_list_currency = currency
 	if pi.meta.has_field("ic_laboratory") and laboratory:
 		pi.ic_laboratory = laboratory
 	if pi.meta.has_field("ic_testing_request") and testing_request:
@@ -407,8 +418,8 @@ def create_lab_purchase_invoice(
 		pi.ic_project = project
 	if pi.meta.has_field("ic_consulting_note"):
 		pi.ic_consulting_note = _(
-			"Consulting purchase: lab service (non-stock). No warehouse required."
-		)
+			"Consulting purchase: lab service (non-stock). Buying price {0} {1} from Testing Request."
+		).format(currency or "", rate)
 
 	strip_warehouse_from_service_items(pi)
 	pi.insert(ignore_permissions=True)
