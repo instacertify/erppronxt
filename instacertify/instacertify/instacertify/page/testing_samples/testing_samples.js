@@ -1147,13 +1147,25 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<td>${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}</td>
 							<td class="ic-ts-money ic-ts-money-buy">${frappe.utils.escape_html(buy)}</td>
 							<td style="text-align:center"><span class="ic-ts-count">${samples.length}</span></td>
-							<td>
+							<td class="ic-ts-actions-cell">
 								<button type="button" class="btn btn-xs ic-ts-btn-qr ic-ts-print-qr" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" title="${__("View & print sample QR")}">${__("QR")}</button>
 								<button type="button" class="btn btn-xs btn-default ic-ts-print-qr-direct" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" title="${__("Print 50×25 mm QR labels")}">${__("Print")}</button>
+								<button type="button" class="btn btn-xs btn-default ic-ts-trf-link" data-tr="${frappe.utils.escape_html(
+									tr.name
+								)}" data-trf="${frappe.utils.escape_html(tr.trf_name || "")}" data-url="${frappe.utils.escape_html(
+									tr.trf_share_url || ""
+								)}" title="${__(
+									"Generate / copy TRF customer fill link"
+								)}">${__("TRF Link")}</button>
+								<button type="button" class="btn btn-xs btn-default ic-ts-trf-pdf" data-tr="${frappe.utils.escape_html(
+									tr.name
+								)}" data-trf="${frappe.utils.escape_html(tr.trf_name || "")}" data-pdf="${frappe.utils.escape_html(
+									tr.trf_pdf_file || ""
+								)}" title="${__("Download TRF PDF")}">${__("TRF PDF")}</button>
 								<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
 									tr.name
 								)}">${__("Open")}</a>
@@ -1210,7 +1222,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<th>${__("Laboratory")}</th>
 							<th style="text-align:right">${__("Buying")}</th>
 							<th style="text-align:center">${__("Samples")}</th>
-							<th style="width:168px">${__("Actions")}</th>
+							<th style="width:280px">${__("Actions")}</th>
 						</tr>
 					</thead>
 					<tbody class="ic-ts-manage-tbody">
@@ -1287,6 +1299,140 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						return;
 					}
 					print_qr_labels(labels);
+				},
+			});
+		});
+		$board.find(".ic-ts-trf-link").on("click", function (e) {
+			e.stopPropagation();
+			const $btn = $(this);
+			const tr_name = $btn.data("tr");
+			const existing_url = $btn.data("url") || "";
+			const existing_trf = $btn.data("trf") || "";
+			const show_link = (x, refresh) => {
+				const url = (x && (x.url || x.share_url)) || existing_url || "";
+				const name = (x && x.name) || existing_trf || "";
+				if (!url) {
+					frappe.msgprint({
+						title: __("TRF link"),
+						message: __("Could not create a TRF share link."),
+						indicator: "orange",
+					});
+					return;
+				}
+				frappe.msgprint({
+					title: __("TRF customer fill link"),
+					message: `<p><a href="${frappe.utils.escape_html(
+						url
+					)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+					<p><button type="button" class="btn btn-xs btn-default" id="ic-ts-copy-trf-url">${__(
+						"Copy link"
+					)}</button>
+					${
+						name
+							? ` <a class="btn btn-xs btn-default" href="/app/ic-test-request-form/${encodeURIComponent(
+									name
+							  )}">${__("Open TRF")}</a>`
+							: ""
+					}</p>`,
+					indicator: "green",
+				});
+				setTimeout(() => {
+					$("#ic-ts-copy-trf-url").on("click", () => {
+						if (navigator.clipboard && navigator.clipboard.writeText) {
+							navigator.clipboard.writeText(url).then(() => {
+								frappe.show_alert({
+									message: __("Link copied"),
+									indicator: "green",
+								});
+							});
+						} else {
+							frappe.utils.copy_to_clipboard(url);
+						}
+					});
+				}, 50);
+				if (refresh) {
+					state._keep_visible = true;
+					refresh_manage();
+				}
+			};
+			if (existing_url) {
+				show_link({ url: existing_url, name: existing_trf }, false);
+				return;
+			}
+			frappe.call({
+				method: "instacertify.trf.api.create_or_get_trf",
+				args: { testing_request: tr_name, share: 1 },
+				freeze: true,
+				freeze_message: __("Creating TRF share link…"),
+				callback(r) {
+					show_link(r.message || {}, true);
+				},
+			});
+		});
+		$board.find(".ic-ts-trf-pdf").on("click", function (e) {
+			e.stopPropagation();
+			const tr_name = $(this).data("tr");
+			const trf_name = $(this).data("trf") || "";
+			const pdf_url = $(this).data("pdf") || "";
+			const open_pdf = (url) => {
+				if (!url) {
+					frappe.msgprint({
+						title: __("TRF PDF"),
+						message: __("PDF is not available yet. Fill the TRF first, then generate PDF."),
+						indicator: "orange",
+					});
+					return;
+				}
+				window.open(url, "_blank");
+			};
+			if (pdf_url) {
+				open_pdf(pdf_url);
+				return;
+			}
+			const generate = (name) => {
+				if (!name) {
+					frappe.msgprint({
+						title: __("TRF PDF"),
+						message: __("Create a TRF link first, then fill the form before generating PDF."),
+						indicator: "orange",
+					});
+					return;
+				}
+				frappe.call({
+					method: "instacertify.trf.api.generate_trf_pdf",
+					args: { name },
+					freeze: true,
+					freeze_message: __("Generating TRF PDF…"),
+					callback(r) {
+						const m = r.message || {};
+						if (m.file_url) {
+							frappe.show_alert({
+								message: __("TRF PDF ready"),
+								indicator: "green",
+							});
+							state._keep_visible = true;
+							refresh_manage();
+							open_pdf(m.file_url);
+						} else {
+							frappe.msgprint({
+								title: __("TRF PDF"),
+								message: __("Could not generate PDF."),
+								indicator: "orange",
+							});
+						}
+					},
+				});
+			};
+			if (trf_name) {
+				generate(trf_name);
+				return;
+			}
+			frappe.call({
+				method: "instacertify.trf.api.create_or_get_trf",
+				args: { testing_request: tr_name, share: 0 },
+				freeze: true,
+				callback(r) {
+					generate((r.message || {}).name || "");
 				},
 			});
 		});
