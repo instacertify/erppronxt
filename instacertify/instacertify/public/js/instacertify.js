@@ -1837,6 +1837,7 @@ $(document).on("page-change", function () {
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
 		instacertify.apply_quotation_naming_series(frm);
+		instacertify.add_change_currency_button(frm, { fieldname: "currency" });
 		if (frm.fields_dict.ic_assignees) {
 			frm.add_custom_button(__("Assign Me"), () => {
 				instacertify.add_me_as_assignee(frm, "ic_assignees");
@@ -3859,6 +3860,10 @@ frappe.ui.form.on("IC Testing Request", {
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
 		instacertify.load_testing_request_library_options(frm);
 		instacertify.bind_testing_request_library_pickers(frm);
+		instacertify.add_change_currency_button(frm, {
+			fieldname: "price_currency",
+			force_button: true,
+		});
 		if (frm.doc.applicable_standard || frm.doc.test_name) {
 			instacertify.load_testing_request_lab_offers(frm);
 		}
@@ -5062,6 +5067,105 @@ instacertify.apply_billing_currency = function (frm, customer, opts) {
 	});
 };
 
+/** Visible Change Currency action for Quotation / Invoice / Testing finance screens. */
+instacertify.add_change_currency_button = function (frm, opts) {
+	opts = opts || {};
+	const field = opts.fieldname || "currency";
+	if (!frm.fields_dict[field] && !opts.force_button) return;
+	if (frm.doc.docstatus === 1 && !opts.allow_submitted) return;
+	const label = opts.label || __("Change Currency");
+	frm.add_custom_button(label, () => instacertify.open_change_currency(frm, opts), __("Finance"));
+};
+
+instacertify.open_change_currency = function (frm, opts) {
+	opts = opts || {};
+	const field = opts.fieldname || "currency";
+	const current = (frm.doc[field] || opts.default || "INR").toString();
+	const quick = ["INR", "USD", "EUR", "AED", "GBP"];
+
+	const d = new frappe.ui.Dialog({
+		title: __("Change Currency"),
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: `<p class="text-muted" style="margin:0 0 8px;">${__(
+					"Current"
+				)}: <b>${frappe.utils.escape_html(current)}</b>. ${__(
+					"Pick INR / USD or any currency. Amounts stay the same numbers — only the currency label changes (edit rates if needed)."
+				)}</p>`,
+			},
+			{
+				fieldname: "quick",
+				fieldtype: "Select",
+				label: __("Quick pick"),
+				options: "\n" + quick.join("\n"),
+				default: quick.includes(current) ? current : "",
+			},
+			{
+				fieldname: "currency",
+				fieldtype: "Link",
+				options: "Currency",
+				label: __("Currency"),
+				reqd: 1,
+				default: current,
+			},
+		],
+		primary_action_label: __("Apply"),
+		primary_action(values) {
+			const cur = (values.currency || values.quick || "").trim();
+			if (!cur) {
+				frappe.msgprint(__("Select a currency"));
+				return;
+			}
+			d.hide();
+			instacertify.apply_manual_currency(frm, cur, { fieldname: field });
+		},
+	});
+	d.fields_dict.quick.$input.on("change", function () {
+		const v = d.get_value("quick");
+		if (v) d.set_value("currency", v);
+	});
+	d.show();
+};
+
+instacertify.apply_manual_currency = function (frm, currency, opts) {
+	opts = opts || {};
+	const field = opts.fieldname || "currency";
+	if (!currency) return;
+	const done = () => {
+		frappe.show_alert({
+			message: __("Currency set to {0}", [currency]),
+			indicator: "green",
+		});
+		if (typeof opts.on_done === "function") opts.on_done(currency);
+	};
+	const set_manual = () => {
+		if (frm.fields_dict.ic_currency_manual && !cint(frm.doc.ic_currency_manual)) {
+			return frm.set_value("ic_currency_manual", 1);
+		}
+		return Promise.resolve();
+	};
+	instacertify._auto_setting_currency = true;
+	Promise.resolve()
+		.then(() => set_manual())
+		.then(() => frm.set_value(field, currency))
+		.then(() => {
+			instacertify._auto_setting_currency = false;
+			// Refresh ERPNext conversion / totals when present
+			if (field === "currency" && frm.fields_dict.conversion_rate) {
+				try {
+					frm.trigger("currency");
+				} catch (e) {
+					/* ignore */
+				}
+			}
+			done();
+		})
+		.catch(() => {
+			instacertify._auto_setting_currency = false;
+		});
+};
+
 frappe.ui.form.on("Customer", {
 	ic_country(frm) {
 		if (!frm.doc.ic_country) return;
@@ -5142,6 +5246,7 @@ frappe.ui.form.on("Sales Invoice", {
 	refresh(frm) {
 		instacertify.hide_pos_on_sales_invoice(frm);
 		instacertify.apply_consulting_no_warehouse(frm);
+		instacertify.add_change_currency_button(frm, { fieldname: "currency" });
 		if (frm.is_new()) {
 			const wanted = cint(frm.doc.is_return) ? "INV-RET-.#####" : "INV-.#####";
 			if (!frm.doc.naming_series || String(frm.doc.naming_series).indexOf("SINV") >= 0) {
@@ -5149,7 +5254,7 @@ frappe.ui.form.on("Sales Invoice", {
 			}
 		}
 		frm.set_intro(
-			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required. Series: INV-00001 …"),
+			__("Consulting billing: sell services to customers as non-stock items — warehouse is not required. Series: INV-00001 … Use Finance → Change Currency anytime."),
 			"blue"
 		);
 		if (!frm.is_new()) {
@@ -5202,9 +5307,10 @@ frappe.ui.form.on("Sales Invoice", {
 frappe.ui.form.on("Purchase Invoice", {
 	refresh(frm) {
 		instacertify.apply_consulting_no_warehouse(frm);
+		instacertify.add_change_currency_button(frm, { fieldname: "currency" });
 		frm.set_intro(
 			__(
-				"Buy lab/vendor services or organisational purchases as non-stock. Link Laboratory / Testing Request when buying lab work. Use Asset for company equipment."
+				"Buy lab/vendor services or organisational purchases as non-stock. Link Laboratory / Testing Request when buying lab work. Use Asset for company equipment. Finance → Change Currency anytime."
 			),
 			"blue"
 		);
