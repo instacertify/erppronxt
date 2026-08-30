@@ -322,6 +322,7 @@ Download a copy off the VPS before `git pull` / migrate.
 | `FileNotFoundError: .../erppronxt/setup.py` | Expected — do not use `bench get-app` on this repo. Clone to `~/src/erppronxt` and `ln -sfn ~/src/erppronxt/instacertify apps/instacertify` |
 | `ls .../instacertify/instacertify/hooks.py` missing after `mv erppronxt instacertify` | You renamed the **repo** folder, not the app. Remove it and use the symlink install above |
 | `No module named 'hrmsinstacertify'` | `sites/apps.txt` glued two app names (missing newline). Fix with the apps.txt rewrite block in §3, or edit so each app is on its own line |
+| `Error 111 connecting to 127.0.0.1:11000` / redis_cache not running | Start Redis before `install-app` / `migrate`. Either point bench at system Redis (`bench set-config -g redis_* redis://127.0.0.1:6379` + `systemctl enable --now redis-server`) or daemonize bench configs: `redis-server config/redis_queue.conf --daemonize yes` and `redis-server config/redis_cache.conf --daemonize yes` |
 | `requires-python` / pip errors | Use **Python 3.14+** for `bench init` |
 | Smoke FAIL | Fix listed DocType/workspace gaps; re-run migrate + ensure_workspaces |
 
