@@ -763,7 +763,7 @@ _SHADOW_THEME_CSS = """
   width: 100% !important;
   max-width: none !important;
   box-sizing: border-box;
-  background: linear-gradient(125deg, #0A3380 0%, #0D47A1 42%, #1565C0 78%, #f26d21 145%);
+  background: linear-gradient(125deg, #0A3380 0%, #0D47A1 42%, #1565C0 78%, #ec691f 145%);
   color: #fff;
   border-radius: 14px;
   padding: 28px 28px 26px;
@@ -778,7 +778,7 @@ _SHADOW_THEME_CSS = """
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.05;
-  color: #EC6820;
+  color: #EC691F;
   margin: 0 0 8px;
   font-family: "Poppins", sans-serif !important;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
@@ -794,7 +794,7 @@ _SHADOW_THEME_CSS = """
 }
 .ic-greeting-brand-text,
 .ic-greeting-brand-text span,
-.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #EC6820 !important; }
+.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #EC691F !important; }
 .ic-greeting h2 {
   margin: 0 0 6px;
   font-weight: 500;
@@ -817,17 +817,17 @@ _SHADOW_THEME_CSS = """
 }
 .ic-lead-prompt.today, .ic-lead-hub-card.today {
   background: linear-gradient(165deg, #fff8f0 0%, #fff 55%) !important;
-  box-shadow: inset 4px 0 0 #F26D21, 0 10px 24px rgba(242,109,33,0.1) !important;
+  box-shadow: inset 4px 0 0 #EC691F, 0 10px 24px rgba(236,105,31,0.1) !important;
 }
 .ic-lead-prompt.upcoming, .ic-lead-hub-card.upcoming {
   background: linear-gradient(165deg, #f0f9fc 0%, #fff 55%) !important;
   box-shadow: inset 4px 0 0 #1565C0, 0 10px 24px rgba(10,143,181,0.08) !important;
 }
 .ic-lead-prompt-when.overdue { background: #c0392b !important; color: #fff !important; }
-.ic-lead-prompt-when.today { background: #F26D21 !important; color: #fff !important; }
+.ic-lead-prompt-when.today { background: #EC691F !important; color: #fff !important; }
 .ic-lead-prompt-when.upcoming { background: #1565C0 !important; color: #fff !important; }
 .ic-lead-hub-counts {
-  background: linear-gradient(90deg, #F26D21, #C45512) !important;
+  background: linear-gradient(90deg, #EC691F, #C45512) !important;
   color: #fff !important;
   font-weight: 700 !important;
   border-radius: 8px;
@@ -864,10 +864,10 @@ _SHADOW_THEME_CSS = """
   border-left: 1px solid rgba(13,71,161,0.1) !important;
 }
 .ic-summary-card:nth-child(3n+1) { border-top-color: #0D47A1 !important; }
-.ic-summary-card:nth-child(3n+2) { border-top-color: #F26D21 !important; }
+.ic-summary-card:nth-child(3n+2) { border-top-color: #EC691F !important; }
 .ic-summary-card:nth-child(3n) { border-top-color: #1565C0 !important; }
 .ic-summary-card:nth-child(3n) .value { color: #1565C0 !important; }
-.ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #F26D21 !important; }
+.ic-summary-card.accent .value, .ic-summary-card:nth-child(even) .value { color: #EC691F !important; }
 .ic-summary-card .label {
   font-size: 0.68rem !important;
   text-transform: uppercase;
@@ -896,7 +896,7 @@ _SHADOW_THEME_CSS = """
 }
 .ic-explore-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(13,71,161,0.1); }
 .ic-explore-card.accent-coral { border-top: 4px solid #c0392b; }
-.ic-explore-card.accent-citrus { border-top: 4px solid #F26D21; }
+.ic-explore-card.accent-citrus { border-top: 4px solid #EC691F; }
 .ic-explore-card.accent-teal { border-top: 4px solid #0D47A1; }
 .ic-explore-card-top { display:flex; justify-content: space-between; align-items:center; min-height: 28px; margin-bottom: 8px; flex-shrink: 0; gap: 8px; }
 .ic-explore-icon {
@@ -989,7 +989,7 @@ def _ensure_crm_lead_tracker_block():
         labels: labels,
         datasets: [{ name: "Leads", values: values }]
       },
-      colors: colors || ["#0D47A1", "#F26D21", "#2a9d8f", "#e9c46a", "#264653", "#f4a261"]
+      colors: colors || ["#0D47A1", "#EC691F", "#2a9d8f", "#e9c46a", "#264653", "#f4a261"]
     });
   }
   frappe.call({
@@ -1030,7 +1030,7 @@ def _ensure_crm_lead_tracker_block():
       const week = d.week_compare || [];
       makeChart(root_element.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#0D47A1", "#90CAF9"]);
       const month = d.month_compare || [];
-      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#F26D21", "#FFAB91"]);
+      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#EC691F", "#FFAB91"]);
       const s7 = d.by_source_7d || [];
       makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count));
       const p30 = d.by_project_type_30d || [];

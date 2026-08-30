@@ -35,7 +35,7 @@
    "fieldname": "accent_color",
    "fieldtype": "Color",
    "label": "Accent Color",
-   "default": "#F26D21"
+   "default": "#EC691F"
   },
   {
    "doctype": "DocField",

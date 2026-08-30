@@ -3,7 +3,7 @@ frappe.provide("instacertify");
 
 instacertify.brand = {
 	primary: "#0D47A1",
-	accent: "#F26D21",
+	accent: "#EC691F",
 	surface: "#E7F1FC",
 	white: "#FFFFFF",
 	logo: "/assets/instacertify/images/instacertify_logo.png",
@@ -3934,7 +3934,7 @@ instacertify.open_testing_request_lab_picker = function (frm, offers) {
 				<td>${frappe.utils.escape_html(o.location || "—")}</td>
 				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
 				<td>${frappe.utils.escape_html(o.applicable_standard || "—")}</td>
-				<td style="text-align:right;font-weight:700;color:#EC6820">${frappe.utils.escape_html(buy)}</td>
+				<td style="text-align:right;font-weight:700;color:#EC691F">${frappe.utils.escape_html(buy)}</td>
 				<td style="text-align:right">${frappe.utils.escape_html(sell)}</td>
 			</tr>`;
 		})
