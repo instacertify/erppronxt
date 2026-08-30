@@ -15,15 +15,58 @@ frappe.ui.form.on("IC Test Request Form", {
 						message: `<p>${__("Send this link to the customer to fill the Test Request Form:")}</p>
 							<p><a href="${frappe.utils.escape_html(m.url)}" target="_blank">${frappe.utils.escape_html(
 								m.url
-							)}</a></p>`,
+							)}</a></p>
+							<p class="text-muted">${__(
+								"Customer can submit only once. Use Allow Edit if a correction is needed."
+							)}</p>`,
 						indicator: "green",
 					});
 				},
 			});
 		});
-		const can_pdf = ["Submitted by Customer", "Under Review", "PDF Generated", "Completed"].includes(
+
+		const locked = ["Submitted by Customer", "Under Review", "PDF Generated", "Completed"].includes(
 			frm.doc.status
-		) || (frm.doc.sample_name && frm.doc.brand_name);
+		);
+		if (locked) {
+			frm.add_custom_button(__("Allow Edit"), () => {
+				frappe.confirm(
+					__(
+						"Reopen this TRF so the customer (or you) can correct details? After they submit again, it will lock."
+					),
+					() => {
+						frappe.call({
+							method: "instacertify.trf.api.reopen_trf_for_edit",
+							args: { name: frm.doc.name },
+							freeze: true,
+							callback(r) {
+								const m = r.message || {};
+								frm.reload_doc();
+								frappe.msgprint({
+									title: __("TRF reopened for edit"),
+									message: `<p>${frappe.utils.escape_html(
+										m.message || __("TRF reopened for edit")
+									)}</p>
+									${
+										m.share_url
+											? `<p><a href="${frappe.utils.escape_html(
+													m.share_url
+											  )}" target="_blank">${frappe.utils.escape_html(m.share_url)}</a></p>`
+											: ""
+									}`,
+									indicator: "green",
+								});
+							},
+						});
+					}
+				);
+			});
+		}
+
+		const can_pdf =
+			["Submitted by Customer", "Under Review", "Reopened for Edit", "PDF Generated", "Completed"].includes(
+				frm.doc.status
+			) || (frm.doc.sample_name && frm.doc.brand_name);
 		if (can_pdf) {
 			frm.add_custom_button(__("Generate TRF PDF"), () => {
 				frappe.call({

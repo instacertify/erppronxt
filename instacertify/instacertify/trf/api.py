@@ -1,5 +1,9 @@
 # Copyright (c) Instacertify
-"""Test Request Form (TRF) — customer fill link + staff fill + PDF with sample QR."""
+"""Test Request Form (TRF) — customer fill link + staff fill + PDF with sample QR.
+
+Portal fill is one-time. After submit the form is locked for the customer.
+Staff can reopen for edit when a correction is needed.
+"""
 
 from __future__ import annotations
 
@@ -12,8 +16,24 @@ from frappe.utils import now_datetime
 from instacertify.documents.api import _assert_allowed_upload
 
 
-OPEN_STATUSES = {"Draft", "Sent to Customer", "Submitted by Customer", "Under Review"}
-FILLED_STATUSES = {"Submitted by Customer", "Under Review", "PDF Generated", "Completed"}
+# Statuses where a new/open TRF may still be reused for a Testing Request
+OPEN_STATUSES = {
+	"Draft",
+	"Sent to Customer",
+	"Submitted by Customer",
+	"Under Review",
+	"Reopened for Edit",
+}
+# Customer portal may edit only in these statuses (one-time fill unless reopened)
+PORTAL_EDITABLE_STATUSES = {"Draft", "Sent to Customer", "Reopened for Edit"}
+FILLED_STATUSES = {
+	"Submitted by Customer",
+	"Under Review",
+	"Reopened for Edit",
+	"PDF Generated",
+	"Completed",
+}
+LOCKED_STATUSES = {"Submitted by Customer", "Under Review", "PDF Generated", "Completed", "Cancelled"}
 
 
 def _portal_url(token: str) -> str:
@@ -53,6 +73,14 @@ def _pick_sample_for_tr(testing_request: str) -> dict | None:
 	}
 
 
+def _is_portal_editable(doc) -> bool:
+	return (doc.status or "") in PORTAL_EDITABLE_STATUSES
+
+
+def _is_staff_user() -> bool:
+	return frappe.session.user and frappe.session.user != "Guest"
+
+
 @frappe.whitelist()
 def create_or_get_trf(testing_request: str, share: int = 0):
 	"""Create (or reuse open) TRF for a Testing Request. Optionally share with customer."""
@@ -72,6 +100,10 @@ def create_or_get_trf(testing_request: str, share: int = 0):
 	sample = _pick_sample_for_tr(testing_request)
 	if existing:
 		doc = frappe.get_doc("IC Test Request Form", existing)
+		# Backfill product name from TR when missing
+		if not doc.product_name and tr.product and doc.meta.has_field("product_name"):
+			doc.product_name = tr.product
+			doc.save(ignore_permissions=True)
 	else:
 		instructions = (
 			"<p>Please complete this <b>Test Request Form (TRF)</b> for your testing case.</p>"
@@ -83,6 +115,7 @@ def create_or_get_trf(testing_request: str, share: int = 0):
 			"<li>Description and other remarks</li>"
 			"</ul>"
 			"<p>The form carries the <b>same QR code as your product sample</b> for matching.</p>"
+			"<p><b>Fill once.</b> If something needs correction later, ask Instacertify to reopen the form for edit.</p>"
 		)
 		doc = frappe.get_doc(
 			{
@@ -98,6 +131,7 @@ def create_or_get_trf(testing_request: str, share: int = 0):
 				"customer_instructions": instructions,
 				"testing_requested": tr.test_name or "",
 				"applicable_standard": tr.applicable_standard or "",
+				"product_name": tr.product or "",
 				"sample_name": (sample or {}).get("sample_description") or tr.product or "",
 				"sample_quantity": str(tr.number_of_samples or "") or "",
 			}
@@ -122,6 +156,7 @@ def create_or_get_trf(testing_request: str, share: int = 0):
 		"status": doc.status,
 		"share_url": doc.share_url,
 		"testing_request": doc.testing_request,
+		"portal_editable": _is_portal_editable(doc),
 	}
 
 
@@ -137,7 +172,43 @@ def share_trf(name: str):
 	url = _portal_url(doc.share_token)
 	doc.share_url = url
 	doc.save(ignore_permissions=True)
-	return {"url": url, "token": doc.share_token, "name": doc.name, "status": doc.status}
+	return {
+		"url": url,
+		"token": doc.share_token,
+		"name": doc.name,
+		"status": doc.status,
+		"portal_editable": _is_portal_editable(doc),
+	}
+
+
+@frappe.whitelist()
+def reopen_trf_for_edit(name: str):
+	"""Staff: unlock a submitted TRF so the customer (or staff) can correct it."""
+	if not _is_staff_user():
+		frappe.throw(_("Only staff can reopen a TRF for edit"), frappe.PermissionError)
+	doc = frappe.get_doc("IC Test Request Form", name)
+	if doc.status == "Cancelled":
+		frappe.throw(_("Cancelled TRF cannot be reopened"))
+	if _is_portal_editable(doc):
+		return {
+			"ok": 1,
+			"name": doc.name,
+			"status": doc.status,
+			"share_url": doc.share_url,
+			"message": _("TRF is already open for edit"),
+		}
+	doc.status = "Reopened for Edit"
+	if not doc.share_token:
+		doc.share_token = secrets.token_urlsafe(24)
+		doc.share_url = _portal_url(doc.share_token)
+	doc.save(ignore_permissions=True)
+	return {
+		"ok": 1,
+		"name": doc.name,
+		"status": doc.status,
+		"share_url": doc.share_url,
+		"message": _("TRF reopened for edit. Customer can use the same link to correct details."),
+	}
 
 
 @frappe.whitelist(allow_guest=True)
@@ -156,6 +227,19 @@ def get_trf_by_token(token: str):
 	except Exception:
 		pass
 	can_pdf = doc.status in FILLED_STATUSES or bool(doc.pdf_file)
+	editable = _is_portal_editable(doc)
+	if editable:
+		notice = _(
+			"This is the Test Request Form (TRF). Fill sample and product details here. "
+			"You can submit only once. If a correction is needed later, ask Instacertify to reopen the form. "
+			"The QR matches your product sample. This link does not provide ERP access."
+		)
+	else:
+		notice = _(
+			"This TRF has already been submitted and is locked. "
+			"If something is wrong, contact Instacertify so they can reopen it for edit. "
+			"You can still download the PDF if available."
+		)
 	return {
 		"name": doc.name,
 		"title": doc.title,
@@ -167,6 +251,7 @@ def get_trf_by_token(token: str):
 		"qr_data_uri": qr_data_uri,
 		"sample_name": doc.sample_name,
 		"sample_quantity": doc.sample_quantity,
+		"product_name": doc.product_name,
 		"rated_input": doc.rated_input,
 		"model_no": doc.model_no,
 		"brand_name": doc.brand_name,
@@ -177,11 +262,9 @@ def get_trf_by_token(token: str):
 		"other_remarks": doc.other_remarks,
 		"pdf_file": doc.pdf_file if can_pdf else "",
 		"can_generate_pdf": can_pdf,
-		"read_only": doc.status in ("Completed", "Cancelled"),
-		"portal_notice": _(
-			"This is the Test Request Form (TRF). Fill sample and product details here. "
-			"The QR matches your product sample. This link does not provide ERP access."
-		),
+		"read_only": not editable,
+		"portal_editable": editable,
+		"portal_notice": notice,
 	}
 
 
@@ -190,6 +273,7 @@ def save_trf(
 	token: str,
 	sample_name: str | None = None,
 	sample_quantity: str | None = None,
+	product_name: str | None = None,
 	rated_input: str | None = None,
 	model_no: str | None = None,
 	brand_name: str | None = None,
@@ -204,8 +288,22 @@ def save_trf(
 	if not name:
 		frappe.throw(_("Invalid Test Request Form link"), frappe.PermissionError)
 	doc = frappe.get_doc("IC Test Request Form", name)
-	if doc.status not in OPEN_STATUSES and not (frappe.session.user != "Guest" and int(as_staff or 0)):
-		frappe.throw(_("This Test Request Form is closed"), frappe.PermissionError)
+
+	is_guest = frappe.session.user == "Guest"
+	staff_override = (not is_guest) and int(as_staff or 0)
+
+	if doc.status == "Cancelled":
+		frappe.throw(_("This Test Request Form is cancelled"), frappe.PermissionError)
+
+	# One-time portal fill: locked after submit unless staff reopened (or staff override)
+	if not _is_portal_editable(doc) and not staff_override:
+		frappe.throw(
+			_(
+				"This Test Request Form was already submitted and is locked. "
+				"Contact Instacertify if you need it reopened for edit."
+			),
+			frappe.PermissionError,
+		)
 
 	if brand_logo:
 		_assert_allowed_upload(brand_logo)
@@ -213,6 +311,7 @@ def save_trf(
 
 	doc.sample_name = sample_name if sample_name is not None else doc.sample_name
 	doc.sample_quantity = sample_quantity if sample_quantity is not None else doc.sample_quantity
+	doc.product_name = product_name if product_name is not None else doc.product_name
 	doc.rated_input = rated_input if rated_input is not None else doc.rated_input
 	doc.model_no = model_no if model_no is not None else doc.model_no
 	doc.brand_name = brand_name if brand_name is not None else doc.brand_name
@@ -223,13 +322,13 @@ def save_trf(
 	doc.description = description if description is not None else doc.description
 	doc.other_remarks = other_remarks if other_remarks is not None else doc.other_remarks
 
-	is_guest = frappe.session.user == "Guest"
 	if is_guest:
 		doc.status = "Submitted by Customer"
 		doc.submitted_on = now_datetime()
 		doc.filled_by = "Customer" if doc.filled_by in (None, "", "Customer") else "Both"
 	else:
-		if doc.status == "Draft":
+		# Staff portal/desk-style save via token: lock after fill unless already under review path
+		if doc.status in ("Draft", "Sent to Customer", "Reopened for Edit"):
 			doc.status = "Under Review"
 		doc.filled_by = "Staff" if doc.filled_by in (None, "", "Staff") else "Both"
 		if not doc.submitted_on and doc.sample_name:
@@ -242,16 +341,21 @@ def save_trf(
 		"status": doc.status,
 		"name": doc.name,
 		"can_generate_pdf": 1,
+		"read_only": not _is_portal_editable(doc),
+		"portal_editable": _is_portal_editable(doc),
 	}
 
 
 @frappe.whitelist()
 def save_trf_staff(name: str, **kwargs):
-	"""Staff save from desk (case handler can fill the same fields)."""
+	"""Staff save from desk (case handler can fill / correct the same fields anytime)."""
 	doc = frappe.get_doc("IC Test Request Form", name)
+	if doc.status == "Cancelled":
+		frappe.throw(_("Cancelled TRF cannot be edited"))
 	for key in (
 		"sample_name",
 		"sample_quantity",
+		"product_name",
 		"rated_input",
 		"model_no",
 		"brand_name",
@@ -265,7 +369,7 @@ def save_trf_staff(name: str, **kwargs):
 			setattr(doc, key, kwargs[key])
 	if doc.brand_logo:
 		_assert_allowed_upload(doc.brand_logo)
-	if doc.status == "Draft":
+	if doc.status in ("Draft", "Sent to Customer", "Reopened for Edit"):
 		doc.status = "Under Review"
 	doc.filled_by = "Staff" if doc.filled_by in (None, "", "Staff") else "Both"
 	if not doc.submitted_on and doc.sample_name:
@@ -359,7 +463,13 @@ def generate_trf_pdf(name: str | None = None, token: str | None = None):
 	)
 	file_doc.insert(ignore_permissions=True)
 	doc.pdf_file = file_doc.file_url
-	if doc.status in ("Submitted by Customer", "Under Review", "Sent to Customer", "Draft"):
+	if doc.status in (
+		"Submitted by Customer",
+		"Under Review",
+		"Sent to Customer",
+		"Draft",
+		"Reopened for Edit",
+	):
 		doc.status = "PDF Generated"
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()

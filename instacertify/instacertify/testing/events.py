@@ -560,25 +560,29 @@ def list_testing_samples_board(
 	if status:
 		filters["status"] = status
 
+	tr_fields = [
+		"name",
+		"title",
+		"status",
+		"customer",
+		"project",
+		"quotation",
+		"product",
+		"test_name",
+		"applicable_standard",
+		"laboratory",
+		"number_of_samples",
+		"library_buying_price",
+		"suggested_selling_price",
+		"modified",
+	]
+	if frappe.get_meta("IC Testing Request").has_field("price_currency"):
+		tr_fields.append("price_currency")
+
 	trs = frappe.get_all(
 		"IC Testing Request",
 		filters=filters,
-		fields=[
-			"name",
-			"title",
-			"status",
-			"customer",
-			"project",
-			"quotation",
-			"product",
-			"test_name",
-			"applicable_standard",
-			"laboratory",
-			"number_of_samples",
-			"library_buying_price",
-			"suggested_selling_price",
-			"modified",
-		],
+		fields=tr_fields,
 		order_by="modified desc",
 		limit_page_length=cint(limit) or 40,
 	)
@@ -632,9 +636,45 @@ def list_testing_samples_board(
 				"trf_share_url": trf.get("share_url") or "",
 				"trf_pdf_file": trf.get("pdf_file") or "",
 				"trf_status": trf.get("status") or "",
+				"price_currency": tr.get("price_currency") or "INR",
 			}
 		)
 	return out
+
+
+@frappe.whitelist()
+def update_testing_request_prices(
+	testing_request: str,
+	library_buying_price: float | None = None,
+	suggested_selling_price: float | None = None,
+	price_currency: str | None = None,
+):
+	"""Case handler: edit buying/selling library prices and currency on a Testing Request."""
+	from frappe.utils import flt
+
+	if not testing_request or not frappe.db.exists("IC Testing Request", testing_request):
+		frappe.throw(_("Testing Request not found"))
+	doc = frappe.get_doc("IC Testing Request", testing_request)
+	if library_buying_price is not None:
+		doc.library_buying_price = flt(library_buying_price)
+	if suggested_selling_price is not None:
+		doc.suggested_selling_price = flt(suggested_selling_price)
+	if price_currency:
+		if not frappe.db.exists("Currency", price_currency):
+			frappe.throw(_("Currency {0} not found").format(price_currency))
+		doc.price_currency = price_currency
+	elif not doc.price_currency:
+		doc.price_currency = "INR"
+	doc.flags.ignore_permissions = True
+	# Allow updating read-only currency fields via API for case handlers
+	doc.save(ignore_permissions=True)
+	return {
+		"ok": 1,
+		"name": doc.name,
+		"library_buying_price": doc.library_buying_price,
+		"suggested_selling_price": doc.suggested_selling_price,
+		"price_currency": doc.price_currency or "INR",
+	}
 
 
 @frappe.whitelist()

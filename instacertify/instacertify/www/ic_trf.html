@@ -54,8 +54,9 @@
         <div class="ic-section">
           <h3>Sample &amp; product</h3>
           <div class="ic-form-grid">
-            <div><label>Sample Name (description of sample)</label><input id="sample_name" type="text"/></div>
+			<div><label>Sample Name (description of sample)</label><input id="sample_name" type="text"/></div>
             <div><label>Sample Quantity</label><input id="sample_quantity" type="text" placeholder="e.g. 2 pcs"/></div>
+            <div><label>Product Name</label><input id="product_name" type="text"/></div>
             <div><label>Brand Name</label><input id="brand_name" type="text"/></div>
             <div><label>Model No</label><input id="model_no" type="text"/></div>
           </div>
@@ -114,6 +115,7 @@
         `<p><b>Status:</b> ${d.status || "—"} · <b>TR:</b> ${d.testing_request || "—"}</p>`;
       set("sample_name", d.sample_name);
       set("sample_quantity", d.sample_quantity);
+      set("product_name", d.product_name);
       set("rated_input", d.rated_input);
       set("model_no", d.model_no);
       set("brand_name", d.brand_name);
@@ -137,10 +139,26 @@
         pdfBtn.style.display = "inline-block";
         if (d.pdf_file) pdfBtn.textContent = "Download TRF PDF";
       }
+      const saveBtn = document.getElementById("btn-save");
+      const fieldIds = ["sample_name","sample_quantity","product_name","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"];
       if (d.read_only) {
-        document.getElementById("btn-save").style.display = "none";
-        ["sample_name","sample_quantity","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"]
-          .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+        saveBtn.style.display = "none";
+        fieldIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+        const lock = document.createElement("div");
+        lock.className = "ic-msg ok";
+        lock.style.display = "block";
+        lock.style.marginTop = "12px";
+        lock.textContent = "Submitted — locked for further edits. Contact Instacertify if a correction is needed.";
+        if (!document.getElementById("ic-trf-locked-banner")) {
+          lock.id = "ic-trf-locked-banner";
+          document.getElementById("form").insertBefore(lock, document.getElementById("form").firstChild);
+        }
+      } else {
+        saveBtn.style.display = "inline-block";
+        saveBtn.textContent = (d.status === "Reopened for Edit") ? "Submit corrected TRF" : "Submit TRF";
+        fieldIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = false; });
+        const old = document.getElementById("ic-trf-locked-banner");
+        if (old) old.remove();
       }
     }
 
@@ -189,6 +207,7 @@
           token,
           sample_name: val("sample_name"),
           sample_quantity: val("sample_quantity"),
+          product_name: val("product_name"),
           rated_input: val("rated_input"),
           model_no: val("model_no"),
           brand_name: val("brand_name"),
@@ -198,7 +217,7 @@
           description: val("description"),
           other_remarks: val("other_remarks"),
         });
-        showMsg("TRF submitted. You can generate the PDF now.", true);
+        showMsg("TRF submitted. Form is now locked. You can download the PDF. Contact Instacertify if a correction is needed.", true);
         document.getElementById("btn-pdf").style.display = "inline-block";
         if (m && m.status) {
           const d = await api("instacertify.trf.api.get_trf_by_token", { token });

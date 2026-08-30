@@ -3450,6 +3450,57 @@ frappe.ui.form.on("IC Testing Request", {
 			}, __("Billing"));
 		}
 		if (!frm.is_new()) {
+			frm.add_custom_button(__("Edit Price"), () => {
+				const d = new frappe.ui.Dialog({
+					title: __("Edit Buying / Selling Price"),
+					fields: [
+						{
+							fieldname: "library_buying_price",
+							fieldtype: "Currency",
+							label: __("Buying Price"),
+							default: frm.doc.library_buying_price || 0,
+							reqd: 1,
+						},
+						{
+							fieldname: "suggested_selling_price",
+							fieldtype: "Currency",
+							label: __("Selling Price"),
+							default: frm.doc.suggested_selling_price || 0,
+							reqd: 1,
+						},
+						{
+							fieldname: "price_currency",
+							fieldtype: "Link",
+							options: "Currency",
+							label: __("Currency"),
+							default: frm.doc.price_currency || "INR",
+							reqd: 1,
+						},
+					],
+					primary_action_label: __("Save Prices"),
+					primary_action(values) {
+						frappe.call({
+							method: "instacertify.testing.events.update_testing_request_prices",
+							args: {
+								testing_request: frm.doc.name,
+								library_buying_price: values.library_buying_price,
+								suggested_selling_price: values.suggested_selling_price,
+								price_currency: values.price_currency,
+							},
+							freeze: true,
+							callback() {
+								d.hide();
+								frm.reload_doc();
+								frappe.show_alert({
+									message: __("Prices updated"),
+									indicator: "green",
+								});
+							},
+						});
+					},
+				});
+				d.show();
+			}, __("Actions"));
 			frm.add_custom_button(__("Create / Share TRF"), () => {
 				frappe.call({
 					method: "instacertify.trf.api.create_or_get_trf",
@@ -3482,6 +3533,40 @@ frappe.ui.form.on("IC Testing Request", {
 					freeze: true,
 					callback(r) {
 						frappe.set_route("Form", "IC Test Request Form", r.message.name);
+					},
+				});
+			}, __("TRF"));
+			frm.add_custom_button(__("Edit TRF"), () => {
+				frappe.call({
+					method: "instacertify.trf.api.create_or_get_trf",
+					args: { testing_request: frm.doc.name, share: 0 },
+					freeze: true,
+					callback(r) {
+						const name = (r.message || {}).name;
+						if (!name) return;
+						const locked = [
+							"Submitted by Customer",
+							"Under Review",
+							"PDF Generated",
+							"Completed",
+						].includes((r.message || {}).status || "");
+						const open = () => frappe.set_route("Form", "IC Test Request Form", name);
+						if (locked) {
+							frappe.call({
+								method: "instacertify.trf.api.reopen_trf_for_edit",
+								args: { name },
+								freeze: true,
+								callback() {
+									frappe.show_alert({
+										message: __("TRF reopened for edit"),
+										indicator: "green",
+									});
+									open();
+								},
+							});
+						} else {
+							open();
+						}
 					},
 				});
 			}, __("TRF"));
@@ -5168,6 +5253,44 @@ instacertify.render_sample_sticker_preview = function (frm, fileUrl) {
 	`);
 };
 
+instacertify.download_png = function (src, filename) {
+	if (!src) {
+		frappe.msgprint({
+			title: __("Download PNG"),
+			message: __("No PNG available yet. Regenerate the sample sticker first."),
+			indicator: "orange",
+		});
+		return;
+	}
+	const fname = filename || "sample-qr.png";
+	const trigger = (href) => {
+		const a = document.createElement("a");
+		a.href = href;
+		a.download = fname;
+		a.rel = "noopener";
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+	};
+	if (String(src).startsWith("data:")) {
+		trigger(src);
+		return;
+	}
+	fetch(src, { credentials: "same-origin" })
+		.then((r) => {
+			if (!r.ok) throw new Error("fetch failed");
+			return r.blob();
+		})
+		.then((blob) => {
+			const url = URL.createObjectURL(blob);
+			trigger(url);
+			setTimeout(() => URL.revokeObjectURL(url), 2000);
+		})
+		.catch(() => {
+			window.open(src, "_blank");
+		});
+};
+
 instacertify.print_sample_qr_labels = function (labels) {
 	if (!labels || !labels.length) return;
 	const sheets = labels
@@ -5279,15 +5402,11 @@ instacertify.show_testing_request_sample_qr_dialog = function (payload) {
 					<button type="button" class="btn btn-xs btn-primary ic-ts-print-one" data-sample="${frappe.utils.escape_html(
 						lab.name
 					)}">${__("Print QR")}</button>
-					${
-						sticker
-							? `<a class="btn btn-xs btn-default" href="${frappe.utils.escape_html(
-									sticker
-							  )}" target="_blank" download="${frappe.utils.escape_html(trk)}.png">${__(
-									"Download PNG"
-							  )}</a>`
-							: ""
-					}
+					<button type="button" class="btn btn-xs btn-default ic-ts-dl-one" data-sample="${frappe.utils.escape_html(
+						lab.name
+					)}" data-src="${frappe.utils.escape_html(
+						lab.sticker_data_uri || lab.sticker_url || lab.qr_data_uri || lab.qr_code || ""
+					)}" data-fname="${frappe.utils.escape_html(trk)}.png">${__("Download PNG")}</button>
 					<a class="btn btn-xs btn-default" href="/app/ic-sample-tracking/${encodeURIComponent(lab.name)}">${__(
 						"Open"
 					)}</a>
@@ -5328,6 +5447,19 @@ instacertify.show_testing_request_sample_qr_dialog = function (payload) {
 		const name = $(this).data("sample");
 		const lab = labels.find((x) => x.name === name);
 		if (lab) instacertify.print_sample_qr_labels([lab]);
+	});
+	d.$body.find(".ic-ts-dl-one").on("click", function () {
+		const name = $(this).data("sample");
+		const lab = labels.find((x) => x.name === name) || {};
+		const src =
+			lab.sticker_data_uri ||
+			lab.sticker_url ||
+			lab.qr_data_uri ||
+			lab.qr_code ||
+			$(this).attr("data-src") ||
+			"";
+		const fname = (lab.tracking_number || lab.name || "sample-qr") + ".png";
+		instacertify.download_png(src, fname);
 	});
 	d.show();
 };
@@ -5381,7 +5513,44 @@ frappe.ui.form.on("IC Sample Tracking", {
 		if (!frm.is_new()) {
 			instacertify.render_sample_sticker_preview(frm);
 			frm.add_custom_button(__("Print 50×25 mm Sticker"), () => {
-				frm.print_doc("Instacertify Sample Sticker 50x25mm");
+				const print_one = () => {
+					frappe.call({
+						method: "instacertify.testing.events.download_sample_sticker_50x25",
+						args: { sample: frm.doc.name },
+						freeze: true,
+						callback(rr) {
+							const m = rr.message || {};
+							instacertify.print_sample_qr_labels([
+								{
+									name: frm.doc.name,
+									tracking_number: frm.doc.tracking_number,
+									sticker_url: m.file_url,
+									sticker_data_uri: "",
+									qr_code: frm.doc.qr_code,
+								},
+							]);
+						},
+					});
+				};
+				if (!frm.doc.testing_request) {
+					print_one();
+					return;
+				}
+				frappe.call({
+					method: "instacertify.testing.events.get_testing_request_sample_labels",
+					args: { testing_request: frm.doc.testing_request },
+					freeze: true,
+					callback(r) {
+						const labels = ((r.message || {}).labels || []).filter(
+							(x) => x.name === frm.doc.name
+						);
+						if (labels.length) {
+							instacertify.print_sample_qr_labels(labels);
+						} else {
+							print_one();
+						}
+					},
+				});
 			}, __("Label"));
 			frm.add_custom_button(__("Download 50×25 mm PNG"), () => {
 				frappe.call({
@@ -5392,7 +5561,10 @@ frappe.ui.form.on("IC Sample Tracking", {
 					callback(r) {
 						const m = r.message || {};
 						if (m.file_url) {
-							window.open(m.file_url, "_blank");
+							instacertify.download_png(
+								m.file_url,
+								(m.tracking_number || frm.doc.tracking_number || frm.doc.name) + ".png"
+							);
 							frappe.show_alert({
 								message: __("Sticker ready: {0}", [m.tracking_number || ""]),
 								indicator: "green",

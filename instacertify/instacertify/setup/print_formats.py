@@ -1328,10 +1328,19 @@ TRF_HTML = """
     <div style="text-align:right;font-size:10px;line-height:1.4;">{{ legal }}</div>
   </div>
   <div class="ic-title">Test Request Form (TRF)</div>
-  <div class="ic-sub">Customer / case-handler filled sheet · PDF for records</div>
+  <div class="ic-sub">Filled sheet for lab / records · match sample QR on intake</div>
   <div class="ic-meta">
-    <b>TRF:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Testing Request:</b> {{ doc.testing_request }} &nbsp;|&nbsp; <b>Status:</b> {{ doc.status }}<br/>
-    <b>Customer:</b> {{ doc.customer }} &nbsp;|&nbsp; <b>Project:</b> {{ doc.project or '—' }} &nbsp;|&nbsp; <b>Filled by:</b> {{ doc.filled_by or '—' }}
+    <b>TRF:</b> {{ doc.name }}
+    {% if doc.testing_request %}
+      &nbsp;|&nbsp; <b>Testing Request:</b>
+      <a href="{{ frappe.utils.get_url('/app/ic-testing-request/' + doc.testing_request) }}">{{ doc.testing_request }}</a>
+    {% endif %}
+    {% if doc.share_url %}
+      &nbsp;|&nbsp; <b>Form link:</b> <a href="{{ doc.share_url }}">{{ doc.share_url }}</a>
+    {% endif %}
+    {% if doc.project %}
+      <br/><b>Project:</b> {{ doc.project }}
+    {% endif %}
   </div>
   <div class="ic-box">
     <h3>Sample QR (same as product sample)</h3>
@@ -1357,6 +1366,7 @@ TRF_HTML = """
   <div class="ic-box">
     <h3>Product / Testing</h3>
     <table class="ic-table">
+      <tr><td>Product Name</td><td>{{ doc.product_name or '' }}</td></tr>
       <tr><td>Rated Input / Specification</td><td>{{ doc.rated_input or '' }}</td></tr>
       <tr><td>Testing Requested</td><td>{{ doc.testing_requested or '' }}</td></tr>
       <tr><td>Standard Applicable</td><td>{{ doc.applicable_standard or '' }}</td></tr>
