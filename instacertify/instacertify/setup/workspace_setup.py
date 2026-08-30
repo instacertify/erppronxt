@@ -15,6 +15,10 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
+	# Frappe 16 left nav reads Workspace Sidebar — not Workspace.links.
+	# GST / Gameplan only patch an existing sidebar; rebuild the full nav here.
+	_ensure_instacertify_home_sidebar()
+	_ensure_hrms_expenses_sidebar()
 	_ensure_unified_testing_samples_sidebar()
 	from instacertify.setup.navigation_icons import ensure_navigation_icons
 
@@ -39,6 +43,218 @@ def _protect_workspace_from_orphan_cleanup(name: str):
 		{"module": None, "app": None},
 		update_modified=False,
 	)
+
+
+def _sidebar_link(
+	label: str,
+	*,
+	link_type: str | None = "DocType",
+	link_to: str | None = None,
+	url: str | None = None,
+	icon: str = "file",
+	child: int = 0,
+	section: bool = False,
+) -> dict:
+	if section:
+		return {
+			"type": "Section Break",
+			"label": label,
+			"icon": icon,
+			"child": 0,
+			"collapsible": 1,
+			"indent": 0,
+			"keep_closed": 0,
+			"show_arrow": 0,
+		}
+	row = {
+		"type": "Link",
+		"label": label,
+		"link_type": link_type,
+		"link_to": link_to,
+		"url": url,
+		"icon": icon,
+		"child": child,
+		"collapsible": 1,
+		"indent": 0,
+		"keep_closed": 0,
+		"show_arrow": 0,
+	}
+	return row
+
+
+def _link_target_exists(link_type: str | None, link_to: str | None, url: str | None = None) -> bool:
+	if url or (link_type or "").upper() == "URL":
+		return True
+	if not link_to:
+		return False
+	lt = link_type or "DocType"
+	if lt == "Workspace":
+		return bool(frappe.db.exists("Workspace", link_to))
+	if lt == "Page":
+		return bool(frappe.db.exists("Page", link_to))
+	if lt == "Report":
+		return bool(frappe.db.exists("Report", link_to))
+	if lt == "Dashboard":
+		return bool(frappe.db.exists("Dashboard", link_to))
+	return bool(frappe.db.exists("DocType", link_to))
+
+
+def _save_workspace_sidebar(title: str, header_icon: str, items: list[dict]):
+	"""Create or replace a Workspace Sidebar (Frappe 16 desk left nav)."""
+	safe_items = []
+	for row in items:
+		if row.get("type") == "Section Break":
+			safe_items.append(row)
+			continue
+		if not _link_target_exists(row.get("link_type"), row.get("link_to"), row.get("url")):
+			continue
+		safe_items.append(row)
+
+	if frappe.db.exists("Workspace Sidebar", title):
+		sb = frappe.get_doc("Workspace Sidebar", title)
+		sb.header_icon = header_icon or sb.header_icon
+		sb.set("items", [])
+		for row in safe_items:
+			sb.append("items", row)
+	else:
+		sb = frappe.get_doc(
+			{
+				"doctype": "Workspace Sidebar",
+				"title": title,
+				"header_icon": header_icon,
+				"items": safe_items,
+			}
+		)
+
+	sb.flags.ignore_permissions = True
+	sb.flags.ignore_links = True
+	sb.flags.ignore_validate = True
+	try:
+		if sb.is_new():
+			sb.insert(ignore_permissions=True)
+		else:
+			sb.save(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), f"workspace sidebar {title}")
+
+
+def _ensure_instacertify_home_sidebar():
+	"""Build the Instacertify Home left sidebar (Quotation, Customer, Testing, …).
+
+	Workspace.links alone do not drive Frappe 16 navigation — Workspace Sidebar does.
+	After ERPNext setup / migrate, GST may leave only a GST-only sidebar; rebuild here.
+	"""
+	if not frappe.db.exists("Workspace", "Instacertify Home"):
+		return
+
+	gameplan = False
+	try:
+		gameplan = "gameplan" in frappe.get_installed_apps()
+	except Exception:
+		pass
+
+	items = [
+		_sidebar_link(
+			"Home",
+			link_type="Workspace",
+			link_to="Instacertify Home",
+			icon="layout-dashboard",
+		),
+	]
+	if gameplan:
+		items.append(
+			_sidebar_link("Gameplan", link_type="URL", url="/g", icon="message-circle")
+		)
+
+	items.extend(
+		[
+			_sidebar_link("Leads", link_to="Lead", icon="users"),
+			_sidebar_link("Customers", link_to="Customer", icon="building"),
+			_sidebar_link("Quotations", link_to="Quotation", icon="file-text"),
+			_sidebar_link("Projects", link_to="Project", icon="briefcase"),
+			_sidebar_link(
+				"Testing & Samples",
+				link_type="Page",
+				link_to="testing-samples",
+				icon="flask-conical",
+			),
+			_sidebar_link("Laboratories", link_to="IC Laboratory", icon="microscope"),
+			_sidebar_link(
+				"Document Requests",
+				link_to="IC Document Request",
+				icon="clipboard-list",
+			),
+			_sidebar_link("Helpdesk", link_to="Helpdesk Ticket", icon="headset"),
+			_sidebar_link("Team Calendar", link_to="Event", icon="calendar"),
+			_sidebar_link(
+				"Lead Reminders",
+				link_type="Page",
+				link_to="lead-reminders",
+				icon="phone",
+			),
+			_sidebar_link("GST & Invoicing", icon="landmark", section=True),
+			_sidebar_link("Sales Invoice", link_to="Sales Invoice", icon="receipt", child=1),
+			_sidebar_link(
+				"Purchase Invoice",
+				link_to="Purchase Invoice",
+				icon="shopping-cart",
+				child=1,
+			),
+			_sidebar_link("Payment Entry", link_to="Payment Entry", icon="banknote", child=1),
+			_sidebar_link("GSTR-1", link_to="GSTR-1", icon="badge-indian-rupee", child=1),
+			_sidebar_link("GSTR-3B", link_to="GSTR 3B Report", icon="calculator", child=1),
+			_sidebar_link(
+				"GST Return Log",
+				link_to="GST Return Log",
+				icon="file-spreadsheet",
+				child=1,
+			),
+			_sidebar_link("GST Settings", link_to="GST Settings", icon="settings", child=1),
+			_sidebar_link("File Expense", link_to="IC Expense Claim", icon="wallet"),
+			_sidebar_link("HRMS Lifecycle", link_to="Employee", icon="id-card"),
+		]
+	)
+	_save_workspace_sidebar("Instacertify Home", "layout-dashboard", items)
+
+
+def _ensure_hrms_expenses_sidebar():
+	"""Left nav for the HRMS & Expenses workspace."""
+	if not frappe.db.exists("Workspace", "HRMS & Expenses"):
+		return
+	items = [
+		_sidebar_link(
+			"Home",
+			link_type="Workspace",
+			link_to="HRMS & Expenses",
+			icon="id-card",
+		),
+		_sidebar_link("Job Applicant", link_to="Job Applicant", icon="user-plus"),
+		_sidebar_link("Job Offer", link_to="Job Offer", icon="file-check"),
+		_sidebar_link("Employee", link_to="Employee", icon="square-user-round"),
+		_sidebar_link(
+			"Employee Onboarding",
+			link_to="Employee Onboarding",
+			icon="user-star",
+		),
+		_sidebar_link("Joining Letters", link_to="IC Joining Letter", icon="mail"),
+		_sidebar_link("Attendance", link_to="Attendance", icon="calendar-check"),
+		_sidebar_link("Leave Application", link_to="Leave Application", icon="plane"),
+		_sidebar_link("Salary Slip", link_to="Salary Slip", icon="banknote"),
+		_sidebar_link("Payroll Entry", link_to="Payroll Entry", icon="circle-dollar-sign"),
+		_sidebar_link("File Expense", link_to="IC Expense Claim", icon="wallet"),
+		_sidebar_link("Expense Claim", link_to="Expense Claim", icon="wallet"),
+		_sidebar_link(
+			"Employee Separation",
+			link_to="Employee Separation",
+			icon="log-out",
+		),
+		_sidebar_link(
+			"Full and Final",
+			link_to="Full and Final Statement",
+			icon="scale",
+		),
+	]
+	_save_workspace_sidebar("HRMS & Expenses", "id-card", items)
 
 
 def _ensure_unified_testing_samples_sidebar():
@@ -1527,6 +1743,6 @@ def ensure_hrms_expenses_workspace():
 	frappe.db.set_value(
 		"Workspace",
 		name,
-		{"public": 1, "is_hidden": 0, "sequence_id": sequence_id},
+		{"public": 1, "is_hidden": 0, "sequence_id": sequence_id, "module": None, "app": None},
 		update_modified=False,
 	)
