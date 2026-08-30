@@ -295,9 +295,9 @@ def get_lead_contact_prompts(limit=12, mine_only=0):
 
 
 @frappe.whitelist()
-def get_lead_reminders_page(limit=60, filter=None):
-	"""Dedicated Lead Reminders page payload."""
-	limit = max(1, min(int(limit or 60), 100))
+def get_lead_reminders_page(limit=200, filter=None):
+	"""Dedicated Lead Reminders page payload (supports Show more paging in UI)."""
+	limit = max(1, min(int(limit or 200), 500))
 	data = get_lead_contact_prompts(limit=limit)
 	rows = data.get("prompts") or []
 	filt = (filter or "all").lower()
@@ -313,6 +313,7 @@ def get_lead_reminders_page(limit=60, filter=None):
 		"upcoming_count": data.get("upcoming_count") or 0,
 		"total": len(rows),
 		"filter": filt,
+		"page_size": 20,
 		"hub_title": "Lead Reminders",
 		"hub_sub": "Who to call · phone · owner · remarks",
 		"me": frappe.session.user,

@@ -50,6 +50,10 @@ def run():
 		bool(frappe.db.exists("Workspace", "Instacertify Home")),
 	)
 	check(
+		"Desktop Icon Instacertify Home",
+		bool(frappe.db.exists("Desktop Icon", "Instacertify Home")),
+	)
+	check(
 		"Workspace Sidebar Instacertify Home",
 		bool(frappe.db.exists("Workspace Sidebar", "Instacertify Home")),
 	)
