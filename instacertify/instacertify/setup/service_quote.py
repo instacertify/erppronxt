@@ -22,7 +22,7 @@ def ensure_service_quote_rules():
 	# ERPNext Item table is optional for draft service quotes
 	_upsert_property_setter("Quotation", "items", "reqd", "0", "Check")
 	_upsert_property_setter("Quotation Item", "item_code", "reqd", "0", "Check")
-	# Shipping / GST / payment plan — not required to create a service quote
+	# Shipping / GST / contact / payment — not required to create a service quote
 	for field in (
 		"shipping_rule",
 		"taxes_and_charges",
@@ -36,6 +36,14 @@ def ensure_service_quote_rules():
 		"place_of_supply",
 		"gst_category",
 		"billing_address_gstin",
+		"contact_person",
+		"contact_display",
+		"contact_email",
+		"contact_mobile",
+		"customer_name",
+		"address_display",
+		"shipping_address",
+		"company_contact_person",
 		"tc_name",
 		"terms",
 	):
