@@ -192,7 +192,7 @@
    "fieldname": "section_tests",
    "fieldtype": "Section Break",
    "label": "Scope of Accreditation & Pricing Library",
-   "description": "Add or edit each accredited test with buying & selling prices. All columns are editable. These drive Testing Request / Quotation lab pickers."
+   "description": "Add or edit each accredited test with buying & selling prices, or use Bulk Upload Scope (Excel/CSV) to import many rows at once. These drive Testing Request / Quotation lab pickers."
   },
   {
    "doctype": "DocField",

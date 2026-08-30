@@ -207,26 +207,29 @@
    "doctype": "DocField",
    "fieldname": "suggested_selling_price",
    "fieldtype": "Currency",
-   "label": "Library Selling Price",
-   "read_only": 1,
-   "options": "price_currency"
+   "label": "Selling Price",
+   "read_only": 0,
+   "options": "price_currency",
+   "description": "Case handler can edit — used for customer sell / invoice records"
   },
   {
    "doctype": "DocField",
    "fieldname": "library_buying_price",
    "fieldtype": "Currency",
-   "label": "Library Buying Price",
-   "read_only": 1,
-   "options": "price_currency"
+   "label": "Buying Price",
+   "read_only": 0,
+   "options": "price_currency",
+   "description": "Case handler can edit — used for lab purchase invoices"
   },
   {
    "doctype": "DocField",
    "fieldname": "price_currency",
    "fieldtype": "Link",
    "options": "Currency",
-   "label": "Price Currency",
+   "label": "Currency",
    "default": "INR",
-   "description": "Currency for buying and selling library prices"
+   "description": "Currency for buying and selling prices",
+   "reqd": 0
   },
   {
    "doctype": "DocField",

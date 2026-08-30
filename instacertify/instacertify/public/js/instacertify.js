@@ -29,6 +29,95 @@ instacertify.open_file_manager = function () {
 	frappe.set_route("List", "File");
 };
 
+/**
+ * Case-handler Edit Price dialog — buying, selling, currency.
+ * Available from Testing Request, Manage TR, Sample, TRF, etc.
+ */
+instacertify.edit_testing_request_prices = function (testing_request, opts) {
+	opts = opts || {};
+	if (!testing_request) {
+		frappe.msgprint({
+			title: __("Edit Price"),
+			message: __("No Testing Request selected."),
+			indicator: "orange",
+		});
+		return;
+	}
+
+	const open_dialog = (defaults) => {
+		const d = new frappe.ui.Dialog({
+			title: __("Edit Price — {0}", [testing_request]),
+			fields: [
+				{
+					fieldname: "library_buying_price",
+					fieldtype: "Currency",
+					label: __("Buying Price"),
+					default: flt(defaults.library_buying_price) || 0,
+					reqd: 1,
+					description: __("What we buy the lab service for (Purchase Invoice)"),
+				},
+				{
+					fieldname: "suggested_selling_price",
+					fieldtype: "Currency",
+					label: __("Selling Price"),
+					default: flt(defaults.suggested_selling_price) || 0,
+					reqd: 1,
+					description: __("What we sell / bill the customer"),
+				},
+				{
+					fieldname: "price_currency",
+					fieldtype: "Link",
+					options: "Currency",
+					label: __("Currency"),
+					default: defaults.price_currency || "INR",
+					reqd: 1,
+				},
+			],
+			primary_action_label: __("Save Prices"),
+			primary_action(values) {
+				frappe.call({
+					method: "instacertify.testing.events.update_testing_request_prices",
+					args: {
+						testing_request,
+						library_buying_price: values.library_buying_price,
+						suggested_selling_price: values.suggested_selling_price,
+						price_currency: values.price_currency,
+					},
+					freeze: true,
+					callback(r) {
+						d.hide();
+						frappe.show_alert({
+							message: __("Prices updated ({0})", [values.price_currency || "INR"]),
+							indicator: "green",
+						});
+						if (typeof opts.on_save === "function") {
+							opts.on_save(r.message || values);
+						}
+					},
+				});
+			},
+		});
+		d.show();
+	};
+
+	if (
+		opts.library_buying_price != null ||
+		opts.suggested_selling_price != null ||
+		opts.price_currency
+	) {
+		open_dialog(opts);
+		return;
+	}
+
+	frappe.db
+		.get_value("IC Testing Request", testing_request, [
+			"library_buying_price",
+			"suggested_selling_price",
+			"price_currency",
+		])
+		.then((r) => open_dialog((r && r.message) || {}));
+};
+
 /** Append a File Manager shortcut under Attach fields in dialogs. */
 instacertify.add_file_manager_hint = function (dialog, fieldname) {
 	try {
@@ -588,57 +677,161 @@ instacertify.open_laboratory_upload = function (opts) {
 	instacertify.add_file_manager_hint(d, "scope_file");
 };
 
+/** Inline bar above Scope of Accreditation table — bulk Excel/CSV upload. */
+instacertify.render_lab_scope_bulk_bar = function (frm) {
+	if (!frm || !frm.fields_dict || !frm.fields_dict.test_scopes) return;
+	const $wrap = frm.fields_dict.test_scopes.$wrapper;
+	$wrap.find(".ic-lab-bulk-bar").remove();
+	const $bar = $(`
+		<div class="ic-lab-bulk-bar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;padding:10px 12px;border:1.5px solid #8eafc0;border-radius:10px;background:#f5fafc;">
+			<div style="flex:1;min-width:200px">
+				<div style="font-weight:650;color:#065175;font-size:13px">${__("Bulk upload scope")}</div>
+				<div class="text-muted" style="font-size:12px;line-height:1.35">${__(
+					"Add many tests at once from an Excel sheet or CSV file (prices included)."
+				)}</div>
+			</div>
+			<button type="button" class="btn btn-sm btn-default ic-lab-dl-xlsx">${__("Excel Template")}</button>
+			<button type="button" class="btn btn-sm btn-default ic-lab-dl-csv">${__("CSV Template")}</button>
+			<button type="button" class="btn btn-sm btn-primary ic-lab-bulk-upload">${__("Upload Excel / CSV")}</button>
+		</div>
+	`);
+	$wrap.prepend($bar);
+	$bar.find(".ic-lab-bulk-upload").on("click", () => {
+		if (frm.is_new()) {
+			frappe.msgprint(__("Save the Laboratory first, then bulk-upload scope rows."));
+			return;
+		}
+		instacertify.open_lab_scope_bulk_upload({
+			laboratory: frm.doc.name,
+			laboratory_name: frm.doc.laboratory_name,
+			on_done() {
+				frm.reload_doc();
+			},
+		});
+	});
+	const dl = (fmt) => {
+		frappe.call({
+			method: "instacertify.setup.library_upload.download_lab_scope_template",
+			args: { fmt },
+			callback(r) {
+				const m = r.message || {};
+				if (m.file_url) window.open(m.file_url, "_blank");
+			},
+		});
+	};
+	$bar.find(".ic-lab-dl-xlsx").on("click", () => dl("xlsx"));
+	$bar.find(".ic-lab-dl-csv").on("click", () => dl("csv"));
+};
+
 instacertify.open_lab_scope_csv_import = function (frm) {
+	instacertify.open_lab_scope_bulk_upload({
+		laboratory: frm && frm.doc ? frm.doc.name : "",
+		laboratory_name: frm && frm.doc ? frm.doc.laboratory_name : "",
+		on_done() {
+			if (frm && frm.reload_doc) frm.reload_doc();
+		},
+	});
+};
+
+/** Bulk upload lab scope rows from Excel/CSV — one lab or multi-lab via laboratory_name column. */
+instacertify.open_lab_scope_bulk_upload = function (opts) {
+	opts = opts || {};
+	const fixed_lab = (opts.laboratory || "").trim();
 	const d = new frappe.ui.Dialog({
-		title: __("Import Laboratory Scope (CSV / Excel)"),
+		title: __("Bulk Upload Lab Scope (Excel / CSV)"),
 		fields: [
 			{
 				fieldname: "help",
 				fieldtype: "HTML",
-				options: `<p class="text-muted">${__(
-					"Headers: test_name, applicable_standard, category, selling_price, purchase_price, currency, is_active. Matching test + standard updates the row."
-				)}</p>`,
+				options: `<div class="ic-lab-bulk-help" style="margin-bottom:8px">
+					<p style="margin:0 0 6px">${__(
+						"Upload many accredited tests at once. Download the Excel or CSV template, fill rows, then import."
+					)}</p>
+					<p class="text-muted" style="margin:0;font-size:12px">${__(
+						"Columns: laboratory_name (optional if one lab selected), test_name, applicable_standard, category, selling_price, purchase_price, currency, is_active. Matching test + standard updates the row."
+					)}</p>
+				</div>`,
+			},
+			{
+				fieldname: "laboratory",
+				fieldtype: "Link",
+				label: __("Laboratory (optional)"),
+				options: "IC Laboratory",
+				default: fixed_lab || "",
+				description: fixed_lab
+					? __("All rows will import into this laboratory.")
+					: __(
+							"Leave empty to split rows by laboratory_name column (multi-lab bulk). Or pick one lab to force all rows into it."
+					  ),
+				read_only: fixed_lab ? 1 : 0,
+			},
+			{
+				fieldname: "create_missing_labs",
+				fieldtype: "Check",
+				label: __("Create missing laboratories from laboratory_name"),
+				default: 0,
+				depends_on: `eval:!doc.laboratory`,
 			},
 			{
 				fieldname: "file",
 				fieldtype: "Attach",
-				label: __("CSV or Excel File"),
+				label: __("Excel or CSV File"),
 				reqd: 1,
-				description: __("Select from My Device or File Library (internal drive)."),
+				description: __("Select from My Device or File Library (.xlsx / .xls / .csv)."),
 				options: instacertify.attach_options,
 			},
 		],
-		primary_action_label: __("Import"),
+		primary_action_label: __("Import Scope Rows"),
 		primary_action(values) {
 			const file_url =
 				(d.get_value && d.get_value("file")) || (values && values.file) || "";
 			if (!file_url) {
-				frappe.msgprint(__("Please attach a CSV or Excel file first."));
+				frappe.msgprint(__("Please attach an Excel or CSV file first."));
 				return;
 			}
+			const laboratory =
+				fixed_lab ||
+				(d.get_value && d.get_value("laboratory")) ||
+				(values && values.laboratory) ||
+				"";
 			frappe.call({
-				method: "instacertify.setup.library_upload.import_laboratory_scopes_csv",
-				args: { laboratory: frm.doc.name, file_url },
+				method: "instacertify.setup.library_upload.import_lab_scopes_bulk",
+				args: {
+					file_url,
+					laboratory: laboratory || "",
+					create_missing_labs: cint(
+						(d.get_value && d.get_value("create_missing_labs")) ||
+							(values && values.create_missing_labs) ||
+							0
+					),
+				},
 				freeze: true,
+				freeze_message: __("Importing lab scope rows…"),
 				callback(r) {
 					d.hide();
 					const m = r.message || {};
-					frappe.show_alert({
-						message: __("Scopes: +{0} added, {1} updated", [
-							m.added || 0,
-							m.updated || 0,
-						]),
-						indicator: "green",
-					});
-					frm.reload_doc();
+					let msg = __("Scopes: +{0} added, {1} updated", [
+						m.added || 0,
+						m.updated || 0,
+					]);
+					if (m.mode === "multi") {
+						msg += " — " + __("{0} laboratories", [m.labs || 0]);
+					}
+					frappe.show_alert({ message: msg, indicator: "green" });
+					if (opts.on_done) opts.on_done(m);
+					else if (m.laboratory) {
+						frappe.set_route("Form", "IC Laboratory", m.laboratory);
+					} else if (m.results && m.results[0]) {
+						frappe.set_route("Form", "IC Laboratory", m.results[0].laboratory);
+					}
 				},
 			});
 		},
 	});
 	d.$wrapper.find(".modal-footer").prepend(
-		`<span style="margin-right:auto;display:flex;gap:6px;">
-			<button type="button" class="btn btn-default btn-sm ic-dl-scope-xlsx">${__("Excel Template")}</button>
-			<button type="button" class="btn btn-default btn-sm ic-dl-scope-csv">${__("CSV Template")}</button>
+		`<span style="margin-right:auto;display:flex;gap:6px;flex-wrap:wrap;">
+			<button type="button" class="btn btn-default btn-sm ic-dl-scope-xlsx">${__("Download Excel Template")}</button>
+			<button type="button" class="btn btn-default btn-sm ic-dl-scope-csv">${__("Download CSV Template")}</button>
 		</span>`
 	);
 	const dl = (fmt) => {
@@ -3026,6 +3219,7 @@ function ic_render_customer_related(d) {
 			<div class="ic-summary-card"><div class="label">${__("Payments")}</div><div class="value">${(d.payments || []).length}</div></div>
 			<div class="ic-summary-card accent"><div class="label">${__("Outstanding")}</div><div class="value" style="font-size:1.1rem;">${ic_fmt_money(d.outstanding_amount || 0)}</div></div>
 			<div class="ic-summary-card"><div class="label">${__("Testing")}</div><div class="value">${(d.testing_requests || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Samples")}</div><div class="value">${(d.samples || []).length}</div></div>
 			<div class="ic-summary-card accent"><div class="label">${__("Open Tickets")}</div><div class="value">${(d.open_tickets || []).length}</div></div>
 		</div>
 		<p class="ic-related-hint text-muted">${__("All quotations, projects, invoices, payments, and Instacertify records for this customer. Open a row or use Connections for filtered lists.")}</p>
@@ -3067,16 +3261,21 @@ function ic_render_customer_related(d) {
 		ic_fmt_money(o.opportunity_amount, o.currency),
 		ic_esc(o.transaction_date || "—"),
 	]);
-	const testing_rows = (d.testing_requests || []).map((t) => [
-		ic_doc_link("IC Testing Request", t.name, t.title || t.name),
-		ic_status_pill(t.status),
-		ic_esc(t.product || t.test_name || "—"),
-		t.laboratory
-			? ic_doc_link("IC Laboratory", t.laboratory, t.laboratory_name || t.laboratory)
-			: "—",
-		t.project ? ic_doc_link("Project", t.project) : "—",
-		t.quotation ? ic_doc_link("Quotation", t.quotation) : "—",
-	]);
+	const testing_rows = (d.testing_requests || []).map((t) => {
+		const testedFor = [t.product, t.test_name, t.applicable_standard]
+			.filter(Boolean)
+			.join(" / ");
+		return [
+			ic_doc_link("IC Testing Request", t.name, t.title || t.name),
+			ic_status_pill(t.status),
+			ic_esc(testedFor || t.product || t.test_name || "—"),
+			t.laboratory
+				? ic_doc_link("IC Laboratory", t.laboratory, t.laboratory_name || t.laboratory)
+				: "—",
+			t.project ? ic_doc_link("Project", t.project) : "—",
+			t.quotation ? ic_doc_link("Quotation", t.quotation) : "—",
+		];
+	});
 	const doc_rows = (d.documents || []).map((doc) => [
 		ic_doc_link("IC Document Request", doc.name, doc.title || doc.name),
 		ic_status_pill(doc.status),
@@ -3100,19 +3299,42 @@ function ic_render_customer_related(d) {
 		ic_esc(t.ticket_type || "—"),
 		ic_esc(t.priority || "—"),
 	]);
-	const sample_rows = (d.samples || []).map((s) => [
-		ic_doc_link("IC Sample Tracking", s.name, s.tracking_number || s.name),
-		`<span style="font-weight:600;color:${
-			(instacertify._sample_custody_color &&
-				instacertify._sample_custody_color(s.sample_location || s.custody_label || "")) ||
-			"#546e7a"
-		}">${ic_esc(s.sample_location || s.custody_label || s.status || "—")}</span>`,
-		s.laboratory
-			? ic_doc_link("IC Laboratory", s.laboratory, s.laboratory_name || s.laboratory)
-			: "—",
-		s.testing_request ? ic_doc_link("IC Testing Request", s.testing_request) : "—",
-		s.project ? ic_doc_link("Project", s.project) : "—",
-	]);
+	const sample_rows = (d.samples || []).map((s) => {
+		const testedFor =
+			s.tested_for ||
+			[s.product, s.test_name, s.applicable_standard].filter(Boolean).join(" / ") ||
+			s.sample_description ||
+			"—";
+		const loc = s.sample_location || s.custody_label || "";
+		const reportCell = s.test_report
+			? `<a class="btn btn-xs btn-primary ic-sample-report-dl" href="${frappe.utils.escape_html(
+					s.test_report
+			  )}" target="_blank" rel="noopener" download>${__("Download Report")}</a>`
+			: s.report_ready
+				? `<span class="text-muted">${__("Awaiting upload")}</span>`
+				: `<span class="text-muted">—</span>`;
+		return [
+			ic_doc_link("IC Sample Tracking", s.name, s.tracking_number || s.name),
+			`<div class="ic-sample-tested-for">${ic_esc(testedFor)}</div>${
+				s.testing_request
+					? `<div class="text-muted" style="font-size:11px;margin-top:2px;">${ic_doc_link(
+							"IC Testing Request",
+							s.testing_request
+					  )}</div>`
+					: ""
+			}`,
+			ic_status_pill(s.status),
+			`<span style="font-weight:600;color:${
+				(instacertify._sample_custody_color &&
+					instacertify._sample_custody_color(loc)) ||
+				"#546e7a"
+			}">${ic_esc(loc || "—")}</span>`,
+			s.laboratory
+				? ic_doc_link("IC Laboratory", s.laboratory, s.laboratory_name || s.laboratory)
+				: "—",
+			reportCell,
+		];
+	});
 	const record_rows = (d.records || []).map((rec) => [
 		ic_doc_link("IC Project Record", rec.name, rec.subject || rec.name),
 		ic_esc(rec.record_type || "—"),
@@ -3185,12 +3407,39 @@ function ic_render_customer_related(d) {
 					: ""
 			)}
 			${ic_related_section(
-				__("Testing & Samples"),
+				__("Testing Requests"),
 				ic_table(
-					[__("Request"), __("Status"), __("Product / Test"), __("Laboratory"), __("Project"), __("Quotation")],
+					[
+						__("Request"),
+						__("Status"),
+						__("Being tested for"),
+						__("Laboratory"),
+						__("Project"),
+						__("Quotation"),
+					],
 					testing_rows
 				),
 				__("No testing requests"),
+				customer
+					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
+							customer
+					  )}">${ic_esc(__("Open Testing & Samples"))}</a>`
+					: ""
+			)}
+			${ic_related_section(
+				__("Samples — status & reports"),
+				ic_table(
+					[
+						__("Sample"),
+						__("Being tested for"),
+						__("Status"),
+						__("Location"),
+						__("Laboratory"),
+						__("Report"),
+					],
+					sample_rows
+				),
+				__("No samples"),
 				customer
 					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
 							customer
@@ -3217,19 +3466,6 @@ function ic_render_customer_related(d) {
 				ic_table([__("Ticket"), __("Status"), __("Type"), __("Priority")], ticket_rows),
 				__("No helpdesk tickets"),
 				customer ? ic_list_link("Helpdesk Ticket", customer) : ""
-			)}
-			${ic_related_section(
-				__("Samples — location (lab / warehouse / client)"),
-				ic_table(
-					[__("Sample"), __("Location"), __("Laboratory"), __("Testing Request"), __("Project")],
-					sample_rows
-				),
-				__("No samples"),
-				customer
-					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
-							customer
-					  )}">${ic_esc(__("Update locations"))}</a>`
-					: ""
 			)}
 			${ic_related_section(
 				__("Project Records"),
@@ -3526,56 +3762,28 @@ frappe.ui.form.on("IC Testing Request", {
 		}
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Edit Price"), () => {
-				const d = new frappe.ui.Dialog({
-					title: __("Edit Buying / Selling Price"),
-					fields: [
-						{
-							fieldname: "library_buying_price",
-							fieldtype: "Currency",
-							label: __("Buying Price"),
-							default: frm.doc.library_buying_price || 0,
-							reqd: 1,
-						},
-						{
-							fieldname: "suggested_selling_price",
-							fieldtype: "Currency",
-							label: __("Selling Price"),
-							default: frm.doc.suggested_selling_price || 0,
-							reqd: 1,
-						},
-						{
-							fieldname: "price_currency",
-							fieldtype: "Link",
-							options: "Currency",
-							label: __("Currency"),
-							default: frm.doc.price_currency || "INR",
-							reqd: 1,
-						},
-					],
-					primary_action_label: __("Save Prices"),
-					primary_action(values) {
-						frappe.call({
-							method: "instacertify.testing.events.update_testing_request_prices",
-							args: {
-								testing_request: frm.doc.name,
-								library_buying_price: values.library_buying_price,
-								suggested_selling_price: values.suggested_selling_price,
-								price_currency: values.price_currency,
-							},
-							freeze: true,
-							callback() {
-								d.hide();
-								frm.reload_doc();
-								frappe.show_alert({
-									message: __("Prices updated"),
-									indicator: "green",
-								});
-							},
-						});
+				instacertify.edit_testing_request_prices(frm.doc.name, {
+					library_buying_price: frm.doc.library_buying_price,
+					suggested_selling_price: frm.doc.suggested_selling_price,
+					price_currency: frm.doc.price_currency || "INR",
+					on_save() {
+						frm.reload_doc();
 					},
 				});
-				d.show();
 			}, __("Actions"));
+			// Keep prices visible in form dashboard
+			const cur = frm.doc.price_currency || "INR";
+			frm.dashboard.clear_headline();
+			frm.dashboard.set_headline(
+				__(
+					"Buying {0} · Selling {1} · {2}",
+					[
+						format_currency(frm.doc.library_buying_price || 0, cur),
+						format_currency(frm.doc.suggested_selling_price || 0, cur),
+						cur,
+					]
+				)
+			);
 			frm.add_custom_button(__("Create / Share TRF"), () => {
 				frappe.call({
 					method: "instacertify.trf.api.create_or_get_trf",
@@ -4530,11 +4738,26 @@ frappe.ui.form.on("IC Laboratory", {
 				},
 			});
 		}, __("Library"));
+		// Primary, visible bulk upload (Excel/CSV) — not buried in a submenu
+		frm.add_custom_button(__("Bulk Upload Scope (Excel/CSV)"), () => {
+			if (frm.is_new()) {
+				frappe.msgprint(__("Save the Laboratory first, then bulk-upload scope rows."));
+				return;
+			}
+			instacertify.open_lab_scope_bulk_upload({
+				laboratory: frm.doc.name,
+				laboratory_name: frm.doc.laboratory_name,
+				on_done() {
+					frm.reload_doc();
+				},
+			});
+		});
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Import Scope CSV / Excel"), () => {
 				instacertify.open_lab_scope_csv_import(frm);
 			}, __("Library"));
 		}
+		instacertify.render_lab_scope_bulk_bar(frm);
 		frm.add_custom_button(__("New Testing Quotation"), () => {
 			frappe.new_doc("Quotation", {
 				ic_quotation_type: "Testing",
@@ -5187,6 +5410,13 @@ frappe.listview_settings["IC Quotation Template"] = {
 frappe.listview_settings["IC Laboratory"] = {
 	add_fields: ["status", "location", "contact_person", "contact_designation", "phone"],
 	onload(listview) {
+		listview.page.add_inner_button(__("Bulk Upload Scope (Excel/CSV)"), () => {
+			instacertify.open_lab_scope_bulk_upload({
+				on_done() {
+					listview.refresh();
+				},
+			});
+		});
 		listview.page.add_inner_button(__("Upload Lab / Scope"), () => {
 			instacertify.open_laboratory_upload();
 		});
@@ -5692,6 +5922,18 @@ frappe.ui.form.on("IC Sample Tracking", {
 	refresh(frm) {
 		if (!frm.is_new()) {
 			instacertify.render_sample_sticker_preview(frm);
+			if (frm.doc.testing_request) {
+				frm.add_custom_button(__("Edit Price"), () => {
+					instacertify.edit_testing_request_prices(frm.doc.testing_request, {
+						on_save() {
+							frappe.show_alert({
+								message: __("Testing Request prices updated"),
+								indicator: "green",
+							});
+						},
+					});
+				}, __("Actions"));
+			}
 			frm.add_custom_button(__("Print 50×25 mm Sticker"), () => {
 				const print_one = () => {
 					frappe.call({
@@ -6768,3 +7010,43 @@ $(document).on("click", "a.ic-schedule-session", function (e) {
 		frappe.new_doc("Event");
 	}
 });
+
+frappe.listview_settings["IC Testing Request"] = {
+	add_fields: ["library_buying_price", "suggested_selling_price", "price_currency"],
+	onload(listview) {
+		listview.page.add_actions_menu_item(__("Edit Price"), () => {
+			const selected = listview.get_checked_items();
+			if (!selected.length) {
+				frappe.msgprint(__("Select one Testing Request first."));
+				return;
+			}
+			const row = selected[0];
+			instacertify.edit_testing_request_prices(row.name, {
+				library_buying_price: row.library_buying_price,
+				suggested_selling_price: row.suggested_selling_price,
+				price_currency: row.price_currency || "INR",
+				on_save() {
+					listview.refresh();
+				},
+			});
+		});
+	},
+	button: {
+		show(doc) {
+			return true;
+		},
+		get_label() {
+			return __("Edit Price");
+		},
+		get_description(doc) {
+			return __("Edit buying / selling / currency");
+		},
+		action(doc) {
+			instacertify.edit_testing_request_prices(doc.name, {
+				library_buying_price: doc.library_buying_price,
+				suggested_selling_price: doc.suggested_selling_price,
+				price_currency: doc.price_currency || "INR",
+			});
+		},
+	},
+};

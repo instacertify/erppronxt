@@ -236,45 +236,6 @@ def _scope_row_key(test_name: str, standard: str) -> str:
 	return f"{(test_name or '').strip().casefold()}||{(standard or '').strip().casefold()}"
 
 
-def _apply_scope_rows_to_lab(doc, file_url: str) -> tuple[int, int]:
-	"""Upsert test_scopes from CSV/Excel. Returns (added, updated)."""
-	rows = _read_lab_scope_rows(file_url)
-	if not rows:
-		return 0, 0
-
-	existing = {}
-	for row in doc.get("test_scopes") or []:
-		existing[_scope_row_key(row.test_name, row.applicable_standard)] = row
-
-	added = 0
-	updated = 0
-	for item in rows:
-		test_name = item.get("test_name") or ""
-		if not test_name:
-			continue
-		standard = item.get("applicable_standard") or ""
-		key = _scope_row_key(test_name, standard)
-		payload = {
-			"test_name": test_name,
-			"applicable_standard": standard,
-			"category": item.get("category") or "",
-			"selling_price": _parse_money(item.get("selling_price")),
-			"purchase_price": _parse_money(item.get("purchase_price")),
-			"currency": item.get("currency") or "INR",
-			"is_active": item.get("is_active", 1),
-		}
-		payload["margin"] = float(payload["selling_price"] or 0) - float(payload["purchase_price"] or 0)
-		if key in existing:
-			row = existing[key]
-			for k, v in payload.items():
-				row.set(k, v)
-			updated += 1
-		else:
-			doc.append("test_scopes", payload)
-			added += 1
-	return added, updated
-
-
 def _read_lab_scope_rows(file_url: str) -> list[dict]:
 	"""Parse lab scope CSV/Excel into normalized dict rows."""
 	content, file_name = _file_bytes_from_url(file_url)
@@ -315,6 +276,15 @@ def _read_lab_scope_rows(file_url: str) -> list[dict]:
 			is_active = 1 if str(active_raw).strip().lower() in ("1", "true", "yes", "y", "active") else 0
 		out.append(
 			{
+				"laboratory_name": _pick(
+					row,
+					"laboratory_name",
+					"laboratory",
+					"lab",
+					"lab_name",
+					"lab name",
+					"laboratory name",
+				),
 				"test_name": test_name,
 				"applicable_standard": _pick(
 					row, "applicable_standard", "standard", "applicable standard"
@@ -339,6 +309,48 @@ def _pick(row: dict, *keys) -> str:
 		if key in lower and lower[key] not in (None, ""):
 			return str(lower[key]).strip()
 	return ""
+
+
+def _apply_parsed_scope_rows(doc, rows: list[dict]) -> tuple[int, int]:
+	"""Upsert already-normalized scope dicts onto a lab doc. Returns (added, updated)."""
+	if not rows:
+		return 0, 0
+	existing = {}
+	for row in doc.get("test_scopes") or []:
+		existing[_scope_row_key(row.test_name, row.applicable_standard)] = row
+
+	added = 0
+	updated = 0
+	for item in rows:
+		test_name = item.get("test_name") or ""
+		if not test_name:
+			continue
+		standard = item.get("applicable_standard") or ""
+		key = _scope_row_key(test_name, standard)
+		payload = {
+			"test_name": test_name,
+			"applicable_standard": standard,
+			"category": item.get("category") or "",
+			"selling_price": _parse_money(item.get("selling_price")),
+			"purchase_price": _parse_money(item.get("purchase_price")),
+			"currency": item.get("currency") or "INR",
+			"is_active": item.get("is_active", 1),
+		}
+		payload["margin"] = float(payload["selling_price"] or 0) - float(payload["purchase_price"] or 0)
+		if key in existing:
+			row = existing[key]
+			for k, v in payload.items():
+				row.set(k, v)
+			updated += 1
+		else:
+			doc.append("test_scopes", payload)
+			added += 1
+	return added, updated
+
+
+def _apply_scope_rows_to_lab(doc, file_url: str) -> tuple[int, int]:
+	"""Upsert test_scopes from CSV/Excel. Returns (added, updated)."""
+	return _apply_parsed_scope_rows(doc, _read_lab_scope_rows(file_url))
 
 
 @frappe.whitelist()
@@ -369,6 +381,111 @@ def import_laboratory_scopes_csv(laboratory: str, file_url: str):
 		"added": added,
 		"updated": updated,
 		"scope_rows": len(doc.test_scopes or []),
+	}
+
+
+@frappe.whitelist()
+def import_lab_scopes_bulk(
+	file_url: str,
+	laboratory: str | None = None,
+	create_missing_labs: int = 0,
+):
+	"""Bulk-upload lab scope rows from one Excel/CSV.
+
+	- If ``laboratory`` is set: all rows go into that lab (same as Import Scope).
+	- If not: rows must include ``laboratory_name`` / ``laboratory`` and are split per lab.
+	"""
+	if not file_url:
+		frappe.throw(_("Select a CSV or Excel file from My Device or File Library first"))
+	file_url = assert_internal_file(file_url, "Scope spreadsheet")
+	rows = _read_lab_scope_rows(file_url)
+	if not rows:
+		frappe.throw(
+			_(
+				"No scope rows found. Use headers: laboratory_name (optional), test_name, applicable_standard, category, selling_price, purchase_price, currency, is_active."
+			)
+		)
+
+	laboratory = (laboratory or "").strip()
+	create_missing = cint(create_missing_labs)
+
+	if laboratory:
+		if not frappe.db.exists("IC Laboratory", laboratory):
+			frappe.throw(_("Laboratory not found"))
+		doc = frappe.get_doc("IC Laboratory", laboratory)
+		added, updated = _apply_parsed_scope_rows(doc, rows)
+		doc.scope_sheet = file_url
+		doc.save(ignore_permissions=False)
+		_link_file_to_lab(file_url, doc.name, "scope_sheet")
+		frappe.db.commit()
+		return {
+			"mode": "single",
+			"laboratory": doc.name,
+			"added": added,
+			"updated": updated,
+			"scope_rows": len(doc.test_scopes or []),
+			"labs": 1,
+		}
+
+	# Multi-lab: group by laboratory_name
+	by_lab: dict[str, list[dict]] = {}
+	missing_name = 0
+	for item in rows:
+		lab_name = (item.get("laboratory_name") or "").strip()
+		if not lab_name:
+			missing_name += 1
+			continue
+		by_lab.setdefault(lab_name, []).append(item)
+
+	if not by_lab:
+		frappe.throw(
+			_(
+				"No laboratory_name column values found. Either pick a Laboratory in the dialog, or add a laboratory_name column to the sheet."
+			)
+		)
+
+	results = []
+	total_added = 0
+	total_updated = 0
+	for lab_name, lab_rows in by_lab.items():
+		existing = frappe.db.get_value("IC Laboratory", {"laboratory_name": lab_name}, "name")
+		if not existing:
+			if not create_missing:
+				frappe.throw(
+					_(
+						"Laboratory “{0}” not found. Create it first, or tick Create missing laboratories."
+					).format(lab_name)
+				)
+			doc = frappe.new_doc("IC Laboratory")
+			doc.laboratory_name = lab_name
+			doc.status = "Active"
+		else:
+			doc = frappe.get_doc("IC Laboratory", existing)
+
+		added, updated = _apply_parsed_scope_rows(doc, lab_rows)
+		doc.scope_sheet = file_url
+		doc.save(ignore_permissions=False)
+		_link_file_to_lab(file_url, doc.name, "scope_sheet")
+		total_added += added
+		total_updated += updated
+		results.append(
+			{
+				"laboratory": doc.name,
+				"laboratory_name": doc.laboratory_name,
+				"added": added,
+				"updated": updated,
+				"scope_rows": len(doc.test_scopes or []),
+			}
+		)
+
+	frappe.db.commit()
+	return {
+		"mode": "multi",
+		"labs": len(results),
+		"added": total_added,
+		"updated": total_updated,
+		"skipped_no_lab_name": missing_name,
+		"results": results,
 	}
 
 
@@ -467,6 +584,7 @@ def download_lab_scope_template(fmt: str | None = None) -> dict:
 	"""Downloadable CSV or Excel template for laboratory scope row import."""
 	fmt = (fmt or "csv").strip().lower()
 	headers = [
+		"laboratory_name",
 		"test_name",
 		"applicable_standard",
 		"category",
@@ -476,9 +594,9 @@ def download_lab_scope_template(fmt: str | None = None) -> dict:
 		"is_active",
 	]
 	samples = [
-		["EMI/EMC Radiated Emission", "CISPR 32", "EMC", 25000, 18000, "INR", 1],
-		["Safety Insulation Resistance", "IEC 62368-1", "Safety", 8000, 5500, "INR", 1],
-		["RF Conducted Spurious", "ETSI EN 300 328", "RF", 15000, 11000, "INR", 1],
+		["NABL Tech Labs", "EMI/EMC Radiated Emission", "CISPR 32", "EMC", 25000, 18000, "INR", 1],
+		["NABL Tech Labs", "Safety Insulation Resistance", "IEC 62368-1", "Safety", 8000, 5500, "INR", 1],
+		["QC Auto Import Lab", "RF Conducted Spurious", "ETSI EN 300 328", "RF", 15000, 11000, "INR", 1],
 	]
 	if fmt in ("xls", "xlsx", "excel"):
 		from openpyxl import Workbook
@@ -493,12 +611,14 @@ def download_lab_scope_template(fmt: str | None = None) -> dict:
 		for row in samples:
 			ws.append(row)
 		guide = wb.create_sheet("Instructions", 0)
-		guide["A1"] = "Instacertify Laboratory Scope Upload"
+		guide["A1"] = "Instacertify — Bulk Lab Scope Upload (Excel / CSV)"
 		guide["A1"].font = Font(bold=True, size=14)
 		guide["A3"] = "1. Fill one row per accredited test on the Scopes sheet."
-		guide["A4"] = "2. Upload via Laboratory → Upload Lab / Scope, or Import Scope CSV/Excel on the form."
-		guide["A5"] = "3. Matching test_name + applicable_standard updates an existing row; new names are added."
-		guide["A6"] = "4. is_active: 1 = Active, 0 = Inactive"
+		guide["A4"] = "2. laboratory_name is optional when uploading into one open Laboratory form."
+		guide["A5"] = "3. For multi-lab bulk upload, set laboratory_name on every row and use Bulk Upload Scope."
+		guide["A6"] = "4. Matching test_name + applicable_standard updates an existing row; new names are added."
+		guide["A7"] = "5. is_active: 1 = Active, 0 = Inactive"
+		guide["A8"] = "6. Desk: Laboratories list → Bulk Upload Scope (Excel/CSV), or Laboratory form → same button."
 		out = io.BytesIO()
 		wb.save(out)
 		name = "IC_Laboratory_Scope_Upload_Template.xlsx"

@@ -216,6 +216,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				</div>
 				<div class="ic-ts-tools">
 					<button type="button" class="btn btn-default btn-sm" id="ic-ts-labs">${__("Laboratories")}</button>
+					<button type="button" class="btn btn-primary btn-sm" id="ic-ts-bulk-scope">${__(
+						"Bulk Upload Scope"
+					)}</button>
 				</div>
 			</div>
 
@@ -1236,10 +1239,20 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							</td>
 							<td>${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}</td>
 							<td class="ic-ts-money ic-ts-money-buy">
-								<div title="${__("Buying")}">${frappe.utils.escape_html(buy)}</div>
-								<div class="ic-ts-cell-sub" title="${__("Selling")}">${__("Sell")}: ${frappe.utils.escape_html(
-									sell
-								)}</div>
+								<button type="button" class="btn btn-link btn-xs ic-ts-edit-price ic-ts-price-btn"
+									data-tr="${frappe.utils.escape_html(tr.name)}"
+									data-buy="${frappe.utils.escape_html(String(tr.library_buying_price ?? ""))}"
+									data-sell="${frappe.utils.escape_html(String(tr.suggested_selling_price ?? ""))}"
+									data-currency="${frappe.utils.escape_html(tr.price_currency || "INR")}"
+									title="${__("Edit buying / selling / currency")}">
+									<div title="${__("Buying")}">${frappe.utils.escape_html(buy)}</div>
+									<div class="ic-ts-cell-sub" title="${__("Selling")}">${__("Sell")}: ${frappe.utils.escape_html(
+										sell
+									)}</div>
+									<div class="ic-ts-cell-sub">${frappe.utils.escape_html(tr.price_currency || "INR")} · ${__(
+										"Edit Price"
+									)}</div>
+								</button>
 							</td>
 							<td style="text-align:center"><span class="ic-ts-count">${samples.length}</span></td>
 							<td class="ic-ts-actions-cell">
@@ -1327,7 +1340,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<th>${__("Customer / Project")}</th>
 							<th>${__("Test / Standard")}</th>
 							<th>${__("Laboratory")}</th>
-							<th style="text-align:right">${__("Buying")}</th>
+							<th style="text-align:right;min-width:120px">${__("Buy / Sell")}</th>
 							<th style="text-align:center">${__("Samples")}</th>
 							<th style="width:320px">${__("Actions")}</th>
 						</tr>
@@ -1533,59 +1546,32 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		});
 		$board.find(".ic-ts-edit-price").on("click", function (e) {
 			e.stopPropagation();
-			const tr_name = $(this).data("tr");
-			const d = new frappe.ui.Dialog({
-				title: __("Edit Price — {0}", [tr_name]),
-				fields: [
-					{
-						fieldname: "library_buying_price",
-						fieldtype: "Currency",
-						label: __("Buying Price"),
-						default: cint($(this).data("buy")) || flt($(this).data("buy")) || 0,
-						options: "price_currency",
-						reqd: 1,
+			const $btn = $(this);
+			const tr_name = $btn.data("tr") || $btn.attr("data-tr");
+			const buy = flt($btn.attr("data-buy") || $btn.data("buy")) || 0;
+			const sell = flt($btn.attr("data-sell") || $btn.data("sell")) || 0;
+			const currency = $btn.attr("data-currency") || $btn.data("currency") || "INR";
+			if (window.instacertify && typeof instacertify.edit_testing_request_prices === "function") {
+				instacertify.edit_testing_request_prices(tr_name, {
+					library_buying_price: buy,
+					suggested_selling_price: sell,
+					price_currency: currency,
+					on_save() {
+						state._keep_visible = true;
+						refresh_manage();
 					},
-					{
-						fieldname: "suggested_selling_price",
-						fieldtype: "Currency",
-						label: __("Selling Price"),
-						default: flt($(this).data("sell")) || 0,
-						options: "price_currency",
-						reqd: 1,
-					},
-					{
-						fieldname: "price_currency",
-						fieldtype: "Link",
-						options: "Currency",
-						label: __("Currency"),
-						default: $(this).data("currency") || "INR",
-						reqd: 1,
-					},
-				],
-				primary_action_label: __("Save Prices"),
-				primary_action(values) {
-					frappe.call({
-						method: "instacertify.testing.events.update_testing_request_prices",
-						args: {
-							testing_request: tr_name,
-							library_buying_price: values.library_buying_price,
-							suggested_selling_price: values.suggested_selling_price,
-							price_currency: values.price_currency,
-						},
-						freeze: true,
-						callback() {
-							d.hide();
-							frappe.show_alert({
-								message: __("Prices updated"),
-								indicator: "green",
-							});
-							state._keep_visible = true;
-							refresh_manage();
-						},
-					});
+				});
+				return;
+			}
+			frappe.call({
+				method: "instacertify.testing.events.update_testing_request_prices",
+				args: {
+					testing_request: tr_name,
+					library_buying_price: buy,
+					suggested_selling_price: sell,
+					price_currency: currency,
 				},
 			});
-			d.show();
 		});
 		$board.find(".ic-ts-trf-pdf").on("click", function (e) {
 			e.stopPropagation();
@@ -1707,6 +1693,13 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 	});
 	page.main.find("#ic-ts-refresh").on("click", refresh_manage);
 	page.main.find("#ic-ts-labs").on("click", () => frappe.set_route("List", "IC Laboratory"));
+	page.main.find("#ic-ts-bulk-scope").on("click", () => {
+		if (window.instacertify && instacertify.open_lab_scope_bulk_upload) {
+			instacertify.open_lab_scope_bulk_upload();
+		} else {
+			frappe.set_route("List", "IC Laboratory");
+		}
+	});
 	page.main.find("#ic-ts-goto-generate").on("click", () => switch_tab("generate"));
 	page.main.find("#ic-ts-goto-manage").on("click", () => switch_tab("manage"));
 	page.main.find("#ic-ts-clear-filters").on("click", () => {

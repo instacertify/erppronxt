@@ -38,12 +38,24 @@ def get_explore_prompts() -> dict:
 	"""
 	roles = set(frappe.get_roles())
 	is_admin = bool(roles & {"System Manager", "IC Admin", "Administrator"})
-	is_sales = bool(roles & {"IC Sales Person", "Sales User", "Sales Manager"}) or is_admin
+	is_sales = bool(
+		roles
+		& {
+			"IC Sales Person",
+			"IC Sales Manager",
+			"IC Sales Executive",
+			"Sales User",
+			"Sales Manager",
+		}
+	) or is_admin
 	is_ops = bool(
 		roles
 		& {
 			"IC Operations Manager",
+			"IC Ops Executive",
 			"IC Senior Operations",
+			"IC Projects Manager",
+			"IC Projects Executive",
 			"Projects User",
 			"Projects Manager",
 		}

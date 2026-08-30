@@ -819,6 +819,17 @@ body {
   font-weight: 600;
 }
 
+.ic-sample-tested-for {
+  font-weight: 600;
+  color: #243447;
+  line-height: 1.35;
+  max-width: 280px;
+}
+
+.ic-related-table .ic-sample-report-dl {
+  white-space: nowrap;
+}
+
 .ic-project-grid {
   display: grid;
   grid-template-columns: var(--ic-tile-cols);
@@ -4312,7 +4323,24 @@ body.full-width {
   line-height: 1.35;
 }
 .ic-ts-money { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+<<<<<<< HEAD
 .ic-ts-money-buy { font-weight: 700; color: var(--ic-accent, #EC691F); }
+=======
+.ic-ts-money-buy { font-weight: 700; color: var(--ic-accent, #EC6820); }
+.ic-ts-price-btn {
+  display: block;
+  width: 100%;
+  text-align: right;
+  padding: 2px 4px !important;
+  color: inherit !important;
+  text-decoration: none !important;
+  line-height: 1.25;
+}
+.ic-ts-price-btn:hover {
+  background: #e8f1f7;
+  border-radius: 6px;
+}
+>>>>>>> origin/main
 
 .ic-ts-manage-card { padding-bottom: 12px; }
 .ic-ts-manage-head {
