@@ -150,11 +150,18 @@ def _configure_gst_settings():
 
 
 def _ensure_global_defaults_inr():
-	frappe.db.set_single_value("Global Defaults", "default_company", COMPANY)
+	# Prefer existing default company; only set Instacertify if none
+	current = frappe.db.get_single_value("Global Defaults", "default_company")
+	if not current or not frappe.db.exists("Company", current):
+		preferred = next(iter(_company_names()), None) or COMPANY
+		if frappe.db.exists("Company", preferred):
+			frappe.db.set_single_value("Global Defaults", "default_company", preferred)
+			current = preferred
 	frappe.db.set_single_value("Global Defaults", "default_currency", "INR")
 	try:
 		frappe.db.set_default("currency", "INR")
-		frappe.db.set_default("company", COMPANY)
+		if current:
+			frappe.db.set_default("company", current)
 	except Exception:
 		pass
 
