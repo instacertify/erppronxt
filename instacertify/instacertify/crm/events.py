@@ -147,6 +147,11 @@ def get_customer_history(customer: str):
 		t["laboratory_name"] = lab.get("laboratory_name") or t.get("laboratory")
 		t["laboratory_city"] = lab.get("location") or ""
 
+	sample_meta = (
+		frappe.get_meta("IC Sample Tracking")
+		if frappe.db.exists("DocType", "IC Sample Tracking")
+		else None
+	)
 	sample_fields = [
 		"name",
 		"tracking_number",
@@ -158,8 +163,13 @@ def get_customer_history(customer: str):
 		"project",
 		"modified",
 	]
-	if frappe.get_meta("IC Sample Tracking").has_field("quotation"):
-		sample_fields.append("quotation")
+	if sample_meta:
+		if sample_meta.has_field("quotation"):
+			sample_fields.append("quotation")
+		if sample_meta.has_field("test_report"):
+			sample_fields.append("test_report")
+		if sample_meta.has_field("report_uploaded_on"):
+			sample_fields.append("report_uploaded_on")
 	samples = list_docs(
 		"IC Sample Tracking",
 		{"customer": customer},
@@ -174,10 +184,102 @@ def get_customer_history(customer: str):
 			fields=["name", "laboratory_name", "location"],
 		):
 			lab_map[lab.name] = lab
+
+	# Map testing requests → product / test / standard for sample “being tested for”
+	tr_ids = {s.get("testing_request") for s in samples if s.get("testing_request")}
+	tr_ids |= {t.get("name") for t in testing if t.get("name")}
+	tr_detail_map = {}
+	if tr_ids and frappe.db.exists("DocType", "IC Testing Request"):
+		tr_fields = ["name", "title", "product", "test_name", "applicable_standard", "status"]
+		for tr in frappe.get_all(
+			"IC Testing Request",
+			filters={"name": ["in", list(tr_ids)]},
+			fields=tr_fields,
+		):
+			tr_detail_map[tr.name] = tr
+
+	# Child linked tests on samples (same lab, multiple tests)
+	linked_by_sample: dict[str, list] = {}
+	sample_names = [s.get("name") for s in samples if s.get("name")]
+	if sample_names and frappe.db.exists("DocType", "IC Sample Testing Link"):
+		try:
+			for row in frappe.get_all(
+				"IC Sample Testing Link",
+				filters={"parent": ["in", sample_names], "parenttype": "IC Sample Tracking"},
+				fields=[
+					"parent",
+					"testing_request",
+					"test_name",
+					"applicable_standard",
+					"laboratory",
+				],
+				order_by="idx asc",
+				limit_page_length=500,
+			):
+				linked_by_sample.setdefault(row.parent, []).append(row)
+		except Exception:
+			linked_by_sample = {}
+
 	for s in samples:
 		lab = lab_map.get(s.get("laboratory")) or {}
 		s["laboratory_name"] = lab.get("laboratory_name") or s.get("laboratory")
 		s["custody_label"] = s.get("sample_location") or s.get("status") or "—"
+		s["report_available"] = bool(s.get("test_report"))
+		s["report_ready"] = bool(s.get("test_report")) or (s.get("status") or "") in (
+			"Report Available",
+			"Report Uploaded",
+			"Report Shared with Customer",
+		)
+
+		tests_out = []
+		seen_tr = set()
+		primary = tr_detail_map.get(s.get("testing_request") or "") or {}
+		if primary:
+			tests_out.append(
+				{
+					"testing_request": primary.get("name"),
+					"product": primary.get("product") or "",
+					"test_name": primary.get("test_name") or "",
+					"applicable_standard": primary.get("applicable_standard") or "",
+					"tr_status": primary.get("status") or "",
+					"primary": True,
+				}
+			)
+			seen_tr.add(primary.get("name"))
+			s["product"] = primary.get("product") or ""
+			s["test_name"] = primary.get("test_name") or ""
+			s["applicable_standard"] = primary.get("applicable_standard") or ""
+			s["tr_status"] = primary.get("status") or ""
+		for link in linked_by_sample.get(s.get("name") or "", []):
+			tr_name = link.get("testing_request")
+			if not tr_name or tr_name in seen_tr:
+				continue
+			seen_tr.add(tr_name)
+			detail = tr_detail_map.get(tr_name) or {}
+			tests_out.append(
+				{
+					"testing_request": tr_name,
+					"product": detail.get("product") or "",
+					"test_name": link.get("test_name") or detail.get("test_name") or "",
+					"applicable_standard": link.get("applicable_standard")
+					or detail.get("applicable_standard")
+					or "",
+					"tr_status": detail.get("status") or "",
+					"primary": False,
+				}
+			)
+		s["tests"] = tests_out
+		# Human-readable “being tested for” line
+		labels = []
+		for t in tests_out:
+			bits = [x for x in (t.get("product"), t.get("test_name"), t.get("applicable_standard")) if x]
+			if bits:
+				labels.append(" / ".join(bits))
+			elif t.get("testing_request"):
+				labels.append(t["testing_request"])
+		if not labels and s.get("sample_description"):
+			labels.append(s["sample_description"])
+		s["tested_for"] = "; ".join(labels) if labels else "—"
 
 	invoices = list_docs(
 		"Sales Invoice",
