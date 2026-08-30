@@ -321,7 +321,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						<div>
 							<div class="ic-ts-card-title">${__("Manage TR")}</div>
 							<div class="ic-ts-card-sub" style="margin-bottom:0">${__(
-								"All Testing Requests in one outlined table. Expand a row for samples, or click QR for unique 50×25 mm labels."
+								"All Testing Requests in one outlined table. Samples open in a bordered sub-table. Click QR / Print for labels."
 							)}</div>
 						</div>
 						<button type="button" class="btn btn-primary btn-sm" id="ic-ts-goto-generate">${__("+ Generate new")}</button>
@@ -1164,7 +1164,10 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				}>
 							<td colspan="9">
 								<div class="ic-ts-detail-inner">
-									<div class="ic-ts-samples-title">${__("Samples on this Testing Request")} · ${samples.length}</div>
+									<div class="ic-ts-samples-title">
+										${__("Samples on this Testing Request")}
+										<span class="ic-ts-samples-count">${samples.length}</span>
+									</div>
 									${sample_table}
 								</div>
 							</td>
@@ -1316,11 +1319,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					state.manage_visible = cint(state.manage_page_size) || 20;
 				}
 				state._keep_visible = false;
-				// default expand all first time
+				// default expand rows that have samples so sample data shows in outlined tables
 				state.board_rows.forEach((tr) => {
 					if (state.expanded[tr.name] === undefined) {
-						// Keep table compact; expand when focused after generate
-						state.expanded[tr.name] = state.focus_tr === tr.name;
+						const has_samples = (tr.samples || []).length > 0;
+						state.expanded[tr.name] =
+							state.focus_tr === tr.name || has_samples;
 					}
 				});
 				render_manage(state.board_rows);
