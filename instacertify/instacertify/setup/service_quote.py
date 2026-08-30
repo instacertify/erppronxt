@@ -91,6 +91,28 @@ def ensure_service_quote_rules():
 	except Exception:
 		pass
 
+	# Quote No comes from naming series (document name) — never required on create
+	try:
+		qn = frappe.db.exists(
+			"Custom Field", {"dt": "Quotation", "fieldname": "ic_quote_number"}
+		)
+		if qn:
+			frappe.db.set_value(
+				"Custom Field",
+				qn,
+				{
+					"reqd": 0,
+					"read_only": 1,
+					"label": "Quote No (from series)",
+					"description": "Auto-set from naming series after save (e.g. QTN-SRV-00001).",
+				},
+				update_modified=False,
+			)
+		_upsert_property_setter("Quotation", "ic_quote_number", "reqd", "0", "Check")
+		_upsert_property_setter("Quotation", "naming_series", "reqd", "0", "Check")
+	except Exception:
+		pass
+
 	_ensure_generic_service_item()
 
 
