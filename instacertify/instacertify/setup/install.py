@@ -13,6 +13,15 @@ ROLES = [
 	"IC Senior Operations",
 	"IC Sales Person",
 	"IC Operations Manager",
+	"IC Ops Executive",
+	"IC Sales Manager",
+	"IC Sales Executive",
+	"IC Projects Manager",
+	"IC Projects Executive",
+	"IC HR Manager",
+	"IC HR Executive",
+	"IC Finance Manager",
+	"IC Finance Executive",
 ]
 
 LEAD_SOURCES = [
@@ -45,6 +54,9 @@ PROJECT_STAGES = [
 
 def after_install():
 	create_roles()
+	from instacertify.setup.role_profiles import ensure_role_profiles
+
+	ensure_role_profiles()
 	ensure_masters()
 	setup_custom_fields()
 	setup_company()
@@ -139,6 +151,9 @@ def ensure_masters():
 def after_migrate():
 	setup_custom_fields()
 	ensure_roles()
+	from instacertify.setup.role_profiles import ensure_role_profiles
+
+	ensure_role_profiles()
 	ensure_masters()
 	setup_lead_sources()
 	setup_project_types()
@@ -1025,15 +1040,10 @@ def setup_number_cards():
 
 
 def setup_permissions():
-	"""Apply role permissions for laboratory purchase price (permlevel 1)."""
+	"""Apply role profiles + laboratory / export permissions."""
 	try:
-		# Ensure IC Admin has permlevel 1 on IC Laboratory
-		if frappe.db.exists("DocType", "IC Laboratory"):
-			# Child table permlevel handled via DocType definition
-			pass
-		# Give System Manager and IC Admin select/read on all IC doctypes is already in DocType perms
-		for role in ("IC Admin", "System Manager"):
-			# Role Permission for export
-			pass
+		from instacertify.setup.role_profiles import ensure_role_profiles
+
+		ensure_role_profiles()
 	except Exception:
-		pass
+		frappe.log_error(frappe.get_traceback(), "setup_permissions / role_profiles")

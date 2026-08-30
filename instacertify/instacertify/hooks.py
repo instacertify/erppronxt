@@ -127,7 +127,20 @@ fixtures = [
 			"IC Senior Operations",
 			"IC Sales Person",
 			"IC Operations Manager",
+			"IC Ops Executive",
+			"IC Sales Manager",
+			"IC Sales Executive",
+			"IC Projects Manager",
+			"IC Projects Executive",
+			"IC HR Manager",
+			"IC HR Executive",
+			"IC Finance Manager",
+			"IC Finance Executive",
 		]]],
+	},
+	{
+		"dt": "Role Profile",
+		"filters": [["name", "like", "IC %"]],
 	},
 	{
 		"dt": "Custom Field",
@@ -220,4 +233,5 @@ website_context = {
 # Reliable Quotation PDF (Chrome + inlined-asset fallback; no HostNotFound server error)
 override_whitelisted_methods = {
 	"frappe.utils.print_format.download_pdf": "instacertify.utils.pdf.download_pdf",
+	"frappe.desk.reportview.export_query": "instacertify.setup.role_profiles.export_query",
 }
