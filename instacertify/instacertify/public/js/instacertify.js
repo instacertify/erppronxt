@@ -1022,24 +1022,69 @@ instacertify.add_helpdesk_buttons = function (frm, defaults) {
 	}
 })();
 
-// Ensure favicon is always the circular Instacertify mark
+// Ensure favicon + site identity is always the circular Instacertify mark
 (function setInstacertifyFavicon() {
-	const href = instacertify.brand.favicon;
-	let link = document.querySelector("link[rel='icon']");
-	if (!link) {
-		link = document.createElement("link");
-		link.rel = "icon";
-		document.head.appendChild(link);
+	const favicon = (instacertify.brand && instacertify.brand.favicon) ||
+		"/assets/instacertify/images/favicon-32.png";
+	const icon48 = (instacertify.brand && instacertify.brand.icon) ||
+		"/assets/instacertify/images/favicon-48.png";
+	const apple = "/assets/instacertify/images/apple-touch-icon.png";
+	const ico = "/assets/instacertify/images/favicon.ico";
+
+	function upsertLink(rel, href, attrs) {
+		attrs = attrs || {};
+		let link = document.querySelector(`link[rel='${rel}']${attrs.sizes ? `[sizes='${attrs.sizes}']` : ""}`);
+		if (!link) {
+			// also match shortcut icon / generic icon
+			link = Array.from(document.querySelectorAll("link[rel]")).find((el) => {
+				const r = (el.getAttribute("rel") || "").toLowerCase();
+				return r === rel || r.split(/\s+/).includes(rel);
+			});
+		}
+		if (!link) {
+			link = document.createElement("link");
+			link.rel = rel;
+			document.head.appendChild(link);
+		}
+		link.href = href;
+		if (attrs.type) link.type = attrs.type;
+		if (attrs.sizes) link.setAttribute("sizes", attrs.sizes);
 	}
-	link.type = "image/png";
-	link.href = href;
-	let apple = document.querySelector("link[rel='apple-touch-icon']");
-	if (!apple) {
-		apple = document.createElement("link");
-		apple.rel = "apple-touch-icon";
-		document.head.appendChild(apple);
+
+	upsertLink("icon", favicon, { type: "image/png", sizes: "32x32" });
+	upsertLink("shortcut icon", favicon, { type: "image/png" });
+	upsertLink("apple-touch-icon", apple, { sizes: "180x180" });
+
+	// Extra ico for older browsers
+	let icoLink = document.querySelector("link[rel='icon'][sizes='any']");
+	if (!icoLink) {
+		icoLink = document.createElement("link");
+		icoLink.rel = "icon";
+		icoLink.setAttribute("sizes", "any");
+		document.head.appendChild(icoLink);
 	}
-	apple.href = "/assets/instacertify/images/apple-touch-icon.png";
+	icoLink.href = ico;
+
+	// App name meta
+	function upsertMeta(name, content, prop) {
+		const sel = prop ? `meta[property='${prop}']` : `meta[name='${name}']`;
+		let m = document.querySelector(sel);
+		if (!m) {
+			m = document.createElement("meta");
+			if (prop) m.setAttribute("property", prop);
+			else m.setAttribute("name", name);
+			document.head.appendChild(m);
+		}
+		m.setAttribute("content", content);
+	}
+	upsertMeta("application-name", "Instacertify");
+	upsertMeta("apple-mobile-web-app-title", "Instacertify");
+	upsertMeta(null, "Instacertify", "og:site_name");
+	upsertMeta(null, icon48, "og:image");
+
+	if (document.title === "Frappe" || document.title === "ERPNext" || !document.title) {
+		document.title = "Instacertify";
+	}
 })();
 
 /** Home greeting + navbar: use circular favicon as icon logo. */

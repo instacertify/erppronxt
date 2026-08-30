@@ -88,8 +88,31 @@ def run():
 
 		img = frappe.get_app_path("instacertify", "public", "images", "favicon-32.png")
 		check("favicon-32.png", os.path.isfile(img))
+		check(
+			"favicon.ico",
+			os.path.isfile(frappe.get_app_path("instacertify", "public", "images", "favicon.ico")),
+		)
+		check(
+			"apple-touch-icon.png",
+			os.path.isfile(
+				frappe.get_app_path("instacertify", "public", "images", "apple-touch-icon.png")
+			),
+		)
 	except Exception as e:
 		check("favicon", False, str(e))
+
+	# Site identity — Website Settings must point at Instacertify favicon
+	try:
+		ws_favicon = frappe.db.get_single_value("Website Settings", "favicon") or ""
+		ws_app = frappe.db.get_single_value("Website Settings", "app_name") or ""
+		check(
+			"Website Settings favicon",
+			"instacertify" in ws_favicon.lower() and "favicon" in ws_favicon.lower(),
+			ws_favicon or "(empty)",
+		)
+		check("Website Settings app_name", ws_app == "Instacertify", ws_app or "(empty)")
+	except Exception as e:
+		check("Website Settings branding", False, str(e))
 
 	# Soft: customer history API
 	cust = frappe.db.get_value("Customer", {}, "name")
