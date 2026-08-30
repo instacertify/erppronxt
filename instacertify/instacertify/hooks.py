@@ -53,6 +53,7 @@ doc_events = {
 	},
 	"Quotation": {
 		"before_insert": "instacertify.quotation.events.before_insert_quotation",
+		"before_validate": "instacertify.quotation.events.before_validate_quotation",
 		"after_insert": "instacertify.quotation.events.after_insert_quotation",
 		"on_update": "instacertify.quotation.events.on_update_quotation",
 		"validate": "instacertify.quotation.events.validate_quotation",
