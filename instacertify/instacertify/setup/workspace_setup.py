@@ -15,9 +15,91 @@ def ensure_workspaces():
 	from instacertify.setup.gst_returns import ensure_gst_returns_access
 
 	ensure_gst_returns_access()
+	_ensure_unified_testing_samples_sidebar()
 	from instacertify.setup.navigation_icons import ensure_navigation_icons
 
 	ensure_navigation_icons()
+
+
+def _ensure_unified_testing_samples_sidebar():
+	"""Sidebar: one Testing & Samples entry (not separate Testing Requests + Samples)."""
+	sidebar_name = "Instacertify Home"
+	if not frappe.db.exists("Workspace Sidebar", sidebar_name):
+		return
+
+	sb = frappe.get_doc("Workspace Sidebar", sidebar_name)
+	remove_labels = {
+		"testing requests",
+		"samples",
+		"sample tracking",
+		"testing request",
+	}
+	remove_links = {"IC Testing Request", "IC Sample Tracking"}
+
+	kept = []
+	unified = None
+	for row in list(sb.items or []):
+		label = (row.label or "").strip()
+		link_to = (row.link_to or "").strip()
+		label_l = label.lower()
+		if label_l in remove_labels or link_to in remove_links:
+			continue
+		if label_l in {"testing & samples", "testing and samples"} or link_to == "testing-samples":
+			unified = row
+			continue
+		kept.append(row)
+
+	# Build unified Page link
+	unified_vals = {
+		"type": "Link",
+		"label": "Testing & Samples",
+		"link_type": "Page",
+		"link_to": "testing-samples",
+		"icon": "flask-conical",
+		"child": 0,
+		"collapsible": 1,
+		"indent": 0,
+		"keep_closed": 0,
+		"show_arrow": 0,
+	}
+
+	# Insert after Projects when possible
+	insert_at = next(
+		(i + 1 for i, r in enumerate(kept) if (r.label or "").strip().lower() == "projects"),
+		min(6, len(kept)),
+	)
+	sb.set("items", [])
+	for i, row in enumerate(kept):
+		if i == insert_at:
+			sb.append("items", unified_vals)
+		sb.append(
+			"items",
+			{
+				"label": row.label,
+				"link_type": row.link_type,
+				"type": row.type,
+				"link_to": row.link_to,
+				"icon": row.icon,
+				"url": row.url,
+				"child": row.child,
+				"collapsible": row.collapsible,
+				"indent": row.indent,
+				"keep_closed": getattr(row, "keep_closed", 0),
+				"show_arrow": getattr(row, "show_arrow", 0),
+				"filters": row.filters,
+				"route_options": row.route_options,
+			},
+		)
+	if insert_at >= len(kept):
+		sb.append("items", unified_vals)
+
+	sb.flags.ignore_permissions = True
+	sb.flags.ignore_links = True
+	sb.flags.ignore_validate = True
+	try:
+		sb.save(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "unified testing samples sidebar")
 
 
 def _ensure_home_html_block():
@@ -186,7 +268,8 @@ def _ensure_home_html_block():
       "Active Projects": ["Project", {status: ["not in", ["Completed", "Cancelled"]]}],
       "Upcoming Deadlines": ["Project", {status: ["not in", ["Completed", "Cancelled"]], ic_deadline: ["<=", deadline_end]}],
       "Pending Documents": ["IC Document Request", {status: ["in", ["Sent to Customer", "Partially Uploaded"]]}],
-      "Testing Requests": ["IC Testing Request", {status: ["not in", ["Report Shared with Customer"]]}],
+      "Testing Requests": ["testing-samples"],
+      "Testing & Samples": ["testing-samples"],
       "AMC Due Soon": ["Project", {ic_requires_amc: 1, ic_amc_status: ["in", ["Scheduled", "Reminded"]], ic_amc_contact_date: ["<=", amc_end]}],
       "This Week": ["Lead", {creation: [">=", week_start]}],
       "Last 7 Days": ["Lead", {creation: [">=", week_start]}],
@@ -196,6 +279,10 @@ def _ensure_home_html_block():
     const hit = map[label];
     if (!hit) {
       frappe.show_alert({message: "No list linked for " + label, indicator: "orange"});
+      return;
+    }
+    if (hit.length === 1 && typeof hit[0] === "string" && hit[0].indexOf("-") >= 0 && hit[0] === hit[0].toLowerCase()) {
+      frappe.set_route(hit[0]);
       return;
     }
     frappe.route_options = hit[1] || {};
@@ -1017,10 +1104,9 @@ def _ensure_home_workspace():
 		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
 		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
 		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
-		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing Requests", "col": 2}},
+		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing & Samples", "col": 2}},
 		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
 		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 2}},
-		{"id": "sc_samples", "type": "shortcut", "data": {"shortcut_name": "Samples", "col": 2}},
 		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Documents Collection Sheets", "col": 2}},
 		{"id": "sc_doc_lib", "type": "shortcut", "data": {"shortcut_name": "Document Collection Library", "col": 2}},
 		{"id": "sc_dispatch", "type": "shortcut", "data": {"shortcut_name": "Sample Dispatch Sheets", "col": 2}},
@@ -1046,10 +1132,9 @@ def _ensure_home_workspace():
 		{"label": "Project Board", "link_to": "project-board", "type": "Page"},
 		{"label": "Team Collaboration", "link_to": "team-collaboration", "type": "Page"},
 		{"label": "Team Calendar", "link_to": "Event", "type": "DocType", "doc_view": "Calendar"},
-		{"label": "Testing Requests", "link_to": "IC Testing Request", "type": "DocType", "doc_view": "List"},
+		{"label": "Testing & Samples", "link_to": "testing-samples", "type": "Page"},
 		{"label": "Laboratories", "link_to": "IC Laboratory", "type": "DocType", "doc_view": "List"},
 		{"label": "Quote Format Library", "link_to": "quote-format-library", "type": "Page", "doc_view": ""},
-		{"label": "Samples", "link_to": "IC Sample Tracking", "type": "DocType", "doc_view": "List"},
 		{"label": "Documents Collection Sheets", "link_to": "IC Document Request", "type": "DocType", "doc_view": "List"},
 		{"label": "Document Collection Library", "link_to": "document-collection-library", "type": "Page"},
 		{"label": "Sample Dispatch Sheets", "link_to": "IC Sample Dispatch Collection", "type": "DocType", "doc_view": "List"},
@@ -1107,12 +1192,10 @@ def _ensure_home_workspace():
 		{"label": "Project Updates", "link_type": "DocType", "link_to": "IC Project Update", "type": "Link"},
 		{"label": "Timesheet", "link_type": "DocType", "link_to": "Timesheet", "type": "Link"},
 		{"label": "Testing", "type": "Card Break"},
-		{"label": "Testing Requests", "link_type": "DocType", "link_to": "IC Testing Request", "type": "Link"},
-		{"label": "Sample Tracking", "link_type": "DocType", "link_to": "IC Sample Tracking", "type": "Link"},
+		{"label": "Testing & Samples", "link_type": "Page", "link_to": "testing-samples", "type": "Link"},
 		{"label": "Laboratory Library", "type": "Card Break"},
 		{"label": "Register / Manage Labs", "link_type": "DocType", "link_to": "IC Laboratory", "type": "Link"},
 		{"label": "Upload Laboratory / Scope", "link_type": "DocType", "link_to": "IC Laboratory", "type": "Link"},
-		{"label": "Testing Requests", "link_type": "DocType", "link_to": "IC Testing Request", "type": "Link"},
 		{"label": "Documents", "type": "Card Break"},
 		{"label": "Documents Collection Sheets", "link_type": "DocType", "link_to": "IC Document Request", "type": "Link"},
 		{"label": "Document Collection Library", "link_type": "Page", "link_to": "document-collection-library", "type": "Link"},

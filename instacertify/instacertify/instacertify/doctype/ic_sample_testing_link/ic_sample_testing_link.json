@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-30 06:20:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "testing_request",
+  "test_name",
+  "applicable_standard",
+  "laboratory"
+ ],
+ "fields": [
+  {
+   "fieldname": "testing_request",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Testing Request",
+   "options": "IC Testing Request",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "testing_request.test_name",
+   "fieldname": "test_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Test Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "testing_request.applicable_standard",
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Applicable Standard",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "testing_request.laboratory",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Laboratory",
+   "options": "IC Laboratory",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-30 06:20:00.000000",
+ "modified_by": "Administrator",
+ "module": "Instacertify",
+ "name": "IC Sample Testing Link",
+ "naming_rule": "",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

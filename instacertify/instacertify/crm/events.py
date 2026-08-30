@@ -118,13 +118,67 @@ def get_customer_history(customer: str):
 	testing = list_docs(
 		"IC Testing Request",
 		{"customer": customer},
-		["name", "title", "status", "product", "test_name", "project", "quotation", "modified"],
+		[
+			"name",
+			"title",
+			"status",
+			"product",
+			"test_name",
+			"applicable_standard",
+			"laboratory",
+			"project",
+			"quotation",
+			"number_of_samples",
+			"modified",
+		],
 	)
+	# Resolve laboratory titles for customer history
+	lab_ids = {t.get("laboratory") for t in testing if t.get("laboratory")}
+	lab_map = {}
+	if lab_ids and frappe.db.exists("DocType", "IC Laboratory"):
+		for lab in frappe.get_all(
+			"IC Laboratory",
+			filters={"name": ["in", list(lab_ids)]},
+			fields=["name", "laboratory_name", "location"],
+		):
+			lab_map[lab.name] = lab
+	for t in testing:
+		lab = lab_map.get(t.get("laboratory")) or {}
+		t["laboratory_name"] = lab.get("laboratory_name") or t.get("laboratory")
+		t["laboratory_city"] = lab.get("location") or ""
+
+	sample_fields = [
+		"name",
+		"tracking_number",
+		"status",
+		"sample_location",
+		"sample_description",
+		"laboratory",
+		"testing_request",
+		"project",
+		"modified",
+	]
+	if frappe.get_meta("IC Sample Tracking").has_field("quotation"):
+		sample_fields.append("quotation")
 	samples = list_docs(
 		"IC Sample Tracking",
 		{"customer": customer},
-		["name", "tracking_number", "status", "sample_description", "modified"],
+		sample_fields,
 	)
+	sample_lab_ids = {s.get("laboratory") for s in samples if s.get("laboratory")}
+	missing_labs = sample_lab_ids - set(lab_map)
+	if missing_labs:
+		for lab in frappe.get_all(
+			"IC Laboratory",
+			filters={"name": ["in", list(missing_labs)]},
+			fields=["name", "laboratory_name", "location"],
+		):
+			lab_map[lab.name] = lab
+	for s in samples:
+		lab = lab_map.get(s.get("laboratory")) or {}
+		s["laboratory_name"] = lab.get("laboratory_name") or s.get("laboratory")
+		s["custody_label"] = s.get("sample_location") or s.get("status") or "—"
+
 	invoices = list_docs(
 		"Sales Invoice",
 		{"customer": customer, "docstatus": ["<", 2]},

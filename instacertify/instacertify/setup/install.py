@@ -337,6 +337,9 @@ def setup_custom_fields():
 		_ensure_service_family_field()
 	finally:
 		frappe.flags.ignore_version = False
+	# Custom Field rows can exist without DB columns (e.g. after partial sync).
+	# Force schema update so save/submit never hits Unknown column in SET.
+	_sync_custom_field_columns(list(CUSTOM_FIELDS.keys()))
 	_apply_quotation_type_options()
 	_ensure_service_family_field()
 	_ensure_sales_invoice_quotation_link()
@@ -346,6 +349,37 @@ def setup_custom_fields():
 	_ensure_lead_project_type_field()
 	_ensure_lead_party_name_field()
 	_ensure_pipeline_and_quote_accept_fields()
+
+
+def _sync_custom_field_columns(doctypes: list[str] | None = None):
+	"""Ensure Custom Field value columns exist on parent tables."""
+	from frappe.model import no_value_fields, table_fields
+
+	doctypes = doctypes or []
+	for doctype in doctypes:
+		if not doctype or not frappe.db.exists("DocType", doctype):
+			continue
+		try:
+			needs_sync = False
+			for cf in frappe.get_all(
+				"Custom Field",
+				filters={"dt": doctype},
+				fields=["fieldname", "fieldtype", "is_virtual"],
+			):
+				if not cf.fieldname:
+					continue
+				if cf.fieldtype in no_value_fields or cf.fieldtype in table_fields:
+					continue
+				if cf.is_virtual:
+					continue
+				if not frappe.db.has_column(doctype, cf.fieldname):
+					needs_sync = True
+					break
+			if needs_sync:
+				frappe.db.updatedb(doctype)
+				frappe.clear_cache(doctype=doctype)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"_sync_custom_field_columns:{doctype}")
 
 
 def _ensure_lead_party_name_field():

@@ -64,6 +64,10 @@ doc_events = {
 		"validate": "instacertify.project.events.validate_project",
 		"on_update": "instacertify.project.events.on_update_project",
 	},
+	"IC Project Update": {
+		"on_update": "instacertify.project.progress.sync_project_from_update",
+		"after_insert": "instacertify.project.progress.sync_project_from_update",
+	},
 	"Lead": {
 		"validate": "instacertify.crm.events.validate_lead",
 		"before_validate": "instacertify.crm.events.before_validate_lead",
@@ -75,6 +79,7 @@ doc_events = {
 	},
 	"IC Testing Request": {
 		"validate": "instacertify.testing.events.validate_testing_request",
+		"after_insert": "instacertify.testing.events.after_insert_testing_request",
 		"on_update": "instacertify.testing.events.on_update_testing_request",
 	},
 	"Task": {

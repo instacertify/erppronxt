@@ -19,13 +19,27 @@ def before_insert_sample(doc, method=None):
 def validate_sample(doc, method=None):
 	"""Hook backup — DocType.validate also syncs custody."""
 	from instacertify.instacertify.doctype.ic_sample_tracking.ic_sample_tracking import (
+		PRESERVE_LOCATIONS_ON_REPORT,
 		STATUS_TO_LOCATION,
 	)
 
 	if doc.status == "Sample Received" and not doc.sample_received_date:
 		doc.sample_received_date = frappe.utils.today()
+	# Normalize legacy storage label
+	if doc.sample_location == "At Instacertify Storage":
+		doc.sample_location = "At Instacertify Warehouse"
+	# Only derive location from status when location is empty or status is a custody move
 	if doc.status in STATUS_TO_LOCATION:
-		doc.sample_location = STATUS_TO_LOCATION[doc.status]
+		if not doc.sample_location or (
+			doc.sample_location not in PRESERVE_LOCATIONS_ON_REPORT
+			and doc.status
+			not in (
+				"Report Available",
+				"Report Uploaded",
+				"Report Shared with Customer",
+			)
+		):
+			doc.sample_location = STATUS_TO_LOCATION[doc.status]
 	if not doc.qr_code and doc.tracking_number:
 		_attach_sample_qr(doc)
 
@@ -120,10 +134,83 @@ def download_sample_sticker_8mm(sample: str):
 	return download_sample_sticker_50x25(sample)
 
 
+@frappe.whitelist()
+def get_testing_request_sample_labels(testing_request: str):
+	"""Unique printable QR labels for every sample on a Testing Request.
+
+	Each label includes:
+	- QR (unique sample tracking code + verify URL)
+	- Sample tracking number
+	- “For more information visit www.instacertify.com”
+	"""
+	from instacertify.utils.qr import get_qr_code_data_uri, sample_qr_payload
+
+	if not testing_request or not frappe.db.exists("IC Testing Request", testing_request):
+		frappe.throw(_("Testing Request not found"))
+
+	samples = get_samples_for_testing_request(testing_request)
+	labels = []
+	for row in samples:
+		doc = frappe.get_doc("IC Sample Tracking", row.name)
+		if not doc.tracking_number:
+			continue
+		if not doc.qr_code:
+			_attach_sample_qr(doc)
+			doc.reload()
+		payload = sample_qr_payload(doc.tracking_number, doc.name)
+		qr_uri = get_qr_code_data_uri(payload, box_size=6, border=1)
+		# Also prepare 50×25 PNG for download/print
+		sticker = None
+		try:
+			sticker = download_sample_sticker_50x25(doc.name)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "sample sticker for TR labels")
+		labels.append(
+			{
+				"name": doc.name,
+				"tracking_number": doc.tracking_number,
+				"sample_description": doc.sample_description,
+				"qr_code": doc.qr_code,
+				"qr_data_uri": qr_uri,
+				"sticker_url": (sticker or {}).get("file_url"),
+				"website": "www.instacertify.com",
+				"info_line": "For more information visit",
+				"print_format": "Instacertify Sample Sticker 50x25mm",
+			}
+		)
+
+	tr = frappe.db.get_value(
+		"IC Testing Request",
+		testing_request,
+		["name", "title", "customer", "test_name", "applicable_standard", "laboratory"],
+		as_dict=True,
+	) or {}
+	return {
+		"testing_request": testing_request,
+		"title": tr.get("title") or testing_request,
+		"customer": tr.get("customer"),
+		"test_name": tr.get("test_name"),
+		"applicable_standard": tr.get("applicable_standard"),
+		"laboratory": tr.get("laboratory"),
+		"labels": labels,
+		"count": len(labels),
+	}
+
+
 def on_update_testing_request(doc, method=None):
+	# Keep Sample Tracking rows in lockstep with this Testing Request
+	try:
+		ensure_samples_for_testing_request(doc.name)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure samples for testing request")
+
 	if doc.has_value_changed("status"):
 		_sync_sample_status(doc)
 		_notify_status_change(doc)
+	if doc.has_value_changed("laboratory") or doc.has_value_changed("customer") or doc.has_value_changed(
+		"project"
+	) or doc.has_value_changed("quotation"):
+		_sync_sample_links_from_tr(doc)
 	if doc.test_report and doc.status == "Report Available":
 		doc.db_set("status", "Report Uploaded", update_modified=False)
 	# When TR report is newly attached, push to linked samples + customer records
@@ -138,16 +225,48 @@ def on_update_testing_request(doc, method=None):
 			frappe.log_error(frappe.get_traceback(), "ingest testing request report")
 
 
+def after_insert_testing_request(doc, method=None):
+	"""Create Sample Tracking rows as soon as a Testing Request exists."""
+	if getattr(doc.flags, "ic_skip_auto_samples", False):
+		if doc.status in (None, "", "Testing Request Created"):
+			doc.status = "Sample Awaited"
+			doc.db_set("status", "Sample Awaited", update_modified=False)
+		return
+	try:
+		ensure_samples_for_testing_request(doc.name)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "after_insert ensure samples")
+	# Move TR out of "Created" once samples are awaited from customer
+	if doc.status in (None, "", "Testing Request Created"):
+		doc.status = "Sample Awaited"
+		doc.db_set("status", "Sample Awaited", update_modified=False)
+		_sync_sample_status(doc)
+
+
+def _sample_names_linked_to_tr(testing_request: str) -> list[str]:
+	"""Primary testing_request link + multi-test child table links."""
+	names = set(
+		frappe.get_all(
+			"IC Sample Tracking",
+			filters={"testing_request": testing_request},
+			pluck="name",
+		)
+	)
+	if frappe.db.exists("DocType", "IC Sample Testing Link"):
+		via = frappe.get_all(
+			"IC Sample Testing Link",
+			filters={"testing_request": testing_request, "parenttype": "IC Sample Tracking"},
+			pluck="parent",
+		)
+		names.update(via)
+	return sorted(names)
+
 def _propagate_report_to_samples(doc):
 	"""Copy test report onto linked Sample Tracking rows and stamp upload time."""
 	meta = frappe.get_meta("IC Sample Tracking")
 	if not meta.has_field("test_report"):
 		return
-	samples = frappe.get_all(
-		"IC Sample Tracking",
-		filters={"testing_request": doc.name},
-		pluck="name",
-	)
+	samples = _sample_names_linked_to_tr(doc.name)
 	stamp = now_datetime()
 	for name in samples:
 		values = {
@@ -164,6 +283,7 @@ def _propagate_report_to_samples(doc):
 def _sync_sample_status(doc):
 	"""Mirror testing-request workflow onto linked samples without wiping custody."""
 	from instacertify.instacertify.doctype.ic_sample_tracking.ic_sample_tracking import (
+		PRESERVE_LOCATIONS_ON_REPORT,
 		STATUS_TO_LOCATION,
 	)
 
@@ -179,18 +299,660 @@ def _sync_sample_status(doc):
 	if doc.status not in workflow_statuses and doc.status not in STATUS_TO_LOCATION:
 		return
 
+	report_statuses = {
+		"Report Available",
+		"Report Uploaded",
+		"Report Shared with Customer",
+	}
+
+	names = _sample_names_linked_to_tr(doc.name)
+	if not names:
+		return
 	samples = frappe.get_all(
 		"IC Sample Tracking",
-		filters={"testing_request": doc.name},
+		filters={"name": ["in", names]},
 		fields=["name", "status", "sample_location"],
 	)
 	for row in samples:
 		if row.status == "Discarded" or row.sample_location == "Discarded":
 			continue
 		values = {"status": doc.status}
-		if doc.status in STATUS_TO_LOCATION:
-			values["sample_location"] = STATUS_TO_LOCATION[doc.status]
+		# After testing completes, keep physical location (lab / warehouse / client)
+		if doc.status in report_statuses:
+			if row.sample_location in PRESERVE_LOCATIONS_ON_REPORT or row.sample_location:
+				pass  # status only
+			elif doc.status in STATUS_TO_LOCATION:
+				values["sample_location"] = STATUS_TO_LOCATION[doc.status]
+		elif doc.status == "Testing in Progress":
+			values["sample_location"] = "At Laboratory"
+		elif doc.status in STATUS_TO_LOCATION:
+			# Don't yank a sample already returned / in warehouse back to transit
+			if row.sample_location not in (
+				"Returned to Client",
+				"In Transit to Client",
+				"At Instacertify Warehouse",
+				"At Instacertify Storage",
+			):
+				values["sample_location"] = STATUS_TO_LOCATION[doc.status]
 		frappe.db.set_value("IC Sample Tracking", row.name, values)
+
+
+def _sync_sample_links_from_tr(doc):
+	"""Push laboratory / customer / project / quotation from Testing Request onto linked samples.
+
+	Never reassign a sample to a different laboratory (same-lab multi-test rule).
+	"""
+	names = _sample_names_linked_to_tr(doc.name)
+	meta = frappe.get_meta("IC Sample Tracking")
+	for name in names:
+		sample = frappe.get_doc("IC Sample Tracking", name)
+		values = {}
+		if doc.laboratory:
+			if sample.laboratory and sample.laboratory != doc.laboratory:
+				frappe.throw(
+					_(
+						"Cannot change Testing Request {0} laboratory to {1}: sample {2} is already "
+						"assigned to {3}. One sample cannot serve tests at different labs."
+					).format(doc.name, doc.laboratory, sample.tracking_number or name, sample.laboratory),
+					title=_("Same-lab only"),
+				)
+			if not sample.laboratory:
+				values["laboratory"] = doc.laboratory
+		if doc.customer:
+			values["customer"] = doc.customer
+		if doc.project:
+			values["project"] = doc.project
+		if meta.has_field("quotation") and doc.quotation:
+			values["quotation"] = doc.quotation
+		if values:
+			for k, v in values.items():
+				sample.set(k, v)
+			sample.flags.ignore_permissions = True
+			sample.save()
+
+
+def _sample_description_from_tr(tr, index: int, total: int) -> str:
+	bits = [b for b in [(tr.product or "").strip(), (tr.test_name or "").strip()] if b]
+	base = " / ".join(bits) if bits else f"Sample for {tr.name}"
+	if (tr.applicable_standard or "").strip():
+		base = f"{base} ({tr.applicable_standard.strip()})"
+	if total > 1:
+		base = f"{base} — {index}/{total}"
+	return base[:140]
+
+
+@frappe.whitelist()
+def create_testing_and_samples(
+	customer: str,
+	product: str | None = None,
+	test_name: str | None = None,
+	applicable_standard: str | None = None,
+	laboratory: str | None = None,
+	lab_scope_row: str | None = None,
+	lab_offer: str | None = None,
+	number_of_samples: int | None = 1,
+	project: str | None = None,
+	quotation: str | None = None,
+	title: str | None = None,
+	reuse_samples: str | list | None = None,
+):
+	"""One-shot: create Testing Request from lab library pricing + linked samples.
+
+	reuse_samples: optional list (or JSON) of existing IC Sample Tracking names to
+	link to this TR. Allowed only when those samples already belong to the same
+	laboratory (one sample → multiple tests at same lab only).
+	"""
+	from frappe.utils import cint, flt
+	import json
+
+	if not customer:
+		frappe.throw(_("Customer is required"))
+	if not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer {0} not found").format(customer))
+
+	if isinstance(reuse_samples, str):
+		reuse_samples = json.loads(reuse_samples) if reuse_samples.strip() else []
+	reuse_samples = [s for s in (reuse_samples or []) if s]
+
+	needed = max(cint(number_of_samples) or 1, 1)
+	buying = 0
+	selling = 0
+	scope_label = ""
+	lab_loc = ""
+
+	# Resolve lab scope / prices from laboratory library
+	if laboratory and (lab_scope_row or test_name or applicable_standard):
+		try:
+			from instacertify.laboratory.api import get_lab_offer_details, get_lab_test_scope_details
+
+			if lab_scope_row:
+				detail = get_lab_test_scope_details(
+					laboratory=laboratory,
+					scope_key="",
+					scope_row=lab_scope_row,
+				)
+			else:
+				detail = get_lab_offer_details(
+					lab_offer=lab_offer,
+					applicable_standard=applicable_standard,
+					test_name=test_name,
+					laboratory=laboratory,
+					scope_row=lab_scope_row,
+				)
+			if detail:
+				buying = flt(detail.get("purchase_price") or detail.get("buying_price"))
+				selling = flt(detail.get("selling_price"))
+				scope_label = detail.get("label") or detail.get("scope_label") or ""
+				lab_scope_row = detail.get("name") or detail.get("scope_row") or lab_scope_row
+				if not test_name:
+					test_name = detail.get("test_name") or test_name
+				if not applicable_standard:
+					applicable_standard = detail.get("applicable_standard") or applicable_standard
+				if not laboratory:
+					laboratory = detail.get("laboratory") or laboratory
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "create_testing_and_samples lab resolve")
+
+	if laboratory and frappe.db.exists("IC Laboratory", laboratory):
+		lab_loc = frappe.db.get_value("IC Laboratory", laboratory, "location") or ""
+
+	tr_title = (title or "").strip() or " / ".join(
+		[b for b in [(test_name or "").strip(), (product or "").strip()] if b]
+	) or _("Testing Request")
+
+	payload = {
+		"doctype": "IC Testing Request",
+		"title": tr_title[:140],
+		"customer": customer,
+		"number_of_samples": needed,
+		"suggested_selling_price": selling,
+		"library_buying_price": buying,
+		"status": "Sample Awaited",
+	}
+	for key, val in {
+		"project": project,
+		"quotation": quotation,
+		"product": product,
+		"test_name": test_name,
+		"applicable_standard": applicable_standard,
+		"laboratory": laboratory,
+		"lab_scope_row": lab_scope_row,
+		"lab_test_scope": scope_label,
+		"lab_offer": lab_offer,
+	}.items():
+		if val:
+			payload[key] = val
+
+	# Skip auto sample creation when reusing — we link after insert
+	tr = frappe.get_doc(payload)
+	if reuse_samples:
+		tr.flags.ic_skip_auto_samples = True
+	tr.insert(ignore_permissions=True)
+
+	linked = []
+	if reuse_samples:
+		linked = link_samples_to_testing_request(tr.name, reuse_samples)
+		# If fewer reused than needed, create the remainder as new samples
+		have = len(linked.get("linked") or [])
+		if have < needed:
+			tr.db_set("number_of_samples", needed, update_modified=False)
+			bundle = ensure_samples_for_testing_request(tr.name, force_sync=1)
+		else:
+			# number_of_samples reflects linked count for display
+			tr.db_set("number_of_samples", max(needed, have), update_modified=False)
+			bundle = {
+				"created": [],
+				"samples": get_samples_for_testing_request(tr.name),
+				"count": have,
+			}
+	else:
+		bundle = ensure_samples_for_testing_request(tr.name, force_sync=1)
+
+	return {
+		"testing_request": tr.name,
+		"title": tr.title,
+		"status": tr.status,
+		"laboratory": laboratory,
+		"laboratory_location": lab_loc,
+		"library_buying_price": buying,
+		"suggested_selling_price": selling,
+		"samples": bundle.get("samples") or [],
+		"created_samples": bundle.get("created") or [],
+		"reused_samples": (linked.get("linked") if linked else []) or [],
+		"sample_labels": get_testing_request_sample_labels(tr.name),
+	}
+
+
+@frappe.whitelist()
+def list_testing_samples_board(
+	customer: str | None = None,
+	project: str | None = None,
+	status: str | None = None,
+	limit: int | None = 40,
+):
+	"""Board rows for the Testing & Samples page — TR + nested sample custody."""
+	from frappe.utils import cint
+
+	filters = {}
+	if customer:
+		filters["customer"] = customer
+	if project:
+		filters["project"] = project
+	if status:
+		filters["status"] = status
+
+	trs = frappe.get_all(
+		"IC Testing Request",
+		filters=filters,
+		fields=[
+			"name",
+			"title",
+			"status",
+			"customer",
+			"project",
+			"quotation",
+			"product",
+			"test_name",
+			"applicable_standard",
+			"laboratory",
+			"number_of_samples",
+			"library_buying_price",
+			"suggested_selling_price",
+			"modified",
+		],
+		order_by="modified desc",
+		limit_page_length=cint(limit) or 40,
+	)
+	lab_ids = {t.laboratory for t in trs if t.laboratory}
+	lab_map = {}
+	if lab_ids:
+		for lab in frappe.get_all(
+			"IC Laboratory",
+			filters={"name": ["in", list(lab_ids)]},
+			fields=["name", "laboratory_name", "location"],
+		):
+			lab_map[lab.name] = lab
+
+	customers = {t.customer for t in trs if t.customer}
+	customer_map = {}
+	if customers:
+		for c in frappe.get_all(
+			"Customer",
+			filters={"name": ["in", list(customers)]},
+			fields=["name", "customer_name"],
+		):
+			customer_map[c.name] = c.customer_name or c.name
+
+	out = []
+	for tr in trs:
+		lab = lab_map.get(tr.laboratory) or {}
+		samples = get_samples_for_testing_request(tr.name)
+		out.append(
+			{
+				**tr,
+				"customer_name": customer_map.get(tr.customer) or tr.customer,
+				"laboratory_name": lab.get("laboratory_name") or tr.laboratory,
+				"laboratory_city": lab.get("location") or "",
+				"samples": samples,
+			}
+		)
+	return out
+
+
+@frappe.whitelist()
+def ensure_samples_for_testing_request(testing_request: str, force_sync: int | None = 0):
+	"""Create missing Sample Tracking rows for a Testing Request and sync lab links.
+
+	Uses Number of Samples. Each sample inherits customer, project, laboratory,
+	and a description built from Product / Test / Standard (lab library data).
+
+	Samples already linked via linked_tests (multi-test same lab) count toward needed.
+	"""
+	from frappe.utils import cint
+
+	tr = frappe.get_doc("IC Testing Request", testing_request)
+	if not tr.customer:
+		frappe.throw(_("Set Customer on the Testing Request before creating samples"))
+
+	needed = max(cint(tr.number_of_samples) or 1, 1)
+	linked_names = _sample_names_linked_to_tr(tr.name)
+	existing = []
+	if linked_names:
+		existing_fields = ["name", "laboratory", "customer", "project", "sample_description"]
+		if frappe.get_meta("IC Sample Tracking").has_field("quotation"):
+			existing_fields.append("quotation")
+		existing = frappe.get_all(
+			"IC Sample Tracking",
+			filters={"name": ["in", linked_names]},
+			fields=existing_fields,
+			order_by="creation asc",
+		)
+
+	created = []
+	for i in range(len(existing), needed):
+		payload = {
+			"doctype": "IC Sample Tracking",
+			"customer": tr.customer,
+			"project": tr.project,
+			"testing_request": tr.name,
+			"laboratory": tr.laboratory,
+			"sample_description": _sample_description_from_tr(tr, i + 1, needed),
+			"quantity": 1,
+			"status": "Sample Awaited",
+			"sample_location": "With Customer",
+		}
+		if frappe.get_meta("IC Sample Tracking").has_field("quotation") and tr.quotation:
+			payload["quotation"] = tr.quotation
+		doc = frappe.get_doc(payload)
+		doc.insert(ignore_permissions=True)
+		created.append(doc.name)
+
+	# Sync lab / links onto existing rows — never move a sample to a different lab
+	meta = frappe.get_meta("IC Sample Tracking")
+	for row in existing:
+		values = {}
+		if tr.laboratory:
+			if not row.laboratory:
+				values["laboratory"] = tr.laboratory
+			elif row.laboratory != tr.laboratory:
+				frappe.throw(
+					_(
+						"Sample {0} is at laboratory {1} and cannot be synced to Testing Request {2} "
+						"which uses {3}. One sample cannot serve tests at different labs."
+					).format(row.name, row.laboratory, tr.name, tr.laboratory),
+					title=_("Same-lab only"),
+				)
+		if tr.customer and row.customer != tr.customer:
+			values["customer"] = tr.customer
+		if tr.project and (force_sync or not row.project):
+			values["project"] = tr.project
+		if meta.has_field("quotation") and tr.quotation and (force_sync or not row.get("quotation")):
+			values["quotation"] = tr.quotation
+		if values:
+			# Use document save so same-lab validation runs when linking fields change
+			sample = frappe.get_doc("IC Sample Tracking", row.name)
+			for k, v in values.items():
+				sample.set(k, v)
+			_ensure_sample_tr_link(sample, tr)
+			sample.flags.ignore_permissions = True
+			sample.save()
+
+	# Ensure every linked sample has this TR in linked_tests
+	for name in [r.name for r in existing] + created:
+		sample = frappe.get_doc("IC Sample Tracking", name)
+		if _ensure_sample_tr_link(sample, tr):
+			sample.flags.ignore_permissions = True
+			sample.save()
+
+	return {
+		"created": created,
+		"samples": get_samples_for_testing_request(tr.name),
+		"count": len(_sample_names_linked_to_tr(tr.name)),
+	}
+
+
+def _ensure_sample_tr_link(sample, tr) -> bool:
+	"""Append TR to sample.linked_tests if missing. Returns True if sample changed."""
+	changed = False
+	if not sample.testing_request:
+		sample.testing_request = tr.name
+		changed = True
+	if not sample.meta.has_field("linked_tests"):
+		return changed
+	existing = {row.testing_request for row in (sample.get("linked_tests") or []) if row.testing_request}
+	if tr.name in existing:
+		return changed
+	sample.append(
+		"linked_tests",
+		{
+			"testing_request": tr.name,
+			"test_name": tr.test_name,
+			"applicable_standard": tr.applicable_standard,
+			"laboratory": tr.laboratory,
+		},
+	)
+	return True
+
+
+@frappe.whitelist()
+def get_reusable_samples(
+	customer: str,
+	laboratory: str,
+	project: str | None = None,
+	limit: int | None = 40,
+):
+	"""Samples for this customer already assigned to the same laboratory.
+
+	These can be reused for additional Testing Requests at that lab only.
+	"""
+	from frappe.utils import cint
+
+	if not customer or not laboratory:
+		return []
+	filters = {
+		"customer": customer,
+		"laboratory": laboratory,
+		"status": ["!=", "Discarded"],
+	}
+	if project:
+		filters["project"] = project
+	rows = frappe.get_all(
+		"IC Sample Tracking",
+		filters=filters,
+		fields=[
+			"name",
+			"tracking_number",
+			"status",
+			"sample_location",
+			"sample_description",
+			"testing_request",
+			"laboratory",
+			"project",
+			"modified",
+		],
+		order_by="modified desc",
+		limit_page_length=cint(limit) or 40,
+	)
+	out = []
+	for r in rows:
+		linked = []
+		if r.testing_request:
+			linked.append(r.testing_request)
+		if frappe.db.exists("DocType", "IC Sample Testing Link"):
+			extra = frappe.get_all(
+				"IC Sample Testing Link",
+				filters={"parent": r.name, "parenttype": "IC Sample Tracking"},
+				fields=["testing_request", "test_name", "applicable_standard"],
+			)
+			for e in extra:
+				if e.testing_request and e.testing_request not in linked:
+					linked.append(e.testing_request)
+		lab_title = frappe.db.get_value("IC Laboratory", laboratory, "laboratory_name") or laboratory
+		out.append(
+			{
+				**r,
+				"laboratory_name": lab_title,
+				"linked_testing_requests": linked,
+				"linked_count": len(linked),
+			}
+		)
+	return out
+
+
+@frappe.whitelist()
+def link_samples_to_testing_request(testing_request: str, samples: str | list | None = None):
+	"""Link existing samples to a Testing Request (same laboratory only)."""
+	import json
+
+	if not testing_request or not frappe.db.exists("IC Testing Request", testing_request):
+		frappe.throw(_("Testing Request not found"))
+	tr = frappe.get_doc("IC Testing Request", testing_request)
+	if not tr.laboratory:
+		frappe.throw(_("Set Laboratory on the Testing Request before linking samples"))
+
+	if isinstance(samples, str):
+		samples = json.loads(samples) if samples.strip() else []
+	samples = [s for s in (samples or []) if s]
+	if not samples:
+		frappe.throw(_("Select at least one sample to link"))
+
+	linked = []
+	for name in samples:
+		if not frappe.db.exists("IC Sample Tracking", name):
+			frappe.throw(_("Sample {0} not found").format(name))
+		sample = frappe.get_doc("IC Sample Tracking", name)
+		if sample.customer and tr.customer and sample.customer != tr.customer:
+			frappe.throw(
+				_("Sample {0} belongs to a different customer and cannot be linked.").format(
+					sample.tracking_number or name
+				)
+			)
+		if sample.laboratory and sample.laboratory != tr.laboratory:
+			lab_a = frappe.db.get_value("IC Laboratory", sample.laboratory, "laboratory_name") or sample.laboratory
+			lab_b = frappe.db.get_value("IC Laboratory", tr.laboratory, "laboratory_name") or tr.laboratory
+			frappe.throw(
+				_(
+					"Sample {0} is for {1} and cannot be used for Testing Request {2} at {3}. "
+					"One sample can cover multiple tests only at the same laboratory."
+				).format(sample.tracking_number or name, lab_a, tr.name, lab_b),
+				title=_("Same-lab only"),
+			)
+		if not sample.laboratory:
+			sample.laboratory = tr.laboratory
+		_ensure_sample_tr_link(sample, tr)
+		sample.flags.ignore_permissions = True
+		sample.save()
+		linked.append(sample.name)
+
+	frappe.db.commit()
+	return {"linked": linked, "samples": get_samples_for_testing_request(testing_request)}
+
+
+@frappe.whitelist()
+def get_samples_for_testing_request(testing_request: str):
+	"""List Sample Tracking rows linked to a Testing Request (primary or multi-test table)."""
+	names = _sample_names_linked_to_tr(testing_request)
+	if not names:
+		return []
+	rows = frappe.get_all(
+		"IC Sample Tracking",
+		filters={"name": ["in", names]},
+		fields=[
+			"name",
+			"tracking_number",
+			"status",
+			"sample_location",
+			"laboratory",
+			"sample_description",
+			"location_updated_on",
+			"dispatch_date",
+			"sample_received_date",
+			"test_report",
+			"testing_request",
+		],
+		order_by="creation asc",
+	)
+	# Resolve lab titles + linked TR count
+	lab_names = {r.laboratory for r in rows if r.laboratory}
+	lab_map = {}
+	if lab_names:
+		for lab in frappe.get_all(
+			"IC Laboratory",
+			filters={"name": ["in", list(lab_names)]},
+			fields=["name", "laboratory_name", "location"],
+		):
+			lab_map[lab.name] = lab
+	for r in rows:
+		lab = lab_map.get(r.laboratory) or {}
+		r["laboratory_name"] = lab.get("laboratory_name") or r.laboratory
+		r["laboratory_city"] = lab.get("location") or ""
+		r["custody_label"] = r.sample_location or r.status or "—"
+		link_count = 0
+		if frappe.db.exists("DocType", "IC Sample Testing Link"):
+			link_count = frappe.db.count(
+				"IC Sample Testing Link",
+				{"parent": r.name, "parenttype": "IC Sample Tracking"},
+			)
+		r["linked_test_count"] = max(link_count, 1 if r.testing_request else 0)
+	return rows
+
+
+@frappe.whitelist()
+def get_linked_testing_overview(project: str | None = None, customer: str | None = None):
+	"""Testing Requests + Samples for a Project or Customer (desk panels)."""
+	filters = {}
+	if project:
+		filters["project"] = project
+	elif customer:
+		filters["customer"] = customer
+	else:
+		frappe.throw(_("Pass project or customer"))
+
+	testing = frappe.get_all(
+		"IC Testing Request",
+		filters=filters,
+		fields=[
+			"name",
+			"title",
+			"status",
+			"product",
+			"test_name",
+			"applicable_standard",
+			"laboratory",
+			"number_of_samples",
+			"quotation",
+			"project",
+			"customer",
+			"modified",
+		],
+		order_by="modified desc",
+		limit_page_length=50,
+	)
+	sample_filters = dict(filters)
+	samples = frappe.get_all(
+		"IC Sample Tracking",
+		filters=sample_filters,
+		fields=[
+			"name",
+			"tracking_number",
+			"status",
+			"sample_location",
+			"laboratory",
+			"testing_request",
+			"sample_description",
+			"project",
+			"customer",
+			"modified",
+		],
+		order_by="modified desc",
+		limit_page_length=80,
+	)
+	lab_ids = {r.laboratory for r in testing + samples if r.laboratory}
+	lab_map = {}
+	if lab_ids:
+		for lab in frappe.get_all(
+			"IC Laboratory",
+			filters={"name": ["in", list(lab_ids)]},
+			fields=["name", "laboratory_name", "location"],
+		):
+			lab_map[lab.name] = lab
+	for row in testing + samples:
+		lab = lab_map.get(row.laboratory) or {}
+		row["laboratory_name"] = lab.get("laboratory_name") or row.laboratory
+		row["laboratory_city"] = lab.get("location") or ""
+	for s in samples:
+		s["custody_label"] = s.sample_location or s.status or "—"
+
+	custody_counts = {}
+	for s in samples:
+		key = s.sample_location or "Unset"
+		custody_counts[key] = custody_counts.get(key, 0) + 1
+
+	return {
+		"testing_requests": testing,
+		"samples": samples,
+		"custody_counts": custody_counts,
+	}
 
 
 @frappe.whitelist()
@@ -201,6 +963,9 @@ def set_sample_location(sample: str, location: str, discard_reason: str | None =
 		SAMPLE_LOCATIONS,
 	)
 
+	# Accept legacy storage label
+	if location == "At Instacertify Storage":
+		location = "At Instacertify Warehouse"
 	if location not in SAMPLE_LOCATIONS:
 		frappe.throw(_("Invalid sample location: {0}").format(location))
 	doc = frappe.get_doc("IC Sample Tracking", sample)
@@ -209,7 +974,54 @@ def set_sample_location(sample: str, location: str, discard_reason: str | None =
 	if location == "Discarded" and discard_reason:
 		doc.discard_reason = discard_reason
 	doc.save(ignore_permissions=True)
+
+	# Nudge parent Testing Request status when sample reaches the lab / office
+	if doc.testing_request and location in (
+		"At Instacertify Office",
+		"In Transit to Lab",
+		"At Laboratory",
+		"At Instacertify Warehouse",
+		"Returned to Client",
+	):
+		_maybe_advance_testing_request_from_sample(doc)
+
 	return doc.as_dict()
+
+
+def _maybe_advance_testing_request_from_sample(sample):
+	"""Advance TR status from sample custody moves (does not move backward)."""
+	tr_name = sample.testing_request
+	if not tr_name or not frappe.db.exists("IC Testing Request", tr_name):
+		return
+	tr_status = frappe.db.get_value("IC Testing Request", tr_name, "status")
+	loc = sample.sample_location
+	order = [
+		"Testing Request Created",
+		"Sample Awaited",
+		"Sample Received",
+		"Sample Dispatched to Laboratory",
+		"Testing in Progress",
+		"Report Available",
+		"Report Uploaded",
+		"Report Shared with Customer",
+	]
+	target = None
+	if loc == "At Instacertify Office":
+		target = "Sample Received"
+	elif loc in ("In Transit to Lab",):
+		target = "Sample Dispatched to Laboratory"
+	elif loc == "At Laboratory":
+		target = "Testing in Progress"
+	# Warehouse / returned to client after testing — leave TR on report workflow
+	if not target:
+		return
+	try:
+		cur_i = order.index(tr_status) if tr_status in order else -1
+		tgt_i = order.index(target)
+	except ValueError:
+		return
+	if tgt_i > cur_i:
+		frappe.db.set_value("IC Testing Request", tr_name, "status", target, update_modified=True)
 
 
 @frappe.whitelist()

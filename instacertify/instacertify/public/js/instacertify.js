@@ -501,6 +501,13 @@ instacertify.open_laboratory_upload = function (opts) {
 				default: opts.contact_person || "",
 			},
 			{
+				fieldname: "contact_designation",
+				fieldtype: "Data",
+				label: __("Designation"),
+				description: __("e.g. Quality Manager, Lab In-charge"),
+				default: opts.contact_designation || "",
+			},
+			{
 				fieldname: "email",
 				fieldtype: "Data",
 				label: __("Email"),
@@ -737,10 +744,9 @@ instacertify.add_helpdesk_buttons = function (frm, defaults) {
 				"Project Board": "layout-grid",
 				"Team Collaboration": "message-circle",
 				"Team Calendar": "calendar",
-				"Testing Requests": "flask-conical",
+				"Testing & Samples": "flask-conical",
 				Laboratories: "microscope",
 				"Quote Format Library": "book-open",
-				Samples: "package",
 				"Documents Collection Sheets": "clipboard-list",
 				"Document Collection Library": "folder-open",
 				"Sample Dispatch Sheets": "truck",
@@ -1153,9 +1159,17 @@ instacertify.kpi_routes = function () {
 			doctype: "IC Sample Tracking",
 			filters: { sample_location: "At Laboratory" },
 		},
+		"Samples In Warehouse": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "At Instacertify Warehouse" },
+		},
 		"Samples In Storage": {
 			doctype: "IC Sample Tracking",
-			filters: { sample_location: "At Instacertify Storage" },
+			filters: { sample_location: ["in", ["At Instacertify Warehouse", "At Instacertify Storage"]] },
+		},
+		"Samples Returned to Client": {
+			doctype: "IC Sample Tracking",
+			filters: { sample_location: "Returned to Client" },
 		},
 		"Samples Discarded": {
 			doctype: "IC Sample Tracking",
@@ -2333,6 +2347,10 @@ frappe.ui.form.on("Customer", {
 			frm.add_custom_button(__("Open Data Drive"), () => {
 				frm.scroll_to_field("ic_customer_files_html");
 			});
+			frm.add_custom_button(__("Testing & Samples"), () => {
+				frappe.route_options = { customer: frm.doc.name };
+				frappe.set_route("testing-samples");
+			});
 			frm.add_custom_button(__("Sync Team Access"), () => {
 				frappe.call({
 					method: "instacertify.crm.customer_permissions.sync_customer_team",
@@ -2363,6 +2381,14 @@ instacertify.load_customer_related = function (frm) {
 		callback(r) {
 			const d = r.message || {};
 			frm.set_df_property("ic_history_html", "options", ic_render_customer_related(d));
+			const $hist = frm.fields_dict.ic_history_html && frm.fields_dict.ic_history_html.$wrapper;
+			if ($hist) {
+				$hist.find("[data-ic-ts-customer]").off("click.icTs").on("click.icTs", function (e) {
+					e.preventDefault();
+					frappe.route_options = { customer: $(this).attr("data-ic-ts-customer") };
+					frappe.set_route("testing-samples");
+				});
+			}
 			if (frm.fields_dict.ic_customer_files_html) {
 				frm.set_df_property(
 					"ic_customer_files_html",
@@ -2970,6 +2996,9 @@ function ic_render_customer_related(d) {
 		ic_doc_link("IC Testing Request", t.name, t.title || t.name),
 		ic_status_pill(t.status),
 		ic_esc(t.product || t.test_name || "—"),
+		t.laboratory
+			? ic_doc_link("IC Laboratory", t.laboratory, t.laboratory_name || t.laboratory)
+			: "—",
 		t.project ? ic_doc_link("Project", t.project) : "—",
 		t.quotation ? ic_doc_link("Quotation", t.quotation) : "—",
 	]);
@@ -2998,8 +3027,16 @@ function ic_render_customer_related(d) {
 	]);
 	const sample_rows = (d.samples || []).map((s) => [
 		ic_doc_link("IC Sample Tracking", s.name, s.tracking_number || s.name),
-		ic_status_pill(s.status),
-		ic_esc(s.sample_description || "—"),
+		`<span style="font-weight:600;color:${
+			(instacertify._sample_custody_color &&
+				instacertify._sample_custody_color(s.sample_location || s.custody_label || "")) ||
+			"#546e7a"
+		}">${ic_esc(s.sample_location || s.custody_label || s.status || "—")}</span>`,
+		s.laboratory
+			? ic_doc_link("IC Laboratory", s.laboratory, s.laboratory_name || s.laboratory)
+			: "—",
+		s.testing_request ? ic_doc_link("IC Testing Request", s.testing_request) : "—",
+		s.project ? ic_doc_link("Project", s.project) : "—",
 	]);
 	const record_rows = (d.records || []).map((rec) => [
 		ic_doc_link("IC Project Record", rec.name, rec.subject || rec.name),
@@ -3073,13 +3110,17 @@ function ic_render_customer_related(d) {
 					: ""
 			)}
 			${ic_related_section(
-				__("Testing Requests"),
+				__("Testing & Samples"),
 				ic_table(
-					[__("Request"), __("Status"), __("Product / Test"), __("Project"), __("Quotation")],
+					[__("Request"), __("Status"), __("Product / Test"), __("Laboratory"), __("Project"), __("Quotation")],
 					testing_rows
 				),
 				__("No testing requests"),
-				customer ? ic_list_link("IC Testing Request", customer) : ""
+				customer
+					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
+							customer
+					  )}">${ic_esc(__("Open Testing & Samples"))}</a>`
+					: ""
 			)}
 			${ic_related_section(
 				__("Document Requests"),
@@ -3103,9 +3144,17 @@ function ic_render_customer_related(d) {
 				customer ? ic_list_link("Helpdesk Ticket", customer) : ""
 			)}
 			${ic_related_section(
-				__("Samples"),
-				ic_table([__("Sample"), __("Status"), __("Description")], sample_rows),
-				__("No samples")
+				__("Samples — location (lab / warehouse / client)"),
+				ic_table(
+					[__("Sample"), __("Location"), __("Laboratory"), __("Testing Request"), __("Project")],
+					sample_rows
+				),
+				__("No samples"),
+				customer
+					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
+							customer
+					  )}">${ic_esc(__("Update locations"))}</a>`
+					: ""
 			)}
 			${ic_related_section(
 				__("Project Records"),
@@ -3126,27 +3175,10 @@ function ic_render_customer_related(d) {
 	`;
 }
 
-// Project progress HTML
+// Project progress HTML + saved editable Progress Log
 frappe.ui.form.on("Project", {
 	refresh(frm) {
-		const stages = [
-			"Project Initiated","Customer Documents Pending","Documents Under Review","Application Submitted",
-			"Sample Awaited","Sample Received","Sample Dispatched to Laboratory","Testing in Progress",
-			"Report Awaited","Report Available","Certification in Progress","Certificate Available",
-			"Delivered to Customer","Project Completed"
-		];
-		const current = frm.doc.ic_project_stage;
-		const idx = stages.indexOf(current);
-		let html = '<div class="ic-stage-tracker">';
-		stages.forEach((s, i) => {
-			let cls = "stage";
-			if (i < idx) cls += " done";
-			if (i === idx) cls += " active";
-			html += `<span class="${cls}">${s}</span>`;
-		});
-		html += "</div>";
-		html += `<div class="ic-progress" style="margin-top:12px;"><span style="width:${frm.doc.ic_progress_percentage||0}%"></span></div>`;
-		frm.set_df_property("ic_progress_html", "options", html);
+		instacertify.render_project_progress_tracker(frm);
 
 		// Optional Quotation map — filter to this customer's quotes
 		frm.set_query("ic_quotation", () => {
@@ -3167,10 +3199,32 @@ frappe.ui.form.on("Project", {
 			frm.add_custom_button(__("Open Customer"), () => {
 				frappe.set_route("Form", "Customer", frm.doc.customer);
 			}, __("Links"));
+			frm.add_custom_button(__("Customer Data Drive"), () => {
+				frappe.set_route("Form", "Customer", frm.doc.customer);
+			}, __("Links"));
+		}
+		if (!frm.is_new()) {
+			frm.add_custom_button(__("Testing & Samples"), () => {
+				frappe.route_options = {
+					customer: frm.doc.customer,
+					project: frm.doc.name,
+				};
+				frappe.set_route("testing-samples");
+			}, __("Testing"));
+			frm.add_custom_button(__("Testing Requests (list)"), () => {
+				frappe.set_route("List", "IC Testing Request", { project: frm.doc.name });
+			}, __("Testing"));
+			frm.add_custom_button(__("Samples (list)"), () => {
+				frappe.set_route("List", "IC Sample Tracking", { project: frm.doc.name });
+			}, __("Testing"));
+			instacertify.render_project_testing_panel(frm);
 		}
 
-		frm.add_custom_button(__("Add Project Update"), () => {
-			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
+		frm.add_custom_button(__("Add Progress Log Entry"), () => {
+			instacertify.open_progress_log_dialog(frm);
+		}, __("Actions"));
+		frm.add_custom_button(__("Open Progress Log List"), () => {
+			frappe.set_route("List", "IC Project Update", { project: frm.doc.name });
 		}, __("Actions"));
 		frm.add_custom_button(__("Generate / Share Document List"), () => {
 			instacertify.open_project_document_share_dialog(frm);
@@ -3395,15 +3449,43 @@ frappe.ui.form.on("IC Testing Request", {
 				});
 			}, __("Billing"));
 		}
+		if (!frm.is_new()) {
+			frm.add_custom_button(__("Create / Sync Samples"), () => {
+				instacertify.ensure_testing_request_samples(frm, { force_sync: 1 });
+			}, __("Samples"));
+			frm.add_custom_button(__("Print Sample QR Labels"), () => {
+				frappe.call({
+					method: "instacertify.testing.events.get_testing_request_sample_labels",
+					args: { testing_request: frm.doc.name },
+					freeze: true,
+					freeze_message: __("Preparing sample QR labels…"),
+					callback(r) {
+						instacertify.show_testing_request_sample_qr_dialog(r.message || {});
+					},
+				});
+			}, __("Samples"));
+			frm.add_custom_button(__("Open Sample List"), () => {
+				frappe.set_route("List", "IC Sample Tracking", {
+					testing_request: frm.doc.name,
+				});
+			}, __("Samples"));
+			instacertify.render_testing_request_samples(frm);
+		}
+	},
+	number_of_samples(frm) {
+		if (frm.is_new() || frm._ic_skip_lab_picker) return;
+		instacertify.ensure_testing_request_samples(frm);
 	},
 	test_name(frm) {
 		if (frm._ic_skip_lab_picker) return;
 		frm.set_value("lab_offer", "");
+		instacertify.load_testing_request_standards_for_test(frm);
 		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 	},
 	applicable_standard(frm) {
 		if (frm._ic_skip_lab_picker) return;
 		frm.set_value("lab_offer", "");
+		instacertify.load_testing_request_tests_for_standard(frm);
 		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 	},
 	lab_offer(frm) {
@@ -3448,31 +3530,92 @@ frappe.ui.form.on("IC Testing Request", {
 	},
 });
 
+instacertify._ic_is_other = function (v) {
+	return String(v || "").trim().toLowerCase() === "other";
+};
+
+instacertify._set_autocomplete_list = function (frm, fieldname, values) {
+	frm.set_df_property(fieldname, "options", (values || []).join("\n"));
+	const ctrl = frm.fields_dict[fieldname];
+	if (ctrl && ctrl.set_data) {
+		ctrl.set_data(values);
+	} else if (ctrl && ctrl.awesomplete) {
+		ctrl.awesomplete.list = values;
+	}
+};
+
 instacertify.load_testing_request_library_options = function (frm) {
 	frappe.call({
 		method: "instacertify.laboratory.api.get_test_name_options",
+		args: {
+			applicable_standard: frm.doc.applicable_standard || "",
+		},
 		callback(r) {
 			const values = (r.message || []).map((o) => o.value || o);
-			frm.set_df_property("test_name", "options", values.join("\n"));
-			const ctrl = frm.fields_dict.test_name;
-			if (ctrl && ctrl.set_data) {
-				ctrl.set_data(values);
-			} else if (ctrl && ctrl.awesomplete) {
-				ctrl.awesomplete.list = values;
-			}
+			instacertify._set_autocomplete_list(frm, "test_name", values);
 		},
 	});
 	frappe.call({
 		method: "instacertify.laboratory.api.get_standard_options",
+		args: {
+			test_name: frm.doc.test_name || "",
+		},
 		callback(r) {
 			const values = (r.message || []).map((o) => o.value || o);
-			frm.set_df_property("applicable_standard", "options", values.join("\n"));
-			const ctrl = frm.fields_dict.applicable_standard;
-			if (ctrl && ctrl.set_data) {
-				ctrl.set_data(values);
-			} else if (ctrl && ctrl.awesomplete) {
-				ctrl.awesomplete.list = values;
+			instacertify._set_autocomplete_list(frm, "applicable_standard", values);
+		},
+	});
+};
+
+instacertify.load_testing_request_standards_for_test = function (frm) {
+	const test = frm.doc.test_name || "";
+	frappe.call({
+		method: "instacertify.laboratory.api.get_standards_for_test",
+		args: { test_name: test },
+		callback(r) {
+			const rows = r.message || [];
+			const values = rows.map((o) => o.value || o);
+			instacertify._set_autocomplete_list(frm, "applicable_standard", values);
+			// Auto-pick when exactly one real standard
+			const real = values.filter((v) => !instacertify._ic_is_other(v));
+			if (real.length === 1 && !frm.doc.applicable_standard) {
+				frm.set_value("applicable_standard", real[0]);
+			} else if (
+				frm.doc.applicable_standard &&
+				!instacertify._ic_is_other(frm.doc.applicable_standard) &&
+				values.length &&
+				!values.includes(frm.doc.applicable_standard)
+			) {
+				// Current standard no longer related — clear so user re-picks
+				frm.set_value("applicable_standard", "");
 			}
+			// Hint labs that have each standard
+			const tips = rows
+				.filter((o) => !instacertify._ic_is_other(o.value) && o.lab_names)
+				.slice(0, 6)
+				.map((o) => `${o.value}: ${o.lab_names}`);
+			if (frm.fields_dict.applicable_standard) {
+				frm.set_df_property(
+					"applicable_standard",
+					"description",
+					tips.length
+						? __("Related to this test — labs: {0}. Pick Other if not listed.", [tips.join(" · ")])
+						: __("Standards related to the selected Test Name — includes Other")
+				);
+			}
+		},
+	});
+};
+
+instacertify.load_testing_request_tests_for_standard = function (frm) {
+	const std = frm.doc.applicable_standard || "";
+	if (!std || instacertify._ic_is_other(std)) return;
+	frappe.call({
+		method: "instacertify.laboratory.api.get_test_name_options",
+		args: { applicable_standard: std },
+		callback(r) {
+			const values = (r.message || []).map((o) => o.value || o);
+			instacertify._set_autocomplete_list(frm, "test_name", values);
 		},
 	});
 };
@@ -3486,6 +3629,11 @@ instacertify.bind_testing_request_library_pickers = function (frm) {
 			if (frm._ic_skip_lab_picker) return;
 			setTimeout(() => {
 				frm.set_value("lab_offer", "");
+				if (fieldname === "test_name") {
+					instacertify.load_testing_request_standards_for_test(frm);
+				} else if (fieldname === "applicable_standard") {
+					instacertify.load_testing_request_tests_for_standard(frm);
+				}
 				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 			}, 50);
 		});
@@ -3493,6 +3641,11 @@ instacertify.bind_testing_request_library_pickers = function (frm) {
 			if (frm._ic_skip_lab_picker) return;
 			if (!frm.doc[fieldname]) return;
 			setTimeout(() => {
+				if (fieldname === "test_name") {
+					instacertify.load_testing_request_standards_for_test(frm);
+				} else if (fieldname === "applicable_standard") {
+					instacertify.load_testing_request_tests_for_standard(frm);
+				}
 				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 			}, 80);
 		});
@@ -3574,7 +3727,7 @@ instacertify.open_testing_request_lab_picker = function (frm, offers) {
 			{
 				fieldtype: "HTML",
 				options: `<div class="text-muted" style="margin-bottom:8px">
-					${__("Labs in the library that offer this test / standard. Pick one using the buying rate:")}
+					${__("Suggested labs that have this test / standard in the library. One test can appear under multiple standards and labs — pick by buying rate:")}
 				</div>
 				<table class="table table-bordered table-hover" style="margin:0">
 					<thead><tr>
@@ -3666,6 +3819,242 @@ instacertify.load_testing_request_scope_options = function (frm) {
 		callback(r) {
 			const opt_str = (r.message || []).map((o) => o.value).join("\n");
 			frm.set_df_property("lab_test_scope", "options", opt_str);
+		},
+	});
+};
+
+instacertify.ensure_testing_request_samples = function (frm, opts) {
+	opts = opts || {};
+	if (!frm.doc.name || frm.is_new()) return;
+	frappe.call({
+		method: "instacertify.testing.events.ensure_samples_for_testing_request",
+		args: {
+			testing_request: frm.doc.name,
+			force_sync: opts.force_sync ? 1 : 0,
+		},
+		freeze: true,
+		freeze_message: __("Linking samples…"),
+		callback(r) {
+			const m = r.message || {};
+			const created = (m.created || []).length;
+			if (created) {
+				frappe.show_alert({
+					message: __("Created {0} sample tracking record(s)", [created]),
+					indicator: "green",
+				});
+			}
+			instacertify.render_testing_request_samples(frm, m.samples);
+		},
+	});
+};
+
+instacertify._sample_custody_color = function (loc) {
+	const colors = {
+		"With Customer": "#1976d2",
+		"In Transit to Office": "#ef6c00",
+		"At Instacertify Office": "#2e7d32",
+		"In Transit to Lab": "#ef6c00",
+		"At Laboratory": "#6a1b9a",
+		"At Instacertify Warehouse": "#00838f",
+		"At Instacertify Storage": "#00838f",
+		"In Transit to Client": "#ef6c00",
+		"Returned to Client": "#1565c0",
+		Discarded: "#c62828",
+	};
+	return colors[loc] || "#546e7a";
+};
+
+instacertify.render_testing_request_samples = function (frm, samples) {
+	const wrap = frm.fields_dict.sample_tracking_html;
+	if (!wrap) return;
+
+	const paint = (rows) => {
+		rows = rows || [];
+		if (!rows.length) {
+			wrap.$wrapper.html(`
+				<div class="ic-tr-samples" style="padding:10px 12px;border:1px dashed #cfd8dc;border-radius:8px;background:#fafbfc;">
+					<div style="font-weight:600;color:#0D47A1;margin-bottom:4px;">${__("Sample Tracking")}</div>
+					<p class="text-muted" style="margin:0 0 8px;">
+						${__("No samples linked yet. Samples are created from Number of Samples using Product / Test / Laboratory from this request.")}
+					</p>
+					<button type="button" class="btn btn-sm btn-primary ic-tr-ensure-samples">${__("Create Samples")}</button>
+				</div>
+			`);
+			wrap.$wrapper.find(".ic-tr-ensure-samples").on("click", () => {
+				instacertify.ensure_testing_request_samples(frm, { force_sync: 1 });
+			});
+			return;
+		}
+		const rows_html = rows
+			.map((s) => {
+				const loc = s.sample_location || s.status || "—";
+				const color = instacertify._sample_custody_color(loc);
+				const lab = s.laboratory_name || s.laboratory || "—";
+				return `<tr>
+					<td><a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}">
+						${frappe.utils.escape_html(s.tracking_number || s.name)}</a></td>
+					<td>${frappe.utils.escape_html(s.sample_description || "—")}</td>
+					<td><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${color}22;color:${color};font-weight:600;font-size:12px;">
+						${frappe.utils.escape_html(loc)}</span></td>
+					<td>${frappe.utils.escape_html(lab)}
+						${s.laboratory_city ? `<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(s.laboratory_city)}</div>` : ""}</td>
+					<td class="text-muted" style="font-size:12px">${frappe.utils.escape_html(s.status || "")}</td>
+					<td><button type="button" class="btn btn-xs btn-default ic-open-sample" data-name="${frappe.utils.escape_html(s.name)}">${__("Open")}</button></td>
+				</tr>`;
+			})
+			.join("");
+		wrap.$wrapper.html(`
+			<div class="ic-tr-samples" style="padding:10px 12px;border:1px solid #d7e6ef;border-radius:10px;background:#F5F9FD;">
+				<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+					<div>
+						<div style="font-weight:650;color:#0D47A1;">${__("Sample Tracking")}</div>
+						<div class="text-muted" style="font-size:12px;max-width:40rem;">
+							${__("Where each sample is now — at lab, Instacertify warehouse, or returned to the client. Update location on the sample form after testing.")}
+						</div>
+					</div>
+					<button type="button" class="btn btn-xs btn-default ic-tr-ensure-samples">${__("Sync from Lab / Count")}</button>
+				</div>
+				<table class="table table-bordered" style="margin:0;background:#fff;">
+					<thead><tr>
+						<th>${__("Tracking #")}</th>
+						<th>${__("Description")}</th>
+						<th>${__("Location")}</th>
+						<th>${__("Laboratory")}</th>
+						<th>${__("Status")}</th>
+						<th></th>
+					</tr></thead>
+					<tbody>${rows_html}</tbody>
+				</table>
+			</div>
+		`);
+		wrap.$wrapper.find(".ic-tr-ensure-samples").on("click", () => {
+			instacertify.ensure_testing_request_samples(frm, { force_sync: 1 });
+		});
+		wrap.$wrapper.find(".ic-open-sample").on("click", function () {
+			frappe.set_route("Form", "IC Sample Tracking", $(this).data("name"));
+		});
+	};
+
+	if (samples) {
+		paint(samples);
+		return;
+	}
+	frappe.call({
+		method: "instacertify.testing.events.get_samples_for_testing_request",
+		args: { testing_request: frm.doc.name },
+		callback(r) {
+			paint(r.message || []);
+		},
+	});
+};
+
+instacertify.render_project_testing_panel = function (frm) {
+	if (!frm.doc.name || frm.is_new()) return;
+	frappe.call({
+		method: "instacertify.testing.events.get_linked_testing_overview",
+		args: { project: frm.doc.name },
+		callback(r) {
+			const d = r.message || {};
+			const tests = d.testing_requests || [];
+			const samples = d.samples || [];
+			const counts = d.custody_counts || {};
+			const custody_bits = Object.keys(counts)
+				.map(
+					(k) =>
+						`<span style="margin-right:8px;"><b>${frappe.utils.escape_html(k)}</b>: ${counts[k]}</span>`
+				)
+				.join("");
+			const test_rows = tests
+				.slice(0, 8)
+				.map((t) => {
+					return `<tr>
+						<td><a href="/app/ic-testing-request/${encodeURIComponent(t.name)}">${frappe.utils.escape_html(
+							t.name
+						)}</a></td>
+						<td>${frappe.utils.escape_html(t.status || "")}</td>
+						<td>${frappe.utils.escape_html(t.product || t.test_name || "—")}</td>
+						<td>${frappe.utils.escape_html(t.laboratory_name || t.laboratory || "—")}</td>
+					</tr>`;
+				})
+				.join("");
+			const sample_rows = samples
+				.slice(0, 10)
+				.map((s) => {
+					const loc = s.sample_location || "—";
+					const color = instacertify._sample_custody_color(loc);
+					return `<tr>
+						<td><a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}">${frappe.utils.escape_html(
+							s.tracking_number || s.name
+						)}</a></td>
+						<td><span style="color:${color};font-weight:600">${frappe.utils.escape_html(loc)}</span></td>
+						<td>${frappe.utils.escape_html(s.laboratory_name || s.laboratory || "—")}</td>
+						<td>${
+							s.testing_request
+								? `<a href="/app/ic-testing-request/${encodeURIComponent(s.testing_request)}">${frappe.utils.escape_html(
+										s.testing_request
+								  )}</a>`
+								: "—"
+						}</td>
+					</tr>`;
+				})
+				.join("");
+
+			const html = `
+				<div class="ic-project-testing form-dashboard-section" style="margin:12px 0;padding:12px;border:1px solid #d7e6ef;border-radius:10px;background:#F5F9FD;">
+					<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:4px;">
+						<div style="font-weight:650;color:#0D47A1;">${__("Testing & Sample Custody")}</div>
+						<button type="button" class="btn btn-xs btn-primary ic-open-testing-samples">${__("Open Testing & Samples")}</button>
+					</div>
+					<div class="text-muted" style="font-size:12px;margin-bottom:8px;">
+						${__("Generate requests from lab pricing, then update where each sample is — lab, warehouse, or back with the client.")}
+					</div>
+					<div style="font-size:12px;margin-bottom:10px;">${custody_bits || `<span class="text-muted">${__("No samples yet")}</span>`}</div>
+					<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+						<div>
+							<div style="font-weight:600;margin-bottom:4px;">${__("Testing Requests")} (${tests.length})</div>
+							${
+								test_rows
+									? `<table class="table table-bordered table-condensed" style="background:#fff;margin:0"><thead><tr>
+										<th>${__("Request")}</th><th>${__("Status")}</th><th>${__("Product / Test")}</th><th>${__("Lab")}</th>
+									</tr></thead><tbody>${test_rows}</tbody></table>`
+									: `<div class="text-muted">${__("No testing requests on this project")}</div>`
+							}
+						</div>
+						<div>
+							<div style="font-weight:600;margin-bottom:4px;">${__("Samples")} (${samples.length})</div>
+							${
+								sample_rows
+									? `<table class="table table-bordered table-condensed" style="background:#fff;margin:0"><thead><tr>
+										<th>${__("Tracking")}</th><th>${__("Location")}</th><th>${__("Lab")}</th><th>${__("TR")}</th>
+									</tr></thead><tbody>${sample_rows}</tbody></table>`
+									: `<div class="text-muted">${__("No samples on this project")}</div>`
+							}
+						</div>
+					</div>
+				</div>
+			`;
+			// Prefer progress HTML area; else inject above form layout
+			let $panel;
+			if (frm.fields_dict.ic_progress_html && frm.fields_dict.ic_progress_html.$wrapper) {
+				const $host = frm.fields_dict.ic_progress_html.$wrapper;
+				$host.find(".ic-project-testing").remove();
+				$host.append(html);
+				$panel = $host.find(".ic-project-testing");
+			} else if (frm.layout && frm.layout.wrapper) {
+				const $body = $(frm.layout.wrapper).find(".form-layout").first();
+				$body.find(".ic-project-testing").remove();
+				$body.prepend(html);
+				$panel = $body.find(".ic-project-testing");
+			}
+			if ($panel && $panel.length) {
+				$panel.find(".ic-open-testing-samples").on("click", () => {
+					frappe.route_options = {
+						customer: frm.doc.customer,
+						project: frm.doc.name,
+					};
+					frappe.set_route("testing-samples");
+				});
+			}
 		},
 	});
 };
@@ -3857,19 +4246,19 @@ frappe.ui.form.on("IC Laboratory", {
 		if (frm.is_new()) {
 			frm.set_intro(
 				__(
-					"Laboratory Library — enter Laboratory Name, Accreditation Scope, and upload Scope Sheet / Scope PDF / CSV / Excel. Add each accredited test with buying & selling prices — all columns are editable."
+					"Laboratory Library — fill Laboratory Name, Contact Person, Designation, Phone, Accreditation Scope, and upload Scope Sheet / CSV. Add each accredited test with buying & selling prices in the scope table."
 				),
 				"blue"
 			);
 		} else {
 			frm.set_intro(
 				__(
-					"Edit any field below anytime. Upload CSV/Excel from Library to fill scope rows, or edit the pricing table directly."
+					"All fields below stay editable: contact, designation, phone, accreditation scope, and the pricing table. Use Library → Upload / Import CSV anytime."
 				),
 				"blue"
 			);
 		}
-		// Ensure master + attach fields stay editable (never locked after upload)
+		// Ensure master + attach + contact fields stay editable (never locked after upload)
 		[
 			"laboratory_name",
 			"status",
@@ -3879,6 +4268,7 @@ frappe.ui.form.on("IC Laboratory", {
 			"country",
 			"address",
 			"contact_person",
+			"contact_designation",
 			"email",
 			"phone",
 			"website",
@@ -3891,7 +4281,10 @@ frappe.ui.form.on("IC Laboratory", {
 			"test_scopes",
 			"supplier",
 		].forEach((f) => {
-			if (frm.fields_dict[f]) frm.set_df_property(f, "read_only", 0);
+			if (frm.fields_dict[f]) {
+				frm.set_df_property(f, "read_only", 0);
+				frm.set_df_property(f, "hidden", 0);
+			}
 		});
 		frm.add_custom_button(__("Upload Lab / Scope"), () => {
 			const strip = (v) =>
@@ -3908,6 +4301,7 @@ frappe.ui.form.on("IC Laboratory", {
 				accreditation_scope: strip(frm.doc.accreditation_scope),
 				accreditation_details: strip(frm.doc.accreditation_details),
 				contact_person: frm.doc.contact_person,
+				contact_designation: frm.doc.contact_designation,
 				email: frm.doc.email,
 				phone: frm.doc.phone,
 				website: frm.doc.website,
@@ -4317,6 +4711,19 @@ frappe.ui.form.on("Lead", {
 					frm: frm,
 				});
 			}, __("Create"));
+			if (frm.doc.customer) {
+				frm.add_custom_button(__("Testing & Samples"), () => {
+					frappe.route_options = { customer: frm.doc.customer };
+					frappe.set_route("testing-samples");
+				}, __("Create"));
+				frm.add_custom_button(__("Open Customer"), () => {
+					frappe.set_route("Form", "Customer", frm.doc.customer);
+				}, __("View"));
+				frm.add_custom_button(__("Customer Testing / Samples"), () => {
+					frappe.route_options = { customer: frm.doc.customer };
+					frappe.set_route("testing-samples");
+				}, __("View"));
+			}
 			frm.add_custom_button(__("Open Dashboard"), () => {
 				instacertify.go_home();
 			}, __("View"));
@@ -4559,6 +4966,7 @@ frappe.listview_settings["IC Quotation Template"] = {
 };
 
 frappe.listview_settings["IC Laboratory"] = {
+	add_fields: ["status", "location", "contact_person", "contact_designation", "phone"],
 	onload(listview) {
 		listview.page.add_inner_button(__("Upload Lab / Scope"), () => {
 			instacertify.open_laboratory_upload();
@@ -4583,6 +4991,17 @@ frappe.listview_settings["IC Laboratory"] = {
 				},
 			});
 		}, __("Templates"));
+	},
+	get_indicator(doc) {
+		if (doc.status === "Active") return [__("Active"), "green", "status,=,Active"];
+		return [__("Inactive"), "gray", "status,=,Inactive"];
+	},
+	formatters: {
+		contact_person(val, df, doc) {
+			if (!val) return "";
+			const desig = doc.contact_designation ? ` · ${frappe.utils.escape_html(doc.contact_designation)}` : "";
+			return `${frappe.utils.escape_html(val)}${desig}`;
+		},
 	},
 };
 
@@ -4615,7 +5034,7 @@ frappe.listview_settings["Project"] = {
 
 // Sample custody — location management + list indicators
 frappe.listview_settings["IC Sample Tracking"] = {
-	add_fields: ["sample_location", "status", "tracking_number", "customer"],
+	add_fields: ["sample_location", "status", "tracking_number", "customer", "testing_request"],
 	get_indicator(doc) {
 		const loc = doc.sample_location || doc.status || "";
 		const colors = {
@@ -4624,7 +5043,10 @@ frappe.listview_settings["IC Sample Tracking"] = {
 			"At Instacertify Office": "green",
 			"In Transit to Lab": "orange",
 			"At Laboratory": "purple",
+			"At Instacertify Warehouse": "teal",
 			"At Instacertify Storage": "teal",
+			"In Transit to Client": "orange",
+			"Returned to Client": "blue",
 			Discarded: "red",
 			"Sample Awaited": "blue",
 			"Sample Received": "green",
@@ -4643,7 +5065,9 @@ frappe.listview_settings["IC Sample Tracking"] = {
 			"At Instacertify Office",
 			"In Transit to Lab",
 			"At Laboratory",
-			"At Instacertify Storage",
+			"At Instacertify Warehouse",
+			"In Transit to Client",
+			"Returned to Client",
 			"Discarded",
 		];
 		locs.forEach((loc) => {
@@ -4685,6 +5109,148 @@ instacertify.render_sample_sticker_preview = function (frm, fileUrl) {
 	`);
 };
 
+instacertify.print_sample_qr_labels = function (labels) {
+	if (!labels || !labels.length) return;
+	const sheets = labels
+		.map((lab) => {
+			const qr = lab.qr_data_uri || lab.qr_code || "";
+			const trk = lab.tracking_number || lab.name || "";
+			return `<div class="sheet">
+				<div class="sticker">
+					${qr ? `<img class="qr" src="${frappe.utils.escape_html(qr)}" alt="QR"/>` : ""}
+					<div class="meta">
+						<div class="lbl">SAMPLE</div>
+						<div class="trk">${frappe.utils.escape_html(trk)}</div>
+						<div class="info">For more information visit<br><b>www.instacertify.com</b></div>
+					</div>
+				</div>
+			</div>`;
+		})
+		.join("");
+	const w = window.open("", "_blank");
+	if (!w) {
+		frappe.msgprint(__("Please allow pop-ups to print sample QR labels."));
+		return;
+	}
+	w.document.write(`<!doctype html><html><head><title>Sample QR Labels</title>
+		<style>
+			@page { size: 50mm 25mm; margin: 0; }
+			html, body { margin: 0; padding: 0; background: #fff; }
+			.sheet { page-break-after: always; width: 50mm; height: 25mm; }
+			.sheet:last-child { page-break-after: auto; }
+			.sticker {
+				box-sizing: border-box; width: 50mm; height: 25mm;
+				padding: 1.2mm 1.4mm; display: flex; align-items: center; gap: 1.6mm;
+				font-family: Arial, Helvetica, sans-serif; color: #000;
+			}
+			.sticker img.qr { width: 18mm; height: 18mm; image-rendering: pixelated; }
+			.sticker .meta { flex: 1; min-width: 0; }
+			.sticker .lbl { font-size: 2.1mm; font-weight: 700; letter-spacing: .06em; color: #333; }
+			.sticker .trk { font-family: monospace; font-size: 3.1mm; font-weight: 700; word-break: break-all; margin: 0.6mm 0; }
+			.sticker .info { font-size: 1.85mm; line-height: 1.25; color: #222; }
+			@media screen {
+				body { padding: 16px; background: #eef2f5; }
+				.sheet {
+					page-break-after: auto; margin: 0 auto 12px; background: #fff;
+					box-shadow: 0 2px 8px rgba(0,0,0,.12); border: 1px solid #cfd8dc;
+				}
+			}
+		</style></head><body>${sheets}
+		<script>window.onload=function(){setTimeout(function(){window.print()},250)}</script>
+		</body></html>`);
+	w.document.close();
+};
+
+instacertify.show_testing_request_sample_qr_dialog = function (payload) {
+	const labels = (payload && payload.labels) || [];
+	if (!labels.length) {
+		frappe.msgprint({
+			title: __("No samples"),
+			message: __("No sample tracking numbers were found for QR labels."),
+			indicator: "orange",
+		});
+		return;
+	}
+	const cards = labels
+		.map((lab) => {
+			const qr = lab.qr_data_uri || lab.qr_code || "";
+			const trk = lab.tracking_number || lab.name || "";
+			const sticker = lab.sticker_url || "";
+			// Prefer real 50×25 PNG; fallback builds the same layout inline
+			const sticker_block = sticker
+				? `<img class="ic-ts-qr-sticker-50" src="${frappe.utils.escape_html(
+						sticker
+				  )}" alt="50×25 mm ${frappe.utils.escape_html(trk)}"/>`
+				: `<div class="ic-ts-qr-sticker-50 ic-ts-qr-sticker-fallback">
+					${qr ? `<img class="qr" src="${frappe.utils.escape_html(qr)}" alt="QR"/>` : ""}
+					<div class="meta">
+						<div class="lbl">SAMPLE</div>
+						<div class="trk">${frappe.utils.escape_html(trk)}</div>
+						<div class="info">For more information visit<br><b>www.instacertify.com</b></div>
+					</div>
+				</div>`;
+			return `<div class="ic-ts-qr-card" data-sample="${frappe.utils.escape_html(lab.name)}">
+				<div class="ic-ts-qr-size-tag">${__("50 × 25 mm · unique sample QR")}</div>
+				${sticker_block}
+				<div class="ic-ts-qr-code-line">
+					<span>${__("Sample code")}</span>
+					<b>${frappe.utils.escape_html(trk)}</b>
+				</div>
+				<div class="ic-ts-qr-actions">
+					<button type="button" class="btn btn-xs btn-primary ic-ts-print-one" data-sample="${frappe.utils.escape_html(
+						lab.name
+					)}">${__("Print 50×25")}</button>
+					${
+						sticker
+							? `<a class="btn btn-xs btn-default" href="${frappe.utils.escape_html(
+									sticker
+							  )}" target="_blank" download>${__("PNG")}</a>`
+							: ""
+					}
+					<a class="btn btn-xs btn-default" href="/app/ic-sample-tracking/${encodeURIComponent(lab.name)}">${__(
+						"Open"
+					)}</a>
+				</div>
+			</div>`;
+		})
+		.join("");
+
+	const d = new frappe.ui.Dialog({
+		title: __("Sample QR — {0}", [(payload && payload.testing_request) || ""]),
+		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "labels",
+				options: `
+					<div class="ic-ts-qr-dialog">
+						<div class="ic-ts-qr-intro">
+							${__("Each Testing Request QR opens unique 50×25 mm labels — sample code +")}
+							<b>www.instacertify.com</b>.
+							${payload.test_name ? ` · ${frappe.utils.escape_html(payload.test_name)}` : ""}
+						</div>
+						<div class="ic-ts-qr-grid">${cards}</div>
+					</div>
+				`,
+			},
+		],
+		primary_action_label: __("Print all 50×25"),
+		primary_action() {
+			instacertify.print_sample_qr_labels(labels);
+		},
+		secondary_action_label: __("Done"),
+		secondary_action() {
+			d.hide();
+		},
+	});
+	d.$body.find(".ic-ts-print-one").on("click", function () {
+		const name = $(this).data("sample");
+		const lab = labels.find((x) => x.name === name);
+		if (lab) instacertify.print_sample_qr_labels([lab]);
+	});
+	d.show();
+};
+
 frappe.ui.form.on("IC Sample Tracking", {
 	status(frm) {
 		const map = {
@@ -4695,7 +5261,12 @@ frappe.ui.form.on("IC Sample Tracking", {
 			"In Transit to Lab": "In Transit to Lab",
 			"At Laboratory": "At Laboratory",
 			"Sample Dispatched to Laboratory": "In Transit to Lab",
-			"At Instacertify Storage": "At Instacertify Storage",
+			"Testing in Progress": "At Laboratory",
+			"At Instacertify Warehouse": "At Instacertify Warehouse",
+			"At Instacertify Storage": "At Instacertify Warehouse",
+			"In Transit to Client": "In Transit to Client",
+			"Dispatched to Client": "In Transit to Client",
+			"Returned to Client": "Returned to Client",
 			Discarded: "Discarded",
 		};
 		if (map[frm.doc.status] && frm.doc.sample_location !== map[frm.doc.status]) {
@@ -4715,7 +5286,10 @@ frappe.ui.form.on("IC Sample Tracking", {
 			"At Instacertify Office": "Sample Received",
 			"In Transit to Lab": "In Transit to Lab",
 			"At Laboratory": "At Laboratory",
-			"At Instacertify Storage": "At Instacertify Storage",
+			"At Instacertify Warehouse": "At Instacertify Warehouse",
+			"At Instacertify Storage": "At Instacertify Warehouse",
+			"In Transit to Client": "In Transit to Client",
+			"Returned to Client": "Returned to Client",
 			Discarded: "Discarded",
 		};
 		if (map[frm.doc.sample_location] && frm.doc.status !== map[frm.doc.sample_location]) {
@@ -4761,13 +5335,25 @@ frappe.ui.form.on("IC Sample Tracking", {
 					},
 				});
 			}, __("Label"));
+			if (frm.doc.testing_request) {
+				frm.add_custom_button(__("Open Testing Request"), () => {
+					frappe.set_route("Form", "IC Testing Request", frm.doc.testing_request);
+				}, __("Links"));
+			}
+			if (frm.doc.laboratory) {
+				frm.add_custom_button(__("Open Laboratory"), () => {
+					frappe.set_route("Form", "IC Laboratory", frm.doc.laboratory);
+				}, __("Links"));
+			}
 		}
 		const locs = [
 			"In Transit to Office",
 			"At Instacertify Office",
 			"In Transit to Lab",
 			"At Laboratory",
-			"At Instacertify Storage",
+			"At Instacertify Warehouse",
+			"In Transit to Client",
+			"Returned to Client",
 			"Discarded",
 		];
 		locs.forEach((label) => {
@@ -4818,7 +5404,8 @@ frappe.ui.form.on("IC Sample Tracking", {
 		if (
 			["Testing in Progress", "At Laboratory", "Sample Dispatched to Laboratory"].includes(
 				frm.doc.status
-			)
+			) ||
+			frm.doc.sample_location === "At Laboratory"
 		) {
 			frm.add_custom_button(__("Mark Report Available"), () => {
 				frappe.call({
@@ -5078,6 +5665,260 @@ frappe.ui.form.on("Opportunity", {
 		});
 	},
 });
+
+// --- Project Progress Tracker (saved editable log) ---
+instacertify.PROJECT_STAGES = [
+	"Project Initiated",
+	"Customer Documents Pending",
+	"Documents Under Review",
+	"Application Submitted",
+	"Sample Awaited",
+	"Sample Received",
+	"Sample Dispatched to Laboratory",
+	"Testing in Progress",
+	"Report Awaited",
+	"Report Available",
+	"Certification in Progress",
+	"Certificate Available",
+	"Delivered to Customer",
+	"Project Completed",
+];
+
+instacertify.render_project_progress_tracker = function (frm) {
+	if (!frm.fields_dict.ic_progress_html) return;
+
+	const stages = instacertify.PROJECT_STAGES;
+	const current = frm.doc.ic_project_stage;
+	const idx = stages.indexOf(current);
+	let stages_html = '<div class="ic-stage-tracker">';
+	stages.forEach((s, i) => {
+		let cls = "stage";
+		if (i < idx) cls += " done";
+		if (i === idx) cls += " active";
+		stages_html += `<span class="${cls}">${frappe.utils.escape_html(s)}</span>`;
+	});
+	stages_html += "</div>";
+	stages_html += `<div class="ic-progress" style="margin-top:12px;"><span style="width:${
+		frm.doc.ic_progress_percentage || 0
+	}%"></span></div>`;
+	stages_html += `<div class="text-muted" style="font-size:12px;margin-top:4px;">${__(
+		"Progress"
+	)}: <b>${frappe.utils.escape_html(String(frm.doc.ic_progress_percentage || 0))}%</b>`;
+	if (frm.doc.ic_pending_action) {
+		stages_html += ` · ${__("Pending")}: ${frappe.utils.escape_html(frm.doc.ic_pending_action)}`;
+	}
+	stages_html += "</div>";
+
+	const log_shell = frm.is_new()
+		? `<div class="ic-progress-log"><div class="text-muted">${__(
+				"Save the project to start the Progress Log."
+		  )}</div></div>`
+		: `<div class="ic-progress-log" id="ic-progress-log-${frappe.utils.escape_html(frm.doc.name)}">
+			<div class="ic-progress-log-head">
+				<div>
+					<strong>${__("Progress Log")}</strong>
+					<span class="text-muted"> · ${__("Saved history — add or edit entries anytime")}</span>
+				</div>
+				<button type="button" class="btn btn-xs btn-primary ic-progress-add">${__("Add entry")}</button>
+			</div>
+			<div class="ic-progress-log-body"><div class="text-muted">${__("Loading…")}</div></div>
+		</div>`;
+
+	frm.set_df_property("ic_progress_html", "options", stages_html + log_shell);
+
+	if (frm.is_new()) return;
+
+	const $host = frm.fields_dict.ic_progress_html.$wrapper;
+	$host.find(".ic-progress-add").off("click").on("click", () => {
+		instacertify.open_progress_log_dialog(frm);
+	});
+	instacertify.load_project_progress_log(frm);
+};
+
+instacertify.load_project_progress_log = function (frm) {
+	const $body = $(`#ic-progress-log-${frm.doc.name} .ic-progress-log-body`);
+	if (!$body.length) return;
+	frappe.call({
+		method: "instacertify.project.progress.get_progress_log",
+		args: { project: frm.doc.name, limit: 80 },
+		callback(r) {
+			const entries = (r.message && r.message.entries) || [];
+			if (!entries.length) {
+				$body.html(
+					`<div class="ic-progress-log-empty text-muted">${__(
+						"No progress log yet. Click Add entry to record stage notes, blockers, or milestones."
+					)}</div>`
+				);
+				return;
+			}
+			$body.html(
+				entries
+					.map((e) => {
+						const pct =
+							e.progress_percentage || e.progress_percentage === 0
+								? `${frappe.utils.escape_html(String(e.progress_percentage))}%`
+								: "";
+						const stage = e.project_stage
+							? `<span class="ic-progress-pill">${frappe.utils.escape_html(e.project_stage)}</span>`
+							: "";
+						const when = e.update_date
+							? frappe.datetime.str_to_user(e.update_date)
+							: "";
+						const plain = frappe.utils.escape_html((e.plain || "").slice(0, 280));
+						const pending = e.pending_action
+							? `<div class="ic-progress-pending">${__("Pending")}: ${frappe.utils.escape_html(
+									e.pending_action
+							  )}</div>`
+							: "";
+						const attach = e.attachment
+							? ` <a href="${frappe.utils.escape_html(
+									e.attachment
+							  )}" target="_blank" rel="noopener">${__("Attachment")}</a>`
+							: "";
+						return `<div class="ic-progress-entry" data-name="${frappe.utils.escape_html(e.name)}">
+							<div class="ic-progress-entry-top">
+								<div class="ic-progress-entry-title">${frappe.utils.escape_html(e.subject || e.name)}</div>
+								<div class="ic-progress-entry-actions">
+									<button type="button" class="btn btn-xs btn-default ic-progress-edit">${__("Edit")}</button>
+									<button type="button" class="btn btn-xs btn-default ic-progress-open">${__("Open")}</button>
+								</div>
+							</div>
+							<div class="ic-progress-entry-meta">
+								${frappe.utils.escape_html(when)}
+								${e.updated_by_name ? ` · ${frappe.utils.escape_html(e.updated_by_name)}` : ""}
+								${pct ? ` · ${pct}` : ""}
+								${stage}
+							</div>
+							${plain ? `<div class="ic-progress-entry-body">${plain}${attach}</div>` : attach ? `<div>${attach}</div>` : ""}
+							${pending}
+						</div>`;
+					})
+					.join("")
+			);
+			$body.find(".ic-progress-edit").on("click", function () {
+				const name = $(this).closest(".ic-progress-entry").data("name");
+				const entry = entries.find((x) => x.name === name);
+				instacertify.open_progress_log_dialog(frm, entry);
+			});
+			$body.find(".ic-progress-open").on("click", function () {
+				const name = $(this).closest(".ic-progress-entry").data("name");
+				frappe.set_route("Form", "IC Project Update", name);
+			});
+		},
+	});
+};
+
+instacertify.open_progress_log_dialog = function (frm, entry) {
+	if (frm.is_new()) {
+		frappe.msgprint(__("Save the project first."));
+		return;
+	}
+	entry = entry || {};
+	const is_edit = !!entry.name;
+	const d = new frappe.ui.Dialog({
+		title: is_edit ? __("Edit Progress Log Entry") : __("Add Progress Log Entry"),
+		size: "large",
+		fields: [
+			{
+				fieldname: "subject",
+				fieldtype: "Data",
+				label: __("Subject"),
+				reqd: 1,
+				default: entry.subject || "",
+			},
+			{
+				fieldname: "update_date",
+				fieldtype: "Datetime",
+				label: __("Update Date"),
+				default: entry.update_date || frappe.datetime.now_datetime(),
+			},
+			{ fieldtype: "Column Break" },
+			{
+				fieldname: "project_stage",
+				fieldtype: "Select",
+				label: __("Project Stage"),
+				options: ["", ...instacertify.PROJECT_STAGES].join("\n"),
+				default: entry.project_stage || frm.doc.ic_project_stage || "",
+			},
+			{
+				fieldname: "progress_percentage",
+				fieldtype: "Percent",
+				label: __("Progress %"),
+				default:
+					entry.progress_percentage != null && entry.progress_percentage !== ""
+						? entry.progress_percentage
+						: frm.doc.ic_progress_percentage || 0,
+			},
+			{
+				fieldname: "pending_action",
+				fieldtype: "Data",
+				label: __("Pending Action"),
+				default: entry.pending_action || frm.doc.ic_pending_action || "",
+			},
+			{ fieldtype: "Section Break" },
+			{
+				fieldname: "remarks",
+				fieldtype: "Text Editor",
+				label: __("Notes / Narration"),
+				default: entry.remarks || "",
+			},
+			{
+				fieldname: "attachment",
+				fieldtype: "Attach",
+				label: __("Attachment"),
+				default: entry.attachment || "",
+			},
+			{
+				fieldname: "apply_to_project",
+				fieldtype: "Check",
+				label: __("Apply stage / progress / pending action to Project"),
+				default: 1,
+			},
+		],
+		primary_action_label: __("Save to Progress Log"),
+		primary_action(values) {
+			frappe.call({
+				method: "instacertify.project.progress.save_progress_entry",
+				args: {
+					project: frm.doc.name,
+					name: entry.name || null,
+					subject: values.subject,
+					remarks: values.remarks,
+					project_stage: values.project_stage,
+					progress_percentage: values.progress_percentage,
+					pending_action: values.pending_action,
+					update_date: values.update_date,
+					attachment: values.attachment,
+					apply_to_project: values.apply_to_project ? 1 : 0,
+				},
+				freeze: true,
+				freeze_message: __("Saving progress log…"),
+				callback() {
+					d.hide();
+					frappe.show_alert({ message: __("Progress log saved"), indicator: "green" });
+					frm.reload_doc();
+				},
+			});
+		},
+	});
+	if (is_edit && frappe.model.can_delete("IC Project Update")) {
+		d.set_secondary_action(__("Delete"), () => {
+			frappe.confirm(__("Delete this progress log entry?"), () => {
+				frappe.call({
+					method: "instacertify.project.progress.delete_progress_entry",
+					args: { name: entry.name },
+					freeze: true,
+					callback() {
+						d.hide();
+						frappe.show_alert({ message: __("Entry deleted"), indicator: "orange" });
+						instacertify.load_project_progress_log(frm);
+					},
+				});
+			});
+		});
+	}
+	d.show();
+};
 
 // --- Project team chat / collaboration ---
 instacertify.render_project_chat_panel = function (frm) {

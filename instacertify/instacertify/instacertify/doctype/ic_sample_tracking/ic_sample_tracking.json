@@ -41,7 +41,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "default": "Sample Awaited",
-   "options": "Sample Awaited\nSample Received\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nSample Dispatched to Laboratory\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer\nDiscarded"
+   "options": "Sample Awaited\nSample Received\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Warehouse\nAt Instacertify Storage\nIn Transit to Client\nReturned to Client\nSample Dispatched to Laboratory\nDispatched to Client\nTesting in Progress\nReport Available\nReport Uploaded\nReport Shared with Customer\nDiscarded"
   },
   {
    "doctype": "DocField",
@@ -51,8 +51,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "in_preview": 1,
-   "options": "\nWith Customer\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Storage\nDiscarded",
-   "description": "Physical custody: transit to office / lab, at lab, Instacertify storage, or discarded"
+   "options": "\nWith Customer\nIn Transit to Office\nAt Instacertify Office\nIn Transit to Lab\nAt Laboratory\nAt Instacertify Warehouse\nAt Instacertify Storage\nIn Transit to Client\nReturned to Client\nDiscarded",
+   "description": "Where the physical sample is now: with customer, Instacertify office/warehouse, at lab, or returned to client"
   },
   {
    "doctype": "DocField",
@@ -105,7 +105,25 @@
    "fieldname": "testing_request",
    "fieldtype": "Link",
    "options": "IC Testing Request",
-   "label": "Testing Request"
+   "label": "Primary Testing Request",
+   "in_standard_filter": 1,
+   "description": "Original / primary TR. One physical sample may also be linked to more tests below — only at the same laboratory."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "linked_tests",
+   "fieldtype": "Table",
+   "label": "Linked Tests (same lab only)",
+   "options": "IC Sample Testing Link",
+   "description": "One sample can serve multiple tests at the same laboratory. Linking tests at a different lab is not allowed."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "options": "Quotation",
+   "label": "Quotation",
+   "in_standard_filter": 1
   },
   {
    "doctype": "DocField",
@@ -118,7 +136,16 @@
    "fieldtype": "Link",
    "options": "IC Laboratory",
    "label": "Laboratory",
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "description": "Physical sample goes to one lab. Multiple tests may share this sample only if they use this same laboratory."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "laboratory_location",
+   "fieldtype": "Data",
+   "label": "Laboratory Location",
+   "fetch_from": "laboratory.location",
+   "read_only": 1
   },
   {
    "doctype": "DocField",

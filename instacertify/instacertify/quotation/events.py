@@ -1027,6 +1027,7 @@ def start_project_from_quotation(quotation: str):
 			"ic_products_services": "\n".join(products),
 			"ic_deliverables": frappe.utils.strip_html(qt.ic_deliverables or "")[:500],
 			"ic_testing_requirements": "\n".join(testing),
+			"ic_timeline": frappe.utils.strip_html(qt.get("ic_timeline_details") or "")[:500],
 			"ic_assigned_employee": (
 				qt.get("ic_primary_assignee")
 				or getattr(qt, "ic_assigned_salesperson", None)
