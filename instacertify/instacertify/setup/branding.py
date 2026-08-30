@@ -8,9 +8,9 @@ import frappe
 # Full horizontal wordmark — headers, letterhead, splash, portal
 LOGO_FULL = "/assets/instacertify/images/instacertify_logo.png"
 LETTERHEAD = "/assets/instacertify/images/instacertify_letterhead.png"
-# Circular checkmark — favicon, navbar, small spaces
-LOGO_ICON = "/assets/instacertify/images/instacertify_icon.png"
-APP_LOGO = "/assets/instacertify/images/instacertify_app_logo.png"
+# Circular checkmark (favicon) — home icon logo, navbar, small spaces
+LOGO_ICON = "/assets/instacertify/images/favicon-48.png"
+APP_LOGO = "/assets/instacertify/images/favicon-48.png"
 FAVICON = "/assets/instacertify/images/favicon.ico"
 FAVICON_PNG = "/assets/instacertify/images/favicon-32.png"
 STAMP = "/assets/instacertify/images/instacertify_stamp.png"

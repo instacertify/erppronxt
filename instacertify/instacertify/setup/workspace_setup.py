@@ -107,7 +107,10 @@ def _ensure_home_html_block():
 	html = """
 <div id="ic-home-root">
   <div class="ic-greeting">
-    <div class="ic-greeting-brand">Insta<span>certify</span></div>
+    <div class="ic-greeting-brand">
+      <img class="ic-home-brand-icon" src="/assets/instacertify/images/favicon-48.png" width="48" height="48" alt="Instacertify" />
+      <span class="ic-greeting-brand-text">Insta<span>certify</span></span>
+    </div>
     <h2 id="ic-greet-title">Welcome</h2>
     <div class="ic-datetime"><span id="ic-date"></span> · <span id="ic-time"></span></div>
   </div>
@@ -768,6 +771,9 @@ _SHADOW_THEME_CSS = """
   box-shadow: 0 10px 28px rgba(13, 71, 161, 0.07);
 }
 .ic-greeting-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: clamp(1.85rem, 3.2vw, 2.45rem);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -776,7 +782,17 @@ _SHADOW_THEME_CSS = """
   margin: 0 0 8px;
   font-family: "Poppins", sans-serif !important;
 }
-.ic-greeting-brand span { color: #ffd7b8; }
+.ic-home-brand-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  border-radius: 50%;
+  object-fit: contain;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  background: transparent;
+}
+.ic-greeting-brand-text span,
+.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #ffd7b8; }
 .ic-greeting h2 {
   margin: 0 0 6px;
   font-weight: 500;

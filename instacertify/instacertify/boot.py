@@ -14,15 +14,15 @@ def boot_session(bootinfo):
 		"theme": "light",
 		"app_name": "Instacertify",
 		"logo": "/assets/instacertify/images/instacertify_logo.png",
-		"icon": "/assets/instacertify/images/instacertify_icon.png",
-		"app_logo": "/assets/instacertify/images/instacertify_app_logo.png",
+		"icon": "/assets/instacertify/images/favicon-48.png",
+		"app_logo": "/assets/instacertify/images/favicon-48.png",
 		"favicon": "/assets/instacertify/images/favicon-32.png",
 		"default_workspace": "Instacertify Home",
 	}
 	# Soft-brand desk — light hue only
 	try:
 		bootinfo["sitename"] = "Instacertify ERP"
-		bootinfo["app_logo_url"] = "/assets/instacertify/images/instacertify_app_logo.png"
+		bootinfo["app_logo_url"] = "/assets/instacertify/images/favicon-48.png"
 		bootinfo["desk_theme"] = "light"
 	except Exception:
 		pass
