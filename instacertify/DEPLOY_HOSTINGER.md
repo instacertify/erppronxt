@@ -176,6 +176,13 @@ print(p.read_text())
 PY
 ./env/bin/pip install -e ./apps/instacertify
 bench build --app instacertify
+
+# Redis must be up before new-site / install-app / migrate
+sudo systemctl enable --now redis-server
+bench set-config -g redis_cache "redis://127.0.0.1:6379"
+bench set-config -g redis_queue "redis://127.0.0.1:6379"
+bench set-config -g redis_socketio "redis://127.0.0.1:6379"
+redis-cli ping
 ```
 
 ### 4. Create the site and install apps
