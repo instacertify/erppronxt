@@ -51,19 +51,13 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			</div>
 
 			<nav class="ic-ts-tabs" role="tablist">
-				<button type="button" class="ic-ts-tab is-active" data-tab="generate" role="tab" aria-selected="true">
-					<span class="ic-ts-tab-num">1</span>
-					<span>
-						<span class="ic-ts-tab-label">${__("Generate Testing Request")}</span>
-						<span class="ic-ts-tab-hint">${__("Test → Standard → Lab → Create")}</span>
-					</span>
+				<button type="button" class="ic-ts-tab ic-ts-tab-gen is-active" data-tab="generate" role="tab" aria-selected="true">
+					<span class="ic-ts-tab-dot" aria-hidden="true"></span>
+					<span class="ic-ts-tab-label">${__("Generate")}</span>
 				</button>
-				<button type="button" class="ic-ts-tab" data-tab="manage" role="tab" aria-selected="false">
-					<span class="ic-ts-tab-num">2</span>
-					<span>
-						<span class="ic-ts-tab-label">${__("Manage TR & Sample Journey")}</span>
-						<span class="ic-ts-tab-hint">${__("Tabular list · update sample location")}</span>
-					</span>
+				<button type="button" class="ic-ts-tab ic-ts-tab-manage" data-tab="manage" role="tab" aria-selected="false">
+					<span class="ic-ts-tab-dot" aria-hidden="true"></span>
+					<span class="ic-ts-tab-label">${__("Manage TR")}</span>
 				</button>
 			</nav>
 
@@ -73,9 +67,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					<div class="ic-ts-card ic-ts-gen-main">
 						<div class="ic-ts-card-head">
 							<div>
-								<div class="ic-ts-card-title">${__("Generate Testing Request")}</div>
+								<div class="ic-ts-card-title">${__("Generate")}</div>
 								<div class="ic-ts-card-sub">${__(
-									"Select customer and test — related standards fill the dropdown (plus Other). Pick a standard to see labs that offer it."
+									"Customer → Test → Standard → Lab. After create, unique 50×25 mm sample QR labels open automatically."
 								)}</div>
 							</div>
 						</div>
@@ -187,9 +181,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				<div class="ic-ts-card ic-ts-manage-card">
 					<div class="ic-ts-manage-head">
 						<div>
-							<div class="ic-ts-card-title">${__("Manage Testing Requests & Sample Journey")}</div>
+							<div class="ic-ts-card-title">${__("Manage TR")}</div>
 							<div class="ic-ts-card-sub" style="margin-bottom:0">${__(
-								"Tabular view of every Testing Request. Expand a row to update sample locations in the journey table."
+								"All Testing Requests in one outlined table. Expand a row for samples, or click QR for unique 50×25 mm labels."
 							)}</div>
 						</div>
 						<button type="button" class="btn btn-primary btn-sm" id="ic-ts-goto-generate">${__("+ Generate new")}</button>
@@ -963,9 +957,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<td class="ic-ts-money ic-ts-money-buy">${frappe.utils.escape_html(buy)}</td>
 							<td style="text-align:center"><span class="ic-ts-count">${samples.length}</span></td>
 							<td>
-								<button type="button" class="btn btn-xs btn-default ic-ts-print-qr" data-tr="${frappe.utils.escape_html(
+								<button type="button" class="btn btn-xs ic-ts-btn-qr ic-ts-print-qr" data-tr="${frappe.utils.escape_html(
 									tr.name
-								)}">${__("QR")}</button>
+								)}" title="${__("Unique 50×25 mm sample QR")}">${__("QR")}</button>
 								<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
 									tr.name
 								)}">${__("Open")}</a>
