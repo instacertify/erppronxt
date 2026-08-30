@@ -3468,11 +3468,13 @@ frappe.ui.form.on("IC Testing Request", {
 	test_name(frm) {
 		if (frm._ic_skip_lab_picker) return;
 		frm.set_value("lab_offer", "");
+		instacertify.load_testing_request_standards_for_test(frm);
 		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 	},
 	applicable_standard(frm) {
 		if (frm._ic_skip_lab_picker) return;
 		frm.set_value("lab_offer", "");
+		instacertify.load_testing_request_tests_for_standard(frm);
 		instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 	},
 	lab_offer(frm) {
@@ -3517,31 +3519,92 @@ frappe.ui.form.on("IC Testing Request", {
 	},
 });
 
+instacertify._ic_is_other = function (v) {
+	return String(v || "").trim().toLowerCase() === "other";
+};
+
+instacertify._set_autocomplete_list = function (frm, fieldname, values) {
+	frm.set_df_property(fieldname, "options", (values || []).join("\n"));
+	const ctrl = frm.fields_dict[fieldname];
+	if (ctrl && ctrl.set_data) {
+		ctrl.set_data(values);
+	} else if (ctrl && ctrl.awesomplete) {
+		ctrl.awesomplete.list = values;
+	}
+};
+
 instacertify.load_testing_request_library_options = function (frm) {
 	frappe.call({
 		method: "instacertify.laboratory.api.get_test_name_options",
+		args: {
+			applicable_standard: frm.doc.applicable_standard || "",
+		},
 		callback(r) {
 			const values = (r.message || []).map((o) => o.value || o);
-			frm.set_df_property("test_name", "options", values.join("\n"));
-			const ctrl = frm.fields_dict.test_name;
-			if (ctrl && ctrl.set_data) {
-				ctrl.set_data(values);
-			} else if (ctrl && ctrl.awesomplete) {
-				ctrl.awesomplete.list = values;
-			}
+			instacertify._set_autocomplete_list(frm, "test_name", values);
 		},
 	});
 	frappe.call({
 		method: "instacertify.laboratory.api.get_standard_options",
+		args: {
+			test_name: frm.doc.test_name || "",
+		},
 		callback(r) {
 			const values = (r.message || []).map((o) => o.value || o);
-			frm.set_df_property("applicable_standard", "options", values.join("\n"));
-			const ctrl = frm.fields_dict.applicable_standard;
-			if (ctrl && ctrl.set_data) {
-				ctrl.set_data(values);
-			} else if (ctrl && ctrl.awesomplete) {
-				ctrl.awesomplete.list = values;
+			instacertify._set_autocomplete_list(frm, "applicable_standard", values);
+		},
+	});
+};
+
+instacertify.load_testing_request_standards_for_test = function (frm) {
+	const test = frm.doc.test_name || "";
+	frappe.call({
+		method: "instacertify.laboratory.api.get_standards_for_test",
+		args: { test_name: test },
+		callback(r) {
+			const rows = r.message || [];
+			const values = rows.map((o) => o.value || o);
+			instacertify._set_autocomplete_list(frm, "applicable_standard", values);
+			// Auto-pick when exactly one real standard
+			const real = values.filter((v) => !instacertify._ic_is_other(v));
+			if (real.length === 1 && !frm.doc.applicable_standard) {
+				frm.set_value("applicable_standard", real[0]);
+			} else if (
+				frm.doc.applicable_standard &&
+				!instacertify._ic_is_other(frm.doc.applicable_standard) &&
+				values.length &&
+				!values.includes(frm.doc.applicable_standard)
+			) {
+				// Current standard no longer related — clear so user re-picks
+				frm.set_value("applicable_standard", "");
 			}
+			// Hint labs that have each standard
+			const tips = rows
+				.filter((o) => !instacertify._ic_is_other(o.value) && o.lab_names)
+				.slice(0, 6)
+				.map((o) => `${o.value}: ${o.lab_names}`);
+			if (frm.fields_dict.applicable_standard) {
+				frm.set_df_property(
+					"applicable_standard",
+					"description",
+					tips.length
+						? __("Related to this test — labs: {0}. Pick Other if not listed.", [tips.join(" · ")])
+						: __("Standards related to the selected Test Name — includes Other")
+				);
+			}
+		},
+	});
+};
+
+instacertify.load_testing_request_tests_for_standard = function (frm) {
+	const std = frm.doc.applicable_standard || "";
+	if (!std || instacertify._ic_is_other(std)) return;
+	frappe.call({
+		method: "instacertify.laboratory.api.get_test_name_options",
+		args: { applicable_standard: std },
+		callback(r) {
+			const values = (r.message || []).map((o) => o.value || o);
+			instacertify._set_autocomplete_list(frm, "test_name", values);
 		},
 	});
 };
@@ -3555,6 +3618,11 @@ instacertify.bind_testing_request_library_pickers = function (frm) {
 			if (frm._ic_skip_lab_picker) return;
 			setTimeout(() => {
 				frm.set_value("lab_offer", "");
+				if (fieldname === "test_name") {
+					instacertify.load_testing_request_standards_for_test(frm);
+				} else if (fieldname === "applicable_standard") {
+					instacertify.load_testing_request_tests_for_standard(frm);
+				}
 				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 			}, 50);
 		});
@@ -3562,6 +3630,11 @@ instacertify.bind_testing_request_library_pickers = function (frm) {
 			if (frm._ic_skip_lab_picker) return;
 			if (!frm.doc[fieldname]) return;
 			setTimeout(() => {
+				if (fieldname === "test_name") {
+					instacertify.load_testing_request_standards_for_test(frm);
+				} else if (fieldname === "applicable_standard") {
+					instacertify.load_testing_request_tests_for_standard(frm);
+				}
 				instacertify.load_testing_request_lab_offers(frm, { open_picker: true });
 			}, 80);
 		});
@@ -3643,7 +3716,7 @@ instacertify.open_testing_request_lab_picker = function (frm, offers) {
 			{
 				fieldtype: "HTML",
 				options: `<div class="text-muted" style="margin-bottom:8px">
-					${__("Labs in the library that offer this test / standard. Pick one using the buying rate:")}
+					${__("Suggested labs that have this test / standard in the library. One test can appear under multiple standards and labs — pick by buying rate:")}
 				</div>
 				<table class="table table-bordered table-hover" style="margin:0">
 					<thead><tr>

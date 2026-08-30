@@ -73,7 +73,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					<div class="ic-ts-card ic-ts-gen-main">
 						<div class="ic-ts-card-title">${__("Generate Testing Request")}</div>
 						<div class="ic-ts-card-sub">${__(
-							"Start with Customer and Test Name. Standards and labs appear as lists — pick one lab, then create the request with samples."
+							"Pick a Test Name — related Applicable Standards appear in the dropdown (plus Other). Then choose a standard to see labs that offer it."
 						)}</div>
 
 						<ol class="ic-ts-steps">
@@ -86,13 +86,17 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						<div class="ic-ts-form" id="ic-ts-form"></div>
 
 						<div class="ic-ts-section" id="ic-ts-standards-wrap" hidden>
-							<div class="ic-ts-section-title">${__("2 — Applicable standards")}</div>
+							<div class="ic-ts-section-title">${__("2 — Applicable standards for this test")}</div>
+							<div class="ic-ts-card-sub" style="margin-top:0">${__(
+								"One test can have multiple standards across labs. Select one — or choose Other in the dropdown above for a custom standard."
+							)}</div>
 							<div class="ic-ts-table-wrap">
 								<table class="ic-ts-table" id="ic-ts-standards-table">
 									<thead>
 										<tr>
 											<th>${__("Applicable Standard")}</th>
-											<th style="text-align:right">${__("Lab scopes")}</th>
+											<th>${__("Labs that have this standard")}</th>
+											<th style="text-align:right">${__("Labs")}</th>
 											<th style="width:100px"></th>
 										</tr>
 									</thead>
@@ -102,15 +106,16 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						</div>
 
 						<div class="ic-ts-section" id="ic-ts-labs-wrap" hidden>
-							<div class="ic-ts-section-title">${__("3 — Laboratories")}</div>
-							<div class="ic-ts-card-sub" style="margin-top:0">${__(
-								"Phone, address, contact person and designation for coordination."
+							<div class="ic-ts-section-title">${__("3 — Suggested laboratories")}</div>
+							<div class="ic-ts-card-sub" style="margin-top:0" id="ic-ts-labs-hint">${__(
+								"Labs from the library that offer the selected test and standard — phone, address, contact, designation."
 							)}</div>
 							<div class="ic-ts-table-wrap">
 								<table class="ic-ts-table" id="ic-ts-labs-table">
 									<thead>
 										<tr>
 											<th>${__("Laboratory")}</th>
+											<th>${__("Standard")}</th>
 											<th>${__("Phone")}</th>
 											<th>${__("Address")}</th>
 											<th>${__("Contact")}</th>
@@ -244,20 +249,22 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					update_summary();
 				},
 			},
-			{ fieldtype: "Section Break", label: __("1 — Test from Laboratory Library") },
+			{ fieldtype: "Section Break", label: __("1 — Test & Applicable Standard (interrelated)") },
 			{
 				fieldname: "test_name",
 				fieldtype: "Autocomplete",
 				label: __("Test Name"),
 				reqd: 1,
-				description: __("Type to search Active lab libraries"),
+				description: __("From Active lab libraries — includes Other for custom tests"),
 				change() {
 					const v = form.get_value("test_name") || "";
 					if (v === state.test_name) return;
 					state.test_name = v;
 					state.applicable_standard = "";
 					clear_lab_selection();
+					state._skip_std_change = true;
 					form.set_value("applicable_standard", "");
+					state._skip_std_change = false;
 					load_standards_for_test();
 					update_summary();
 				},
@@ -265,15 +272,39 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			{ fieldtype: "Column Break" },
 			{
 				fieldname: "applicable_standard",
-				fieldtype: "Data",
+				fieldtype: "Autocomplete",
 				label: __("Applicable Standard"),
-				read_only: 1,
-				description: __("Selected from the list below"),
+				description: __("Standards related to the selected Test Name — pick Other if not listed"),
+				change() {
+					if (state._skip_std_change) return;
+					const v = (form.get_value("applicable_standard") || "").trim();
+					if (v === state.applicable_standard) return;
+					state.applicable_standard = v;
+					clear_lab_selection();
+					// Refresh related test names when standard drives the filter
+					if (v && !is_other(v)) {
+						refresh_test_options_for_standard(v);
+					}
+					render_standards_table(state.standards);
+					load_labs();
+					update_summary();
+				},
 			},
 		],
 		body: page.main.find("#ic-ts-form"),
 	});
 	form.make();
+
+	function is_other(v) {
+		return String(v || "").trim().toLowerCase() === "other";
+	}
+
+	function set_autocomplete_options(fieldname, values) {
+		form.set_df_property(fieldname, "options", values.join("\n"));
+		const ctrl = form.get_field(fieldname);
+		if (ctrl && ctrl.set_data) ctrl.set_data(values);
+		else if (ctrl && ctrl.awesomplete) ctrl.awesomplete.list = values;
+	}
 
 	const filter_customer = frappe.ui.form.make_control({
 		parent: page.main.find("#ic-ts-filter-customer"),
@@ -393,9 +424,20 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			method: "instacertify.laboratory.api.get_test_name_options",
 			callback(r) {
 				const vals = (r.message || []).map((o) => o.value || o);
-				form.set_df_property("test_name", "options", vals.join("\n"));
-				const ctrl = form.get_field("test_name");
-				if (ctrl && ctrl.set_data) ctrl.set_data(vals);
+				set_autocomplete_options("test_name", vals);
+			},
+		});
+		// Standards empty until a test is chosen (still allow typing Other later)
+		set_autocomplete_options("applicable_standard", [__("Other")]);
+	}
+
+	function refresh_test_options_for_standard(standard) {
+		frappe.call({
+			method: "instacertify.laboratory.api.get_test_name_options",
+			args: { applicable_standard: standard || "" },
+			callback(r) {
+				const vals = (r.message || []).map((o) => o.value || o);
+				set_autocomplete_options("test_name", vals);
 			},
 		});
 	}
@@ -406,6 +448,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		if (!test_name) {
 			$wrap.prop("hidden", true);
 			page.main.find("#ic-ts-labs-wrap").prop("hidden", true);
+			set_autocomplete_options("applicable_standard", [__("Other")]);
 			set_step(1);
 			return;
 		}
@@ -415,10 +458,16 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			args: { test_name },
 			callback(r) {
 				state.standards = r.message || [];
+				const vals = state.standards.map((o) => o.value || o);
+				set_autocomplete_options("applicable_standard", vals);
 				render_standards_table(state.standards);
-				if (state.standards.length === 1) {
-					pick_standard(state.standards[0].value || state.standards[0]);
-				} else if (!state.standards.length) {
+				const real = state.standards.filter((s) => !is_other(s.value || s));
+				if (real.length === 1) {
+					pick_standard(real[0].value || real[0]);
+				} else if (is_other(test_name)) {
+					// Custom test — load labs only after a standard (or Other) is picked
+					page.main.find("#ic-ts-labs-wrap").prop("hidden", true);
+				} else if (!real.length) {
 					load_labs();
 				}
 			},
@@ -429,22 +478,25 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		const $wrap = page.main.find("#ic-ts-standards-wrap");
 		const $tbody = page.main.find("#ic-ts-standards-table tbody");
 		$wrap.prop("hidden", false);
-		if (!standards.length) {
+		const rows = (standards || []).filter((s) => !is_other(s.value || s));
+		if (!rows.length) {
 			$tbody.html(
-				`<tr><td colspan="3" class="text-muted">${__(
-					"No standard mapped — labs will list by test name alone."
+				`<tr><td colspan="4" class="text-muted">${__(
+					"No library standards for this test — pick Other in Applicable Standard, or labs will match by test name alone."
 				)}</td></tr>`
 			);
 			return;
 		}
 		$tbody.html(
-			standards
+			rows
 				.map((s, idx) => {
 					const label = s.value || s;
+					const labs = s.lab_names || (s.labs || []).map((l) => l.laboratory_name || l.name).join(", ");
 					const active = state.applicable_standard === label ? "is-selected" : "";
 					return `<tr class="${active}" data-idx="${idx}">
 						<td><b>${frappe.utils.escape_html(label)}</b></td>
-						<td style="text-align:right">${cint(s.lab_count) || "—"}</td>
+						<td style="max-width:280px">${frappe.utils.escape_html(labs || "—")}</td>
+						<td style="text-align:right">${cint(s.lab_count) || (s.labs || []).length || "—"}</td>
 						<td style="text-align:right">
 							<button type="button" class="btn btn-xs ${
 								active ? "btn-primary" : "btn-default"
@@ -457,18 +509,21 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				.join("")
 		);
 		$tbody.find(".ic-ts-pick-std").on("click", function () {
-			pick_standard(standards[cint($(this).data("idx"))].value || standards[cint($(this).data("idx"))]);
+			const s = rows[cint($(this).data("idx"))];
+			pick_standard(s.value || s);
 		});
 		$tbody.find("tr[data-idx]").on("click", function (e) {
 			if ($(e.target).closest("button").length) return;
-			const s = standards[cint($(this).data("idx"))];
+			const s = rows[cint($(this).data("idx"))];
 			pick_standard(s.value || s);
 		});
 	}
 
 	function pick_standard(label) {
 		state.applicable_standard = label;
+		state._skip_std_change = true;
 		form.set_value("applicable_standard", label);
+		state._skip_std_change = false;
 		clear_lab_selection();
 		render_standards_table(state.standards);
 		load_labs();
@@ -477,12 +532,24 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 
 	function load_labs() {
 		const test_name = form.get_value("test_name") || "";
-		const standard = state.applicable_standard || "";
+		const standard = state.applicable_standard || form.get_value("applicable_standard") || "";
 		if (!test_name && !standard) {
 			page.main.find("#ic-ts-labs-wrap").prop("hidden", true);
 			return;
 		}
+		if (is_other(test_name) && is_other(standard)) {
+			page.main.find("#ic-ts-labs-wrap").prop("hidden", true);
+			frappe.show_alert({
+				message: __("Both Test and Standard are Other — pick a library value or choose a lab from Laboratories."),
+				indicator: "orange",
+			});
+			return;
+		}
 		set_step(3);
+		const hint = is_other(standard)
+			? __("Showing labs that offer this test (standard is Other / custom).")
+			: __("Suggested labs that have standard: {0}", [standard || "—"]);
+		page.main.find("#ic-ts-labs-hint").text(hint);
 		frappe.call({
 			method: "instacertify.laboratory.api.get_labs_for_standard",
 			args: { applicable_standard: standard || "", test_name: test_name || "" },
@@ -499,8 +566,8 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		$wrap.prop("hidden", false);
 		if (!offers.length) {
 			$tbody.html(
-				`<tr><td colspan="8" class="text-muted">${__(
-					"No Active labs for this test/standard. Add scope & pricing on Laboratories."
+				`<tr><td colspan="9" class="text-muted">${__(
+					"No Active labs for this test/standard. Add scope & pricing on Laboratories, or pick Other and enter details manually later."
 				)}</td></tr>`
 			);
 			return;
@@ -519,6 +586,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<b>${frappe.utils.escape_html(o.laboratory_name || "")}</b>
 							<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(o.test_name || "")}</div>
 						</td>
+						<td>${frappe.utils.escape_html(o.applicable_standard || "—")}</td>
 						<td>${frappe.utils.escape_html(o.phone || "—")}</td>
 						<td style="max-width:200px">${frappe.utils.escape_html(o.address || o.location || "—")}</td>
 						<td>${frappe.utils.escape_html(o.contact_person || "—")}</td>

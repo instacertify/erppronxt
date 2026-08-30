@@ -148,7 +148,7 @@
    "fieldtype": "Autocomplete",
    "label": "Test",
    "reqd": 1,
-   "description": "From the full lab library \u2014 pick a test to see labs and buying rates"
+   "description": "From Active lab libraries \u2014 interrelated with Applicable Standard; includes Other"
   },
   {
    "doctype": "DocField",
@@ -161,7 +161,7 @@
    "fieldname": "applicable_standard",
    "fieldtype": "Autocomplete",
    "label": "Applicable Standard",
-   "description": "From the full lab library \u2014 pick a standard to compare labs"
+   "description": "Standards related to the selected Test Name across labs \u2014 includes Other; then pick a lab that has that standard"
   },
   {
    "doctype": "DocField",
