@@ -50,21 +50,26 @@ def cint_active(row) -> bool:
 
 def _iter_active_lab_scopes():
 	"""Yield (lab dict, scope_row) for Active labs with active scopes."""
+	lab_fields = [
+		"name",
+		"laboratory_name",
+		"location",
+		"city",
+		"state",
+		"country",
+		"address",
+		"phone",
+		"email",
+		"contact_person",
+		"accreditation_details",
+		"accreditation_scope",
+	]
+	if frappe.db.has_column("IC Laboratory", "contact_designation"):
+		lab_fields.append("contact_designation")
 	labs = frappe.get_all(
 		"IC Laboratory",
 		filters={"status": "Active"},
-		fields=[
-			"name",
-			"laboratory_name",
-			"location",
-			"city",
-			"state",
-			"country",
-			"address",
-			"phone",
-			"email",
-			"contact_person",
-		],
+		fields=lab_fields,
 		order_by="laboratory_name asc",
 	)
 	for lab in labs:
@@ -110,6 +115,9 @@ def _offer_dict(lab, row) -> dict:
 		"phone": (lab.get("phone") or "").strip(),
 		"email": (lab.get("email") or "").strip(),
 		"contact_person": (lab.get("contact_person") or "").strip(),
+		"contact_designation": (lab.get("contact_designation") or "").strip(),
+		"accreditation_details": (lab.get("accreditation_details") or "").strip(),
+		"accreditation_scope": (lab.get("accreditation_scope") or "").strip(),
 		"scope_row": row.name,
 		"test_name": row.test_name,
 		"applicable_standard": row.applicable_standard,
