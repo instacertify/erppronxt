@@ -3450,7 +3450,7 @@ frappe.ui.form.on("IC Testing Request", {
 			}, __("Billing"));
 		}
 		if (!frm.is_new()) {
-			frm.add_custom_button(__("Print Sample QR Labels"), () => {
+			frm.add_custom_button(__("Print QR Labels"), () => {
 				frappe.call({
 					method: "instacertify.testing.events.get_testing_request_sample_labels",
 					args: { testing_request: frm.doc.name },
@@ -5243,13 +5243,13 @@ instacertify.show_testing_request_sample_qr_dialog = function (payload) {
 				<div class="ic-ts-qr-actions">
 					<button type="button" class="btn btn-xs btn-primary ic-ts-print-one" data-sample="${frappe.utils.escape_html(
 						lab.name
-					)}">${__("Print 50×25")}</button>
+					)}">${__("Print QR")}</button>
 					${
 						sticker
 							? `<a class="btn btn-xs btn-default" href="${frappe.utils.escape_html(
 									sticker
 							  )}" target="_blank" download="${frappe.utils.escape_html(trk)}.png">${__(
-									"PNG"
+									"Download PNG"
 							  )}</a>`
 							: ""
 					}
@@ -5280,11 +5280,11 @@ instacertify.show_testing_request_sample_qr_dialog = function (payload) {
 				`,
 			},
 		],
-		primary_action_label: __("Print all 50×25"),
+		primary_action_label: __("Print QR"),
 		primary_action() {
 			instacertify.print_sample_qr_labels(labels);
 		},
-		secondary_action_label: __("Done"),
+		secondary_action_label: __("Close"),
 		secondary_action() {
 			d.hide();
 		},
