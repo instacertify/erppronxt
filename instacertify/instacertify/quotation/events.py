@@ -13,18 +13,26 @@ from frappe.utils import cint, now_datetime
 def before_validate_quotation(doc, method=None):
 	"""Fill Company Address / GSTIN before india_compliance validate (quote create).
 
-	Only Customer is mandatory for service quotes — GST address must not block save.
+	Only Customer is mandatory for service quotes — GST / phone / email / address
+	must not block save (india_compliance respects doc.flags.ignore_mandatory).
 	"""
 	from instacertify.accounting.billing import _ensure_company_address_on_transaction
+	from instacertify.accounting.quotation_gst import patch_india_compliance_quotation_validate
 	from instacertify.setup.contact_billing import ensure_party_address_contact_fields
 	from instacertify.setup.gst import ensure_gst_setup
 
+	patch_india_compliance_quotation_validate()
 	ensure_party_address_contact_fields()
 	try:
 		ensure_gst_setup()
 	except Exception:
 		pass
 	_ensure_company_address_on_transaction(doc)
+	# Soften GST + ERPNext mandatory checks other than Customer (we enforce party ourselves)
+	doc.flags.ignore_mandatory = True
+	# Soft contact defaults — never require phone / email / party address on quote
+	if doc.meta.has_field("gst_category") and not doc.get("gst_category"):
+		doc.gst_category = "Unregistered"
 
 
 def validate_quotation(doc, method=None):
