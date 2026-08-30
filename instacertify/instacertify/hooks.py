@@ -231,7 +231,11 @@ website_context = {
 }
 
 # Reliable Quotation PDF (Chrome + inlined-asset fallback; no HostNotFound server error)
+# Also wrap party lookups so missing Address.tax_category / Contact.is_billing_contact
+# never 1054 when creating Quotation (ERPNext get_party_details).
 override_whitelisted_methods = {
 	"frappe.utils.print_format.download_pdf": "instacertify.utils.pdf.download_pdf",
 	"frappe.desk.reportview.export_query": "instacertify.setup.role_profiles.export_query",
+	"erpnext.accounts.party.get_party_details": "instacertify.setup.contact_billing.get_party_details",
+	"erpnext.accounts.party.get_address_tax_category": "instacertify.setup.contact_billing.get_address_tax_category",
 }

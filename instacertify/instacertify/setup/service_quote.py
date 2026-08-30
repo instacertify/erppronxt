@@ -22,6 +22,23 @@ def ensure_service_quote_rules():
 	# ERPNext Item table is optional for draft service quotes
 	_upsert_property_setter("Quotation", "items", "reqd", "0", "Check")
 	_upsert_property_setter("Quotation Item", "item_code", "reqd", "0", "Check")
+	# Shipping / GST / payment plan — not required to create a service quote
+	for field in (
+		"shipping_rule",
+		"taxes_and_charges",
+		"tax_category",
+		"payment_terms_template",
+		"payment_schedule",
+		"customer_address",
+		"shipping_address_name",
+		"company_address",
+		"tc_name",
+		"terms",
+	):
+		try:
+			_upsert_property_setter("Quotation", field, "reqd", "0", "Check")
+		except Exception:
+			pass
 
 	# Quotation Type optional (defaults when blank)
 	try:
@@ -35,6 +52,39 @@ def ensure_service_quote_rules():
 				{
 					"reqd": 0,
 					"description": "Optional category. Only Customer is required to create a quote.",
+				},
+				update_modified=False,
+			)
+	except Exception:
+		pass
+
+	# Assignees optional + collapsed (not on first-page mandatory path)
+	try:
+		sec = frappe.db.exists(
+			"Custom Field", {"dt": "Quotation", "fieldname": "ic_section_assignees"}
+		)
+		if sec:
+			frappe.db.set_value(
+				"Custom Field",
+				sec,
+				{
+					"label": "Additional Information — Assigned Team (optional)",
+					"collapsible": 1,
+					"description": "Optional. Assignees are not required to create a quotation.",
+				},
+				update_modified=False,
+			)
+		# collapsed may be stored as property on Section Break
+		_upsert_property_setter("Quotation", "ic_section_assignees", "collapsible", "1", "Check")
+		_upsert_property_setter("Quotation", "ic_section_assignees", "collapsed", "1", "Check")
+		asn = frappe.db.exists("Custom Field", {"dt": "Quotation", "fieldname": "ic_assignees"})
+		if asn:
+			frappe.db.set_value(
+				"Custom Field",
+				asn,
+				{
+					"reqd": 0,
+					"description": "Optional — add people later. Not required to save or share a quote.",
 				},
 				update_modified=False,
 			)
@@ -162,6 +212,19 @@ def apply_quote_customer_only_rules(doc):
 		if not (row.get("cost_component") or "").strip() and (row.get("particulars") or "").strip():
 			row.cost_component = row.particulars
 
+	# Free-text service lines on Items table: create non-stock Item from name/description
+	for row in doc.get("items") or []:
+		code = (row.get("item_code") or "").strip()
+		label = (row.get("item_name") or row.get("description") or "").strip()
+		if not code and label:
+			row.item_code = ensure_nonstock_item_for_label(label)
+			if not row.get("item_name"):
+				row.item_name = label[:140]
+			if not row.get("uom"):
+				row.uom = "Nos"
+			if not row.get("qty"):
+				row.qty = 1
+
 	# Draft with Customer only / Instacertify tables: ERPNext may still expect Items —
 	# map free-text lines to non-stock Items, or add a zero placeholder (no inventory).
 	has_items = any((row.get("item_code") or "").strip() for row in (doc.get("items") or []))
@@ -258,3 +321,46 @@ def apply_quote_customer_only_rules(doc):
 			for f in ("warehouse", "target_warehouse", "from_warehouse"):
 				if hasattr(row, f):
 					row.set(f, None)
+
+
+@frappe.whitelist()
+def suggest_service_price(label: str | None = None, test_name: str | None = None, applicable_standard: str | None = None):
+	"""Suggest a selling price for a free-text service from the lab purchase/scope library.
+
+	Returns best (lowest purchase) matching offer, or empty when nothing matches.
+	Also ensures a non-stock Item exists for the label so the quote line can use it.
+	"""
+	from instacertify.laboratory.api import get_labs_for_standard
+
+	text = (label or test_name or "").strip()
+	std = (applicable_standard or "").strip()
+	offers = get_labs_for_standard(
+		applicable_standard=std or None,
+		test_name=text or None,
+	)
+	# Broaden: if no match on test_name alone, try using label as standard
+	if not offers and text and not std:
+		offers = get_labs_for_standard(applicable_standard=text)
+
+	item_code = ensure_nonstock_item_for_label(text or "Customer Product / Service")
+	if not offers:
+		return {
+			"item_code": item_code,
+			"item_name": text or "Customer Product / Service",
+			"suggested_selling_price": 0,
+			"purchase_price": 0,
+			"offers": [],
+		}
+
+	best = offers[0]
+	return {
+		"item_code": item_code,
+		"item_name": text or best.get("test_name") or "Service",
+		"suggested_selling_price": best.get("selling_price") or 0,
+		"purchase_price": best.get("purchase_price") or 0,
+		"currency": best.get("currency") or "INR",
+		"laboratory": best.get("laboratory"),
+		"laboratory_name": best.get("laboratory_name"),
+		"lab_offer": best.get("value"),
+		"offers": offers[:25],
+	}

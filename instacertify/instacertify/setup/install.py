@@ -304,10 +304,10 @@ def setup_service_quote_rules():
 
 
 def setup_contact_billing_fields():
-	"""Ensure Contact.is_billing_contact exists (ERPNext party/quote lookups)."""
-	from instacertify.setup.contact_billing import ensure_contact_billing_fields
+	"""Ensure Address.tax_category + Contact.is_billing_contact (ERPNext party/quote)."""
+	from instacertify.setup.contact_billing import ensure_party_address_contact_fields
 
-	ensure_contact_billing_fields()
+	ensure_party_address_contact_fields()
 
 
 def setup_consulting_billing():

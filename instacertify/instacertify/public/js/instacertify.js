@@ -1835,7 +1835,11 @@ $(document).on("page-change", function () {
 
 // Quotation form enhancements
 frappe.ui.form.on("Quotation", {
+	onload(frm) {
+		instacertify.ensure_party_address_contact_fields();
+	},
 	refresh(frm) {
+		instacertify.ensure_party_address_contact_fields();
 		instacertify.apply_service_quote_mandatory(frm);
 		instacertify.apply_quotation_naming_series(frm);
 		instacertify.add_change_currency_button(frm, { fieldname: "currency" });
@@ -2128,6 +2132,21 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
+instacertify.ensure_party_address_contact_fields = function () {
+	if (instacertify._party_fields_ensuring) return;
+	instacertify._party_fields_ensuring = true;
+	frappe.call({
+		method: "instacertify.setup.contact_billing.ensure_party_fields",
+		callback() {
+			instacertify._party_fields_ensuring = false;
+			instacertify._party_fields_ready = true;
+		},
+		error() {
+			instacertify._party_fields_ensuring = false;
+		},
+	});
+};
+
 instacertify.apply_service_quote_mandatory = function (frm) {
 	// Service business: only Customer is mandatory — products/services are free text, not inventory
 	frm.set_df_property("party_name", "reqd", 1);
@@ -2136,11 +2155,41 @@ instacertify.apply_service_quote_mandatory = function (frm) {
 	frm.set_df_property("ic_quotation_template", "reqd", 0);
 	frm.set_df_property("ic_subject", "reqd", 0);
 	frm.set_df_property("order_type", "reqd", 0);
+	[
+		"shipping_rule",
+		"taxes_and_charges",
+		"tax_category",
+		"payment_terms_template",
+		"payment_schedule",
+		"customer_address",
+		"shipping_address_name",
+		"company_address",
+		"tc_name",
+		"ic_assignees",
+		"ic_primary_assignee",
+		"ic_payment_terms",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) frm.set_df_property(f, "reqd", 0);
+	});
 	if (frm.fields_dict.items) {
 		frm.set_df_property("items", "reqd", 0);
 	}
+	if (frm.fields_dict.ic_section_assignees) {
+		frm.set_df_property("ic_section_assignees", "collapsible", 1);
+	}
 	if (!frm.doc.quotation_to) {
 		frm.set_value("quotation_to", "Customer");
+	}
+	// Allow typing a free-text service name in Items (no Item master required)
+	const grid = frm.fields_dict.items && frm.fields_dict.items.grid;
+	if (grid) {
+		grid.update_docfield_property("item_code", "reqd", 0);
+		grid.update_docfield_property("item_name", "reqd", 0);
+		grid.update_docfield_property(
+			"item_name",
+			"description",
+			__("Free-text service / product — no inventory Item required. Price can be suggested from the lab library.")
+		);
 	}
 };
 
@@ -2159,6 +2208,107 @@ instacertify.apply_quote_format_to_form = function (frm, template) {
 				indicator: "green",
 			});
 		},
+	});
+};
+
+// Free-text service lines on Quotation Items — suggest price from lab purchase/scope library
+frappe.ui.form.on("Quotation Item", {
+	item_name(frm, cdt, cdn) {
+		instacertify.suggest_quote_item_service_price(frm, cdt, cdn);
+	},
+	description(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
+		if (row && !row.item_code && !row.item_name && row.description) {
+			frappe.model.set_value(cdt, cdn, "item_name", row.description);
+		}
+	},
+});
+
+instacertify.suggest_quote_item_service_price = function (frm, cdt, cdn) {
+	const row = locals[cdt][cdn];
+	if (!row) return;
+	const label = (row.item_name || row.description || "").trim();
+	if (!label) return;
+	// If an inventory item was picked, leave rate alone
+	if (row.item_code && !String(row.item_code).startsWith("SVC-") && row.item_code !== "CUSTOMER-SERVICE") {
+		return;
+	}
+	frappe.call({
+		method: "instacertify.setup.service_quote.suggest_service_price",
+		args: { label },
+		callback(r) {
+			const d = r.message || {};
+			if (d.item_code) {
+				frappe.model.set_value(cdt, cdn, "item_code", d.item_code);
+			}
+			if (!row.qty) frappe.model.set_value(cdt, cdn, "qty", 1);
+			const offers = d.offers || [];
+			if (offers.length > 1) {
+				instacertify.open_quote_item_lab_price_picker(frm, cdt, cdn, offers, d);
+			} else if (flt(d.suggested_selling_price) > 0) {
+				frappe.model.set_value(cdt, cdn, "rate", d.suggested_selling_price);
+				frappe.show_alert({
+					message: __("Suggested price {0} from lab library", [
+						format_currency(d.suggested_selling_price, d.currency || frm.doc.currency || "INR"),
+					]),
+					indicator: "green",
+				});
+			}
+		},
+	});
+};
+
+instacertify.open_quote_item_lab_price_picker = function (frm, cdt, cdn, offers, hint) {
+	const rows_html = (offers || [])
+		.map((o, idx) => {
+			const buy = format_currency(o.purchase_price || 0, o.currency || "INR");
+			const sell = format_currency(o.selling_price || 0, o.currency || "INR");
+			return `<tr data-idx="${idx}" class="ic-lab-offer-row" style="cursor:pointer">
+				<td><b>${frappe.utils.escape_html(o.laboratory_name || "")}</b></td>
+				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
+				<td>${frappe.utils.escape_html(o.applicable_standard || "—")}</td>
+				<td style="text-align:right;font-weight:700;color:#EC691F">${frappe.utils.escape_html(buy)}</td>
+				<td style="text-align:right">${frappe.utils.escape_html(sell)}</td>
+			</tr>`;
+		})
+		.join("");
+	const d = new frappe.ui.Dialog({
+		title: __("Suggest price from lab library"),
+		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: `<div class="text-muted" style="margin-bottom:8px">
+					${__("Pick a lab scope offer — selling price is suggested onto this service line:")}
+				</div>
+				<table class="table table-bordered table-hover" style="margin:0">
+					<thead><tr>
+						<th>${__("Laboratory")}</th><th>${__("Test")}</th><th>${__("Standard")}</th>
+						<th style="text-align:right">${__("Purchase")}</th>
+						<th style="text-align:right">${__("Suggested Sell")}</th>
+					</tr></thead>
+					<tbody>${rows_html}</tbody>
+				</table>`,
+			},
+		],
+	});
+	d.show();
+	d.$wrapper.find(".ic-lab-offer-row").on("click", function () {
+		const idx = cint($(this).data("idx"));
+		const offer = offers[idx];
+		if (!offer) return;
+		d.hide();
+		if (hint && hint.item_code) {
+			frappe.model.set_value(cdt, cdn, "item_code", hint.item_code);
+		}
+		frappe.model.set_value(cdt, cdn, "rate", offer.selling_price || 0);
+		frappe.show_alert({
+			message: __("Suggested price {0} from {1}", [
+				format_currency(offer.selling_price || 0, offer.currency || "INR"),
+				offer.laboratory_name || __("lab library"),
+			]),
+			indicator: "green",
+		});
 	});
 };
 

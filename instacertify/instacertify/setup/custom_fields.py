@@ -695,9 +695,11 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_section_assignees",
 		"fieldtype": "Section Break",
-		"label": "Assigned Team — one or more people",
+		"label": "Additional Information — Assigned Team (optional)",
 		"insert_after": "ic_post_accept_action",
-		"collapsible": 0,
+		"collapsible": 1,
+		"collapsed": 1,
+		"description": "Optional. Assignees are not required to create a quotation.",
 	},
 	{
 		"fieldname": "ic_assignees",
@@ -705,7 +707,8 @@ QUOTATION_FIELDS = [
 		"label": "Assign People",
 		"options": "IC Assignee",
 		"insert_after": "ic_section_assignees",
-		"description": "Add everyone responsible for this quotation. Mark one as Primary.",
+		"reqd": 0,
+		"description": "Optional — add people later. Not required to save or share a quote.",
 	},
 	{
 		"fieldname": "ic_primary_assignee",

@@ -11,11 +11,11 @@ from frappe.utils import cint, now_datetime
 
 
 def validate_quotation(doc, method=None):
-	from instacertify.setup.contact_billing import ensure_contact_billing_fields
+	from instacertify.setup.contact_billing import ensure_party_address_contact_fields
 	from instacertify.setup.service_quote import apply_quote_customer_only_rules, ensure_service_quote_rules
 
-	# Avoid MySQL 1054 on Contact.is_billing_contact during party/contact fetch
-	ensure_contact_billing_fields()
+	# Avoid MySQL 1054 on Address.tax_category / Contact.is_billing_contact
+	ensure_party_address_contact_fields()
 	ensure_service_quote_rules()
 	apply_quote_customer_only_rules(doc)
 	_calculate_test_line_totals(doc)
@@ -34,7 +34,7 @@ def validate_quotation(doc, method=None):
 		doc,
 		table_field="ic_assignees",
 		primary_field="ic_primary_assignee",
-		default_user=doc.owner,
+		default_user=None,  # Assignees optional — do not auto-assign owner on create
 	)
 	if doc.quotation_to == "Customer" and doc.party_name:
 		from instacertify.accounting.billing import apply_transaction_billing_defaults
