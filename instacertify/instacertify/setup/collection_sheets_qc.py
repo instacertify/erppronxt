@@ -104,6 +104,10 @@ def run_collection_sheets_qc() -> dict:
 			fail("Dispatch guest payload leaked desk ids")
 		else:
 			ok("Dispatch guest payload stripped")
+		if not payload.get("pdf_url") or "download_dispatch_pdf" not in payload["pdf_url"]:
+			fail("Dispatch payload missing pdf_url")
+		else:
+			ok("Dispatch pdf_url present")
 		save_sample_dispatch_collection(
 			token=disp["token"],
 			contact_person="QC Contact",
