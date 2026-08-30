@@ -139,14 +139,25 @@ def get_testing_request_sample_labels(testing_request: str):
 	"""Unique printable QR labels for every sample on a Testing Request.
 
 	Each label includes:
-	- QR (unique sample tracking code + verify URL)
+	- QR (unique sample tracking code + verify URL) as an embedded data URI
 	- Sample tracking number
 	- “For more information visit www.instacertify.com”
 	"""
-	from instacertify.utils.qr import get_qr_code_data_uri, sample_qr_payload
+	from instacertify.utils.qr import (
+		get_qr_code_data_uri,
+		render_sample_sticker_50x25_png,
+		sample_qr_payload,
+	)
+	import base64
 
 	if not testing_request or not frappe.db.exists("IC Testing Request", testing_request):
 		frappe.throw(_("Testing Request not found"))
+
+	# Ensure samples exist so QR always has something to show
+	try:
+		ensure_samples_for_testing_request(testing_request)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure samples before QR labels")
 
 	samples = get_samples_for_testing_request(testing_request)
 	labels = []
@@ -158,13 +169,20 @@ def get_testing_request_sample_labels(testing_request: str):
 			_attach_sample_qr(doc)
 			doc.reload()
 		payload = sample_qr_payload(doc.tracking_number, doc.name)
-		qr_uri = get_qr_code_data_uri(payload, box_size=6, border=1)
-		# Also prepare 50×25 PNG for download/print
-		sticker = None
+		qr_uri = get_qr_code_data_uri(payload, box_size=8, border=1) or ""
+		# Prefer embedded sticker PNG so the dialog never depends on /files URL loading
+		sticker_uri = ""
+		sticker_url = doc.get("qr_code") or ""
 		try:
+			png = render_sample_sticker_50x25_png(doc.tracking_number, payload)
+			sticker_uri = "data:image/png;base64," + base64.b64encode(png).decode()
 			sticker = download_sample_sticker_50x25(doc.name)
+			sticker_url = (sticker or {}).get("file_url") or sticker_url
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "sample sticker for TR labels")
+		if not qr_uri and doc.qr_code:
+			# Absolute URL fallback for attached file
+			qr_uri = doc.qr_code
 		labels.append(
 			{
 				"name": doc.name,
@@ -172,7 +190,8 @@ def get_testing_request_sample_labels(testing_request: str):
 				"sample_description": doc.sample_description,
 				"qr_code": doc.qr_code,
 				"qr_data_uri": qr_uri,
-				"sticker_url": (sticker or {}).get("file_url"),
+				"sticker_data_uri": sticker_uri,
+				"sticker_url": sticker_url,
 				"website": "www.instacertify.com",
 				"info_line": "For more information visit",
 				"print_format": "Instacertify Sample Sticker 50x25mm",

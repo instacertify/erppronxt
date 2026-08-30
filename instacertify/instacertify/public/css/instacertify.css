@@ -4587,6 +4587,28 @@ body.full-width {
   border-radius: 4px;
   display: block;
 }
+.ic-ts-qr-missing {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: #c62828;
+  font-size: 12px;
+  text-align: center;
+  padding: 8px;
+}
+.ic-ts-qr-only {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ic-ts-qr-only img {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+  border: 1px solid #d5e4ee;
+  border-radius: 6px;
+  background: #fff;
+}
 .ic-ts-qr-sticker-fallback {
   box-sizing: border-box;
   display: flex !important;
