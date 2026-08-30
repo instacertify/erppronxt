@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Test Request Form (TRF)</title>
+  <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
+  <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
+  <style>
+    .ic-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+    @media (max-width:720px){ .ic-form-grid { grid-template-columns:1fr; } }
+    .ic-form-grid label, .ic-full label { display:block; font-size:12px; color:#5b7380; margin-bottom:4px; font-weight:600; }
+    .ic-form-grid input, .ic-form-grid textarea, .ic-full textarea, .ic-full input {
+      width:100%; border-radius:10px; border:1.5px solid #9eb8c8; padding:9px 10px; box-sizing:border-box;
+    }
+    .ic-full { margin-top:12px; }
+    .ic-section { margin-top:18px; padding-top:12px; border-top:1.5px solid #9eb8c8; }
+    .ic-section h3 { color:#065175; margin:0 0 10px; font-size:1rem; }
+    .ic-msg { margin-top:10px; padding:10px 12px; border-radius:10px; display:none; }
+    .ic-msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
+    .ic-msg.err { display:block; background:#fdecea; color:#b42318; }
+    .ic-hint { color:#5b7380; font-size:0.92rem; }
+    .ic-qr-box {
+      display:flex; gap:14px; align-items:center; border:1.5px solid #9eb8c8; border-radius:12px;
+      padding:12px; background:#f5fafc; margin:12px 0;
+    }
+    .ic-qr-box img { width:96px; height:96px; image-rendering:pixelated; border:1px solid #cfd8dc; background:#fff; }
+    .ic-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    table.ic-outline { width:100%; border-collapse:collapse; margin-top:8px; }
+    table.ic-outline th, table.ic-outline td {
+      border:1px solid #8eafc0; padding:8px 10px; text-align:left; font-size:13px;
+    }
+    table.ic-outline th { background:#e8f1f7; color:#065175; }
+  </style>
+</head>
+<body class="ic-portal-body">
+  <div class="ic-portal-wrap">
+    <div class="ic-portal-brand" style="margin-bottom:14px;">
+      <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+    </div>
+    <div class="ic-portal-card">
+      <h2 style="color:#065175;margin-top:0;">Test Request Form (TRF)</h2>
+      <div id="content">Loading…</div>
+      <div id="msg" class="ic-msg"></div>
+      <div id="form" style="display:none;">
+        <div id="qr-wrap" class="ic-qr-box" style="display:none;">
+          <img id="qr-img" alt="Sample QR"/>
+          <div>
+            <div style="font-weight:700;color:#065175;">Same QR as product sample</div>
+            <div class="ic-hint" id="qr-trk"></div>
+            <div class="ic-hint">Scan/match this QR with the sample sticker to avoid confusion.</div>
+          </div>
+        </div>
+        <div class="ic-section">
+          <h3>Sample &amp; product</h3>
+          <div class="ic-form-grid">
+            <div><label>Sample Name (description of sample)</label><input id="sample_name" type="text"/></div>
+            <div><label>Sample Quantity</label><input id="sample_quantity" type="text" placeholder="e.g. 2 pcs"/></div>
+            <div><label>Brand Name</label><input id="brand_name" type="text"/></div>
+            <div><label>Model No</label><input id="model_no" type="text"/></div>
+          </div>
+          <div class="ic-full">
+            <label>Upload Brand Logo</label>
+            <input id="brand_logo_file" type="file" accept=".png,.jpg,.jpeg,.webp,.gif,image/*"/>
+            <div id="brand_logo_link" class="ic-hint"></div>
+          </div>
+          <div class="ic-full">
+            <label>Rated Input of Product / Specification</label>
+            <textarea id="rated_input" rows="2" placeholder="e.g. 100–240V AC, 50/60Hz"></textarea>
+          </div>
+        </div>
+        <div class="ic-section">
+          <h3>Testing</h3>
+          <div class="ic-form-grid">
+            <div><label>Testing Requested</label><input id="testing_requested" type="text"/></div>
+            <div><label>Standard Applicable for Testing</label><input id="applicable_standard" type="text"/></div>
+          </div>
+          <div class="ic-full">
+            <label>Description</label>
+            <textarea id="description" rows="3"></textarea>
+          </div>
+          <div class="ic-full">
+            <label>Other Remarks</label>
+            <textarea id="other_remarks" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="ic-actions">
+          <button class="ic-btn ic-btn-primary" id="btn-save">Submit TRF</button>
+          <button class="ic-btn" id="btn-pdf" style="display:none;">Generate / Download PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const token = {{ token|tojson }};
+    const csrf = {{ csrf_token|tojson }};
+    let brandLogoUrl = "";
+    let data = null;
+
+    function showMsg(text, ok) {
+      const el = document.getElementById("msg");
+      el.className = "ic-msg " + (ok ? "ok" : "err");
+      el.textContent = text;
+    }
+
+    function val(id) { return (document.getElementById(id).value || "").trim(); }
+    function set(id, v) { document.getElementById(id).value = v || ""; }
+
+    function fill(d) {
+      data = d;
+      document.getElementById("content").innerHTML =
+        `<p class="ic-hint">${d.portal_notice || ""}</p>` +
+        (d.customer_instructions ? `<div style="margin:8px 0;">${d.customer_instructions}</div>` : "") +
+        `<p><b>Status:</b> ${d.status || "—"} · <b>TR:</b> ${d.testing_request || "—"}</p>`;
+      set("sample_name", d.sample_name);
+      set("sample_quantity", d.sample_quantity);
+      set("rated_input", d.rated_input);
+      set("model_no", d.model_no);
+      set("brand_name", d.brand_name);
+      set("testing_requested", d.testing_requested);
+      set("applicable_standard", d.applicable_standard);
+      set("description", d.description);
+      set("other_remarks", d.other_remarks);
+      brandLogoUrl = d.brand_logo || "";
+      document.getElementById("brand_logo_link").innerHTML = brandLogoUrl
+        ? `<a href="${brandLogoUrl}" target="_blank">Current logo</a>` : "";
+      const qr = d.qr_data_uri || d.sample_qr_code || "";
+      if (qr) {
+        document.getElementById("qr-wrap").style.display = "flex";
+        document.getElementById("qr-img").src = qr;
+        document.getElementById("qr-trk").textContent = d.sample_tracking_number
+          ? ("Tracking: " + d.sample_tracking_number) : "";
+      }
+      document.getElementById("form").style.display = "block";
+      const pdfBtn = document.getElementById("btn-pdf");
+      if (d.can_generate_pdf || d.pdf_file) {
+        pdfBtn.style.display = "inline-block";
+        if (d.pdf_file) pdfBtn.textContent = "Download TRF PDF";
+      }
+      if (d.read_only) {
+        document.getElementById("btn-save").style.display = "none";
+        ["sample_name","sample_quantity","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"]
+          .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+      }
+    }
+
+    async function api(method, args) {
+      const body = new URLSearchParams({ ...args, csrf_token: csrf });
+      const res = await fetch("/api/method/" + method, {
+        method: "POST",
+        headers: { "X-Frappe-CSRF-Token": csrf, "Content-Type": "application/x-www-form-urlencoded" },
+        body
+      });
+      const json = await res.json();
+      if (json.exc || (json._server_messages && !json.message)) {
+        let msg = "Request failed";
+        try {
+          const sm = JSON.parse(json._server_messages || "[]");
+          msg = sm.map(s => { try { return JSON.parse(s).message; } catch(e){ return s; } }).join(" ");
+        } catch (e) {}
+        throw new Error(msg || json.exc || "Failed");
+      }
+      return json.message;
+    }
+
+    async function uploadLogo(file) {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("is_private", "0");
+      fd.append("folder", "Home");
+      fd.append("csrf_token", csrf);
+      const res = await fetch("/api/method/upload_file", {
+        method: "POST",
+        headers: { "X-Frappe-CSRF-Token": csrf },
+        body: fd
+      });
+      const json = await res.json();
+      if (!json.message || !json.message.file_url) throw new Error("Logo upload failed");
+      return json.message.file_url;
+    }
+
+    document.getElementById("btn-save").onclick = async () => {
+      try {
+        const fileInput = document.getElementById("brand_logo_file");
+        if (fileInput.files && fileInput.files[0]) {
+          brandLogoUrl = await uploadLogo(fileInput.files[0]);
+        }
+        const m = await api("instacertify.trf.api.save_trf", {
+          token,
+          sample_name: val("sample_name"),
+          sample_quantity: val("sample_quantity"),
+          rated_input: val("rated_input"),
+          model_no: val("model_no"),
+          brand_name: val("brand_name"),
+          brand_logo: brandLogoUrl || "",
+          testing_requested: val("testing_requested"),
+          applicable_standard: val("applicable_standard"),
+          description: val("description"),
+          other_remarks: val("other_remarks"),
+        });
+        showMsg("TRF submitted. You can generate the PDF now.", true);
+        document.getElementById("btn-pdf").style.display = "inline-block";
+        if (m && m.status) {
+          const d = await api("instacertify.trf.api.get_trf_by_token", { token });
+          fill(d);
+        }
+      } catch (e) {
+        showMsg(e.message || String(e), false);
+      }
+    };
+
+    document.getElementById("btn-pdf").onclick = async () => {
+      try {
+        if (data && data.pdf_file) {
+          window.open(data.pdf_file, "_blank");
+          return;
+        }
+        const m = await api("instacertify.trf.api.generate_trf_pdf", { token });
+        showMsg("TRF PDF generated.", true);
+        if (m && m.file_url) window.open(m.file_url, "_blank");
+        const d = await api("instacertify.trf.api.get_trf_by_token", { token });
+        fill(d);
+      } catch (e) {
+        showMsg(e.message || String(e), false);
+      }
+    };
+
+    (async () => {
+      try {
+        const d = await api("instacertify.trf.api.get_trf_by_token", { token });
+        fill(d);
+      } catch (e) {
+        document.getElementById("content").textContent = e.message || "Invalid link";
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1295,6 +1295,80 @@ DOCUMENTS_COLLECTION_HTML = """
 """
 
 
+TRF_HTML = """
+{%- set s = frappe.get_cached_doc('IC Settings') -%}
+{%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
+{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo.png' -%}
+{%- set qr_src = doc.sample_qr_code or '' -%}
+{%- if not qr_src and doc.sample_tracking_number -%}
+  {%- set qr_src = get_qr_code_data_uri((doc.sample_tracking_number or '') + '\n' + frappe.utils.get_url() + '/ic-verify/sample/' + (doc.sample_tracking_number or ''), 6, 1) -%}
+{%- endif -%}
+<style>
+""" + IC_PRINT_TYPOGRAPHY_CSS + """
+  @page { size: A4; margin: 12mm; }
+  .print-format { padding: 0 !important; margin: 0 !important; }
+  .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh-logo img { max-height:58px; max-width:320px; }
+  .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
+  .ic-sub { color:#555; margin-bottom:12px; }
+  .ic-box { border:1.5px solid #8eafc0; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
+  table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.ic-table td, table.ic-table th { border:1px solid #8eafc0; padding:7px 8px; vertical-align:top; }
+  table.ic-table td:first-child { width:34%; color:#065175; font-weight:600; background:#f5fafc; }
+  .ic-meta { margin-bottom:10px; }
+  .ic-qr-row { display:flex; gap:16px; align-items:center; }
+  .ic-qr-row img { width:28mm; height:28mm; border:1px solid #cfd8dc; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+</style>
+<div class="ic-sheet">
+  <div class="ic-lh">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
+    <div style="text-align:right;font-size:10px;line-height:1.4;">{{ legal }}</div>
+  </div>
+  <div class="ic-title">Test Request Form (TRF)</div>
+  <div class="ic-sub">Customer / case-handler filled sheet · PDF for records</div>
+  <div class="ic-meta">
+    <b>TRF:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Testing Request:</b> {{ doc.testing_request }} &nbsp;|&nbsp; <b>Status:</b> {{ doc.status }}<br/>
+    <b>Customer:</b> {{ doc.customer }} &nbsp;|&nbsp; <b>Project:</b> {{ doc.project or '—' }} &nbsp;|&nbsp; <b>Filled by:</b> {{ doc.filled_by or '—' }}
+  </div>
+  <div class="ic-box">
+    <h3>Sample QR (same as product sample)</h3>
+    <div class="ic-qr-row">
+      {% if qr_src %}<img src="{{ qr_src }}" alt="Sample QR"/>{% endif %}
+      <div>
+        <div><b>Tracking #:</b> {{ doc.sample_tracking_number or '—' }}</div>
+        <div><b>Sample:</b> {{ doc.sample_tracking or '—' }}</div>
+        <div style="margin-top:4px;color:#555;">QR matches the sample sticker to avoid confusion.</div>
+      </div>
+    </div>
+  </div>
+  <div class="ic-box">
+    <h3>Sample &amp; Brand</h3>
+    <table class="ic-table">
+      <tr><td>Sample Name</td><td>{{ doc.sample_name or '' }}</td></tr>
+      <tr><td>Sample Quantity</td><td>{{ doc.sample_quantity or '' }}</td></tr>
+      <tr><td>Brand Name</td><td>{{ doc.brand_name or '' }}</td></tr>
+      <tr><td>Model No</td><td>{{ doc.model_no or '' }}</td></tr>
+      <tr><td>Brand Logo</td><td>{% if doc.brand_logo %}<img src="{{ doc.brand_logo }}" style="max-height:28px;"/>{% else %}—{% endif %}</td></tr>
+    </table>
+  </div>
+  <div class="ic-box">
+    <h3>Product / Testing</h3>
+    <table class="ic-table">
+      <tr><td>Rated Input / Specification</td><td>{{ doc.rated_input or '' }}</td></tr>
+      <tr><td>Testing Requested</td><td>{{ doc.testing_requested or '' }}</td></tr>
+      <tr><td>Standard Applicable</td><td>{{ doc.applicable_standard or '' }}</td></tr>
+      <tr><td>Description</td><td>{{ doc.description or '' }}</td></tr>
+      <tr><td>Other Remarks</td><td>{{ doc.other_remarks or '' }}</td></tr>
+    </table>
+  </div>
+  <div class="ic-footer-bar">instacertify · test request form (TRF)</div>
+</div>
+"""
+
+
 SAMPLE_DISPATCH_COLLECTION_HTML = """
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
 {%- set legal = s.legal_name or 'INSTACERTIFY LABS PRIVATE LIMITED' -%}
@@ -1471,6 +1545,7 @@ def ensure_print_formats():
 		("Instacertify Joining Letter", "IC Joining Letter", JOINING_HTML),
 		("Instacertify Documents Collection Sheet", "IC Document Request", DOCUMENTS_COLLECTION_HTML),
 		("Instacertify Sample Dispatch Collection", "IC Sample Dispatch Collection", SAMPLE_DISPATCH_COLLECTION_HTML),
+		("Instacertify Test Request Form", "IC Test Request Form", TRF_HTML),
 	]
 	for name, dt, html in formats:
 		values = {

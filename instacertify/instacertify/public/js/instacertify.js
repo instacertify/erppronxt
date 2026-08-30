@@ -3450,6 +3450,41 @@ frappe.ui.form.on("IC Testing Request", {
 			}, __("Billing"));
 		}
 		if (!frm.is_new()) {
+			frm.add_custom_button(__("Create / Share TRF"), () => {
+				frappe.call({
+					method: "instacertify.trf.api.create_or_get_trf",
+					args: { testing_request: frm.doc.name, share: 1 },
+					freeze: true,
+					freeze_message: __("Preparing Test Request Form…"),
+					callback(r) {
+						const m = r.message || {};
+						const url = m.url || m.share_url || "";
+						frappe.msgprint({
+							title: __("Test Request Form (TRF)"),
+							message: `<p>${__(
+								"Share this link so the customer can fill the TRF. Case handlers can also open and fill the same form."
+							)}</p>
+							<p><a href="${frappe.utils.escape_html(url)}" target="_blank">${frappe.utils.escape_html(
+								url
+							)}</a></p>
+							<p><a href="/app/ic-test-request-form/${encodeURIComponent(
+								m.name
+							)}">${__("Open TRF (staff fill / PDF)")}</a></p>`,
+							indicator: "green",
+						});
+					},
+				});
+			}, __("TRF"));
+			frm.add_custom_button(__("Open TRF"), () => {
+				frappe.call({
+					method: "instacertify.trf.api.create_or_get_trf",
+					args: { testing_request: frm.doc.name, share: 0 },
+					freeze: true,
+					callback(r) {
+						frappe.set_route("Form", "IC Test Request Form", r.message.name);
+					},
+				});
+			}, __("TRF"));
 			frm.add_custom_button(__("Print QR Labels"), () => {
 				frappe.call({
 					method: "instacertify.testing.events.get_testing_request_sample_labels",
