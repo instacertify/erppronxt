@@ -226,7 +226,11 @@ def get_trf_by_token(token: str):
 			qr_data_uri = get_qr_code_data_uri(sample_qr_payload(trk, doc.sample_tracking), box_size=6, border=1)
 	except Exception:
 		pass
-	can_pdf = doc.status in FILLED_STATUSES or bool(doc.pdf_file)
+	can_pdf = (
+		doc.status in FILLED_STATUSES
+		or bool(doc.pdf_file)
+		or bool(doc.sample_name or doc.product_name or doc.brand_name)
+	)
 	editable = _is_portal_editable(doc)
 	if editable:
 		notice = _(
@@ -238,7 +242,7 @@ def get_trf_by_token(token: str):
 		notice = _(
 			"This TRF has already been submitted and is locked. "
 			"If something is wrong, contact Instacertify so they can reopen it for edit. "
-			"You can still download the PDF if available."
+			"You can still download the PDF of what you submitted."
 		)
 	return {
 		"name": doc.name,
@@ -262,6 +266,7 @@ def get_trf_by_token(token: str):
 		"other_remarks": doc.other_remarks,
 		"pdf_file": doc.pdf_file if can_pdf else "",
 		"can_generate_pdf": can_pdf,
+		"pdf_url": f"/api/method/instacertify.trf.api.download_trf_pdf?token={token}",
 		"read_only": not editable,
 		"portal_editable": editable,
 		"portal_notice": notice,
@@ -396,6 +401,31 @@ def _sync_to_sample(doc):
 
 
 @frappe.whitelist(allow_guest=True)
+def download_trf_pdf(token: str):
+	"""Customer downloads PDF of the TRF they filled (streamed attachment)."""
+	name = frappe.db.get_value("IC Test Request Form", {"share_token": token}, "name")
+	if not name:
+		frappe.throw(_("Invalid TRF link"), frappe.PermissionError)
+	doc = frappe.get_doc("IC Test Request Form", name)
+	if not (
+		doc.status in FILLED_STATUSES
+		or doc.pdf_file
+		or doc.sample_name
+		or doc.product_name
+		or doc.brand_name
+	):
+		frappe.throw(_("Fill and submit the form before downloading the PDF"))
+	from instacertify.utils.collection_pdf import download_by_share_token
+
+	download_by_share_token(
+		"IC Test Request Form",
+		token,
+		print_format="Instacertify Test Request Form",
+		filename_prefix="TRF",
+	)
+
+
+@frappe.whitelist(allow_guest=True)
 def generate_trf_pdf(name: str | None = None, token: str | None = None):
 	"""Generate TRF PDF (staff by name, or customer by token after submit)."""
 	if token:
@@ -404,11 +434,16 @@ def generate_trf_pdf(name: str | None = None, token: str | None = None):
 		frappe.throw(_("Test Request Form not found"))
 	doc = frappe.get_doc("IC Test Request Form", name)
 
-	# Guest may only generate after the form is filled/submitted
+	# Guest may only generate after the form has data
 	if frappe.session.user == "Guest":
 		if not token or doc.share_token != token:
 			frappe.throw(_("Not permitted"), frappe.PermissionError)
-		if doc.status not in FILLED_STATUSES and not (doc.sample_name and doc.brand_name):
+		if not (
+			doc.status in FILLED_STATUSES
+			or doc.pdf_file
+			or (doc.sample_name and doc.brand_name)
+			or doc.product_name
+		):
 			frappe.throw(_("Submit the form before generating the PDF"))
 
 	# Ensure sample QR is present

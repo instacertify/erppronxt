@@ -66,6 +66,10 @@ def run_collection_sheets_qc() -> dict:
 			fail("Documents payload missing data_fields")
 		else:
 			ok(f"Documents data_fields={len(payload.get('data_fields') or [])}")
+		if not payload.get("pdf_url") or "download_collection_pdf" not in payload["pdf_url"]:
+			fail("Documents payload missing pdf_url")
+		else:
+			ok("Documents pdf_url present")
 		save_data_collection(
 			token=doc_share["token"],
 			company_legal_name="QC Test Pvt Ltd",

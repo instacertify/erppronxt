@@ -29,6 +29,9 @@
       <h2 style="color:#0D47A1;margin-top:0;">Documents Collection Sheet</h2>
       <div id="content">Loading…</div>
       <div id="msg" class="ic-msg"></div>
+      <div class="ic-actions" id="pdf-actions" style="display:none;margin:12px 0;">
+        <a class="ic-btn ic-btn-accent" id="btn-pdf" href="#" target="_blank" rel="noopener">Download PDF of filled data</a>
+      </div>
       <div id="list"></div>
       <div class="ic-data-box" id="data-box" style="display:none;">
         <h3 class="ic-section-title">Data Collection Sheet</h3>
@@ -115,6 +118,12 @@
             '<p><b>' + esc(d.title || '') + '</b></p><p>Status: <b>' + esc(d.status || '') + '</b></p>' +
             '<p style="color:#5b7380;font-size:0.92rem;">Allowed uploads: ' + esc(d.allowed_types || 'PDF, images, Excel/CSV, Word') + '</p>' +
             '<h3 class="ic-section-title">List of documents</h3>';
+          const pdfBtn = document.getElementById('btn-pdf');
+          const pdfWrap = document.getElementById('pdf-actions');
+          if (pdfBtn && pdfWrap) {
+            pdfBtn.href = d.pdf_url || ('/api/method/instacertify.documents.api.download_collection_pdf?token=' + encodeURIComponent(token));
+            pdfWrap.style.display = 'block';
+          }
           const list = document.getElementById('list');
           list.innerHTML = '';
           (d.items || []).forEach(item => {
