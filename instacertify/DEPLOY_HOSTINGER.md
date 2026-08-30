@@ -3,7 +3,31 @@
 This build is a **Frappe / ERPNext** app (`instacertify`). It needs a **Linux VPS** (Hostinger **KVM VPS** or Cloud VPS), **not** shared Web Hosting / hPanel PHP hosting.
 
 **Repo:** `https://github.com/instacertify/erppronxt`  
-**Branch to deploy:** `main` (all feature PRs are merged here)
+**Branch to deploy:** `main`  
+**App name:** `instacertify` (Python package + bench app)
+
+---
+
+## Pre-flight (verified)
+
+Local bench checks against current `main`:
+
+| Check | Result |
+|-------|--------|
+| `bench migrate` | Pass |
+| `bench build --app instacertify` | Pass (~0.6s) |
+| Installed apps | frappe, erpnext, instacertify, india_compliance, hrms, gameplan |
+| Core DocTypes (TR, Sample, Lab, TRF, …) | Present |
+| Instacertify Home workspace + Home Dashboard | Present |
+| Customer history API | OK |
+
+After every Hostinger update, run:
+
+```bash
+bench --site YOUR_SITE execute instacertify.setup.deploy_smoke.run
+```
+
+Or use the one-shot update script (Option B below).
 
 ---
 
@@ -11,13 +35,32 @@ This build is a **Frappe / ERPNext** app (`instacertify`). It needs a **Linux VP
 
 | Item | Recommendation |
 |------|----------------|
-| Plan | Hostinger **VPS** (Ubuntu 22.04 or 24.04) |
-| RAM | 4 GB minimum (8 GB preferred) |
+| Plan | Hostinger **VPS** (Ubuntu **24.04** preferred) |
+| RAM | **8 GB** preferred (4 GB minimum) |
 | Disk | 40 GB+ SSD |
+| Python | **3.14+** (matches `pyproject.toml` / ERPNext 16 in this repo) |
 | Access | Root SSH |
 | Domain | Point A record to the VPS public IP |
 
-Shared hosting, WordPress, or “upload ZIP to public_html” will **not** run this stack.
+Shared hosting, WordPress, or “upload ZIP to `public_html`” will **not** run this stack.
+
+### Python 3.14 on Ubuntu
+
+ERPNext / Frappe for this project expect **Python ≥ 3.14**. On Ubuntu 24.04, install a 3.14 toolchain before `bench init` (example with deadsnakes — adjust if your image already has 3.14):
+
+```bash
+sudo apt update
+sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:deadsnakes/ppa
+sudo apt install -y python3.14 python3.14-venv python3.14-dev
+python3.14 --version
+```
+
+When initializing bench, point at that interpreter:
+
+```bash
+bench init --frappe-branch version-16 --python python3.14 frappe-bench
+```
 
 ---
 
@@ -25,7 +68,7 @@ Shared hosting, WordPress, or “upload ZIP to public_html” will **not** run t
 
 ### 1. Create the VPS
 
-1. Hostinger → **VPS** → create Ubuntu 22.04/24.04.
+1. Hostinger → **VPS** → create Ubuntu 24.04 (or 22.04 + Python 3.14 as above).
 2. Note the **IP**, **root password** (or SSH key).
 3. In DNS (Hostinger Domains): set `A` record for your site (e.g. `erp.yourdomain.com`) → VPS IP. Wait for DNS.
 
@@ -36,7 +79,8 @@ ssh root@YOUR_VPS_IP
 apt update && apt upgrade -y
 apt install -y git python3-dev python3-pip python3-venv redis-server \
   mariadb-server nginx supervisor curl software-properties-common \
-  libffi-dev libssl-dev wkhtmltopdf xvfb fontconfig libxrender1
+  libffi-dev libssl-dev wkhtmltopdf xvfb fontconfig libxrender1 \
+  build-essential libmariadb-dev pkg-config
 ```
 
 Secure MariaDB (set a strong root password when prompted):
@@ -68,8 +112,8 @@ pip3 install frappe-bench --user
 echo 'export PATH=$HOME/.local/bin:$PATH' >> ~/.bashrc
 source ~/.bashrc
 
-# New bench (match ERPNext 16)
-bench init --frappe-branch version-16 frappe-bench
+# New bench (match ERPNext 16 + Python 3.14)
+bench init --frappe-branch version-16 --python python3.14 frappe-bench
 cd frappe-bench
 
 bench get-app erpnext --branch version-16
@@ -77,21 +121,19 @@ bench get-app https://github.com/resilient-tech/india-compliance --branch versio
 bench get-app hrms --branch version-16
 bench get-app gameplan --branch develop
 
-# Instacertify app (this repo)
+# Instacertify app (this repo — app name is instacertify)
 bench get-app https://github.com/instacertify/erppronxt.git --branch main
-# The app folder name on disk is typically "erppronxt" or "instacertify"
-# depending on the repo layout. Ensure the Python package `instacertify` is
-# under apps/<app>/instacertify. If the clone folder is erppronxt:
-#   ln -s erppronxt instacertify   # only if needed for naming
 ```
 
-If `get-app` clones as `erppronxt` but hooks expect the app name `instacertify`, rename or set the app path so `apps/instacertify/instacertify/hooks.py` exists:
+If `get-app` clones as `erppronxt` but hooks expect the app name `instacertify`, rename so `apps/instacertify/instacertify/hooks.py` exists:
 
 ```bash
-# Example when clone directory is erppronxt:
 cd apps
-mv erppronxt instacertify   # only if hooks.py lives at instacertify/instacertify/hooks.py
+# only if the folder is still named erppronxt:
+mv erppronxt instacertify
 cd ..
+# ensure sites/apps.txt lists: instacertify
+grep -q instacertify sites/apps.txt || echo instacertify >> sites/apps.txt
 ```
 
 ### 4. Create the site and install apps
@@ -111,12 +153,8 @@ bench --site erp.yourdomain.com install-app instacertify
 bench --site erp.yourdomain.com migrate
 bench build --app instacertify
 bench --site erp.yourdomain.com clear-cache
-```
-
-Restore Instacertify workspaces if migrate removes orphans:
-
-```bash
 bench --site erp.yourdomain.com execute instacertify.setup.workspace_setup.ensure_workspaces
+bench --site erp.yourdomain.com execute instacertify.setup.deploy_smoke.run
 ```
 
 ### 5. Production mode (nginx + supervisor + SSL)
@@ -136,16 +174,26 @@ Open `https://erp.yourdomain.com` → login as **Administrator**.
 
 ---
 
-## Option B — Update an existing Hostinger bench (most common after this merge)
+## Option B — Update an existing Hostinger bench (recommended)
 
-When production already has ERPNext + Instacertify and you only need the **latest `main` build**:
+One-shot script (from bench root, as user `frappe`):
+
+```bash
+cd ~/frappe-bench
+SITE=erp.yourdomain.com bash apps/instacertify/scripts/hostinger_update.sh
+```
+
+What it does: backup → `git pull origin main` → migrate → build → clear-cache → `ensure_workspaces` → smoke check → supervisor restart.
+
+Manual equivalent:
 
 ```bash
 ssh frappe@YOUR_VPS_IP
 cd ~/frappe-bench
 
-# Pull latest Instacertify
-cd apps/instacertify
+bench --site erp.yourdomain.com backup --with-files
+
+cd apps/instacertify   # or apps/erppronxt if not renamed
 git fetch origin
 git checkout main
 git pull origin main
@@ -155,19 +203,22 @@ bench --site erp.yourdomain.com migrate
 bench build --app instacertify
 bench --site erp.yourdomain.com clear-cache
 bench --site erp.yourdomain.com execute instacertify.setup.workspace_setup.ensure_workspaces
+bench --site erp.yourdomain.com execute instacertify.setup.deploy_smoke.run
 
 sudo supervisorctl restart all
 ```
 
-Replace `erp.yourdomain.com` with your real site name (`bench --site all list` if unsure).
+Replace `erp.yourdomain.com` with your real site name (`ls sites` if unsure).
 
-### Quick health checks after deploy
+### Quick UI checks after deploy
 
-1. Desk → **Laboratories** — list loads; open any lab → scope / buying & selling prices visible.  
-2. **Testing Request** — Product | Test side-by-side; **Compare Labs** / Lab Offer works.  
-3. **Quote Format Library** — Use opens a new Quotation (no “Not found”).  
-4. **Samples** — Label / 50×25 mm sticker actions present.  
-5. **Customer → Data Drive** — Share Report + 8-digit code.
+1. Hard-refresh desk (**Ctrl+Shift+R**).  
+2. **Instacertify Home** — greeting + explore tiles load.  
+3. **Testing & Samples** — Manage TR: QR, TRF Link / PDF, Edit Price.  
+4. **Laboratories** — scope + buying/selling prices.  
+5. **Customer → Related Data** — testing / samples sections.  
+6. **Quote Format Library** — Use opens a Quotation.  
+7. **Team Calendar** — Event list opens.
 
 ---
 
@@ -186,7 +237,7 @@ tar czf instacertify-main.tar.gz \
 ```
 
 2. Upload to the VPS (`scp` / SFTP) into `~/frappe-bench/apps/`.
-3. Extract over `apps/instacertify/`, then run the same `migrate` / `build` / `clear-cache` / `ensure_workspaces` / `supervisorctl restart` as in Option B.
+3. Extract over `apps/instacertify/`, then run the same `migrate` / `build` / `clear-cache` / `ensure_workspaces` / smoke / `supervisorctl restart` as in Option B.
 
 ---
 
@@ -207,7 +258,7 @@ Do **not** expose MariaDB (`3306`) to the public internet.
 ```bash
 cd ~/frappe-bench
 bench --site erp.yourdomain.com backup --with-files
-# Files land under sites/erp.yourdomain.com/private/backups/
+# Files: sites/erp.yourdomain.com/private/backups/
 ```
 
 Download a copy off the VPS before `git pull` / migrate.
@@ -222,18 +273,35 @@ Download a copy off the VPS before `git pull` / migrate.
 | Missing Home tiles | `ensure_workspaces` (see above) |
 | 502 Bad Gateway | `sudo supervisorctl status` — restart `frappe-bench-web` / workers |
 | SSL fail | DNS A record must point to this VPS before Let's Encrypt |
-| App not found | Confirm `apps/instacertify/instacertify/hooks.py` exists and app is in `sites/apps.txt` |
+| App not found | Confirm `apps/instacertify/instacertify/hooks.py` exists and `instacertify` is in `sites/apps.txt` |
+| `requires-python` / pip errors | Use **Python 3.14+** for `bench init` |
+| Smoke FAIL | Fix listed DocType/workspace gaps; re-run migrate + ensure_workspaces |
 
 ---
 
 ## Build identity (this release)
 
-Deploy **`main`** at or after:
+Deploy **`main`** at or after commit **`ea907ee`** (Sample QR Print / Download fix and prior TRF / Testing & Samples work).
 
-- Sample report upload, report share + 8-digit code  
-- Laboratories upload / editable fields  
-- Testing Request Product \| Test + lab buying-rate picker  
-- Sample QR sticker 50×25 mm  
-- Quote Format Library Use fix, Document Collection Library, Lead full-width  
+Included on `main` for production:
 
-Only open PR left historically: **#60** (8mm sticker) — superseded by the 50×25 mm sticker on `main`; safe to ignore or close.
+- Manage TR: QR, Print, TRF Link / PDF, Edit TRF / Price  
+- TRF fill-once + reopen; guest PDF  
+- Generate page: editable buy/sell + currency  
+- Sample QR 50×25 mm sticker print + PNG download  
+- Customer Data Drive / Related Data  
+- Quote Format Library, Document Collection, Lead capture  
+
+Open draft PRs (favicon/orange brand, role profiles, etc.) are **not** on `main` until merged — deploy `main` only unless you intentionally merge those first.
+
+---
+
+## Deploy command cheat-sheet
+
+```bash
+# Update production to latest main
+SITE=erp.yourdomain.com bash ~/frappe-bench/apps/instacertify/scripts/hostinger_update.sh
+
+# Smoke only
+bench --site erp.yourdomain.com execute instacertify.setup.deploy_smoke.run
+```
