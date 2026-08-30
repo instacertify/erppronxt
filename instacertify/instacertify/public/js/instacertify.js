@@ -3040,6 +3040,7 @@ function ic_render_customer_related(d) {
 			<div class="ic-summary-card"><div class="label">${__("Payments")}</div><div class="value">${(d.payments || []).length}</div></div>
 			<div class="ic-summary-card accent"><div class="label">${__("Outstanding")}</div><div class="value" style="font-size:1.1rem;">${ic_fmt_money(d.outstanding_amount || 0)}</div></div>
 			<div class="ic-summary-card"><div class="label">${__("Testing")}</div><div class="value">${(d.testing_requests || []).length}</div></div>
+			<div class="ic-summary-card accent"><div class="label">${__("Samples")}</div><div class="value">${(d.samples || []).length}</div></div>
 			<div class="ic-summary-card accent"><div class="label">${__("Open Tickets")}</div><div class="value">${(d.open_tickets || []).length}</div></div>
 		</div>
 		<p class="ic-related-hint text-muted">${__("All quotations, projects, invoices, payments, and Instacertify records for this customer. Open a row or use Connections for filtered lists.")}</p>
@@ -3081,16 +3082,21 @@ function ic_render_customer_related(d) {
 		ic_fmt_money(o.opportunity_amount, o.currency),
 		ic_esc(o.transaction_date || "—"),
 	]);
-	const testing_rows = (d.testing_requests || []).map((t) => [
-		ic_doc_link("IC Testing Request", t.name, t.title || t.name),
-		ic_status_pill(t.status),
-		ic_esc(t.product || t.test_name || "—"),
-		t.laboratory
-			? ic_doc_link("IC Laboratory", t.laboratory, t.laboratory_name || t.laboratory)
-			: "—",
-		t.project ? ic_doc_link("Project", t.project) : "—",
-		t.quotation ? ic_doc_link("Quotation", t.quotation) : "—",
-	]);
+	const testing_rows = (d.testing_requests || []).map((t) => {
+		const testedFor = [t.product, t.test_name, t.applicable_standard]
+			.filter(Boolean)
+			.join(" / ");
+		return [
+			ic_doc_link("IC Testing Request", t.name, t.title || t.name),
+			ic_status_pill(t.status),
+			ic_esc(testedFor || t.product || t.test_name || "—"),
+			t.laboratory
+				? ic_doc_link("IC Laboratory", t.laboratory, t.laboratory_name || t.laboratory)
+				: "—",
+			t.project ? ic_doc_link("Project", t.project) : "—",
+			t.quotation ? ic_doc_link("Quotation", t.quotation) : "—",
+		];
+	});
 	const doc_rows = (d.documents || []).map((doc) => [
 		ic_doc_link("IC Document Request", doc.name, doc.title || doc.name),
 		ic_status_pill(doc.status),
@@ -3114,19 +3120,42 @@ function ic_render_customer_related(d) {
 		ic_esc(t.ticket_type || "—"),
 		ic_esc(t.priority || "—"),
 	]);
-	const sample_rows = (d.samples || []).map((s) => [
-		ic_doc_link("IC Sample Tracking", s.name, s.tracking_number || s.name),
-		`<span style="font-weight:600;color:${
-			(instacertify._sample_custody_color &&
-				instacertify._sample_custody_color(s.sample_location || s.custody_label || "")) ||
-			"#546e7a"
-		}">${ic_esc(s.sample_location || s.custody_label || s.status || "—")}</span>`,
-		s.laboratory
-			? ic_doc_link("IC Laboratory", s.laboratory, s.laboratory_name || s.laboratory)
-			: "—",
-		s.testing_request ? ic_doc_link("IC Testing Request", s.testing_request) : "—",
-		s.project ? ic_doc_link("Project", s.project) : "—",
-	]);
+	const sample_rows = (d.samples || []).map((s) => {
+		const testedFor =
+			s.tested_for ||
+			[s.product, s.test_name, s.applicable_standard].filter(Boolean).join(" / ") ||
+			s.sample_description ||
+			"—";
+		const loc = s.sample_location || s.custody_label || "";
+		const reportCell = s.test_report
+			? `<a class="btn btn-xs btn-primary ic-sample-report-dl" href="${frappe.utils.escape_html(
+					s.test_report
+			  )}" target="_blank" rel="noopener" download>${__("Download Report")}</a>`
+			: s.report_ready
+				? `<span class="text-muted">${__("Awaiting upload")}</span>`
+				: `<span class="text-muted">—</span>`;
+		return [
+			ic_doc_link("IC Sample Tracking", s.name, s.tracking_number || s.name),
+			`<div class="ic-sample-tested-for">${ic_esc(testedFor)}</div>${
+				s.testing_request
+					? `<div class="text-muted" style="font-size:11px;margin-top:2px;">${ic_doc_link(
+							"IC Testing Request",
+							s.testing_request
+					  )}</div>`
+					: ""
+			}`,
+			ic_status_pill(s.status),
+			`<span style="font-weight:600;color:${
+				(instacertify._sample_custody_color &&
+					instacertify._sample_custody_color(loc)) ||
+				"#546e7a"
+			}">${ic_esc(loc || "—")}</span>`,
+			s.laboratory
+				? ic_doc_link("IC Laboratory", s.laboratory, s.laboratory_name || s.laboratory)
+				: "—",
+			reportCell,
+		];
+	});
 	const record_rows = (d.records || []).map((rec) => [
 		ic_doc_link("IC Project Record", rec.name, rec.subject || rec.name),
 		ic_esc(rec.record_type || "—"),
@@ -3199,12 +3228,39 @@ function ic_render_customer_related(d) {
 					: ""
 			)}
 			${ic_related_section(
-				__("Testing & Samples"),
+				__("Testing Requests"),
 				ic_table(
-					[__("Request"), __("Status"), __("Product / Test"), __("Laboratory"), __("Project"), __("Quotation")],
+					[
+						__("Request"),
+						__("Status"),
+						__("Being tested for"),
+						__("Laboratory"),
+						__("Project"),
+						__("Quotation"),
+					],
 					testing_rows
 				),
 				__("No testing requests"),
+				customer
+					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
+							customer
+					  )}">${ic_esc(__("Open Testing & Samples"))}</a>`
+					: ""
+			)}
+			${ic_related_section(
+				__("Samples — status & reports"),
+				ic_table(
+					[
+						__("Sample"),
+						__("Being tested for"),
+						__("Status"),
+						__("Location"),
+						__("Laboratory"),
+						__("Report"),
+					],
+					sample_rows
+				),
+				__("No samples"),
 				customer
 					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
 							customer
@@ -3231,19 +3287,6 @@ function ic_render_customer_related(d) {
 				ic_table([__("Ticket"), __("Status"), __("Type"), __("Priority")], ticket_rows),
 				__("No helpdesk tickets"),
 				customer ? ic_list_link("Helpdesk Ticket", customer) : ""
-			)}
-			${ic_related_section(
-				__("Samples — location (lab / warehouse / client)"),
-				ic_table(
-					[__("Sample"), __("Location"), __("Laboratory"), __("Testing Request"), __("Project")],
-					sample_rows
-				),
-				__("No samples"),
-				customer
-					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
-							customer
-					  )}">${ic_esc(__("Update locations"))}</a>`
-					: ""
 			)}
 			${ic_related_section(
 				__("Project Records"),

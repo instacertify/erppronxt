@@ -804,6 +804,17 @@ body {
   font-weight: 600;
 }
 
+.ic-sample-tested-for {
+  font-weight: 600;
+  color: #243447;
+  line-height: 1.35;
+  max-width: 280px;
+}
+
+.ic-related-table .ic-sample-report-dl {
+  white-space: nowrap;
+}
+
 .ic-project-grid {
   display: grid;
   grid-template-columns: var(--ic-tile-cols);
