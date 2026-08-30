@@ -64,3 +64,11 @@ def boot_session(bootinfo):
 		ensure_party_address_contact_fields()
 	except Exception:
 		pass
+
+	# Soften india_compliance Quotation validate (GST/address/phone not required)
+	try:
+		from instacertify.accounting.quotation_gst import patch_india_compliance_quotation_validate
+
+		patch_india_compliance_quotation_validate()
+	except Exception:
+		pass
