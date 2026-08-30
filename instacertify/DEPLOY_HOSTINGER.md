@@ -323,6 +323,7 @@ Download a copy off the VPS before `git pull` / migrate.
 |---------|-----|
 | Blank desk / old JS | `bench build --app instacertify` then `clear-cache`; hard-refresh browser |
 | Missing Home tiles | `ensure_workspaces` (see above) |
+| Sidebar missing Quotation / Customer / Testing | Frappe 16 uses **Workspace Sidebar** (not Workspace links). Run `ensure_workspaces` — it rebuilds Instacertify Home with Leads, Customers, Quotations, Testing & Samples, GST, etc. Then hard-refresh and open **Instacertify Home** (`/app/instacertify-home`), not ERPNext Home |
 | 502 Bad Gateway | `sudo supervisorctl status` — restart `frappe-bench-web` / workers |
 | SSL fail | DNS A record must point to this VPS before Let's Encrypt |
 | App not found | Confirm `apps/instacertify/instacertify/hooks.py` exists and `instacertify` is in `sites/apps.txt` |
