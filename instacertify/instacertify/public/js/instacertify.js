@@ -1836,6 +1836,7 @@ $(document).on("page-change", function () {
 // Quotation form enhancements
 frappe.ui.form.on("Quotation", {
 	refresh(frm) {
+		instacertify.apply_service_quote_mandatory(frm);
 		instacertify.apply_quotation_naming_series(frm);
 		instacertify.add_change_currency_button(frm, { fieldname: "currency" });
 		if (frm.fields_dict.ic_assignees) {
@@ -2127,6 +2128,22 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
+instacertify.apply_service_quote_mandatory = function (frm) {
+	// Service business: only Customer is mandatory — products/services are free text, not inventory
+	frm.set_df_property("party_name", "reqd", 1);
+	frm.set_df_property("quotation_to", "reqd", 0);
+	frm.set_df_property("ic_quotation_type", "reqd", 0);
+	frm.set_df_property("ic_quotation_template", "reqd", 0);
+	frm.set_df_property("ic_subject", "reqd", 0);
+	frm.set_df_property("order_type", "reqd", 0);
+	if (frm.fields_dict.items) {
+		frm.set_df_property("items", "reqd", 0);
+	}
+	if (!frm.doc.quotation_to) {
+		frm.set_value("quotation_to", "Customer");
+	}
+};
+
 instacertify.apply_quote_format_to_form = function (frm, template) {
 	if (!template) return;
 	frappe.call({
@@ -2263,7 +2280,7 @@ instacertify.render_quotation_entry_guide = function (frm) {
 						help ? frappe.utils.escape_html(help.title) : __("Choose quotation type")
 					}</div>
 					<div class="ic-quote-entry-sub">${__(
-						"Type and template are the first two fields — everything else opens from there."
+						"Only Customer is required. Type, format, products, and services are optional free text (no inventory)."
 					)}</div>
 				</div>
 			</div>
@@ -2326,19 +2343,34 @@ instacertify.toggle_quotation_sections = function (frm) {
 	frm.toggle_display("ic_section_products", t === "Multiple Products / Multiple Services");
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
-		frm.set_df_property("ic_subject", "reqd", 1);
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {
 		frm.meta.default_print_format = "Instacertify Consulting Quotation";
-		frm.set_df_property("ic_subject", "reqd", 0);
 	} else {
 		frm.meta.default_print_format = "Instacertify Quotation";
-		frm.set_df_property("ic_subject", "reqd", 0);
 	}
+	frm.set_df_property("ic_subject", "reqd", 0);
 };
 
 frappe.ui.form.on("IC Quotation Test Item", {
 	form_render(frm, cdt, cdn) {
 		instacertify.load_lab_scope_options(frm, cdt, cdn);
+		instacertify.load_quote_test_library_options(frm, cdt, cdn);
+		instacertify.load_quote_test_lab_offers(frm, cdt, cdn);
+	},
+	product_name(frm, cdt, cdn) {
+		// Free-text customer product — no Item master required
+	},
+	applicable_standard(frm, cdt, cdn) {
+		frappe.model.set_value(cdt, cdn, "lab_offer", "");
+		instacertify.load_quote_test_lab_offers(frm, cdt, cdn, { open_picker: true });
+	},
+	test_name(frm, cdt, cdn) {
+		frappe.model.set_value(cdt, cdn, "lab_offer", "");
+		instacertify.load_quote_test_library_options(frm, cdt, cdn);
+		instacertify.load_quote_test_lab_offers(frm, cdt, cdn, { open_picker: true });
+	},
+	lab_offer(frm, cdt, cdn) {
+		instacertify.apply_quote_test_lab_offer(frm, cdt, cdn);
 	},
 	laboratory(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
@@ -2372,6 +2404,160 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
 });
+
+instacertify.load_quote_test_library_options = function (frm, cdt, cdn) {
+	const row = locals[cdt][cdn] || {};
+	const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+	if (!grid) return;
+	frappe.call({
+		method: "instacertify.laboratory.api.get_test_name_options",
+		args: { applicable_standard: row.applicable_standard || "" },
+		callback(r) {
+			const opts = (r.message || []).map((o) => o.value || o).filter(Boolean);
+			grid.update_docfield_property("test_name", "options", opts.join("\n"));
+		},
+	});
+	frappe.call({
+		method: "instacertify.laboratory.api.get_standard_options",
+		args: { test_name: row.test_name || "" },
+		callback(r) {
+			const opts = (r.message || []).map((o) => o.value || o).filter(Boolean);
+			grid.update_docfield_property("applicable_standard", "options", opts.join("\n"));
+		},
+	});
+};
+
+instacertify.load_quote_test_lab_offers = function (frm, cdt, cdn, opts) {
+	opts = opts || {};
+	const row = locals[cdt][cdn];
+	if (!row) return;
+	const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+	if (!row.applicable_standard && !row.test_name) {
+		if (grid) grid.update_docfield_property("lab_offer", "options", "");
+		return;
+	}
+	frappe.call({
+		method: "instacertify.laboratory.api.get_labs_for_standard",
+		args: {
+			applicable_standard: row.applicable_standard || "",
+			test_name: row.test_name || "",
+		},
+		callback(r) {
+			const offers = r.message || [];
+			frm._ic_quote_lab_offers = frm._ic_quote_lab_offers || {};
+			frm._ic_quote_lab_offers[cdn] = offers;
+			if (grid) {
+				grid.update_docfield_property(
+					"lab_offer",
+					"options",
+					offers.map((o) => o.value).join("\n")
+				);
+			}
+			if (opts.open_picker && offers.length) {
+				instacertify.open_quote_test_lab_picker(frm, cdt, cdn, offers);
+			} else if (opts.open_picker && !offers.length) {
+				frappe.show_alert({
+					message: __(
+						"No Active labs list this test/standard yet. Check the Laboratory Library."
+					),
+					indicator: "orange",
+				});
+			}
+		},
+	});
+};
+
+instacertify.open_quote_test_lab_picker = function (frm, cdt, cdn, offers) {
+	const rows_html = offers
+		.map((o, idx) => {
+			const buy = format_currency(o.purchase_price || 0, o.currency || "INR");
+			const sell = format_currency(o.selling_price || 0, o.currency || "INR");
+			return `<tr data-idx="${idx}" class="ic-lab-offer-row" style="cursor:pointer">
+				<td><b>${frappe.utils.escape_html(o.laboratory_name || "")}</b></td>
+				<td>${frappe.utils.escape_html(o.location || "—")}</td>
+				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
+				<td>${frappe.utils.escape_html(o.applicable_standard || "—")}</td>
+				<td style="text-align:right;font-weight:700;color:#EC691F">${frappe.utils.escape_html(buy)}</td>
+				<td style="text-align:right">${frappe.utils.escape_html(sell)}</td>
+			</tr>`;
+		})
+		.join("");
+	const d = new frappe.ui.Dialog({
+		title: __("Choose lab — suggest price from lab library"),
+		size: "extra-large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: `<div class="text-muted" style="margin-bottom:8px">
+					${__("Labs offering this standard/test. Selling price is suggested onto the quote line:")}
+				</div>
+				<table class="table table-bordered table-hover" style="margin:0">
+					<thead><tr>
+						<th>${__("Laboratory")}</th><th>${__("Location")}</th>
+						<th>${__("Test")}</th><th>${__("Standard")}</th>
+						<th style="text-align:right">${__("Lab Purchase")}</th>
+						<th style="text-align:right">${__("Suggested Sell")}</th>
+					</tr></thead>
+					<tbody>${rows_html}</tbody>
+				</table>`,
+			},
+		],
+	});
+	d.show();
+	d.$wrapper.find(".ic-lab-offer-row").on("click", function () {
+		const idx = cint($(this).data("idx"));
+		const offer = offers[idx];
+		if (!offer) return;
+		d.hide();
+		frappe.model.set_value(cdt, cdn, "lab_offer", offer.value).then(() => {
+			instacertify.apply_quote_test_lab_offer(frm, cdt, cdn, offer);
+		});
+	});
+};
+
+instacertify.apply_quote_test_lab_offer = function (frm, cdt, cdn, offer) {
+	const row = locals[cdt][cdn];
+	if (!row) return;
+	const apply = (s) => {
+		if (!s) return;
+		if (s.laboratory) frappe.model.set_value(cdt, cdn, "laboratory", s.laboratory);
+		if (s.test_name) frappe.model.set_value(cdt, cdn, "test_name", s.test_name);
+		if (s.applicable_standard) {
+			frappe.model.set_value(cdt, cdn, "applicable_standard", s.applicable_standard);
+		}
+		if (s.scope_row) frappe.model.set_value(cdt, cdn, "lab_scope_row", s.scope_row);
+		if (s.label) frappe.model.set_value(cdt, cdn, "lab_test_scope", s.label);
+		frappe.model.set_value(cdt, cdn, "suggested_selling_price", s.selling_price || 0);
+		frappe.model.set_value(cdt, cdn, "per_unit_charges", s.selling_price || 0).then(() => {
+			instacertify.recalc_test_row(frm, cdt, cdn);
+		});
+		if (s.currency) frappe.model.set_value(cdt, cdn, "currency", s.currency);
+		frappe.show_alert({
+			message: __("Suggested selling price {0} from lab library", [
+				format_currency(s.selling_price || 0, s.currency || "INR"),
+			]),
+			indicator: "green",
+		});
+	};
+	if (offer) {
+		apply(offer);
+		return;
+	}
+	if (!row.lab_offer) return;
+	frappe.call({
+		method: "instacertify.laboratory.api.get_lab_offer_details",
+		args: {
+			lab_offer: row.lab_offer,
+			applicable_standard: row.applicable_standard,
+			test_name: row.test_name,
+			laboratory: row.laboratory,
+			scope_row: row.lab_scope_row,
+		},
+		callback(r) {
+			apply(r.message);
+		},
+	});
+};
 
 instacertify.recalc_test_row = function (frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
@@ -2527,20 +2713,23 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 	const d = new frappe.ui.Dialog({
 		title: __("New Quotation"),
 		size: "large",
-		static: true,
+		static: false,
 		fields: [
 			{
 				fieldtype: "HTML",
 				fieldname: "help",
 				options: `<div class="ic-quote-dialog-help">
+					<div class="ic-quote-dialog-step"><strong>${__("Optional.")}</strong> ${__(
+						"Only Customer is required to save a quote. Type, format, and product lines are optional."
+					)}</div>
 					<div class="ic-quote-dialog-step"><strong>${__("1.")}</strong> ${__(
-						"Select major category: Consulting, Testing, Renewal, or Other"
+						"Select major category: Consulting, Testing, Renewal, or Other (optional)"
 					)}</div>
 					<div class="ic-quote-dialog-step"><strong>${__("2.")}</strong> ${__(
-						"Choose a template already in the library for that category"
+						"Choose a template from the library, or continue blank"
 					)}</div>
 					<div class="ic-quote-dialog-step text-muted">${__(
-						"After start, edit headings and mark cost lines as Counted Revenue or Do Not Count Revenue (pass-through)."
+						"Products and services are free-text (no inventory Item required)."
 					)}</div>
 				</div>`,
 			},
@@ -2549,9 +2738,9 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				fieldtype: "Select",
 				label: __("Major Category"),
 				options: TYPE_OPTIONS.map((t) => t.value).join("\n"),
-				reqd: 1,
+				reqd: 0,
 				default: "Consulting",
-				description: __("Required first — loads templates from the Quote Format Library"),
+				description: __("Optional — loads templates from the Quote Format Library"),
 			},
 			{
 				fieldtype: "HTML",
@@ -2579,9 +2768,9 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				fieldtype: "Select",
 				label: __("Template (from library)"),
 				options: "",
-				reqd: 1,
+				reqd: 0,
 				description: __(
-					"Templates for this category. Admins / Ops can add more via Quote Format Library upload."
+					"Optional. Admins / Ops can add more via Quote Format Library upload."
 				),
 			},
 			{
@@ -2593,19 +2782,13 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				fieldname: "skip_format",
 				fieldtype: "Check",
 				label: __("Continue without a library format (blank quote)"),
-				default: 0,
+				default: 1,
 			},
 		],
 		primary_action_label: __("Start Quotation"),
 		primary_action(values) {
-			const skip = cint(values.skip_format);
-			if (!skip && !values.ic_quotation_template) {
-				frappe.msgprint(
-					__("Select a quote format from the library, or check Continue without a library format.")
-				);
-				return;
-			}
-			const qtype = values.ic_quotation_type;
+			const skip = cint(values.skip_format) || !values.ic_quotation_template;
+			const qtype = values.ic_quotation_type || "Consulting";
 
 			const finish_standalone = (pending) => {
 				instacertify._pending_quote_format = pending;
@@ -2646,7 +2829,7 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 					d.hide();
 					setTimeout(() => {
 						instacertify.render_quotation_entry_guide(frm);
-						frm.scroll_to_field("ic_quotation_type");
+						frm.scroll_to_field("party_name");
 					}, 200);
 					return;
 				}
@@ -2670,7 +2853,8 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 								});
 								setTimeout(() => {
 									instacertify.render_quotation_entry_guide(frm);
-									frm.scroll_to_field("ic_service_name") ||
+									frm.scroll_to_field("party_name") ||
+										frm.scroll_to_field("ic_service_name") ||
 										frm.scroll_to_field("ic_subject") ||
 										frm.scroll_to_field("ic_quotation_type");
 								}, 250);

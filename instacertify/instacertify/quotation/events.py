@@ -11,6 +11,13 @@ from frappe.utils import cint, now_datetime
 
 
 def validate_quotation(doc, method=None):
+	from instacertify.setup.contact_billing import ensure_contact_billing_fields
+	from instacertify.setup.service_quote import apply_quote_customer_only_rules, ensure_service_quote_rules
+
+	# Avoid MySQL 1054 on Contact.is_billing_contact during party/contact fetch
+	ensure_contact_billing_fields()
+	ensure_service_quote_rules()
+	apply_quote_customer_only_rules(doc)
 	_calculate_test_line_totals(doc)
 	_calculate_revenue_split(doc)
 	if not doc.ic_revision_number and doc.ic_revision_number != 0:
@@ -1357,10 +1364,12 @@ def _ensure_company_accounting_defaults(company: str) -> tuple[str | None, str |
 
 
 def _ensure_quotation_items(qt):
-	"""Ensure Quotation has sellable items so invoice mapping works.
+	"""Ensure Quotation has sellable non-stock items so invoice mapping works.
 
-	If standard items are empty, create them from ic_cost_items.
+	Maps free-text cost / test / product labels to non-stock Items (no inventory).
 	"""
+	from instacertify.setup.service_quote import ensure_nonstock_item_for_label
+
 	qt = frappe.get_doc("Quotation", qt.name)
 	if qt.docstatus != 0:
 		return
@@ -1368,19 +1377,15 @@ def _ensure_quotation_items(qt):
 	if has_items:
 		return
 
-	cost_rows = qt.get("ic_cost_items") or []
-	if not cost_rows:
-		frappe.throw(
-			_("Add Quotation Items or Cost / Commercial lines before creating an invoice")
-		)
-
-	item_code = _default_service_item(qt.company)
 	changed = False
-	for row in cost_rows:
+	for row in qt.get("ic_cost_items") or []:
 		amount = float(row.amount or 0)
 		if amount <= 0:
 			continue
-		label = row.particulars or row.description or row.cost_component or "Service Charges"
+		label = (
+			row.particulars or row.description or row.cost_component or "Service Charges"
+		).strip()
+		item_code = ensure_nonstock_item_for_label(label)
 		qt.append(
 			"items",
 			{
@@ -1395,38 +1400,63 @@ def _ensure_quotation_items(qt):
 		changed = True
 
 	if not changed:
-		frappe.throw(_("No billable commercial amounts found on this quotation"))
+		for row in qt.get("ic_test_items") or []:
+			amount = float(row.testing_charges or row.per_unit_charges or 0)
+			if amount <= 0:
+				continue
+			label = (
+				row.test_name
+				or row.applicable_standard
+				or row.product_name
+				or "Testing Service"
+			).strip()
+			item_code = ensure_nonstock_item_for_label(label)
+			qt.append(
+				"items",
+				{
+					"item_code": item_code,
+					"item_name": label[:140],
+					"description": label,
+					"qty": 1,
+					"rate": amount,
+					"uom": frappe.db.get_value("Item", item_code, "stock_uom") or "Nos",
+				},
+			)
+			changed = True
+
+	if not changed:
+		for row in qt.get("ic_products") or []:
+			label = (row.product_name or "").strip()
+			amount = float(row.estimated_value or 0)
+			if not label and amount <= 0:
+				continue
+			label = label or "Customer Product"
+			item_code = ensure_nonstock_item_for_label(label)
+			qt.append(
+				"items",
+				{
+					"item_code": item_code,
+					"item_name": label[:140],
+					"description": label,
+					"qty": 1,
+					"rate": amount,
+					"uom": frappe.db.get_value("Item", item_code, "stock_uom") or "Nos",
+				},
+			)
+			changed = True
+
+	if not changed:
+		frappe.throw(
+			_("Add Quotation Items, Cost / Commercial lines, or Test lines before creating an invoice")
+		)
 
 	qt.save(ignore_permissions=True)
 
 
 def _default_service_item(company: str | None = None) -> str:
-	for code in ("CONSULTING-SVC", "TESTING-SVC", "SERVICES"):
-		if frappe.db.exists("Item", code):
-			return code
-	name = frappe.db.get_value("Item", {"is_sales_item": 1, "disabled": 0}, "name")
-	if name:
-		return name
-	group = (
-		"Services"
-		if frappe.db.exists("Item Group", "Services")
-		else frappe.db.get_value("Item Group", {"is_group": 0}, "name")
-		or "All Item Groups"
-	)
-	doc = frappe.get_doc(
-		{
-			"doctype": "Item",
-			"item_code": "CONSULTING-SVC",
-			"item_name": "Consulting / Certification Service",
-			"item_group": group,
-			"stock_uom": "Nos",
-			"is_stock_item": 0,
-			"is_sales_item": 1,
-			"is_purchase_item": 0,
-		}
-	)
-	doc.insert(ignore_permissions=True)
-	return doc.name
+	from instacertify.setup.service_quote import ensure_nonstock_item_for_label
+
+	return ensure_nonstock_item_for_label("Customer Product / Service")
 
 
 def _notify_share(doc):

@@ -21,8 +21,8 @@
    "label": "Cost Component",
    "in_list_view": 1,
    "columns": 2,
-   "reqd": 1,
-   "description": "Any name — Consulting Charges, Government Fees, or your own label."
+   "reqd": 0,
+   "description": "Optional label — Consulting Charges, Government Fees, or your own name."
   },
   {
    "doctype": "DocField",
@@ -39,7 +39,7 @@
    "label": "Default Amount",
    "in_list_view": 1,
    "columns": 1,
-   "reqd": 1,
+   "reqd": 0,
    "default": "0",
    "options": "currency",
    "description": "Default amount copied onto new quotations — sales can edit per quote."
@@ -60,7 +60,8 @@
    "label": "Payment Destination",
    "in_list_view": 1,
    "columns": 1,
-   "reqd": 1,
+   "reqd": 0,
+   "default": "Payable to Instacertify",
    "options": "Payable to Instacertify\nPayable Directly to Government\nPayable Directly to Laboratory\nPayable to Third Party",
    "description": "Payable to Instacertify = counted revenue. Other destinations = pass-through (do not count)."
   },
@@ -71,7 +72,7 @@
    "label": "Revenue",
    "in_list_view": 1,
    "columns": 1,
-   "reqd": 1,
+   "reqd": 0,
    "default": "Counted Revenue",
    "options": "Counted Revenue\nDo Not Count as Revenue",
    "description": "Counted Revenue = money paid to Instacertify. Do Not Count = shown to customer but paid to govt/lab/third party."

@@ -172,6 +172,10 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 
 	Respects ic_currency_manual so users can switch back to INR or any other currency.
 	"""
+	from instacertify.setup.contact_billing import ensure_contact_billing_fields
+
+	ensure_contact_billing_fields()
+
 	customer = doc.get(customer_field) or (
 		doc.get("party_name") if doc.doctype == "Quotation" and doc.get("quotation_to") == "Customer" else None
 	)

@@ -435,11 +435,11 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Select",
 		"label": "Quotation Type",
 		"options": "\nConsulting\nTesting\nRenewal\nOther",
-		"reqd": 1,
+		"reqd": 0,
 		"insert_after": "ic_entry_guide",
 		"in_list_view": 1,
 		"bold": 1,
-		"description": "Major category first: Consulting, Testing, Renewal, or Other — then pick a library template.",
+		"description": "Optional — Consulting, Testing, Renewal, or Other. Only Customer is required to save a quote.",
 	},
 	{
 		"fieldname": "ic_column_break_type",
