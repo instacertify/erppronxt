@@ -141,6 +141,29 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								</table>
 							</div>
 						</div>
+
+						<div class="ic-ts-section" id="ic-ts-reuse-wrap" hidden>
+							<div class="ic-ts-section-head">
+								<div class="ic-ts-section-title">${__("Reuse samples at this lab (optional)")}</div>
+								<div class="ic-ts-card-sub" style="margin:0">${__(
+									"One physical sample can cover multiple tests at the same laboratory — not at different labs. Select existing samples to link, or leave empty to create new ones."
+								)}</div>
+							</div>
+							<div class="ic-ts-table-wrap">
+								<table class="ic-ts-table" id="ic-ts-reuse-table">
+									<thead>
+										<tr>
+											<th style="width:44px">${__("Use")}</th>
+											<th>${__("Tracking #")}</th>
+											<th>${__("Location")}</th>
+											<th>${__("Description")}</th>
+											<th>${__("Already linked tests")}</th>
+										</tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
+						</div>
 					</div>
 
 					<aside class="ic-ts-card ic-ts-summary" id="ic-ts-summary">
@@ -208,6 +231,8 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		offers: [],
 		standards: [],
 		selected_offer: null,
+		reuse_samples: [],
+		reusable: [],
 		board_rows: [],
 		filter_customer: "",
 		filter_project: "",
@@ -226,6 +251,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				reqd: 1,
 				change() {
 					state.customer = form.get_value("customer") || "";
+					if (state.selected_offer) load_reusable_samples();
 					update_summary();
 				},
 			},
@@ -360,8 +386,11 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		state.lab_scope_row = "";
 		state.lab_offer = "";
 		state.selected_offer = null;
+		state.reuse_samples = [];
+		state.reusable = [];
 		page.main.find("#ic-ts-generate").prop("disabled", true);
 		page.main.find("#ic-ts-labs-table tbody tr").removeClass("is-selected");
+		page.main.find("#ic-ts-reuse-wrap").prop("hidden", true);
 		update_summary();
 	}
 
@@ -410,6 +439,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			[__("Standard"), state.applicable_standard || "—"],
 			[__("Laboratory"), offer ? offer.laboratory_name || offer.laboratory : "—"],
 		];
+		if (state.reuse_samples.length) {
+			rows.push([__("Reuse samples"), String(state.reuse_samples.length)]);
+		}
 		if (offer) {
 			rows.push([__("Phone"), offer.phone || "—"]);
 			rows.push([
@@ -635,6 +667,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		state.laboratory = offer.laboratory;
 		state.lab_scope_row = offer.scope_row;
 		state.lab_offer = offer.value;
+		state.reuse_samples = [];
 		if (offer.test_name) {
 			state.test_name = offer.test_name;
 			form.set_value("test_name", offer.test_name);
@@ -644,11 +677,74 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			form.set_value("applicable_standard", offer.applicable_standard);
 		}
 		render_labs_table(state.offers);
+		load_reusable_samples();
 		set_step(4);
 		update_summary();
 		frappe.show_alert({
-			message: __("Lab selected — review summary and generate"),
+			message: __("Lab selected — optionally reuse same-lab samples, then generate"),
 			indicator: "green",
+		});
+	}
+
+	function load_reusable_samples() {
+		const customer = form.get_value("customer");
+		const laboratory = state.laboratory || (state.selected_offer && state.selected_offer.laboratory);
+		const $wrap = page.main.find("#ic-ts-reuse-wrap");
+		if (!customer || !laboratory) {
+			$wrap.prop("hidden", true);
+			return;
+		}
+		frappe.call({
+			method: "instacertify.testing.events.get_reusable_samples",
+			args: {
+				customer,
+				laboratory,
+				project: form.get_value("project") || "",
+			},
+			callback(r) {
+				state.reusable = r.message || [];
+				render_reuse_table(state.reusable);
+			},
+		});
+	}
+
+	function render_reuse_table(rows) {
+		const $wrap = page.main.find("#ic-ts-reuse-wrap");
+		const $tbody = page.main.find("#ic-ts-reuse-table tbody");
+		if (!rows.length) {
+			$wrap.prop("hidden", true);
+			return;
+		}
+		$wrap.prop("hidden", false);
+		$tbody.html(
+			rows
+				.map((s) => {
+					const checked = state.reuse_samples.includes(s.name) ? "checked" : "";
+					const linked = (s.linked_testing_requests || []).join(", ") || "—";
+					return `<tr data-sample="${frappe.utils.escape_html(s.name)}">
+						<td>
+							<input type="checkbox" class="ic-ts-reuse-check" data-sample="${frappe.utils.escape_html(
+								s.name
+							)}" ${checked} />
+						</td>
+						<td><b>${frappe.utils.escape_html(s.tracking_number || s.name)}</b></td>
+						<td>${frappe.utils.escape_html(s.sample_location || s.status || "—")}</td>
+						<td class="ic-ts-desc-cell">${frappe.utils.escape_html(s.sample_description || "—")}</td>
+						<td class="ic-ts-cell-sub">${frappe.utils.escape_html(linked)}
+							${s.linked_count ? ` <span class="ic-ts-count">${cint(s.linked_count)}</span>` : ""}
+						</td>
+					</tr>`;
+				})
+				.join("")
+		);
+		$tbody.find(".ic-ts-reuse-check").on("change", function () {
+			const name = $(this).data("sample");
+			if (this.checked) {
+				if (!state.reuse_samples.includes(name)) state.reuse_samples.push(name);
+			} else {
+				state.reuse_samples = state.reuse_samples.filter((x) => x !== name);
+			}
+			update_summary();
 		});
 	}
 
@@ -675,6 +771,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				lab_scope_row: offer.scope_row || "",
 				lab_offer: offer.value || "",
 				number_of_samples: cint(form.get_value("number_of_samples")) || 1,
+				reuse_samples: state.reuse_samples || [],
 			},
 			freeze: true,
 			freeze_message: __("Generating Testing Request and samples…"),
@@ -770,6 +867,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 									<th>${__("Tracking #")}</th>
 									<th>${__("Description")}</th>
 									<th>${__("Location")}</th>
+									<th>${__("Tests")}</th>
 									<th>${__("Journey")}</th>
 									<th style="min-width:140px">${__("Move to")}</th>
 									<th style="width:72px"></th>
@@ -790,6 +888,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 											<td><span class="ic-ts-pill" style="background:${color}22;color:${color}">${frappe.utils.escape_html(
 												loc
 											)}</span></td>
+											<td style="text-align:center"><span class="ic-ts-count" title="${__(
+												"Linked tests at same lab"
+											)}">${cint(s.linked_test_count) || 1}</span></td>
 											<td>${journey_mini(loc)}</td>
 											<td>${location_select(s, loc)}</td>
 											<td>

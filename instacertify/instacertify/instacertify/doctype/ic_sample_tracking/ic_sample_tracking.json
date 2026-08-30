@@ -105,8 +105,17 @@
    "fieldname": "testing_request",
    "fieldtype": "Link",
    "options": "IC Testing Request",
-   "label": "Testing Request",
-   "in_standard_filter": 1
+   "label": "Primary Testing Request",
+   "in_standard_filter": 1,
+   "description": "Original / primary TR. One physical sample may also be linked to more tests below — only at the same laboratory."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "linked_tests",
+   "fieldtype": "Table",
+   "label": "Linked Tests (same lab only)",
+   "options": "IC Sample Testing Link",
+   "description": "One sample can serve multiple tests at the same laboratory. Linking tests at a different lab is not allowed."
   },
   {
    "doctype": "DocField",
@@ -127,7 +136,8 @@
    "fieldtype": "Link",
    "options": "IC Laboratory",
    "label": "Laboratory",
-   "in_standard_filter": 1
+   "in_standard_filter": 1,
+   "description": "Physical sample goes to one lab. Multiple tests may share this sample only if they use this same laboratory."
   },
   {
    "doctype": "DocField",
