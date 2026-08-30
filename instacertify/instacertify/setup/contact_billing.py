@@ -120,13 +120,43 @@ def ensure_party_fields():
 	return {"ok": 1, "ready": _all_columns_present()}
 
 
+def _call_erpnext_party_fn(fn, *args, **kwargs):
+	"""Forward only kwargs the ERPNext function accepts (strip cmd / form_dict junk)."""
+	import inspect
+
+	kwargs = dict(kwargs or {})
+	for junk in ("cmd", "_", "csrf_token", "args"):
+		kwargs.pop(junk, None)
+
+	try:
+		sig = inspect.signature(fn)
+		allowed = {
+			name
+			for name, param in sig.parameters.items()
+			if param.kind
+			in (
+				inspect.Parameter.POSITIONAL_OR_KEYWORD,
+				inspect.Parameter.KEYWORD_ONLY,
+			)
+		}
+		# If the function accepts **kwargs, pass everything remaining
+		if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+			filtered = kwargs
+		else:
+			filtered = {k: v for k, v in kwargs.items() if k in allowed}
+	except (TypeError, ValueError):
+		filtered = {k: v for k, v in kwargs.items() if k != "cmd"}
+
+	return fn(*args, **filtered)
+
+
 @frappe.whitelist()
 def get_party_details(*args, **kwargs):
 	"""Wrap ERPNext get_party_details after ensuring Address/Contact columns."""
 	ensure_party_address_contact_fields()
 	from erpnext.accounts.party import get_party_details as _erpnext_get_party_details
 
-	return _erpnext_get_party_details(*args, **kwargs)
+	return _call_erpnext_party_fn(_erpnext_get_party_details, *args, **kwargs)
 
 
 @frappe.whitelist()
@@ -135,4 +165,4 @@ def get_address_tax_category(*args, **kwargs):
 	ensure_party_address_contact_fields()
 	from erpnext.accounts.party import get_address_tax_category as _erpnext_get_address_tax_category
 
-	return _erpnext_get_address_tax_category(*args, **kwargs)
+	return _call_erpnext_party_fn(_erpnext_get_address_tax_category, *args, **kwargs)

@@ -57,6 +57,30 @@ def before_insert_quotation(doc, method=None):
 	apply_quotation_series(doc)
 
 
+def after_insert_quotation(doc, method=None):
+	"""Quote No = naming-series document name (e.g. QTN-SRV-00001)."""
+	_sync_quote_number_from_name(doc)
+
+
+def on_update_quotation(doc, method=None):
+	_sync_quote_number_from_name(doc)
+
+
+def _sync_quote_number_from_name(doc):
+	"""Keep ic_quote_number aligned with series-generated name unless manually overridden."""
+	if doc.is_new() or not doc.name or doc.name.startswith("new-"):
+		return
+	if not doc.meta.has_field("ic_quote_number"):
+		return
+	current = (doc.get("ic_quote_number") or "").strip()
+	# Auto-fill when blank; also replace placeholder text
+	if not current or current.startswith("new-"):
+		frappe.db.set_value(
+			"Quotation", doc.name, "ic_quote_number", doc.name, update_modified=False
+		)
+		doc.ic_quote_number = doc.name
+
+
 def _calculate_test_line_totals(doc):
 	for row in doc.get("ic_test_items") or []:
 		units = float(row.number_of_samples or 0) or 1

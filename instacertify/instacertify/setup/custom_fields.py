@@ -657,8 +657,10 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_quote_number",
 		"fieldtype": "Data",
-		"label": "Quote No (Print)",
-		"description": "Printed number, e.g. ILPL/C/2026-2027/130. Leave blank to use document name.",
+		"label": "Quote No (from series)",
+		"reqd": 0,
+		"read_only": 1,
+		"description": "Auto-set from naming series after save (e.g. QTN-SRV-00001). Not required on create.",
 		"insert_after": "ic_service_family",
 	},
 	{

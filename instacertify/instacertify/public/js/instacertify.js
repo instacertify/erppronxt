@@ -2168,9 +2168,22 @@ instacertify.apply_service_quote_mandatory = function (frm) {
 		"ic_assignees",
 		"ic_primary_assignee",
 		"ic_payment_terms",
+		"ic_quote_number",
+		"naming_series",
 	].forEach((f) => {
 		if (frm.fields_dict[f]) frm.set_df_property(f, "reqd", 0);
 	});
+	if (frm.fields_dict.ic_quote_number) {
+		frm.set_df_property("ic_quote_number", "read_only", 1);
+		frm.set_df_property(
+			"ic_quote_number",
+			"description",
+			__("Filled automatically from the naming series after save (e.g. QTN-SRV-00001).")
+		);
+		if (!frm.is_new() && frm.doc.name && !frm.doc.ic_quote_number) {
+			frm.set_value("ic_quote_number", frm.doc.name);
+		}
+	}
 	if (frm.fields_dict.items) {
 		frm.set_df_property("items", "reqd", 0);
 	}
