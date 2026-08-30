@@ -136,15 +136,23 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				d.hide();
 			},
 		});
-		d.$body.find(".ic-ts-print-one").on("click", function () {
-			const name = $(this).data("sample");
+		d.$body.find(".ic-ts-print-one").on("click", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			const name = $(this).attr("data-sample");
 			const lab = labels.find((x) => x.name === name);
 			if (lab) print_qr_labels([lab]);
 		});
-		d.$body.find(".ic-ts-dl-one").on("click", function () {
-			const name = $(this).data("sample");
+		d.$body.find(".ic-ts-dl-one").on("click", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			const name = $(this).attr("data-sample");
 			const lab = labels.find((x) => x.name === name);
 			if (!lab) return;
+			if (window.instacertify && typeof instacertify.download_sample_sticker_png === "function") {
+				instacertify.download_sample_sticker_png(lab);
+				return;
+			}
 			const src = lab.sticker_data_uri || lab.sticker_url || lab.qr_data_uri || lab.qr_code || "";
 			const fname = (lab.tracking_number || lab.name || "sample-qr") + ".png";
 			if (window.instacertify && typeof instacertify.download_png === "function") {
@@ -153,7 +161,6 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				const a = document.createElement("a");
 				a.href = src;
 				a.download = fname;
-				a.target = "_blank";
 				document.body.appendChild(a);
 				a.click();
 				a.remove();
