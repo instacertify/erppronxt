@@ -165,25 +165,12 @@ def get_explore_prompts() -> dict:
 		show=is_ops or is_admin,
 	)
 	add(
-		"testing",
-		_("Testing Requests"),
-		_("Lab testing workflow"),
-		["List", "IC Testing Request"],
-		doctype="IC Testing Request",
-		count=_count("IC Testing Request", {"status": ["not in", ["Report Shared with Customer"]]}),
+		"testing_samples",
+		_("Testing & Samples"),
+		_("Lab pricing, generate requests, sample custody"),
+		["testing-samples"],
 		accent="teal",
 		priority=55,
-		show=is_ops or is_admin,
-	)
-	add(
-		"samples",
-		_("Samples"),
-		_("Custody & dispatch tracking"),
-		["List", "IC Sample Tracking"],
-		doctype="IC Sample Tracking",
-		count=_count("IC Sample Tracking"),
-		accent="teal",
-		priority=60,
 		show=is_ops or is_admin,
 	)
 	add(
