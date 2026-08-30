@@ -57,10 +57,10 @@ def boot_session(bootinfo):
 	except Exception:
 		pass
 
-	# Fix missing Contact.is_billing_contact before desk party queries on Quotation
+	# Fix missing Address.tax_category / Contact.is_billing_contact before party queries
 	try:
-		from instacertify.setup.contact_billing import ensure_contact_billing_fields
+		from instacertify.setup.contact_billing import ensure_party_address_contact_fields
 
-		ensure_contact_billing_fields()
+		ensure_party_address_contact_fields()
 	except Exception:
 		pass
