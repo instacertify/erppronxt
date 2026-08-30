@@ -931,6 +931,34 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				};
 				open_labels();
 				switch_tab("manage");
+				if (m.testing_request) {
+					frappe.confirm(
+						__(
+							"Create a Test Request Form (TRF) share link for the customer to fill sample/product details? Case handlers can fill the same form."
+						),
+						() => {
+							frappe.call({
+								method: "instacertify.trf.api.create_or_get_trf",
+								args: { testing_request: m.testing_request, share: 1 },
+								freeze: true,
+								callback(tr) {
+									const x = tr.message || {};
+									const url = x.url || x.share_url || "";
+									frappe.msgprint({
+										title: __("TRF customer fill link"),
+										message: `<p><a href="${frappe.utils.escape_html(
+											url
+										)}" target="_blank">${frappe.utils.escape_html(url)}</a></p>
+										<p><a href="/app/ic-test-request-form/${encodeURIComponent(
+											x.name
+										)}">${__("Open TRF (staff fill / generate PDF)")}</a></p>`,
+										indicator: "green",
+									});
+								},
+							});
+						}
+					);
+				}
 			},
 		});
 	}

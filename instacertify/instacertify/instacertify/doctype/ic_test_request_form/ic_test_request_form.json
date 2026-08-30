@@ -1,0 +1,298 @@
+{
+ "name": "IC Test Request Form",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "module": "Instacertify",
+ "autoname": "naming_series:",
+ "naming_rule": "By \"Naming Series\" field",
+ "track_changes": 1,
+ "title_field": "title",
+ "search_fields": "customer,testing_request,brand_name,model_no,status",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "TRF-.YYYY.-.####",
+   "default": "TRF-.YYYY.-.####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_top",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSent to Customer\nSubmitted by Customer\nUnder Review\nPDF Generated\nCompleted\nCancelled",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "filled_by",
+   "fieldtype": "Select",
+   "label": "Filled By",
+   "options": "\nStaff\nCustomer\nBoth",
+   "default": "Staff"
+  },
+  {
+   "fieldname": "share_token",
+   "fieldtype": "Data",
+   "label": "Share Token",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "share_url",
+   "fieldtype": "Small Text",
+   "label": "Customer Fill Link",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_on",
+   "fieldtype": "Datetime",
+   "label": "Sent On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submitted_on",
+   "fieldtype": "Datetime",
+   "label": "Submitted On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_links",
+   "fieldtype": "Section Break",
+   "label": "Links"
+  },
+  {
+   "fieldname": "testing_request",
+   "fieldtype": "Link",
+   "options": "IC Testing Request",
+   "label": "Testing Request",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sample_tracking",
+   "fieldtype": "Link",
+   "options": "IC Sample Tracking",
+   "label": "Sample (QR match)",
+   "description": "TRF uses the same QR as this sample to avoid confusion"
+  },
+  {
+   "fieldname": "sample_tracking_number",
+   "fieldtype": "Data",
+   "label": "Sample Tracking #",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_links",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "options": "Customer",
+   "label": "Customer",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "options": "Project",
+   "label": "Project"
+  },
+  {
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "options": "Quotation",
+   "label": "Quotation"
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "options": "User",
+   "label": "Case Handler"
+  },
+  {
+   "fieldname": "section_sample_qr",
+   "fieldtype": "Section Break",
+   "label": "Sample QR (same as product sample)"
+  },
+  {
+   "fieldname": "sample_qr_code",
+   "fieldtype": "Attach Image",
+   "label": "Sample QR Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_instructions",
+   "fieldtype": "Section Break",
+   "label": "Instructions"
+  },
+  {
+   "fieldname": "customer_instructions",
+   "fieldtype": "Text Editor",
+   "label": "Customer Instructions"
+  },
+  {
+   "fieldname": "section_trf_fields",
+   "fieldtype": "Section Break",
+   "label": "Test Request Form (fill by customer or case handler)"
+  },
+  {
+   "fieldname": "sample_name",
+   "fieldtype": "Data",
+   "label": "Sample Name",
+   "description": "Description of the sample",
+   "reqd": 0,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "sample_quantity",
+   "fieldtype": "Data",
+   "label": "Sample Quantity"
+  },
+  {
+   "fieldname": "column_break_trf1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "brand_name",
+   "fieldtype": "Data",
+   "label": "Brand Name"
+  },
+  {
+   "fieldname": "model_no",
+   "fieldtype": "Data",
+   "label": "Model No"
+  },
+  {
+   "fieldname": "brand_logo",
+   "fieldtype": "Attach Image",
+   "label": "Brand Logo"
+  },
+  {
+   "fieldname": "section_specs",
+   "fieldtype": "Section Break",
+   "label": "Product / Testing"
+  },
+  {
+   "fieldname": "rated_input",
+   "fieldtype": "Small Text",
+   "label": "Rated Input of Product / Specification"
+  },
+  {
+   "fieldname": "testing_requested",
+   "fieldtype": "Small Text",
+   "label": "Testing Requested"
+  },
+  {
+   "fieldname": "column_break_specs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "applicable_standard",
+   "fieldtype": "Data",
+   "label": "Standard Applicable for Testing"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "other_remarks",
+   "fieldtype": "Text",
+   "label": "Other Remarks"
+  },
+  {
+   "fieldname": "section_pdf",
+   "fieldtype": "Section Break",
+   "label": "Generated PDF"
+  },
+  {
+   "fieldname": "pdf_file",
+   "fieldtype": "Attach",
+   "label": "TRF PDF",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "IC Admin",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "IC Senior Operations",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "IC Operations Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "IC Sales Person",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "print": 1,
+   "email": 1,
+   "share": 1,
+   "report": 1,
+   "export": 1
+  }
+ ]
+}
