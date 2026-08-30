@@ -5,7 +5,7 @@
  "module": "Instacertify",
  "track_changes": 1,
  "title_field": "laboratory_name",
- "search_fields": "laboratory_name,location,city,country",
+ "search_fields": "laboratory_name,location,city,country,contact_person,phone",
  "image_field": "logo",
  "sort_field": "laboratory_name",
  "sort_order": "ASC",
@@ -67,13 +67,15 @@
    "doctype": "DocField",
    "fieldname": "section_address",
    "fieldtype": "Section Break",
-   "label": "Address & Contact"
+   "label": "Address & Contact",
+   "collapsible": 0
   },
   {
    "doctype": "DocField",
    "fieldname": "address",
    "fieldtype": "Small Text",
-   "label": "Address"
+   "label": "Address",
+   "description": "Full laboratory street address"
   },
   {
    "doctype": "DocField",
@@ -104,21 +106,17 @@
    "fieldname": "contact_person",
    "fieldtype": "Data",
    "label": "Contact Person",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Primary contact at the laboratory"
   },
   {
    "doctype": "DocField",
    "fieldname": "contact_designation",
    "fieldtype": "Data",
    "label": "Designation",
-   "description": "Role / designation of the contact person"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "email",
-   "fieldtype": "Data",
-   "label": "Email",
-   "options": "Email"
+   "in_list_view": 1,
+   "description": "Role / designation of the contact person (e.g. Quality Manager)"
   },
   {
    "doctype": "DocField",
@@ -126,7 +124,16 @@
    "fieldtype": "Data",
    "label": "Phone",
    "options": "Phone",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Laboratory contact phone number"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "options": "Email"
   },
   {
    "doctype": "DocField",
@@ -139,21 +146,22 @@
    "doctype": "DocField",
    "fieldname": "section_accreditation",
    "fieldtype": "Section Break",
-   "label": "Accreditation"
+   "label": "Accreditation & Scope",
+   "collapsible": 0
   },
   {
    "doctype": "DocField",
    "fieldname": "accreditation_details",
    "fieldtype": "Small Text",
    "label": "Accreditation Details",
-   "description": "NABL / ISO details — editable anytime"
+   "description": "NABL / ISO / ILAC details — editable anytime"
   },
   {
    "doctype": "DocField",
    "fieldname": "accreditation_scope",
    "fieldtype": "Small Text",
    "label": "Accreditation Scope",
-   "description": "Short summary of tests / standards covered — editable anytime"
+   "description": "Short summary of accredited tests / standards — editable anytime"
   },
   {
    "doctype": "DocField",
@@ -183,15 +191,16 @@
    "doctype": "DocField",
    "fieldname": "section_tests",
    "fieldtype": "Section Break",
-   "label": "Accreditation Scope & Pricing Library",
-   "description": "Add or edit each accredited test with buying & selling prices. All columns are editable. These drive the Testing Quotation dropdown."
+   "label": "Scope of Accreditation & Pricing Library",
+   "description": "Add or edit each accredited test with buying & selling prices. All columns are editable. These drive Testing Request / Quotation lab pickers."
   },
   {
    "doctype": "DocField",
    "fieldname": "test_scopes",
    "fieldtype": "Table",
    "label": "Scope of Accreditation & Pricing",
-   "options": "IC Laboratory Test Scope"
+   "options": "IC Laboratory Test Scope",
+   "reqd": 0
   },
   {
    "doctype": "DocField",

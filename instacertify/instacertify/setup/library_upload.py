@@ -119,6 +119,7 @@ def create_laboratory_from_upload(
 	accreditation_details: str | None = None,
 	scope_file: str | None = None,
 	contact_person: str | None = None,
+	contact_designation: str | None = None,
 	email: str | None = None,
 	phone: str | None = None,
 	city: str | None = None,
@@ -150,6 +151,8 @@ def create_laboratory_from_upload(
 	doc.address = (address or "").strip()
 	doc.website = (website or "").strip()
 	doc.contact_person = (contact_person or "").strip()
+	if frappe.get_meta("IC Laboratory").has_field("contact_designation"):
+		doc.contact_designation = (contact_designation or "").strip()
 	doc.email = (email or "").strip()
 	doc.phone = (phone or "").strip()
 	if accreditation_scope is not None:

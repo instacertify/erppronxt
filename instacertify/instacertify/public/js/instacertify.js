@@ -501,6 +501,13 @@ instacertify.open_laboratory_upload = function (opts) {
 				default: opts.contact_person || "",
 			},
 			{
+				fieldname: "contact_designation",
+				fieldtype: "Data",
+				label: __("Designation"),
+				description: __("e.g. Quality Manager, Lab In-charge"),
+				default: opts.contact_designation || "",
+			},
+			{
 				fieldname: "email",
 				fieldtype: "Data",
 				label: __("Email"),
@@ -4169,19 +4176,19 @@ frappe.ui.form.on("IC Laboratory", {
 		if (frm.is_new()) {
 			frm.set_intro(
 				__(
-					"Laboratory Library — enter Laboratory Name, Accreditation Scope, and upload Scope Sheet / Scope PDF / CSV / Excel. Add each accredited test with buying & selling prices — all columns are editable."
+					"Laboratory Library — fill Laboratory Name, Contact Person, Designation, Phone, Accreditation Scope, and upload Scope Sheet / CSV. Add each accredited test with buying & selling prices in the scope table."
 				),
 				"blue"
 			);
 		} else {
 			frm.set_intro(
 				__(
-					"Edit any field below anytime. Upload CSV/Excel from Library to fill scope rows, or edit the pricing table directly."
+					"All fields below stay editable: contact, designation, phone, accreditation scope, and the pricing table. Use Library → Upload / Import CSV anytime."
 				),
 				"blue"
 			);
 		}
-		// Ensure master + attach fields stay editable (never locked after upload)
+		// Ensure master + attach + contact fields stay editable (never locked after upload)
 		[
 			"laboratory_name",
 			"status",
@@ -4191,6 +4198,7 @@ frappe.ui.form.on("IC Laboratory", {
 			"country",
 			"address",
 			"contact_person",
+			"contact_designation",
 			"email",
 			"phone",
 			"website",
@@ -4203,7 +4211,10 @@ frappe.ui.form.on("IC Laboratory", {
 			"test_scopes",
 			"supplier",
 		].forEach((f) => {
-			if (frm.fields_dict[f]) frm.set_df_property(f, "read_only", 0);
+			if (frm.fields_dict[f]) {
+				frm.set_df_property(f, "read_only", 0);
+				frm.set_df_property(f, "hidden", 0);
+			}
 		});
 		frm.add_custom_button(__("Upload Lab / Scope"), () => {
 			const strip = (v) =>
@@ -4220,6 +4231,7 @@ frappe.ui.form.on("IC Laboratory", {
 				accreditation_scope: strip(frm.doc.accreditation_scope),
 				accreditation_details: strip(frm.doc.accreditation_details),
 				contact_person: frm.doc.contact_person,
+				contact_designation: frm.doc.contact_designation,
 				email: frm.doc.email,
 				phone: frm.doc.phone,
 				website: frm.doc.website,
@@ -4884,6 +4896,7 @@ frappe.listview_settings["IC Quotation Template"] = {
 };
 
 frappe.listview_settings["IC Laboratory"] = {
+	add_fields: ["status", "location", "contact_person", "contact_designation", "phone"],
 	onload(listview) {
 		listview.page.add_inner_button(__("Upload Lab / Scope"), () => {
 			instacertify.open_laboratory_upload();
@@ -4908,6 +4921,17 @@ frappe.listview_settings["IC Laboratory"] = {
 				},
 			});
 		}, __("Templates"));
+	},
+	get_indicator(doc) {
+		if (doc.status === "Active") return [__("Active"), "green", "status,=,Active"];
+		return [__("Inactive"), "gray", "status,=,Inactive"];
+	},
+	formatters: {
+		contact_person(val, df, doc) {
+			if (!val) return "";
+			const desig = doc.contact_designation ? ` · ${frappe.utils.escape_html(doc.contact_designation)}` : "";
+			return `${frappe.utils.escape_html(val)}${desig}`;
+		},
 	},
 };
 
