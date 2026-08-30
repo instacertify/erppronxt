@@ -53,7 +53,18 @@ def _iter_active_lab_scopes():
 	labs = frappe.get_all(
 		"IC Laboratory",
 		filters={"status": "Active"},
-		fields=["name", "laboratory_name", "location", "city"],
+		fields=[
+			"name",
+			"laboratory_name",
+			"location",
+			"city",
+			"state",
+			"country",
+			"address",
+			"phone",
+			"email",
+			"contact_person",
+		],
 		order_by="laboratory_name asc",
 	)
 	for lab in labs:
@@ -66,6 +77,26 @@ def _iter_active_lab_scopes():
 			yield lab, row
 
 
+def _lab_address_line(lab) -> str:
+	parts = [
+		(lab.get("address") or "").strip(),
+		(lab.get("city") or "").strip(),
+		(lab.get("state") or "").strip(),
+		(lab.get("location") or "").strip(),
+		(lab.get("country") or "").strip(),
+	]
+	# Dedupe while preserving order
+	seen = set()
+	out = []
+	for p in parts:
+		key = p.casefold()
+		if not p or key in seen:
+			continue
+		seen.add(key)
+		out.append(p)
+	return ", ".join(out)
+
+
 def _offer_dict(lab, row) -> dict:
 	location = lab.get("location") or lab.get("city") or ""
 	label = _lab_offer_label(lab.name, lab.get("laboratory_name"), location, row)
@@ -75,6 +106,10 @@ def _offer_dict(lab, row) -> dict:
 		"laboratory": lab.name,
 		"laboratory_name": lab.get("laboratory_name") or lab.name,
 		"location": location,
+		"address": _lab_address_line(lab),
+		"phone": (lab.get("phone") or "").strip(),
+		"email": (lab.get("email") or "").strip(),
+		"contact_person": (lab.get("contact_person") or "").strip(),
 		"scope_row": row.name,
 		"test_name": row.test_name,
 		"applicable_standard": row.applicable_standard,
@@ -143,11 +178,44 @@ def get_test_name_options(txt: str | None = None):
 
 
 @frappe.whitelist()
+def get_standards_for_test(test_name: str | None = None, txt: str | None = None):
+	"""Applicable standards suggested for a selected test name (from Active labs)."""
+	test_key = _normalize_standard(test_name)
+	if not test_key:
+		return []
+	needle = _normalize_standard(txt)
+	seen = {}
+	lab_counts = {}
+	for _lab, row in _iter_active_lab_scopes():
+		row_test = _normalize_standard(row.test_name)
+		if test_key not in row_test and row_test not in test_key:
+			continue
+		std = (row.applicable_standard or "").strip()
+		if not std:
+			continue
+		key = _normalize_standard(std)
+		if needle and needle not in key:
+			continue
+		seen.setdefault(key, std)
+		lab_counts[key] = lab_counts.get(key, 0) + 1
+	values = sorted(seen.values(), key=lambda s: s.casefold())
+	return [
+		{
+			"value": v,
+			"label": v,
+			"lab_count": lab_counts.get(_normalize_standard(v), 0),
+		}
+		for v in values
+	]
+
+
+@frappe.whitelist()
 def get_labs_for_standard(applicable_standard: str | None = None, test_name: str | None = None):
 	"""Labs that offer the standard and/or test, with buying & selling rates.
 
 	Either filter may be provided. When both are set, results must match both.
 	Same standard/test can appear under multiple labs at different prices.
+	Includes phone and address for lab selection UIs.
 	"""
 	standard_key = _normalize_standard(applicable_standard)
 	test_key = _normalize_standard(test_name) if test_name else ""
