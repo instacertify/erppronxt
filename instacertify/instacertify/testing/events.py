@@ -602,10 +602,25 @@ def list_testing_samples_board(
 		):
 			customer_map[c.name] = c.customer_name or c.name
 
+	# Latest TRF per Testing Request (for Manage TR Actions: link + PDF)
+	trf_map = {}
+	tr_names = [t.name for t in trs]
+	if tr_names and frappe.db.exists("DocType", "IC Test Request Form"):
+		for row in frappe.get_all(
+			"IC Test Request Form",
+			filters={"testing_request": ["in", tr_names]},
+			fields=["name", "testing_request", "share_url", "pdf_file", "status", "modified"],
+			order_by="modified desc",
+			limit_page_length=len(tr_names) * 5,
+		):
+			if row.testing_request not in trf_map:
+				trf_map[row.testing_request] = row
+
 	out = []
 	for tr in trs:
 		lab = lab_map.get(tr.laboratory) or {}
 		samples = get_samples_for_testing_request(tr.name)
+		trf = trf_map.get(tr.name) or {}
 		out.append(
 			{
 				**tr,
@@ -613,6 +628,10 @@ def list_testing_samples_board(
 				"laboratory_name": lab.get("laboratory_name") or tr.laboratory,
 				"laboratory_city": lab.get("location") or "",
 				"samples": samples,
+				"trf_name": trf.get("name") or "",
+				"trf_share_url": trf.get("share_url") or "",
+				"trf_pdf_file": trf.get("pdf_file") or "",
+				"trf_status": trf.get("status") or "",
 			}
 		)
 	return out
