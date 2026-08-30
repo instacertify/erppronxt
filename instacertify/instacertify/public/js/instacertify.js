@@ -28,6 +28,95 @@ instacertify.open_file_manager = function () {
 	frappe.set_route("List", "File");
 };
 
+/**
+ * Case-handler Edit Price dialog — buying, selling, currency.
+ * Available from Testing Request, Manage TR, Sample, TRF, etc.
+ */
+instacertify.edit_testing_request_prices = function (testing_request, opts) {
+	opts = opts || {};
+	if (!testing_request) {
+		frappe.msgprint({
+			title: __("Edit Price"),
+			message: __("No Testing Request selected."),
+			indicator: "orange",
+		});
+		return;
+	}
+
+	const open_dialog = (defaults) => {
+		const d = new frappe.ui.Dialog({
+			title: __("Edit Price — {0}", [testing_request]),
+			fields: [
+				{
+					fieldname: "library_buying_price",
+					fieldtype: "Currency",
+					label: __("Buying Price"),
+					default: flt(defaults.library_buying_price) || 0,
+					reqd: 1,
+					description: __("What we buy the lab service for (Purchase Invoice)"),
+				},
+				{
+					fieldname: "suggested_selling_price",
+					fieldtype: "Currency",
+					label: __("Selling Price"),
+					default: flt(defaults.suggested_selling_price) || 0,
+					reqd: 1,
+					description: __("What we sell / bill the customer"),
+				},
+				{
+					fieldname: "price_currency",
+					fieldtype: "Link",
+					options: "Currency",
+					label: __("Currency"),
+					default: defaults.price_currency || "INR",
+					reqd: 1,
+				},
+			],
+			primary_action_label: __("Save Prices"),
+			primary_action(values) {
+				frappe.call({
+					method: "instacertify.testing.events.update_testing_request_prices",
+					args: {
+						testing_request,
+						library_buying_price: values.library_buying_price,
+						suggested_selling_price: values.suggested_selling_price,
+						price_currency: values.price_currency,
+					},
+					freeze: true,
+					callback(r) {
+						d.hide();
+						frappe.show_alert({
+							message: __("Prices updated ({0})", [values.price_currency || "INR"]),
+							indicator: "green",
+						});
+						if (typeof opts.on_save === "function") {
+							opts.on_save(r.message || values);
+						}
+					},
+				});
+			},
+		});
+		d.show();
+	};
+
+	if (
+		opts.library_buying_price != null ||
+		opts.suggested_selling_price != null ||
+		opts.price_currency
+	) {
+		open_dialog(opts);
+		return;
+	}
+
+	frappe.db
+		.get_value("IC Testing Request", testing_request, [
+			"library_buying_price",
+			"suggested_selling_price",
+			"price_currency",
+		])
+		.then((r) => open_dialog((r && r.message) || {}));
+};
+
 /** Append a File Manager shortcut under Attach fields in dialogs. */
 instacertify.add_file_manager_hint = function (dialog, fieldname) {
 	try {
@@ -3451,56 +3540,28 @@ frappe.ui.form.on("IC Testing Request", {
 		}
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Edit Price"), () => {
-				const d = new frappe.ui.Dialog({
-					title: __("Edit Buying / Selling Price"),
-					fields: [
-						{
-							fieldname: "library_buying_price",
-							fieldtype: "Currency",
-							label: __("Buying Price"),
-							default: frm.doc.library_buying_price || 0,
-							reqd: 1,
-						},
-						{
-							fieldname: "suggested_selling_price",
-							fieldtype: "Currency",
-							label: __("Selling Price"),
-							default: frm.doc.suggested_selling_price || 0,
-							reqd: 1,
-						},
-						{
-							fieldname: "price_currency",
-							fieldtype: "Link",
-							options: "Currency",
-							label: __("Currency"),
-							default: frm.doc.price_currency || "INR",
-							reqd: 1,
-						},
-					],
-					primary_action_label: __("Save Prices"),
-					primary_action(values) {
-						frappe.call({
-							method: "instacertify.testing.events.update_testing_request_prices",
-							args: {
-								testing_request: frm.doc.name,
-								library_buying_price: values.library_buying_price,
-								suggested_selling_price: values.suggested_selling_price,
-								price_currency: values.price_currency,
-							},
-							freeze: true,
-							callback() {
-								d.hide();
-								frm.reload_doc();
-								frappe.show_alert({
-									message: __("Prices updated"),
-									indicator: "green",
-								});
-							},
-						});
+				instacertify.edit_testing_request_prices(frm.doc.name, {
+					library_buying_price: frm.doc.library_buying_price,
+					suggested_selling_price: frm.doc.suggested_selling_price,
+					price_currency: frm.doc.price_currency || "INR",
+					on_save() {
+						frm.reload_doc();
 					},
 				});
-				d.show();
 			}, __("Actions"));
+			// Keep prices visible in form dashboard
+			const cur = frm.doc.price_currency || "INR";
+			frm.dashboard.clear_headline();
+			frm.dashboard.set_headline(
+				__(
+					"Buying {0} · Selling {1} · {2}",
+					[
+						format_currency(frm.doc.library_buying_price || 0, cur),
+						format_currency(frm.doc.suggested_selling_price || 0, cur),
+						cur,
+					]
+				)
+			);
 			frm.add_custom_button(__("Create / Share TRF"), () => {
 				frappe.call({
 					method: "instacertify.trf.api.create_or_get_trf",
@@ -5617,6 +5678,18 @@ frappe.ui.form.on("IC Sample Tracking", {
 	refresh(frm) {
 		if (!frm.is_new()) {
 			instacertify.render_sample_sticker_preview(frm);
+			if (frm.doc.testing_request) {
+				frm.add_custom_button(__("Edit Price"), () => {
+					instacertify.edit_testing_request_prices(frm.doc.testing_request, {
+						on_save() {
+							frappe.show_alert({
+								message: __("Testing Request prices updated"),
+								indicator: "green",
+							});
+						},
+					});
+				}, __("Actions"));
+			}
 			frm.add_custom_button(__("Print 50×25 mm Sticker"), () => {
 				const print_one = () => {
 					frappe.call({
@@ -6693,3 +6766,43 @@ $(document).on("click", "a.ic-schedule-session", function (e) {
 		frappe.new_doc("Event");
 	}
 });
+
+frappe.listview_settings["IC Testing Request"] = {
+	add_fields: ["library_buying_price", "suggested_selling_price", "price_currency"],
+	onload(listview) {
+		listview.page.add_actions_menu_item(__("Edit Price"), () => {
+			const selected = listview.get_checked_items();
+			if (!selected.length) {
+				frappe.msgprint(__("Select one Testing Request first."));
+				return;
+			}
+			const row = selected[0];
+			instacertify.edit_testing_request_prices(row.name, {
+				library_buying_price: row.library_buying_price,
+				suggested_selling_price: row.suggested_selling_price,
+				price_currency: row.price_currency || "INR",
+				on_save() {
+					listview.refresh();
+				},
+			});
+		});
+	},
+	button: {
+		show(doc) {
+			return true;
+		},
+		get_label() {
+			return __("Edit Price");
+		},
+		get_description(doc) {
+			return __("Edit buying / selling / currency");
+		},
+		action(doc) {
+			instacertify.edit_testing_request_prices(doc.name, {
+				library_buying_price: doc.library_buying_price,
+				suggested_selling_price: doc.suggested_selling_price,
+				price_currency: doc.price_currency || "INR",
+			});
+		},
+	},
+};

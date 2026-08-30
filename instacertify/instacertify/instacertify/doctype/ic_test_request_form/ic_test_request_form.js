@@ -19,6 +19,12 @@ frappe.ui.form.on("IC Test Request Form", {
 			frm.dashboard.set_headline(bits.join(" · "));
 		}
 
+		if (frm.doc.testing_request) {
+			frm.add_custom_button(__("Edit Price"), () => {
+				instacertify.edit_testing_request_prices(frm.doc.testing_request);
+			}, __("Actions"));
+		}
+
 		frm.add_custom_button(__("Share with Customer"), () => {
 			frappe.call({
 				method: "instacertify.trf.api.share_trf",
