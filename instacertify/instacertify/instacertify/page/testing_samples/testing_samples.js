@@ -13,6 +13,75 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 	page.set_title(__("Testing & Samples"));
 	page.main.addClass("ic-ts-page");
 
+	/** Open sample QR dialog — works even if desk bundle failed to attach helpers. */
+	function open_tr_qr_dialog(payload) {
+		if (
+			window.instacertify &&
+			typeof instacertify.show_testing_request_sample_qr_dialog === "function"
+		) {
+			instacertify.show_testing_request_sample_qr_dialog(payload || {});
+			return;
+		}
+		const labels = (payload && payload.labels) || [];
+		if (!labels.length) {
+			frappe.msgprint({
+				title: __("No sample QR"),
+				message: __("No sample tracking numbers found for this Testing Request."),
+				indicator: "orange",
+			});
+			return;
+		}
+		const cards = labels
+			.map((lab) => {
+				const trk = lab.tracking_number || lab.name || "";
+				const img =
+					lab.sticker_data_uri || lab.qr_data_uri || lab.sticker_url || lab.qr_code || "";
+				return `<div style="border:1.5px solid #9eb8c8;border-radius:12px;padding:12px;background:#fff;">
+					<div style="font-size:11px;font-weight:700;color:#065175;margin-bottom:8px;">50 × 25 mm · unique sample QR</div>
+					${
+						img
+							? `<img src="${frappe.utils.escape_html(img)}" alt="QR ${frappe.utils.escape_html(
+									trk
+							  )}" style="width:200px;height:100px;object-fit:contain;border:1px solid #cfd8dc;background:#fff;display:block;"/>`
+							: `<div style="padding:20px;color:#c62828;">${__("QR image missing")}</div>`
+					}
+					<div style="margin-top:8px;font-size:12px;display:flex;justify-content:space-between;gap:8px;">
+						<span>${__("Sample code")}</span>
+						<b style="font-family:monospace;color:#065175;">${frappe.utils.escape_html(trk)}</b>
+					</div>
+				</div>`;
+			})
+			.join("");
+		const d = new frappe.ui.Dialog({
+			title: __("Sample QR — {0}", [(payload && payload.testing_request) || ""]),
+			size: "large",
+			fields: [
+				{
+					fieldtype: "HTML",
+					options: `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">${cards}</div>`,
+				},
+			],
+			primary_action_label: __("Done"),
+			primary_action() {
+				d.hide();
+			},
+		});
+		d.show();
+	}
+
+	function load_and_show_tr_qr(testing_request) {
+		if (!testing_request) return;
+		frappe.call({
+			method: "instacertify.testing.events.get_testing_request_sample_labels",
+			args: { testing_request },
+			freeze: true,
+			freeze_message: __("Loading sample QR labels…"),
+			callback(r) {
+				open_tr_qr_dialog(r.message || {});
+			},
+		});
+	}
+
 	const JOURNEY_STEPS = [
 		"With Customer",
 		"In Transit to Office",
@@ -786,17 +855,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				const labels_payload = m.sample_labels || null;
 				const open_labels = () => {
 					if (labels_payload && (labels_payload.labels || []).length) {
-						instacertify.show_testing_request_sample_qr_dialog(labels_payload);
+						open_tr_qr_dialog(labels_payload);
 					} else if (m.testing_request) {
-						frappe.call({
-							method: "instacertify.testing.events.get_testing_request_sample_labels",
-							args: { testing_request: m.testing_request },
-							freeze: true,
-							freeze_message: __("Preparing sample QR labels…"),
-							callback(lr) {
-								instacertify.show_testing_request_sample_qr_dialog(lr.message || {});
-							},
-						});
+						load_and_show_tr_qr(m.testing_request);
 					}
 				};
 				open_labels();
@@ -1102,15 +1163,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		$board.find(".ic-ts-print-qr").on("click", function (e) {
 			e.stopPropagation();
 			const tr_name = $(this).data("tr");
-			frappe.call({
-				method: "instacertify.testing.events.get_testing_request_sample_labels",
-				args: { testing_request: tr_name },
-				freeze: true,
-				freeze_message: __("Loading sample QR labels…"),
-				callback(r) {
-					instacertify.show_testing_request_sample_qr_dialog(r.message || {});
-				},
-			});
+			load_and_show_tr_qr(tr_name);
 		});
 
 		if (state.focus_tr) {
