@@ -173,6 +173,12 @@
    "fieldtype": "Column Break"
   },
   {
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name",
+   "description": "Product / model family name for the TRF"
+  },
+  {
    "fieldname": "brand_name",
    "fieldtype": "Data",
    "label": "Brand Name"

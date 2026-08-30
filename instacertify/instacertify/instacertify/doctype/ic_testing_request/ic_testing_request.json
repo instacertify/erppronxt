@@ -208,14 +208,25 @@
    "fieldname": "suggested_selling_price",
    "fieldtype": "Currency",
    "label": "Library Selling Price",
-   "read_only": 1
+   "read_only": 1,
+   "options": "price_currency"
   },
   {
    "doctype": "DocField",
    "fieldname": "library_buying_price",
    "fieldtype": "Currency",
    "label": "Library Buying Price",
-   "read_only": 1
+   "read_only": 1,
+   "options": "price_currency"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "price_currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Price Currency",
+   "default": "INR",
+   "description": "Currency for buying and selling library prices"
   },
   {
    "doctype": "DocField",

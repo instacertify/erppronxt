@@ -54,8 +54,9 @@
         <div class="ic-section">
           <h3>Sample &amp; product</h3>
           <div class="ic-form-grid">
-            <div><label>Sample Name (description of sample)</label><input id="sample_name" type="text"/></div>
+			<div><label>Sample Name (description of sample)</label><input id="sample_name" type="text"/></div>
             <div><label>Sample Quantity</label><input id="sample_quantity" type="text" placeholder="e.g. 2 pcs"/></div>
+            <div><label>Product Name</label><input id="product_name" type="text"/></div>
             <div><label>Brand Name</label><input id="brand_name" type="text"/></div>
             <div><label>Model No</label><input id="model_no" type="text"/></div>
           </div>
@@ -114,6 +115,7 @@
         `<p><b>Status:</b> ${d.status || "—"} · <b>TR:</b> ${d.testing_request || "—"}</p>`;
       set("sample_name", d.sample_name);
       set("sample_quantity", d.sample_quantity);
+      set("product_name", d.product_name);
       set("rated_input", d.rated_input);
       set("model_no", d.model_no);
       set("brand_name", d.brand_name);
@@ -138,7 +140,7 @@
         if (d.pdf_file) pdfBtn.textContent = "Download TRF PDF";
       }
       const saveBtn = document.getElementById("btn-save");
-      const fieldIds = ["sample_name","sample_quantity","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"];
+      const fieldIds = ["sample_name","sample_quantity","product_name","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"];
       if (d.read_only) {
         saveBtn.style.display = "none";
         fieldIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
@@ -205,6 +207,7 @@
           token,
           sample_name: val("sample_name"),
           sample_quantity: val("sample_quantity"),
+          product_name: val("product_name"),
           rated_input: val("rated_input"),
           model_no: val("model_no"),
           brand_name: val("brand_name"),

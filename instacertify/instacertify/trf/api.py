@@ -100,6 +100,10 @@ def create_or_get_trf(testing_request: str, share: int = 0):
 	sample = _pick_sample_for_tr(testing_request)
 	if existing:
 		doc = frappe.get_doc("IC Test Request Form", existing)
+		# Backfill product name from TR when missing
+		if not doc.product_name and tr.product and doc.meta.has_field("product_name"):
+			doc.product_name = tr.product
+			doc.save(ignore_permissions=True)
 	else:
 		instructions = (
 			"<p>Please complete this <b>Test Request Form (TRF)</b> for your testing case.</p>"
@@ -127,6 +131,7 @@ def create_or_get_trf(testing_request: str, share: int = 0):
 				"customer_instructions": instructions,
 				"testing_requested": tr.test_name or "",
 				"applicable_standard": tr.applicable_standard or "",
+				"product_name": tr.product or "",
 				"sample_name": (sample or {}).get("sample_description") or tr.product or "",
 				"sample_quantity": str(tr.number_of_samples or "") or "",
 			}
@@ -246,6 +251,7 @@ def get_trf_by_token(token: str):
 		"qr_data_uri": qr_data_uri,
 		"sample_name": doc.sample_name,
 		"sample_quantity": doc.sample_quantity,
+		"product_name": doc.product_name,
 		"rated_input": doc.rated_input,
 		"model_no": doc.model_no,
 		"brand_name": doc.brand_name,
@@ -267,6 +273,7 @@ def save_trf(
 	token: str,
 	sample_name: str | None = None,
 	sample_quantity: str | None = None,
+	product_name: str | None = None,
 	rated_input: str | None = None,
 	model_no: str | None = None,
 	brand_name: str | None = None,
@@ -304,6 +311,7 @@ def save_trf(
 
 	doc.sample_name = sample_name if sample_name is not None else doc.sample_name
 	doc.sample_quantity = sample_quantity if sample_quantity is not None else doc.sample_quantity
+	doc.product_name = product_name if product_name is not None else doc.product_name
 	doc.rated_input = rated_input if rated_input is not None else doc.rated_input
 	doc.model_no = model_no if model_no is not None else doc.model_no
 	doc.brand_name = brand_name if brand_name is not None else doc.brand_name
@@ -347,6 +355,7 @@ def save_trf_staff(name: str, **kwargs):
 	for key in (
 		"sample_name",
 		"sample_quantity",
+		"product_name",
 		"rated_input",
 		"model_no",
 		"brand_name",

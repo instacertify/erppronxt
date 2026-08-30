@@ -104,10 +104,16 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						<span>${__("Sample code")}</span>
 						<b style="font-family:monospace;color:#065175;">${frappe.utils.escape_html(trk)}</b>
 					</div>
-					<div style="margin-top:10px;">
+					<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
 						<button type="button" class="btn btn-xs btn-primary ic-ts-print-one" data-sample="${frappe.utils.escape_html(
 							lab.name
 						)}">${__("Print QR")}</button>
+						<button type="button" class="btn btn-xs btn-default ic-ts-dl-one" data-sample="${frappe.utils.escape_html(
+							lab.name
+						)}">${__("Download PNG")}</button>
+						<a class="btn btn-xs btn-default" href="/app/ic-sample-tracking/${encodeURIComponent(
+							lab.name
+						)}">${__("Open")}</a>
 					</div>
 				</div>`;
 			})
@@ -134,6 +140,24 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			const name = $(this).data("sample");
 			const lab = labels.find((x) => x.name === name);
 			if (lab) print_qr_labels([lab]);
+		});
+		d.$body.find(".ic-ts-dl-one").on("click", function () {
+			const name = $(this).data("sample");
+			const lab = labels.find((x) => x.name === name);
+			if (!lab) return;
+			const src = lab.sticker_data_uri || lab.sticker_url || lab.qr_data_uri || lab.qr_code || "";
+			const fname = (lab.tracking_number || lab.name || "sample-qr") + ".png";
+			if (window.instacertify && typeof instacertify.download_png === "function") {
+				instacertify.download_png(src, fname);
+			} else if (src) {
+				const a = document.createElement("a");
+				a.href = src;
+				a.download = fname;
+				a.target = "_blank";
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+			}
 		});
 		d.show();
 	}
@@ -1051,7 +1075,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			.map((tr, i) => {
 				const open = !!state.expanded[tr.name];
 				const samples = tr.samples || [];
-				const buy = tr.library_buying_price ? format_currency(tr.library_buying_price) : "—";
+				const buy = tr.library_buying_price
+					? format_currency(tr.library_buying_price, tr.price_currency || "INR")
+					: "—";
+				const sell = tr.suggested_selling_price
+					? format_currency(tr.suggested_selling_price, tr.price_currency || "INR")
+					: "—";
 				const focus = state.focus_tr === tr.name ? "ic-ts-flash" : "";
 				const zebra = i % 2 === 1 ? "is-alt" : "";
 
@@ -1145,7 +1174,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								<div class="ic-ts-cell-sub">${frappe.utils.escape_html(tr.applicable_standard || "—")}</div>
 							</td>
 							<td>${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}</td>
-							<td class="ic-ts-money ic-ts-money-buy">${frappe.utils.escape_html(buy)}</td>
+							<td class="ic-ts-money ic-ts-money-buy">
+								<div title="${__("Buying")}">${frappe.utils.escape_html(buy)}</div>
+								<div class="ic-ts-cell-sub" title="${__("Selling")}">${__("Sell")}: ${frappe.utils.escape_html(
+									sell
+								)}</div>
+							</td>
 							<td style="text-align:center"><span class="ic-ts-count">${samples.length}</span></td>
 							<td class="ic-ts-actions-cell">
 								<button type="button" class="btn btn-xs ic-ts-btn-qr ic-ts-print-qr" data-tr="${frappe.utils.escape_html(
@@ -1154,6 +1188,13 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								<button type="button" class="btn btn-xs btn-default ic-ts-print-qr-direct" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" title="${__("Print 50×25 mm QR labels")}">${__("Print")}</button>
+								<button type="button" class="btn btn-xs btn-default ic-ts-edit-price" data-tr="${frappe.utils.escape_html(
+									tr.name
+								)}" data-buy="${frappe.utils.escape_html(String(tr.library_buying_price ?? ""))}" data-sell="${frappe.utils.escape_html(
+									String(tr.suggested_selling_price ?? "")
+								)}" data-currency="${frappe.utils.escape_html(
+									tr.price_currency || "INR"
+								)}" title="${__("Edit buying / selling price")}">${__("Edit Price")}</button>
 								<button type="button" class="btn btn-xs btn-default ic-ts-trf-link" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" data-trf="${frappe.utils.escape_html(tr.trf_name || "")}" data-url="${frappe.utils.escape_html(
@@ -1161,6 +1202,11 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								)}" title="${__(
 									"Generate / copy TRF customer fill link"
 								)}">${__("TRF Link")}</button>
+								<button type="button" class="btn btn-xs btn-default ic-ts-trf-edit" data-tr="${frappe.utils.escape_html(
+									tr.name
+								)}" data-trf="${frappe.utils.escape_html(tr.trf_name || "")}" data-status="${frappe.utils.escape_html(
+									tr.trf_status || ""
+								)}" title="${__("Open / edit TRF (reopen if locked)")}">${__("Edit TRF")}</button>
 								<button type="button" class="btn btn-xs btn-default ic-ts-trf-pdf" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" data-trf="${frappe.utils.escape_html(tr.trf_name || "")}" data-pdf="${frappe.utils.escape_html(
@@ -1222,7 +1268,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<th>${__("Laboratory")}</th>
 							<th style="text-align:right">${__("Buying")}</th>
 							<th style="text-align:center">${__("Samples")}</th>
-							<th style="width:280px">${__("Actions")}</th>
+							<th style="width:320px">${__("Actions")}</th>
 						</tr>
 					</thead>
 					<tbody class="ic-ts-manage-tbody">
@@ -1329,9 +1375,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					)}</button>
 					${
 						name
-							? ` <a class="btn btn-xs btn-default" href="/app/ic-test-request-form/${encodeURIComponent(
+							? ` <a class="btn btn-xs btn-primary" href="/app/ic-test-request-form/${encodeURIComponent(
 									name
-							  )}">${__("Open TRF")}</a>`
+							  )}">${__("Open TRF")}</a>
+							   <button type="button" class="btn btn-xs btn-default ic-ts-dlg-edit-trf" data-trf="${frappe.utils.escape_html(
+									name
+							  )}">${__("Edit TRF")}</button>`
 							: ""
 					}</p>`,
 					indicator: "green",
@@ -1348,6 +1397,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						} else {
 							frappe.utils.copy_to_clipboard(url);
 						}
+					});
+					$(".ic-ts-dlg-edit-trf").on("click", function () {
+						open_edit_trf($(this).data("trf"));
 					});
 				}, 50);
 				if (refresh) {
@@ -1368,6 +1420,111 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					show_link(r.message || {}, true);
 				},
 			});
+		});
+		function open_edit_trf(trf_name, tr_name, status) {
+			const go = (name) => {
+				if (!name) {
+					frappe.msgprint({
+						title: __("Edit TRF"),
+						message: __("No TRF found yet. Use TRF Link first."),
+						indicator: "orange",
+					});
+					return;
+				}
+				frappe.set_route("Form", "IC Test Request Form", name);
+			};
+			if (!trf_name && tr_name) {
+				frappe.call({
+					method: "instacertify.trf.api.create_or_get_trf",
+					args: { testing_request: tr_name, share: 0 },
+					freeze: true,
+					callback(r) {
+						go((r.message || {}).name);
+					},
+				});
+				return;
+			}
+			const locked = ["Submitted by Customer", "Under Review", "PDF Generated", "Completed"].includes(
+				String(status || "")
+			);
+			if (trf_name && locked) {
+				frappe.call({
+					method: "instacertify.trf.api.reopen_trf_for_edit",
+					args: { name: trf_name },
+					freeze: true,
+					callback() {
+						frappe.show_alert({
+							message: __("TRF reopened for edit"),
+							indicator: "green",
+						});
+						state._keep_visible = true;
+						refresh_manage();
+						go(trf_name);
+					},
+				});
+				return;
+			}
+			go(trf_name);
+		}
+		$board.find(".ic-ts-trf-edit").on("click", function (e) {
+			e.stopPropagation();
+			open_edit_trf($(this).data("trf"), $(this).data("tr"), $(this).data("status"));
+		});
+		$board.find(".ic-ts-edit-price").on("click", function (e) {
+			e.stopPropagation();
+			const tr_name = $(this).data("tr");
+			const d = new frappe.ui.Dialog({
+				title: __("Edit Price — {0}", [tr_name]),
+				fields: [
+					{
+						fieldname: "library_buying_price",
+						fieldtype: "Currency",
+						label: __("Buying Price"),
+						default: cint($(this).data("buy")) || flt($(this).data("buy")) || 0,
+						options: "price_currency",
+						reqd: 1,
+					},
+					{
+						fieldname: "suggested_selling_price",
+						fieldtype: "Currency",
+						label: __("Selling Price"),
+						default: flt($(this).data("sell")) || 0,
+						options: "price_currency",
+						reqd: 1,
+					},
+					{
+						fieldname: "price_currency",
+						fieldtype: "Link",
+						options: "Currency",
+						label: __("Currency"),
+						default: $(this).data("currency") || "INR",
+						reqd: 1,
+					},
+				],
+				primary_action_label: __("Save Prices"),
+				primary_action(values) {
+					frappe.call({
+						method: "instacertify.testing.events.update_testing_request_prices",
+						args: {
+							testing_request: tr_name,
+							library_buying_price: values.library_buying_price,
+							suggested_selling_price: values.suggested_selling_price,
+							price_currency: values.price_currency,
+						},
+						freeze: true,
+						callback() {
+							d.hide();
+							frappe.show_alert({
+								message: __("Prices updated"),
+								indicator: "green",
+							});
+							state._keep_visible = true;
+							refresh_manage();
+						},
+					});
+				},
+			});
+			d.show();
 		});
 		$board.find(".ic-ts-trf-pdf").on("click", function (e) {
 			e.stopPropagation();
