@@ -445,6 +445,16 @@ def list_testing_samples_board(
 		):
 			lab_map[lab.name] = lab
 
+	customers = {t.customer for t in trs if t.customer}
+	customer_map = {}
+	if customers:
+		for c in frappe.get_all(
+			"Customer",
+			filters={"name": ["in", list(customers)]},
+			fields=["name", "customer_name"],
+		):
+			customer_map[c.name] = c.customer_name or c.name
+
 	out = []
 	for tr in trs:
 		lab = lab_map.get(tr.laboratory) or {}
@@ -452,6 +462,7 @@ def list_testing_samples_board(
 		out.append(
 			{
 				**tr,
+				"customer_name": customer_map.get(tr.customer) or tr.customer,
 				"laboratory_name": lab.get("laboratory_name") or tr.laboratory,
 				"laboratory_city": lab.get("location") or "",
 				"samples": samples,

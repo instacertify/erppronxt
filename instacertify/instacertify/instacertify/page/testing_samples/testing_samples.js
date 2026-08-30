@@ -42,7 +42,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					<div class="ic-ts-kicker">${__("Laboratory · Testing · Custody")}</div>
 					<div class="ic-ts-title">${__("Testing & Samples")}</div>
 					<div class="ic-ts-sub">${__(
-						"Generate a Testing Request from the lab library, then manage the same TR and every sample’s journey in one place."
+						"Generate a Testing Request from the lab library, then manage TRs and sample journey in clean tables."
 					)}</div>
 				</div>
 				<div class="ic-ts-tools">
@@ -62,7 +62,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					<span class="ic-ts-tab-num">2</span>
 					<span>
 						<span class="ic-ts-tab-label">${__("Manage TR & Sample Journey")}</span>
-						<span class="ic-ts-tab-hint">${__("Same requests · update sample location")}</span>
+						<span class="ic-ts-tab-hint">${__("Tabular list · update sample location")}</span>
 					</span>
 				</button>
 			</nav>
@@ -71,33 +71,42 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			<section class="ic-ts-panel" id="ic-ts-panel-generate" role="tabpanel">
 				<div class="ic-ts-gen-layout">
 					<div class="ic-ts-card ic-ts-gen-main">
-						<div class="ic-ts-card-title">${__("Generate Testing Request")}</div>
-						<div class="ic-ts-card-sub">${__(
-							"Pick a Test Name — related Applicable Standards appear in the dropdown (plus Other). Then choose a standard to see labs that offer it."
-						)}</div>
+						<div class="ic-ts-card-head">
+							<div>
+								<div class="ic-ts-card-title">${__("Generate Testing Request")}</div>
+								<div class="ic-ts-card-sub">${__(
+									"Select customer and test — related standards fill the dropdown (plus Other). Pick a standard to see labs that offer it."
+								)}</div>
+							</div>
+						</div>
 
-						<ol class="ic-ts-steps">
+						<ol class="ic-ts-steps" aria-label="${__("Progress")}">
 							<li class="ic-ts-step is-on is-current" data-step="1"><b>1</b> ${__("Customer & Test")}</li>
 							<li class="ic-ts-step" data-step="2"><b>2</b> ${__("Standard")}</li>
 							<li class="ic-ts-step" data-step="3"><b>3</b> ${__("Laboratory")}</li>
 							<li class="ic-ts-step" data-step="4"><b>4</b> ${__("Create")}</li>
 						</ol>
 
-						<div class="ic-ts-form" id="ic-ts-form"></div>
+						<div class="ic-ts-form-shell">
+							<div class="ic-ts-form" id="ic-ts-form"></div>
+						</div>
 
 						<div class="ic-ts-section" id="ic-ts-standards-wrap" hidden>
-							<div class="ic-ts-section-title">${__("2 — Applicable standards for this test")}</div>
-							<div class="ic-ts-card-sub" style="margin-top:0">${__(
-								"One test can have multiple standards across labs. Select one — or choose Other in the dropdown above for a custom standard."
-							)}</div>
+							<div class="ic-ts-section-head">
+								<div class="ic-ts-section-title">${__("Applicable standards")}</div>
+								<div class="ic-ts-card-sub" style="margin:0">${__(
+									"Multiple standards may exist across labs — select one, or choose Other above."
+								)}</div>
+							</div>
 							<div class="ic-ts-table-wrap">
-								<table class="ic-ts-table" id="ic-ts-standards-table">
+								<table class="ic-ts-table ic-ts-table-select" id="ic-ts-standards-table">
 									<thead>
 										<tr>
+											<th style="width:36px"></th>
 											<th>${__("Applicable Standard")}</th>
 											<th>${__("Labs that have this standard")}</th>
-											<th style="text-align:right">${__("Labs")}</th>
-											<th style="width:100px"></th>
+											<th style="text-align:right;width:72px">${__("Labs")}</th>
+											<th style="width:110px"></th>
 										</tr>
 									</thead>
 									<tbody></tbody>
@@ -106,14 +115,17 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						</div>
 
 						<div class="ic-ts-section" id="ic-ts-labs-wrap" hidden>
-							<div class="ic-ts-section-title">${__("3 — Suggested laboratories")}</div>
-							<div class="ic-ts-card-sub" style="margin-top:0" id="ic-ts-labs-hint">${__(
-								"Labs from the library that offer the selected test and standard — phone, address, contact, designation."
-							)}</div>
+							<div class="ic-ts-section-head">
+								<div class="ic-ts-section-title">${__("Suggested laboratories")}</div>
+								<div class="ic-ts-card-sub" style="margin:0" id="ic-ts-labs-hint">${__(
+									"Labs offering the selected test and standard."
+								)}</div>
+							</div>
 							<div class="ic-ts-table-wrap">
-								<table class="ic-ts-table" id="ic-ts-labs-table">
+								<table class="ic-ts-table ic-ts-table-select" id="ic-ts-labs-table">
 									<thead>
 										<tr>
+											<th style="width:36px"></th>
 											<th>${__("Laboratory")}</th>
 											<th>${__("Standard")}</th>
 											<th>${__("Phone")}</th>
@@ -122,7 +134,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 											<th>${__("Designation")}</th>
 											<th style="text-align:right">${__("Buying")}</th>
 											<th style="text-align:right">${__("Selling")}</th>
-											<th style="width:100px"></th>
+											<th style="width:110px"></th>
 										</tr>
 									</thead>
 									<tbody></tbody>
@@ -132,28 +144,29 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					</div>
 
 					<aside class="ic-ts-card ic-ts-summary" id="ic-ts-summary">
+						<div class="ic-ts-summary-badge">${__("Summary")}</div>
 						<div class="ic-ts-card-title">${__("Ready to create")}</div>
 						<div class="ic-ts-summary-body" id="ic-ts-summary-body">
 							<div class="text-muted">${__("Select customer, test, standard and laboratory.")}</div>
 						</div>
-						<button type="button" class="btn btn-primary btn-block" id="ic-ts-generate" disabled>
+						<button type="button" class="btn btn-primary btn-block ic-ts-btn-create" id="ic-ts-generate" disabled>
 							${__("Generate Testing Request + Samples")}
 						</button>
-						<button type="button" class="btn btn-default btn-block" id="ic-ts-goto-manage" style="margin-top:8px">
+						<button type="button" class="btn btn-default btn-block" id="ic-ts-goto-manage">
 							${__("Open Manage TR & Journey")}
 						</button>
 					</aside>
 				</div>
 			</section>
 
-			<!-- —— Manage TR + Sample Journey (same place) —— -->
+			<!-- —— Manage TR + Sample Journey —— -->
 			<section class="ic-ts-panel" id="ic-ts-panel-manage" role="tabpanel" hidden>
-				<div class="ic-ts-card">
+				<div class="ic-ts-card ic-ts-manage-card">
 					<div class="ic-ts-manage-head">
 						<div>
 							<div class="ic-ts-card-title">${__("Manage Testing Requests & Sample Journey")}</div>
 							<div class="ic-ts-card-sub" style="margin-bottom:0">${__(
-								"Each Testing Request lists its samples underneath. Advance sample location through the product journey without leaving this page."
+								"Tabular view of every Testing Request. Expand a row to update sample locations in the journey table."
 							)}</div>
 						</div>
 						<button type="button" class="btn btn-primary btn-sm" id="ic-ts-goto-generate">${__("+ Generate new")}</button>
@@ -162,11 +175,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					<div class="ic-ts-filters">
 						<div class="ic-ts-filter" id="ic-ts-filter-customer"></div>
 						<div class="ic-ts-filter" id="ic-ts-filter-project"></div>
-						<button type="button" class="btn btn-xs btn-default" id="ic-ts-clear-filters">${__("Clear")}</button>
-						<button type="button" class="btn btn-xs btn-default" id="ic-ts-refresh">${__("Refresh")}</button>
+						<button type="button" class="btn btn-sm btn-default" id="ic-ts-clear-filters">${__("Clear")}</button>
+						<button type="button" class="btn btn-sm btn-default" id="ic-ts-refresh">${__("Refresh")}</button>
 					</div>
 
 					<div class="ic-ts-legend">
+						<span class="ic-ts-legend-label">${__("Journey")}:</span>
 						${JOURNEY_STEPS.map(
 							(s) =>
 								`<span class="ic-ts-legend-item"><i class="ic-ts-jdot is-on"></i>${frappe.utils.escape_html(
@@ -481,7 +495,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		const rows = (standards || []).filter((s) => !is_other(s.value || s));
 		if (!rows.length) {
 			$tbody.html(
-				`<tr><td colspan="4" class="text-muted">${__(
+				`<tr><td colspan="5" class="text-muted ic-ts-empty-row">${__(
 					"No library standards for this test — pick Other in Applicable Standard, or labs will match by test name alone."
 				)}</td></tr>`
 			);
@@ -494,8 +508,11 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					const labs = s.lab_names || (s.labs || []).map((l) => l.laboratory_name || l.name).join(", ");
 					const active = state.applicable_standard === label ? "is-selected" : "";
 					return `<tr class="${active}" data-idx="${idx}">
+						<td class="ic-ts-radio-cell">
+							<span class="ic-ts-radio ${active ? "is-on" : ""}" aria-hidden="true"></span>
+						</td>
 						<td><b>${frappe.utils.escape_html(label)}</b></td>
-						<td style="max-width:280px">${frappe.utils.escape_html(labs || "—")}</td>
+						<td class="ic-ts-labs-cell">${frappe.utils.escape_html(labs || "—")}</td>
 						<td style="text-align:right">${cint(s.lab_count) || (s.labs || []).length || "—"}</td>
 						<td style="text-align:right">
 							<button type="button" class="btn btn-xs ${
@@ -566,7 +583,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		$wrap.prop("hidden", false);
 		if (!offers.length) {
 			$tbody.html(
-				`<tr><td colspan="9" class="text-muted">${__(
+				`<tr><td colspan="10" class="text-muted ic-ts-empty-row">${__(
 					"No Active labs for this test/standard. Add scope & pricing on Laboratories, or pick Other and enter details manually later."
 				)}</td></tr>`
 			);
@@ -582,17 +599,20 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							? "is-selected"
 							: "";
 					return `<tr class="${selected}" data-idx="${idx}">
+						<td class="ic-ts-radio-cell">
+							<span class="ic-ts-radio ${selected ? "is-on" : ""}" aria-hidden="true"></span>
+						</td>
 						<td>
 							<b>${frappe.utils.escape_html(o.laboratory_name || "")}</b>
-							<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(o.test_name || "")}</div>
+							<div class="ic-ts-cell-sub">${frappe.utils.escape_html(o.test_name || "")}</div>
 						</td>
 						<td>${frappe.utils.escape_html(o.applicable_standard || "—")}</td>
 						<td>${frappe.utils.escape_html(o.phone || "—")}</td>
-						<td style="max-width:200px">${frappe.utils.escape_html(o.address || o.location || "—")}</td>
+						<td class="ic-ts-addr-cell">${frappe.utils.escape_html(o.address || o.location || "—")}</td>
 						<td>${frappe.utils.escape_html(o.contact_person || "—")}</td>
 						<td>${frappe.utils.escape_html(o.contact_designation || "—")}</td>
-						<td style="text-align:right;font-weight:700;color:#EC6820">${frappe.utils.escape_html(buy)}</td>
-						<td style="text-align:right">${frappe.utils.escape_html(sell)}</td>
+						<td class="ic-ts-money ic-ts-money-buy">${frappe.utils.escape_html(buy)}</td>
+						<td class="ic-ts-money">${frappe.utils.escape_html(sell)}</td>
 						<td style="text-align:right">
 							<button type="button" class="btn btn-xs ${
 								selected ? "btn-primary" : "btn-default"
@@ -690,20 +710,32 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		});
 	}
 
-	function journey_track(loc) {
+	function journey_mini(loc) {
 		const idx = JOURNEY_STEPS.indexOf(loc);
-		return `<div class="ic-ts-track" aria-label="${frappe.utils.escape_html(loc || "")}">
+		return `<div class="ic-ts-track-mini" title="${frappe.utils.escape_html(loc || "")}">
 			${JOURNEY_STEPS.map((step, i) => {
 				const on = idx >= 0 && i <= idx;
 				const cur = i === idx;
-				return `<div class="ic-ts-track-step ${on ? "is-on" : ""} ${cur ? "is-current" : ""}" title="${frappe.utils.escape_html(
+				return `<span class="ic-ts-track-mini-dot ${on ? "is-on" : ""} ${cur ? "is-current" : ""}" title="${frappe.utils.escape_html(
 					step
-				)}">
-					<span class="ic-ts-track-dot"></span>
-					<span class="ic-ts-track-label">${frappe.utils.escape_html(LOC_SHORT[step] || step)}</span>
-				</div>`;
+				)}"></span>`;
 			}).join("")}
 		</div>`;
+	}
+
+	function location_select(sample, loc) {
+		const opts = JOURNEY_STEPS.map(
+			(l) =>
+				`<option value="${frappe.utils.escape_html(l)}" ${l === loc ? "selected" : ""}>${frappe.utils.escape_html(
+					LOC_SHORT[l] || l
+				)}</option>`
+		).join("");
+		return `<select class="form-control input-sm ic-ts-loc-select" data-sample="${frappe.utils.escape_html(
+			sample.name
+		)}" data-current="${frappe.utils.escape_html(loc || "")}">
+			${opts}
+			<option value="Discarded" ${loc === "Discarded" ? "selected" : ""}>${__("Discarded")}</option>
+		</select>`;
 	}
 
 	function render_manage(rows) {
@@ -711,7 +743,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		if (!rows.length) {
 			$board.html(`
 				<div class="ic-ts-empty">
-					<div style="font-weight:650;margin-bottom:6px">${__("No Testing Requests yet")}</div>
+					<div class="ic-ts-empty-title">${__("No Testing Requests yet")}</div>
 					<div>${__("Use Generate Testing Request to create the first one from the lab library.")}</div>
 					<button type="button" class="btn btn-primary btn-sm" style="margin-top:12px" id="ic-ts-empty-gen">${__(
 						"Generate Testing Request"
@@ -722,115 +754,170 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			return;
 		}
 
-		$board.html(
-			rows
-				.map((tr) => {
-					const open = state.expanded[tr.name] !== false; // default open
-					const samples = tr.samples || [];
-					const sample_rows = samples
-						.map((s) => {
-							const loc = s.sample_location || s.status || "With Customer";
-							const color = custody_color(loc);
-							const moves = next_locations(loc);
-							const all_btns = JOURNEY_STEPS.map(
-								(l) =>
-									`<button type="button" class="btn btn-xs ${
-										loc === l ? "btn-primary" : moves.includes(l) ? "btn-default" : "btn-default"
-									} ic-ts-loc" data-sample="${frappe.utils.escape_html(s.name)}" data-loc="${frappe.utils.escape_html(
-										l
-									)}" ${loc === l ? "disabled" : ""}>${frappe.utils.escape_html(
-										LOC_SHORT[l] || l
-									)}</button>`
-							).join("");
-							return `<div class="ic-ts-sample">
-								<div class="ic-ts-sample-top">
-									<div>
-										<a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}"><b>${frappe.utils.escape_html(
-											s.tracking_number || s.name
-										)}</b></a>
-										<div class="text-muted" style="font-size:12px;margin-top:2px">${frappe.utils.escape_html(
-											s.sample_description || ""
-										)}</div>
-									</div>
-									<span class="ic-ts-pill" style="background:${color}22;color:${color}">${frappe.utils.escape_html(
-										loc
-									)}</span>
+		const body = rows
+			.map((tr) => {
+				const open = !!state.expanded[tr.name];
+				const samples = tr.samples || [];
+				const buy = tr.library_buying_price ? format_currency(tr.library_buying_price) : "—";
+				const focus = state.focus_tr === tr.name ? "ic-ts-flash" : "";
+
+				const sample_table = !samples.length
+					? `<div class="ic-ts-nested-empty text-muted">${__("No samples linked yet.")}</div>`
+					: `<div class="ic-ts-table-wrap ic-ts-nested-wrap">
+						<table class="ic-ts-table ic-ts-samples-table">
+							<thead>
+								<tr>
+									<th>${__("Tracking #")}</th>
+									<th>${__("Description")}</th>
+									<th>${__("Location")}</th>
+									<th>${__("Journey")}</th>
+									<th style="min-width:140px">${__("Move to")}</th>
+									<th style="width:72px"></th>
+								</tr>
+							</thead>
+							<tbody>
+								${samples
+									.map((s) => {
+										const loc = s.sample_location || s.status || "With Customer";
+										const color = custody_color(loc);
+										return `<tr>
+											<td>
+												<a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}"><b>${frappe.utils.escape_html(
+													s.tracking_number || s.name
+												)}</b></a>
+											</td>
+											<td class="ic-ts-desc-cell">${frappe.utils.escape_html(s.sample_description || "—")}</td>
+											<td><span class="ic-ts-pill" style="background:${color}22;color:${color}">${frappe.utils.escape_html(
+												loc
+											)}</span></td>
+											<td>${journey_mini(loc)}</td>
+											<td>${location_select(s, loc)}</td>
+											<td>
+												<button type="button" class="btn btn-xs btn-default ic-ts-loc-apply" data-sample="${frappe.utils.escape_html(
+													s.name
+												)}">${__("Update")}</button>
+											</td>
+										</tr>`;
+									})
+									.join("")}
+							</tbody>
+						</table>
+					</div>`;
+
+				return `
+					<tbody class="ic-ts-tr-group ${focus}" data-tr="${frappe.utils.escape_html(tr.name)}">
+						<tr class="ic-ts-tr-row ${open ? "is-open" : ""}">
+							<td class="ic-ts-expand-cell">
+								<button type="button" class="ic-ts-expand-btn" data-tr="${frappe.utils.escape_html(
+									tr.name
+								)}" aria-expanded="${open ? "true" : "false"}" title="${__(
+									"Show samples"
+								)}">${open ? "▾" : "▸"}</button>
+							</td>
+							<td>
+								<a class="ic-ts-tr-id" href="/app/ic-testing-request/${encodeURIComponent(tr.name)}">${frappe.utils.escape_html(
+									tr.name
+								)}</a>
+								<div class="ic-ts-cell-sub">${frappe.utils.escape_html(tr.title || tr.product || "")}</div>
+							</td>
+							<td><span class="ic-ts-status">${frappe.utils.escape_html(tr.status || "—")}</span></td>
+							<td>
+								${
+									tr.customer
+										? `<a href="/app/customer/${encodeURIComponent(tr.customer)}">${frappe.utils.escape_html(
+												tr.customer_name || tr.customer
+										  )}</a>`
+										: "—"
+								}
+								${
+									tr.project
+										? `<div class="ic-ts-cell-sub"><a href="/app/project/${encodeURIComponent(
+												tr.project
+										  )}">${frappe.utils.escape_html(tr.project)}</a></div>`
+										: ""
+								}
+							</td>
+							<td>
+								<b>${frappe.utils.escape_html(tr.test_name || "—")}</b>
+								<div class="ic-ts-cell-sub">${frappe.utils.escape_html(tr.applicable_standard || "—")}</div>
+							</td>
+							<td>${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}</td>
+							<td class="ic-ts-money ic-ts-money-buy">${frappe.utils.escape_html(buy)}</td>
+							<td style="text-align:center"><span class="ic-ts-count">${samples.length}</span></td>
+							<td>
+								<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
+									tr.name
+								)}">${__("Open")}</a>
+							</td>
+						</tr>
+						<tr class="ic-ts-tr-detail" ${open ? "" : "hidden"}>
+							<td colspan="9">
+								<div class="ic-ts-detail-inner">
+									<div class="ic-ts-samples-title">${__("Samples on this Testing Request")} · ${samples.length}</div>
+									${sample_table}
 								</div>
-								${journey_track(loc)}
-								<div class="ic-ts-loc-label">${__("Move sample to")}</div>
-								<div class="ic-ts-loc-btns">${all_btns}</div>
-							</div>`;
-						})
-						.join("");
+							</td>
+						</tr>
+					</tbody>`;
+			})
+			.join("");
 
-					const buy = tr.library_buying_price
-						? format_currency(tr.library_buying_price)
-						: "";
-					const focus = state.focus_tr === tr.name ? "ic-ts-flash" : "";
+		$board.html(`
+			<div class="ic-ts-table-wrap ic-ts-manage-table-wrap">
+				<table class="ic-ts-table ic-ts-manage-table">
+					<thead>
+						<tr>
+							<th style="width:40px"></th>
+							<th>${__("Testing Request")}</th>
+							<th>${__("Status")}</th>
+							<th>${__("Customer / Project")}</th>
+							<th>${__("Test / Standard")}</th>
+							<th>${__("Laboratory")}</th>
+							<th style="text-align:right">${__("Buying")}</th>
+							<th style="text-align:center">${__("Samples")}</th>
+							<th style="width:80px"></th>
+						</tr>
+					</thead>
+					${body}
+				</table>
+			</div>
+		`);
 
-					return `<article class="ic-ts-tr ${focus}" data-tr="${frappe.utils.escape_html(tr.name)}">
-						<button type="button" class="ic-ts-tr-toggle" data-tr="${frappe.utils.escape_html(tr.name)}" aria-expanded="${
-							open ? "true" : "false"
-						}">
-							<div class="ic-ts-tr-main">
-								<div>
-									<span class="ic-ts-tr-id">${frappe.utils.escape_html(tr.name)}</span>
-									<span class="ic-ts-status">${frappe.utils.escape_html(tr.status || "")}</span>
-									<div class="ic-ts-tr-title">${frappe.utils.escape_html(tr.title || tr.product || tr.test_name || "")}</div>
-									<div class="ic-ts-tr-meta">
-										${frappe.utils.escape_html(tr.test_name || "—")}
-										${tr.applicable_standard ? ` · ${frappe.utils.escape_html(tr.applicable_standard)}` : ""}
-										· ${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}
-										${buy ? ` · ${__("Buy")} ${frappe.utils.escape_html(buy)}` : ""}
-										· ${samples.length} ${__("sample(s)")}
-									</div>
-								</div>
-								<span class="ic-ts-chevron">${open ? "▾" : "▸"}</span>
-							</div>
-						</button>
-						<div class="ic-ts-tr-links">
-							<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
-								tr.name
-							)}">${__("Open TR")}</a>
-							${
-								tr.customer
-									? `<a class="btn btn-xs btn-default" href="/app/customer/${encodeURIComponent(
-											tr.customer
-									  )}">${__("Customer")}</a>`
-									: ""
-							}
-							${
-								tr.project
-									? `<a class="btn btn-xs btn-default" href="/app/project/${encodeURIComponent(
-											tr.project
-									  )}">${__("Project")}</a>`
-									: ""
-							}
-						</div>
-						<div class="ic-ts-tr-body" ${open ? "" : "hidden"}>
-							<div class="ic-ts-samples-title">${__("Samples on this Testing Request")}</div>
-							${
-								sample_rows ||
-								`<div class="text-muted">${__("No samples linked yet.")}</div>`
-							}
-						</div>
-					</article>`;
-				})
-				.join("")
-		);
-
-		$board.find(".ic-ts-tr-toggle").on("click", function () {
+		$board.find(".ic-ts-expand-btn").on("click", function () {
 			const name = $(this).data("tr");
 			state.expanded[name] = !($(this).attr("aria-expanded") === "true");
 			render_manage(state.board_rows);
 		});
-		$board.find(".ic-ts-loc").on("click", function (e) {
+		$board.find(".ic-ts-tr-row").on("click", function (e) {
+			if ($(e.target).closest("a,button,select").length) return;
+			const name = $(this).closest(".ic-ts-tr-group").data("tr");
+			state.expanded[name] = !state.expanded[name];
+			render_manage(state.board_rows);
+		});
+		$board.find(".ic-ts-loc-apply").on("click", function (e) {
 			e.stopPropagation();
-			set_location($(this).data("sample"), $(this).data("loc"));
+			const sample = $(this).data("sample");
+			const $sel = $board.find(`.ic-ts-loc-select[data-sample="${CSS.escape(sample)}"]`);
+			const loc = $sel.val();
+			const current = $sel.data("current");
+			if (!loc || loc === current) {
+				frappe.show_alert({ message: __("Location unchanged"), indicator: "blue" });
+				return;
+			}
+			set_location(sample, loc);
+		});
+		$board.find(".ic-ts-loc-select").on("change", function () {
+			// optional auto-apply on change for faster workflow
+			const sample = $(this).data("sample");
+			const loc = $(this).val();
+			const current = $(this).data("current");
+			if (loc && loc !== current) {
+				set_location(sample, loc);
+			}
 		});
 
 		if (state.focus_tr) {
-			const $card = $board.find(`.ic-ts-tr[data-tr="${CSS.escape(state.focus_tr)}"]`);
+			const $card = $board.find(`.ic-ts-tr-group[data-tr="${CSS.escape(state.focus_tr)}"]`);
 			if ($card.length) {
 				setTimeout(() => {
 					$("html, body").animate({ scrollTop: $card.offset().top - 72 }, 250);
@@ -854,7 +941,10 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				state.board_rows = r.message || [];
 				// default expand all first time
 				state.board_rows.forEach((tr) => {
-					if (state.expanded[tr.name] === undefined) state.expanded[tr.name] = true;
+					if (state.expanded[tr.name] === undefined) {
+						// Keep table compact; expand when focused after generate
+						state.expanded[tr.name] = state.focus_tr === tr.name;
+					}
 				});
 				render_manage(state.board_rows);
 			},
