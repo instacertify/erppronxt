@@ -19,13 +19,18 @@ instacertify.brand = {
  */
 instacertify.ensure_contrast_guard = function () {
 	const ID = "ic-contrast-guard-style";
-	if (document.getElementById(ID)) return;
-	const s = document.createElement("style");
-	s.id = ID;
+	let s = document.getElementById(ID);
+	if (!s) {
+		s = document.createElement("style");
+		s.id = ID;
+		(document.head || document.documentElement).appendChild(s);
+	}
 	s.textContent = `
 :root {
   --btn-primary-color: #ffffff !important;
   --text-on-primary: #ffffff;
+  --icon-stroke: #152833 !important;
+  --text-muted: #334955 !important;
   --ic-hl-bg: rgba(6, 81, 117, 0.08);
   --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
   --ic-hl-edge: rgba(236, 105, 31, 0.55);
@@ -47,9 +52,33 @@ instacertify.ensure_contrast_guard = function () {
   fill: #ffffff !important;
   stroke: #ffffff !important;
 }
-.btn-default, .btn-secondary, .btn-light, .ic-btn-ghost, .ic-list-cat-btn, .filter-button {
+.btn-default, .btn-secondary, .btn-light, .ic-btn-ghost, .ic-list-cat-btn, .filter-button,
+.btn-modal-close, .btn-modal-minimize, .btn[data-label="Cut"], .btn[aria-label="Cut"],
+.btn[title="Cut"], .btn[data-label="Cancel"], .page-icon-group .icon-btn {
   color: #152833 !important;
   -webkit-text-fill-color: #152833 !important;
+}
+svg.icon, svg.es-icon, .icon use, .es-icon use,
+.page-icon-group .icon-btn svg,
+.page-actions .btn-default svg,
+.standard-actions .btn-default svg,
+.menu-btn-group .dropdown-item svg,
+.menu-item-icon svg, .ic-action-icon svg,
+.form-sidebar svg.icon, .form-sidebar .sidebar-image-section ~ * svg,
+.btn-modal-close svg, .btn-modal-minimize svg,
+.modal-header .btn svg, .section-head .icon,
+.grid-row-check, .row-actions svg, .btn-open-row svg,
+.ql-toolbar button svg, .ql-toolbar .ql-stroke,
+.link-btn svg, .btn-search svg, .control-input .link-btn svg {
+  stroke: #152833 !important;
+  color: #152833 !important;
+  --icon-stroke: #152833 !important;
+}
+.ql-toolbar .ql-stroke { stroke: #152833 !important; }
+.ql-toolbar .ql-fill { fill: #152833 !important; }
+.ql-toolbar button, .ql-toolbar .ql-picker {
+  color: #152833 !important;
+  opacity: 1 !important;
 }
 .ic-list-cat-btn.btn-primary {
   background: #e4f1f8 !important;
@@ -104,7 +133,6 @@ mark, .highlight, .search-highlight, .frappe-list .highlight, .ql-editor mark, s
   -webkit-text-fill-color: #ffffff !important;
 }
 `;
-	(document.head || document.documentElement).appendChild(s);
 };
 
 try {
@@ -1172,6 +1200,13 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		Amend: "rotate-ccw",
 		Cancel: "x",
 		Close: "x",
+		Cut: "scissors",
+		Minimize: "minimize-2",
+		Maximize: "maximize-2",
+		Expand: "expand",
+		Collapse: "collapse",
+		"Move Forward": "chevron-right",
+		Forward: "chevron-right",
 		Delete: "trash-2",
 		Print: "printer",
 		PDF: "file-text",
@@ -1244,7 +1279,10 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		if (/email|mail/i.test(n)) return "mail";
 		if (/save/i.test(n)) return "save";
 		if (/submit/i.test(n)) return "circle-check";
-		if (/cancel|close|discard/i.test(n)) return "x";
+		if (/cancel|close|discard|cut\b/i.test(n)) return /cut/i.test(n) ? "scissors" : "x";
+		if (/minimize/i.test(n)) return "minimize-2";
+		if (/maximize|expand/i.test(n)) return "maximize-2";
+		if (/move\s*forward|forward/i.test(n)) return "chevron-right";
 		if (/delete|trash/i.test(n)) return "trash-2";
 		if (/reload|refresh/i.test(n)) return "refresh-cw";
 		if (/previous|prev\b/i.test(n)) return "chevron-left";

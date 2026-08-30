@@ -60,7 +60,8 @@ html {
   --text-on-danger: #ffffff;
   --text-primary: #065175;
   --text-on-blue: #ffffff;
-  --icon-stroke: #065175;
+  --icon-stroke: #152833;
+  --icon-stroke-muted: #334955;
   /* Uniform soft highlight brightness (same luminance family) */
   --ic-hl-bg: rgba(6, 81, 117, 0.08);
   --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
@@ -5045,4 +5046,158 @@ span.highlight,
 .btn-warning:disabled {
   color: #ffffff !important;
   opacity: 0.65;
+}
+
+/* ==========================================================================
+   Dark action icons on light backgrounds (Cut, Minimize, Next, menu icons)
+   ========================================================================== */
+
+:root,
+[data-theme="light"],
+html {
+  --icon-stroke: #152833 !important;
+  --text-muted: #334955;
+}
+
+/* Desk Lucide / es-icons — dark ink, not washed gray */
+.desk-page svg.icon,
+.desk-page svg.es-icon,
+.page-container svg.icon,
+.page-container svg.es-icon,
+.form-layout svg.icon,
+.modal svg.icon,
+.dropdown-menu svg.icon,
+.list-row-container svg.icon,
+.workspace-sidebar svg.icon,
+.navbar svg.icon,
+.navbar svg.es-icon,
+.ic-action-icon svg.icon,
+.menu-item-icon svg.icon {
+  stroke: #152833 !important;
+  color: #152833 !important;
+  --icon-stroke: #152833 !important;
+  opacity: 1 !important;
+}
+
+.desk-page svg.icon use,
+.desk-page svg.es-icon use,
+.page-container svg.icon use,
+.modal svg.icon use,
+.dropdown-menu svg.icon use,
+.ic-action-icon svg use,
+.menu-item-icon svg use {
+  stroke: #152833 !important;
+  fill: none;
+}
+
+/* Page head icon buttons: previous / next / print / menu */
+.page-icon-group .icon-btn,
+.page-icon-group button,
+.page-head .btn-default,
+.page-actions .btn-default,
+.standard-actions .btn-default,
+.menu-btn-group > .btn-default,
+.btn-modal-close,
+.btn-modal-minimize,
+.modal-header .btn,
+.btn[data-label="Cut"],
+.btn[aria-label="Cut"],
+.btn[title="Cut"],
+.btn[data-original-title="Cut"],
+button[aria-label="Cut"],
+button[title="Cut"],
+button[aria-label="Minimize"],
+button[title="Minimize"],
+.btn-modal-minimize,
+.grid-row .btn,
+.row-check,
+.btn-open-row {
+  color: #152833 !important;
+  -webkit-text-fill-color: #152833 !important;
+  opacity: 1 !important;
+}
+
+.page-icon-group .icon-btn svg,
+.page-icon-group button svg,
+.btn-modal-close svg,
+.btn-modal-minimize svg,
+.modal-header .btn svg,
+.btn[data-label="Cut"] svg,
+.btn[aria-label="Cut"] svg,
+.btn[title="Cut"] svg,
+.section-head .icon,
+.section-head .octicon,
+.collapse-indicator,
+.form-section .section-head svg,
+.grid-body .btn-open-row svg,
+.grid-row-open .close-btn svg,
+.link-btn svg,
+.btn-search svg,
+.control-input .link-btn svg,
+.form-sidebar .sidebar-menu svg,
+.form-sidebar .form-stats svg,
+.form-sidebar .sidebar-image-section ~ .sidebar-menu svg,
+.comment-box .btn svg,
+.filter-section svg,
+.sort-selector svg {
+  stroke: #152833 !important;
+  color: #152833 !important;
+  --icon-stroke: #152833 !important;
+  opacity: 1 !important;
+}
+
+/* Quill / text editor toolbar (Cut, bold, etc.) */
+.ql-toolbar.ql-snow,
+.ql-toolbar {
+  color: #152833 !important;
+}
+.ql-toolbar button,
+.ql-toolbar .ql-picker,
+.ql-toolbar .ql-picker-label {
+  color: #152833 !important;
+  opacity: 1 !important;
+}
+.ql-toolbar .ql-stroke {
+  stroke: #152833 !important;
+  stroke-width: 1.6 !important;
+}
+.ql-toolbar .ql-fill,
+.ql-toolbar .ql-stroke.ql-fill {
+  fill: #152833 !important;
+}
+.ql-toolbar button:hover,
+.ql-toolbar button.ql-active,
+.ql-toolbar .ql-picker-label:hover {
+  color: #033447 !important;
+}
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+  stroke: #033447 !important;
+}
+
+/* Cancel / Cut text buttons on light chrome */
+.page-actions .btn-default,
+.standard-actions .btn-secondary,
+.btn.btn-default.btn-sm,
+.btn.btn-default.ellipsis {
+  color: #152833 !important;
+  border-color: rgba(21, 40, 51, 0.35) !important;
+}
+.page-actions .btn-default:hover,
+.btn-modal-close:hover,
+.btn-modal-minimize:hover {
+  color: #033447 !important;
+  background: rgba(6, 81, 117, 0.08) !important;
+}
+
+/* Keep white strokes only on filled dark buttons */
+.btn-primary svg.icon,
+.btn-primary svg.es-icon,
+.btn-warning svg.icon,
+.btn-accent svg.icon,
+.btn-danger svg.icon,
+.btn-success svg.icon {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  --icon-stroke: #ffffff !important;
 }
