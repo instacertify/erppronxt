@@ -50,6 +50,23 @@ def run():
 		bool(frappe.db.exists("Workspace", "Instacertify Home")),
 	)
 	check(
+		"Workspace Sidebar Instacertify Home",
+		bool(frappe.db.exists("Workspace Sidebar", "Instacertify Home")),
+	)
+	# Frappe 16 left nav — must include core ops links (not GST-only)
+	sidebar_labels = set()
+	if frappe.db.exists("Workspace Sidebar", "Instacertify Home"):
+		sidebar_labels = {
+			(r.label or "").strip()
+			for r in frappe.get_all(
+				"Workspace Sidebar Item",
+				filters={"parent": "Instacertify Home"},
+				fields=["label"],
+			)
+		}
+	for label in ("Quotations", "Customers", "Leads", "Testing & Samples"):
+		check(f"Sidebar has {label}", label in sidebar_labels)
+	check(
 		"Custom HTML Block Home Dashboard",
 		bool(frappe.db.exists("Custom HTML Block", "Home Dashboard")),
 	)
