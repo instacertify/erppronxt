@@ -233,6 +233,8 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		expanded: {},
 		tab: "generate",
 		focus_tr: "",
+		manage_page_size: 20,
+		manage_visible: 20,
 	};
 
 	const form = new frappe.ui.FieldGroup({
@@ -813,6 +815,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					message: __("Sample → {0}", [location]),
 					indicator: "green",
 				});
+				state._keep_visible = true;
 				refresh_manage();
 			},
 		});
@@ -846,6 +849,15 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		</select>`;
 	}
 
+	function status_class(status) {
+		const s = String(status || "").toLowerCase();
+		if (s.includes("report") || s.includes("complete") || s.includes("closed")) return "is-done";
+		if (s.includes("progress") || s.includes("testing") || s.includes("lab")) return "is-progress";
+		if (s.includes("await") || s.includes("sample") || s.includes("dispatch")) return "is-wait";
+		if (s.includes("cancel") || s.includes("hold")) return "is-hold";
+		return "is-new";
+	}
+
 	function render_manage(rows) {
 		const $board = page.main.find("#ic-ts-board");
 		if (!rows.length) {
@@ -862,12 +874,28 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			return;
 		}
 
-		const body = rows
-			.map((tr) => {
+		const page_size = cint(state.manage_page_size) || 20;
+		let visible = cint(state.manage_visible) || page_size;
+		if (visible < page_size) visible = page_size;
+		// Keep focused TR in view after generate
+		if (state.focus_tr) {
+			const idx = rows.findIndex((r) => r.name === state.focus_tr);
+			if (idx >= 0 && idx + 1 > visible) {
+				visible = Math.ceil((idx + 1) / page_size) * page_size;
+				state.manage_visible = visible;
+			}
+		}
+		const total = rows.length;
+		const shown = rows.slice(0, visible);
+		const remaining = Math.max(0, total - shown.length);
+
+		const body = shown
+			.map((tr, i) => {
 				const open = !!state.expanded[tr.name];
 				const samples = tr.samples || [];
 				const buy = tr.library_buying_price ? format_currency(tr.library_buying_price) : "—";
 				const focus = state.focus_tr === tr.name ? "ic-ts-flash" : "";
+				const zebra = i % 2 === 1 ? "is-alt" : "";
 
 				const sample_table = !samples.length
 					? `<div class="ic-ts-nested-empty text-muted">${__("No samples linked yet.")}</div>`
@@ -917,7 +945,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					</div>`;
 
 				return `
-						<tr class="ic-ts-tr-row ic-ts-tr-group ${open ? "is-open" : ""} ${focus}" data-tr="${frappe.utils.escape_html(
+						<tr class="ic-ts-tr-row ic-ts-tr-group ${open ? "is-open" : ""} ${zebra} ${focus}" data-tr="${frappe.utils.escape_html(
 							tr.name
 						)}">
 							<td class="ic-ts-expand-cell">
@@ -933,7 +961,11 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								)}</a>
 								<div class="ic-ts-cell-sub">${frappe.utils.escape_html(tr.title || tr.product || "")}</div>
 							</td>
-							<td><span class="ic-ts-status">${frappe.utils.escape_html(tr.status || "—")}</span></td>
+							<td class="ic-ts-status-cell">
+								<span class="ic-ts-status ${status_class(tr.status)}">${frappe.utils.escape_html(
+									tr.status || "—"
+								)}</span>
+							</td>
 							<td>
 								${
 									tr.customer
@@ -966,7 +998,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								)}">${__("Open")}</a>
 							</td>
 						</tr>
-						<tr class="ic-ts-tr-detail" data-tr="${frappe.utils.escape_html(tr.name)}" ${open ? "" : "hidden"}>
+						<tr class="ic-ts-tr-detail ${zebra}" data-tr="${frappe.utils.escape_html(tr.name)}" ${
+					open ? "" : "hidden"
+				}>
 							<td colspan="9">
 								<div class="ic-ts-detail-inner">
 									<div class="ic-ts-samples-title">${__("Samples on this Testing Request")} · ${samples.length}</div>
@@ -976,6 +1010,28 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						</tr>`;
 			})
 			.join("");
+
+		const more_footer =
+			remaining > 0
+				? `<div class="ic-ts-show-more-bar">
+					<span class="ic-ts-show-more-meta">${__("Showing {0} of {1} Testing Requests", [
+						shown.length,
+						total,
+					])}</span>
+					<button type="button" class="btn btn-sm btn-primary" id="ic-ts-show-more">
+						${__("Show more Testing Requests")} (${remaining})
+					</button>
+				</div>`
+				: total > page_size
+					? `<div class="ic-ts-show-more-bar is-all">
+						<span class="ic-ts-show-more-meta">${__("Showing all {0} Testing Requests", [total])}</span>
+						<button type="button" class="btn btn-sm btn-default" id="ic-ts-show-less">${__(
+							"Show less"
+						)}</button>
+					</div>`
+					: `<div class="ic-ts-show-more-bar is-all">
+						<span class="ic-ts-show-more-meta">${__("Showing {0} Testing Request(s)", [total])}</span>
+					</div>`;
 
 		$board.html(`
 			<div class="ic-ts-table-wrap ic-ts-manage-table-wrap">
@@ -998,8 +1054,19 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					</tbody>
 				</table>
 			</div>
+			${more_footer}
 		`);
 
+		$board.find("#ic-ts-show-more").on("click", function () {
+			state.manage_visible = (cint(state.manage_visible) || page_size) + page_size;
+			render_manage(state.board_rows);
+		});
+		$board.find("#ic-ts-show-less").on("click", function () {
+			state.manage_visible = page_size;
+			render_manage(state.board_rows);
+			const top = $board.offset();
+			if (top) $("html, body").animate({ scrollTop: top.top - 72 }, 200);
+		});
 		$board.find(".ic-ts-expand-btn").on("click", function () {
 			const name = $(this).data("tr");
 			state.expanded[name] = !($(this).attr("aria-expanded") === "true");
@@ -1065,10 +1132,15 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			args: {
 				customer: state.filter_customer || "",
 				project: state.filter_project || "",
-				limit: 80,
+				limit: 200,
 			},
 			callback(r) {
 				state.board_rows = r.message || [];
+				// Reset page window when filters refresh (keep size if already expanded mid-session)
+				if (!state._keep_visible) {
+					state.manage_visible = cint(state.manage_page_size) || 20;
+				}
+				state._keep_visible = false;
 				// default expand all first time
 				state.board_rows.forEach((tr) => {
 					if (state.expanded[tr.name] === undefined) {
