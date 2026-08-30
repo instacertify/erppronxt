@@ -1290,6 +1290,13 @@ PROJECT_FIELDS = [
 		"label": "Testing Requirements",
 		"insert_after": "ic_deliverables",
 	},
+	{
+		"fieldname": "ic_timeline",
+		"fieldtype": "Small Text",
+		"label": "Timeline",
+		"insert_after": "ic_testing_requirements",
+		"description": "Expected / agreed timeline for this project (editable).",
+	},
 ]
 
 SALES_INVOICE_FIELDS = [

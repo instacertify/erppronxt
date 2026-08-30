@@ -3175,27 +3175,10 @@ function ic_render_customer_related(d) {
 	`;
 }
 
-// Project progress HTML
+// Project progress HTML + saved editable Progress Log
 frappe.ui.form.on("Project", {
 	refresh(frm) {
-		const stages = [
-			"Project Initiated","Customer Documents Pending","Documents Under Review","Application Submitted",
-			"Sample Awaited","Sample Received","Sample Dispatched to Laboratory","Testing in Progress",
-			"Report Awaited","Report Available","Certification in Progress","Certificate Available",
-			"Delivered to Customer","Project Completed"
-		];
-		const current = frm.doc.ic_project_stage;
-		const idx = stages.indexOf(current);
-		let html = '<div class="ic-stage-tracker">';
-		stages.forEach((s, i) => {
-			let cls = "stage";
-			if (i < idx) cls += " done";
-			if (i === idx) cls += " active";
-			html += `<span class="${cls}">${s}</span>`;
-		});
-		html += "</div>";
-		html += `<div class="ic-progress" style="margin-top:12px;"><span style="width:${frm.doc.ic_progress_percentage||0}%"></span></div>`;
-		frm.set_df_property("ic_progress_html", "options", html);
+		instacertify.render_project_progress_tracker(frm);
 
 		// Optional Quotation map — filter to this customer's quotes
 		frm.set_query("ic_quotation", () => {
@@ -3237,8 +3220,11 @@ frappe.ui.form.on("Project", {
 			instacertify.render_project_testing_panel(frm);
 		}
 
-		frm.add_custom_button(__("Add Project Update"), () => {
-			frappe.new_doc("IC Project Update", { project: frm.doc.name, progress_percentage: frm.doc.ic_progress_percentage, project_stage: frm.doc.ic_project_stage });
+		frm.add_custom_button(__("Add Progress Log Entry"), () => {
+			instacertify.open_progress_log_dialog(frm);
+		}, __("Actions"));
+		frm.add_custom_button(__("Open Progress Log List"), () => {
+			frappe.set_route("List", "IC Project Update", { project: frm.doc.name });
 		}, __("Actions"));
 		frm.add_custom_button(__("Generate / Share Document List"), () => {
 			instacertify.open_project_document_share_dialog(frm);
@@ -5453,6 +5439,260 @@ frappe.ui.form.on("Opportunity", {
 		});
 	},
 });
+
+// --- Project Progress Tracker (saved editable log) ---
+instacertify.PROJECT_STAGES = [
+	"Project Initiated",
+	"Customer Documents Pending",
+	"Documents Under Review",
+	"Application Submitted",
+	"Sample Awaited",
+	"Sample Received",
+	"Sample Dispatched to Laboratory",
+	"Testing in Progress",
+	"Report Awaited",
+	"Report Available",
+	"Certification in Progress",
+	"Certificate Available",
+	"Delivered to Customer",
+	"Project Completed",
+];
+
+instacertify.render_project_progress_tracker = function (frm) {
+	if (!frm.fields_dict.ic_progress_html) return;
+
+	const stages = instacertify.PROJECT_STAGES;
+	const current = frm.doc.ic_project_stage;
+	const idx = stages.indexOf(current);
+	let stages_html = '<div class="ic-stage-tracker">';
+	stages.forEach((s, i) => {
+		let cls = "stage";
+		if (i < idx) cls += " done";
+		if (i === idx) cls += " active";
+		stages_html += `<span class="${cls}">${frappe.utils.escape_html(s)}</span>`;
+	});
+	stages_html += "</div>";
+	stages_html += `<div class="ic-progress" style="margin-top:12px;"><span style="width:${
+		frm.doc.ic_progress_percentage || 0
+	}%"></span></div>`;
+	stages_html += `<div class="text-muted" style="font-size:12px;margin-top:4px;">${__(
+		"Progress"
+	)}: <b>${frappe.utils.escape_html(String(frm.doc.ic_progress_percentage || 0))}%</b>`;
+	if (frm.doc.ic_pending_action) {
+		stages_html += ` · ${__("Pending")}: ${frappe.utils.escape_html(frm.doc.ic_pending_action)}`;
+	}
+	stages_html += "</div>";
+
+	const log_shell = frm.is_new()
+		? `<div class="ic-progress-log"><div class="text-muted">${__(
+				"Save the project to start the Progress Log."
+		  )}</div></div>`
+		: `<div class="ic-progress-log" id="ic-progress-log-${frappe.utils.escape_html(frm.doc.name)}">
+			<div class="ic-progress-log-head">
+				<div>
+					<strong>${__("Progress Log")}</strong>
+					<span class="text-muted"> · ${__("Saved history — add or edit entries anytime")}</span>
+				</div>
+				<button type="button" class="btn btn-xs btn-primary ic-progress-add">${__("Add entry")}</button>
+			</div>
+			<div class="ic-progress-log-body"><div class="text-muted">${__("Loading…")}</div></div>
+		</div>`;
+
+	frm.set_df_property("ic_progress_html", "options", stages_html + log_shell);
+
+	if (frm.is_new()) return;
+
+	const $host = frm.fields_dict.ic_progress_html.$wrapper;
+	$host.find(".ic-progress-add").off("click").on("click", () => {
+		instacertify.open_progress_log_dialog(frm);
+	});
+	instacertify.load_project_progress_log(frm);
+};
+
+instacertify.load_project_progress_log = function (frm) {
+	const $body = $(`#ic-progress-log-${frm.doc.name} .ic-progress-log-body`);
+	if (!$body.length) return;
+	frappe.call({
+		method: "instacertify.project.progress.get_progress_log",
+		args: { project: frm.doc.name, limit: 80 },
+		callback(r) {
+			const entries = (r.message && r.message.entries) || [];
+			if (!entries.length) {
+				$body.html(
+					`<div class="ic-progress-log-empty text-muted">${__(
+						"No progress log yet. Click Add entry to record stage notes, blockers, or milestones."
+					)}</div>`
+				);
+				return;
+			}
+			$body.html(
+				entries
+					.map((e) => {
+						const pct =
+							e.progress_percentage || e.progress_percentage === 0
+								? `${frappe.utils.escape_html(String(e.progress_percentage))}%`
+								: "";
+						const stage = e.project_stage
+							? `<span class="ic-progress-pill">${frappe.utils.escape_html(e.project_stage)}</span>`
+							: "";
+						const when = e.update_date
+							? frappe.datetime.str_to_user(e.update_date)
+							: "";
+						const plain = frappe.utils.escape_html((e.plain || "").slice(0, 280));
+						const pending = e.pending_action
+							? `<div class="ic-progress-pending">${__("Pending")}: ${frappe.utils.escape_html(
+									e.pending_action
+							  )}</div>`
+							: "";
+						const attach = e.attachment
+							? ` <a href="${frappe.utils.escape_html(
+									e.attachment
+							  )}" target="_blank" rel="noopener">${__("Attachment")}</a>`
+							: "";
+						return `<div class="ic-progress-entry" data-name="${frappe.utils.escape_html(e.name)}">
+							<div class="ic-progress-entry-top">
+								<div class="ic-progress-entry-title">${frappe.utils.escape_html(e.subject || e.name)}</div>
+								<div class="ic-progress-entry-actions">
+									<button type="button" class="btn btn-xs btn-default ic-progress-edit">${__("Edit")}</button>
+									<button type="button" class="btn btn-xs btn-default ic-progress-open">${__("Open")}</button>
+								</div>
+							</div>
+							<div class="ic-progress-entry-meta">
+								${frappe.utils.escape_html(when)}
+								${e.updated_by_name ? ` · ${frappe.utils.escape_html(e.updated_by_name)}` : ""}
+								${pct ? ` · ${pct}` : ""}
+								${stage}
+							</div>
+							${plain ? `<div class="ic-progress-entry-body">${plain}${attach}</div>` : attach ? `<div>${attach}</div>` : ""}
+							${pending}
+						</div>`;
+					})
+					.join("")
+			);
+			$body.find(".ic-progress-edit").on("click", function () {
+				const name = $(this).closest(".ic-progress-entry").data("name");
+				const entry = entries.find((x) => x.name === name);
+				instacertify.open_progress_log_dialog(frm, entry);
+			});
+			$body.find(".ic-progress-open").on("click", function () {
+				const name = $(this).closest(".ic-progress-entry").data("name");
+				frappe.set_route("Form", "IC Project Update", name);
+			});
+		},
+	});
+};
+
+instacertify.open_progress_log_dialog = function (frm, entry) {
+	if (frm.is_new()) {
+		frappe.msgprint(__("Save the project first."));
+		return;
+	}
+	entry = entry || {};
+	const is_edit = !!entry.name;
+	const d = new frappe.ui.Dialog({
+		title: is_edit ? __("Edit Progress Log Entry") : __("Add Progress Log Entry"),
+		size: "large",
+		fields: [
+			{
+				fieldname: "subject",
+				fieldtype: "Data",
+				label: __("Subject"),
+				reqd: 1,
+				default: entry.subject || "",
+			},
+			{
+				fieldname: "update_date",
+				fieldtype: "Datetime",
+				label: __("Update Date"),
+				default: entry.update_date || frappe.datetime.now_datetime(),
+			},
+			{ fieldtype: "Column Break" },
+			{
+				fieldname: "project_stage",
+				fieldtype: "Select",
+				label: __("Project Stage"),
+				options: ["", ...instacertify.PROJECT_STAGES].join("\n"),
+				default: entry.project_stage || frm.doc.ic_project_stage || "",
+			},
+			{
+				fieldname: "progress_percentage",
+				fieldtype: "Percent",
+				label: __("Progress %"),
+				default:
+					entry.progress_percentage != null && entry.progress_percentage !== ""
+						? entry.progress_percentage
+						: frm.doc.ic_progress_percentage || 0,
+			},
+			{
+				fieldname: "pending_action",
+				fieldtype: "Data",
+				label: __("Pending Action"),
+				default: entry.pending_action || frm.doc.ic_pending_action || "",
+			},
+			{ fieldtype: "Section Break" },
+			{
+				fieldname: "remarks",
+				fieldtype: "Text Editor",
+				label: __("Notes / Narration"),
+				default: entry.remarks || "",
+			},
+			{
+				fieldname: "attachment",
+				fieldtype: "Attach",
+				label: __("Attachment"),
+				default: entry.attachment || "",
+			},
+			{
+				fieldname: "apply_to_project",
+				fieldtype: "Check",
+				label: __("Apply stage / progress / pending action to Project"),
+				default: 1,
+			},
+		],
+		primary_action_label: __("Save to Progress Log"),
+		primary_action(values) {
+			frappe.call({
+				method: "instacertify.project.progress.save_progress_entry",
+				args: {
+					project: frm.doc.name,
+					name: entry.name || null,
+					subject: values.subject,
+					remarks: values.remarks,
+					project_stage: values.project_stage,
+					progress_percentage: values.progress_percentage,
+					pending_action: values.pending_action,
+					update_date: values.update_date,
+					attachment: values.attachment,
+					apply_to_project: values.apply_to_project ? 1 : 0,
+				},
+				freeze: true,
+				freeze_message: __("Saving progress log…"),
+				callback() {
+					d.hide();
+					frappe.show_alert({ message: __("Progress log saved"), indicator: "green" });
+					frm.reload_doc();
+				},
+			});
+		},
+	});
+	if (is_edit && frappe.model.can_delete("IC Project Update")) {
+		d.set_secondary_action(__("Delete"), () => {
+			frappe.confirm(__("Delete this progress log entry?"), () => {
+				frappe.call({
+					method: "instacertify.project.progress.delete_progress_entry",
+					args: { name: entry.name },
+					freeze: true,
+					callback() {
+						d.hide();
+						frappe.show_alert({ message: __("Entry deleted"), indicator: "orange" });
+						instacertify.load_project_progress_log(frm);
+					},
+				});
+			});
+		});
+	}
+	d.show();
+};
 
 // --- Project team chat / collaboration ---
 instacertify.render_project_chat_panel = function (frm) {

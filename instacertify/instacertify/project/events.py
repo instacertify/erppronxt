@@ -179,11 +179,11 @@ def _sync_amc_dates(doc):
 
 
 def on_update_project(doc, method=None):
-	if doc.has_value_changed("ic_project_stage"):
+	if doc.has_value_changed("ic_project_stage") and not getattr(doc.flags, "ic_skip_auto_update", False):
 		_notify_stage_change(doc)
-		# Auto create project update timeline entry
+		# Auto create project update timeline entry (saved Progress Tracker log)
 		try:
-			frappe.get_doc(
+			entry = frappe.get_doc(
 				{
 					"doctype": "IC Project Update",
 					"project": doc.name,
@@ -194,7 +194,9 @@ def on_update_project(doc, method=None):
 					"remarks": f"Project stage updated to <b>{doc.ic_project_stage}</b>",
 					"updated_by": frappe.session.user,
 				}
-			).insert(ignore_permissions=True)
+			)
+			entry.flags.ic_skip_project_sync = True
+			entry.insert(ignore_permissions=True)
 		except Exception:
 			pass
 

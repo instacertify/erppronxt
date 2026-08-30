@@ -64,6 +64,10 @@ doc_events = {
 		"validate": "instacertify.project.events.validate_project",
 		"on_update": "instacertify.project.events.on_update_project",
 	},
+	"IC Project Update": {
+		"on_update": "instacertify.project.progress.sync_project_from_update",
+		"after_insert": "instacertify.project.progress.sync_project_from_update",
+	},
 	"Lead": {
 		"validate": "instacertify.crm.events.validate_lead",
 		"before_validate": "instacertify.crm.events.before_validate_lead",
