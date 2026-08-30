@@ -17,14 +17,23 @@ SKIP_BACKUP="${SKIP_BACKUP:-0}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 RESTART="${RESTART:-1}"
 
-# Resolve bench root (script lives in apps/instacertify/scripts/)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BENCH_ROOT="$(cd "${APP_DIR}/../.." && pwd)"
+# Resolve bench root (script lives in apps/instacertify/scripts/).
+# Use pwd -L so a symlink apps/instacertify → ~/src/erppronxt/instacertify
+# still yields BENCH_ROOT=~/frappe-bench (not ~/src/erppronxt).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -L)"
+APP_DIR="$(cd "${SCRIPT_DIR}/.." && pwd -L)"
+BENCH_ROOT="$(cd "${APP_DIR}/../.." && pwd -L)"
 
 if [[ ! -d "${BENCH_ROOT}/sites" ]]; then
-	echo "ERROR: Could not find bench root (expected sites/ under ${BENCH_ROOT})"
-	exit 1
+	if [[ -d "${PWD}/sites" ]]; then
+		BENCH_ROOT="${PWD}"
+	elif [[ -d "${HOME}/frappe-bench/sites" ]]; then
+		BENCH_ROOT="${HOME}/frappe-bench"
+	else
+		echo "ERROR: Could not find bench root (expected sites/ under ${BENCH_ROOT})"
+		echo "Run from ~/frappe-bench or: SITE=... bash ~/frappe-bench/apps/instacertify/scripts/hostinger_update.sh"
+		exit 1
+	fi
 fi
 
 cd "${BENCH_ROOT}"
@@ -44,19 +53,29 @@ echo "==> Bench: ${BENCH_ROOT}"
 echo "==> Site:  ${SITE}"
 echo "==> Branch: ${BRANCH}"
 
-# App folder may be instacertify or erppronxt
+# Frappe app path (may be a symlink to ~/src/erppronxt/instacertify)
 APP_PATH=""
-for cand in apps/instacertify apps/erppronxt; do
+for cand in apps/instacertify apps/erppronxt/instacertify; do
 	if [[ -f "${cand}/instacertify/hooks.py" ]]; then
-		APP_PATH="${cand}"
+		APP_PATH="$(cd "${cand}" && pwd -P)"
 		break
 	fi
 done
 if [[ -z "${APP_PATH}" ]]; then
 	echo "ERROR: instacertify app not found under apps/"
+	echo "Expected apps/instacertify/instacertify/hooks.py (symlink to ~/src/erppronxt/instacertify is OK)."
 	exit 1
 fi
 echo "==> App:   ${APP_PATH}"
+
+# Git root is the erppronxt clone (parent of nested instacertify/), not apps/ alone
+GIT_ROOT="$(git -C "${APP_PATH}" rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -z "${GIT_ROOT}" ]]; then
+	echo "ERROR: ${APP_PATH} is not inside a git checkout."
+	echo "Re-install with: clone ~/src/erppronxt and ln -sfn ~/src/erppronxt/instacertify apps/instacertify"
+	exit 1
+fi
+echo "==> Git:   ${GIT_ROOT}"
 
 if [[ "${SKIP_BACKUP}" != "1" ]]; then
 	echo "==> Backup (with files)"
@@ -64,7 +83,7 @@ if [[ "${SKIP_BACKUP}" != "1" ]]; then
 fi
 
 echo "==> git fetch / checkout / pull ${BRANCH}"
-cd "${APP_PATH}"
+cd "${GIT_ROOT}"
 git fetch origin
 git checkout "${BRANCH}"
 git pull origin "${BRANCH}"
