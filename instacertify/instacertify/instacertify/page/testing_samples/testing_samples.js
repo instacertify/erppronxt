@@ -917,8 +917,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					</div>`;
 
 				return `
-					<tbody class="ic-ts-tr-group ${focus}" data-tr="${frappe.utils.escape_html(tr.name)}">
-						<tr class="ic-ts-tr-row ${open ? "is-open" : ""}">
+						<tr class="ic-ts-tr-row ic-ts-tr-group ${open ? "is-open" : ""} ${focus}" data-tr="${frappe.utils.escape_html(
+							tr.name
+						)}">
 							<td class="ic-ts-expand-cell">
 								<button type="button" class="ic-ts-expand-btn" data-tr="${frappe.utils.escape_html(
 									tr.name
@@ -965,15 +966,14 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								)}">${__("Open")}</a>
 							</td>
 						</tr>
-						<tr class="ic-ts-tr-detail" ${open ? "" : "hidden"}>
+						<tr class="ic-ts-tr-detail" data-tr="${frappe.utils.escape_html(tr.name)}" ${open ? "" : "hidden"}>
 							<td colspan="9">
 								<div class="ic-ts-detail-inner">
 									<div class="ic-ts-samples-title">${__("Samples on this Testing Request")} · ${samples.length}</div>
 									${sample_table}
 								</div>
 							</td>
-						</tr>
-					</tbody>`;
+						</tr>`;
 			})
 			.join("");
 
@@ -993,7 +993,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<th style="width:118px">${__("Actions")}</th>
 						</tr>
 					</thead>
-					${body}
+					<tbody class="ic-ts-manage-tbody">
+						${body}
+					</tbody>
 				</table>
 			</div>
 		`);
@@ -1005,7 +1007,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		});
 		$board.find(".ic-ts-tr-row").on("click", function (e) {
 			if ($(e.target).closest("a,button,select").length) return;
-			const name = $(this).closest(".ic-ts-tr-group").data("tr");
+			const name = $(this).data("tr");
 			state.expanded[name] = !state.expanded[name];
 			render_manage(state.board_rows);
 		});
