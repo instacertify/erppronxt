@@ -201,6 +201,7 @@ def _spot_libraries(ok, warn, fail):
 			"create_quote_format_from_upload",
 			"create_laboratory_from_upload",
 			"import_laboratory_scopes_csv",
+			"import_lab_scopes_bulk",
 		):
 			(ok if hasattr(lu, fn) else fail)(f"library_upload.{fn}")
 		# Smoke: template downloads return a file URL

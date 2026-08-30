@@ -676,57 +676,161 @@ instacertify.open_laboratory_upload = function (opts) {
 	instacertify.add_file_manager_hint(d, "scope_file");
 };
 
+/** Inline bar above Scope of Accreditation table — bulk Excel/CSV upload. */
+instacertify.render_lab_scope_bulk_bar = function (frm) {
+	if (!frm || !frm.fields_dict || !frm.fields_dict.test_scopes) return;
+	const $wrap = frm.fields_dict.test_scopes.$wrapper;
+	$wrap.find(".ic-lab-bulk-bar").remove();
+	const $bar = $(`
+		<div class="ic-lab-bulk-bar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px;padding:10px 12px;border:1.5px solid #8eafc0;border-radius:10px;background:#f5fafc;">
+			<div style="flex:1;min-width:200px">
+				<div style="font-weight:650;color:#065175;font-size:13px">${__("Bulk upload scope")}</div>
+				<div class="text-muted" style="font-size:12px;line-height:1.35">${__(
+					"Add many tests at once from an Excel sheet or CSV file (prices included)."
+				)}</div>
+			</div>
+			<button type="button" class="btn btn-sm btn-default ic-lab-dl-xlsx">${__("Excel Template")}</button>
+			<button type="button" class="btn btn-sm btn-default ic-lab-dl-csv">${__("CSV Template")}</button>
+			<button type="button" class="btn btn-sm btn-primary ic-lab-bulk-upload">${__("Upload Excel / CSV")}</button>
+		</div>
+	`);
+	$wrap.prepend($bar);
+	$bar.find(".ic-lab-bulk-upload").on("click", () => {
+		if (frm.is_new()) {
+			frappe.msgprint(__("Save the Laboratory first, then bulk-upload scope rows."));
+			return;
+		}
+		instacertify.open_lab_scope_bulk_upload({
+			laboratory: frm.doc.name,
+			laboratory_name: frm.doc.laboratory_name,
+			on_done() {
+				frm.reload_doc();
+			},
+		});
+	});
+	const dl = (fmt) => {
+		frappe.call({
+			method: "instacertify.setup.library_upload.download_lab_scope_template",
+			args: { fmt },
+			callback(r) {
+				const m = r.message || {};
+				if (m.file_url) window.open(m.file_url, "_blank");
+			},
+		});
+	};
+	$bar.find(".ic-lab-dl-xlsx").on("click", () => dl("xlsx"));
+	$bar.find(".ic-lab-dl-csv").on("click", () => dl("csv"));
+};
+
 instacertify.open_lab_scope_csv_import = function (frm) {
+	instacertify.open_lab_scope_bulk_upload({
+		laboratory: frm && frm.doc ? frm.doc.name : "",
+		laboratory_name: frm && frm.doc ? frm.doc.laboratory_name : "",
+		on_done() {
+			if (frm && frm.reload_doc) frm.reload_doc();
+		},
+	});
+};
+
+/** Bulk upload lab scope rows from Excel/CSV — one lab or multi-lab via laboratory_name column. */
+instacertify.open_lab_scope_bulk_upload = function (opts) {
+	opts = opts || {};
+	const fixed_lab = (opts.laboratory || "").trim();
 	const d = new frappe.ui.Dialog({
-		title: __("Import Laboratory Scope (CSV / Excel)"),
+		title: __("Bulk Upload Lab Scope (Excel / CSV)"),
 		fields: [
 			{
 				fieldname: "help",
 				fieldtype: "HTML",
-				options: `<p class="text-muted">${__(
-					"Headers: test_name, applicable_standard, category, selling_price, purchase_price, currency, is_active. Matching test + standard updates the row."
-				)}</p>`,
+				options: `<div class="ic-lab-bulk-help" style="margin-bottom:8px">
+					<p style="margin:0 0 6px">${__(
+						"Upload many accredited tests at once. Download the Excel or CSV template, fill rows, then import."
+					)}</p>
+					<p class="text-muted" style="margin:0;font-size:12px">${__(
+						"Columns: laboratory_name (optional if one lab selected), test_name, applicable_standard, category, selling_price, purchase_price, currency, is_active. Matching test + standard updates the row."
+					)}</p>
+				</div>`,
+			},
+			{
+				fieldname: "laboratory",
+				fieldtype: "Link",
+				label: __("Laboratory (optional)"),
+				options: "IC Laboratory",
+				default: fixed_lab || "",
+				description: fixed_lab
+					? __("All rows will import into this laboratory.")
+					: __(
+							"Leave empty to split rows by laboratory_name column (multi-lab bulk). Or pick one lab to force all rows into it."
+					  ),
+				read_only: fixed_lab ? 1 : 0,
+			},
+			{
+				fieldname: "create_missing_labs",
+				fieldtype: "Check",
+				label: __("Create missing laboratories from laboratory_name"),
+				default: 0,
+				depends_on: `eval:!doc.laboratory`,
 			},
 			{
 				fieldname: "file",
 				fieldtype: "Attach",
-				label: __("CSV or Excel File"),
+				label: __("Excel or CSV File"),
 				reqd: 1,
-				description: __("Select from My Device or File Library (internal drive)."),
+				description: __("Select from My Device or File Library (.xlsx / .xls / .csv)."),
 				options: instacertify.attach_options,
 			},
 		],
-		primary_action_label: __("Import"),
+		primary_action_label: __("Import Scope Rows"),
 		primary_action(values) {
 			const file_url =
 				(d.get_value && d.get_value("file")) || (values && values.file) || "";
 			if (!file_url) {
-				frappe.msgprint(__("Please attach a CSV or Excel file first."));
+				frappe.msgprint(__("Please attach an Excel or CSV file first."));
 				return;
 			}
+			const laboratory =
+				fixed_lab ||
+				(d.get_value && d.get_value("laboratory")) ||
+				(values && values.laboratory) ||
+				"";
 			frappe.call({
-				method: "instacertify.setup.library_upload.import_laboratory_scopes_csv",
-				args: { laboratory: frm.doc.name, file_url },
+				method: "instacertify.setup.library_upload.import_lab_scopes_bulk",
+				args: {
+					file_url,
+					laboratory: laboratory || "",
+					create_missing_labs: cint(
+						(d.get_value && d.get_value("create_missing_labs")) ||
+							(values && values.create_missing_labs) ||
+							0
+					),
+				},
 				freeze: true,
+				freeze_message: __("Importing lab scope rows…"),
 				callback(r) {
 					d.hide();
 					const m = r.message || {};
-					frappe.show_alert({
-						message: __("Scopes: +{0} added, {1} updated", [
-							m.added || 0,
-							m.updated || 0,
-						]),
-						indicator: "green",
-					});
-					frm.reload_doc();
+					let msg = __("Scopes: +{0} added, {1} updated", [
+						m.added || 0,
+						m.updated || 0,
+					]);
+					if (m.mode === "multi") {
+						msg += " — " + __("{0} laboratories", [m.labs || 0]);
+					}
+					frappe.show_alert({ message: msg, indicator: "green" });
+					if (opts.on_done) opts.on_done(m);
+					else if (m.laboratory) {
+						frappe.set_route("Form", "IC Laboratory", m.laboratory);
+					} else if (m.results && m.results[0]) {
+						frappe.set_route("Form", "IC Laboratory", m.results[0].laboratory);
+					}
 				},
 			});
 		},
 	});
 	d.$wrapper.find(".modal-footer").prepend(
-		`<span style="margin-right:auto;display:flex;gap:6px;">
-			<button type="button" class="btn btn-default btn-sm ic-dl-scope-xlsx">${__("Excel Template")}</button>
-			<button type="button" class="btn btn-default btn-sm ic-dl-scope-csv">${__("CSV Template")}</button>
+		`<span style="margin-right:auto;display:flex;gap:6px;flex-wrap:wrap;">
+			<button type="button" class="btn btn-default btn-sm ic-dl-scope-xlsx">${__("Download Excel Template")}</button>
+			<button type="button" class="btn btn-default btn-sm ic-dl-scope-csv">${__("Download CSV Template")}</button>
 		</span>`
 	);
 	const dl = (fmt) => {
@@ -4559,11 +4663,26 @@ frappe.ui.form.on("IC Laboratory", {
 				},
 			});
 		}, __("Library"));
+		// Primary, visible bulk upload (Excel/CSV) — not buried in a submenu
+		frm.add_custom_button(__("Bulk Upload Scope (Excel/CSV)"), () => {
+			if (frm.is_new()) {
+				frappe.msgprint(__("Save the Laboratory first, then bulk-upload scope rows."));
+				return;
+			}
+			instacertify.open_lab_scope_bulk_upload({
+				laboratory: frm.doc.name,
+				laboratory_name: frm.doc.laboratory_name,
+				on_done() {
+					frm.reload_doc();
+				},
+			});
+		});
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Import Scope CSV / Excel"), () => {
 				instacertify.open_lab_scope_csv_import(frm);
 			}, __("Library"));
 		}
+		instacertify.render_lab_scope_bulk_bar(frm);
 		frm.add_custom_button(__("New Testing Quotation"), () => {
 			frappe.new_doc("Quotation", {
 				ic_quotation_type: "Testing",
@@ -5216,6 +5335,13 @@ frappe.listview_settings["IC Quotation Template"] = {
 frappe.listview_settings["IC Laboratory"] = {
 	add_fields: ["status", "location", "contact_person", "contact_designation", "phone"],
 	onload(listview) {
+		listview.page.add_inner_button(__("Bulk Upload Scope (Excel/CSV)"), () => {
+			instacertify.open_lab_scope_bulk_upload({
+				on_done() {
+					listview.refresh();
+				},
+			});
+		});
 		listview.page.add_inner_button(__("Upload Lab / Scope"), () => {
 			instacertify.open_laboratory_upload();
 		});
