@@ -4,6 +4,12 @@ frappe.ui.form.on("IC Document Checklist Template", {
 		frm.add_custom_button(__("Open Library"), () => {
 			frappe.set_route("document-collection-library");
 		});
+		frm.set_intro(
+			__(
+				"Use Format Fields (optional) to check/uncheck built-in Data Collection fields. Unchecked fields are hidden on sheets created from this template."
+			),
+			"blue"
+		);
 		if (!frm.is_new()) {
 			frm.add_custom_button(__("Use for Customer"), () => {
 				const d = new frappe.ui.Dialog({

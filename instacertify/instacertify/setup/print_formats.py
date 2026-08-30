@@ -1266,15 +1266,27 @@ DOCUMENTS_COLLECTION_HTML = """
       <tbody>
         <tr><td><b>Company Legal Name</b></td><td>{{ doc.company_legal_name or '' }}</td></tr>
         <tr><td><b>GSTIN</b></td><td>{{ doc.gstin or '' }}</td></tr>
+        {% if doc.include_company_address is none or doc.include_company_address %}
         <tr><td><b>Company Address</b></td><td>{{ doc.company_address or '' }}</td></tr>
+        {% endif %}
         <tr><td><b>Contact Person</b></td><td>{{ doc.data_contact_person or '' }}</td></tr>
         <tr><td><b>Phone</b></td><td>{{ doc.data_contact_phone or '' }}</td></tr>
         <tr><td><b>Email</b></td><td>{{ doc.data_contact_email or '' }}</td></tr>
-        <tr><td><b>Product</b></td><td>{{ doc.product_name or '' }} / {{ doc.product_model or '' }} / {{ doc.product_brand or '' }}</td></tr>
+        {% if (doc.include_product_name is none or doc.include_product_name)
+              or (doc.include_product_model is none or doc.include_product_model)
+              or (doc.include_product_brand is none or doc.include_product_brand) %}
+        <tr><td><b>Product</b></td><td>
+          {%- if doc.include_product_name is none or doc.include_product_name -%}{{ doc.product_name or '' }}{%- endif -%}
+          {%- if doc.include_product_model is none or doc.include_product_model -%}{% if doc.include_product_name is none or doc.include_product_name %} / {% endif %}{{ doc.product_model or '' }}{%- endif -%}
+          {%- if doc.include_product_brand is none or doc.include_product_brand -%}{% if (doc.include_product_name is none or doc.include_product_name) or (doc.include_product_model is none or doc.include_product_model) %} / {% endif %}{{ doc.product_brand or '' }}{%- endif -%}
+        </td></tr>
+        {% endif %}
+        {% if doc.include_data_collection_remarks is none or doc.include_data_collection_remarks %}
         <tr><td><b>Remarks</b></td><td>{{ doc.data_collection_remarks or '' }}</td></tr>
+        {% endif %}
       </tbody>
     </table>
-    {% if doc.data_fields %}
+    {% if (doc.include_data_fields is none or doc.include_data_fields) and doc.data_fields %}
     <table class="ic-table" style="margin-top:10px;">
       <thead><tr><th>#</th><th>Field</th><th>Value</th><th>Mandatory</th></tr></thead>
       <tbody>
@@ -1290,6 +1302,14 @@ DOCUMENTS_COLLECTION_HTML = """
     </table>
     {% endif %}
   </div>
+  {% if doc.include_remarks is none or doc.include_remarks %}
+  {% if doc.remarks %}
+  <div class="ic-box">
+    <h3>Notes</h3>
+    <div>{{ doc.remarks }}</div>
+  </div>
+  {% endif %}
+  {% endif %}
   <div class="ic-footer-bar">instacertify · documents collection sheet</div>
 </div>
 """

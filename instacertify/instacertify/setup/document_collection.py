@@ -5,11 +5,51 @@ from __future__ import annotations
 
 import frappe
 
+from instacertify.documents.format_fields import INCLUDE_FIELDNAMES
+
+
+def _backfill_include_flags(doctype: str):
+	"""Existing rows get include_*=1 so optional format fields stay visible after migrate."""
+	if not frappe.db.exists("DocType", doctype):
+		return
+	meta = frappe.get_meta(doctype)
+	for flag in INCLUDE_FIELDNAMES:
+		if not meta.has_field(flag):
+			continue
+		# NULL → 1 (new column). Leave intentional 0 alone after first backfill.
+		frappe.db.sql(
+			f"""
+			UPDATE `tab{doctype}`
+			SET `{flag}` = 1
+			WHERE `{flag}` IS NULL
+			"""
+		)
+
+
+def _one_time_include_flags_default():
+	"""First deploy of format-field checks: force include=1 on all existing sheets/templates."""
+	key = "ic_doc_format_fields_backfilled_v1"
+	if frappe.db.get_global(key):
+		return
+	for doctype in ("IC Document Checklist Template", "IC Document Request"):
+		if not frappe.db.exists("DocType", doctype):
+			continue
+		meta = frappe.get_meta(doctype)
+		for flag in INCLUDE_FIELDNAMES:
+			if not meta.has_field(flag):
+				continue
+			frappe.db.sql(f"UPDATE `tab{doctype}` SET `{flag}` = 1")
+	frappe.db.set_global(key, "1")
+
 
 def ensure_document_collection_templates():
 	"""Backfill remark/entry_type and seed a starter template if the library is empty."""
 	if not frappe.db.exists("DocType", "IC Document Checklist Template"):
 		return
+
+	_one_time_include_flags_default()
+	_backfill_include_flags("IC Document Checklist Template")
+	_backfill_include_flags("IC Document Request")
 
 	item_meta = frappe.get_meta("IC Document Checklist Item")
 	has_remark = item_meta.has_field("remark")
@@ -40,6 +80,14 @@ def ensure_document_collection_templates():
 				"category": "General",
 				"is_active": 1,
 				"notes": "Starter template — customise Name / Remark / Mandatory / Collect As.",
+				"include_company_address": 1,
+				"include_product_name": 1,
+				"include_product_model": 1,
+				"include_product_brand": 1,
+				"include_data_collection_remarks": 1,
+				"include_data_fields": 1,
+				"include_sample_dispatch": 0,
+				"include_remarks": 1,
 				"items": [
 					{
 						"document_name": "Company Registration / GST Certificate",

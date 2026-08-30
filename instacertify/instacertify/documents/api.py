@@ -9,6 +9,12 @@ import frappe
 from frappe import _
 from frappe.utils import now_datetime, today
 
+from instacertify.documents.format_fields import (
+	copy_format_field_flags,
+	format_field_flags,
+	is_format_field_included,
+)
+
 
 ALLOWED_UPLOAD_EXTENSIONS = {
 	".pdf",
@@ -333,11 +339,13 @@ def create_document_request_for_project(
 
 
 def _ensure_default_data_fields(doc):
-	"""Seed Data Collection Sheet rows when empty."""
+	"""Seed Data Collection Sheet rows when empty (skipped if format hides Additional Data Fields)."""
 	doc.reload()
 	if doc.get("data_fields"):
 		return
 	if not frappe.get_meta("IC Document Request").has_field("data_fields"):
+		return
+	if not is_format_field_included(doc, "include_data_fields"):
 		return
 	for label, mandatory in (
 		("Application / Scheme Name", 1),
@@ -355,13 +363,17 @@ def _ensure_default_data_fields(doc):
 
 def _apply_template_rows(doc, tmpl):
 	"""Map template rows onto request items (Upload File) and data_fields (Fill Field)."""
+	copy_format_field_flags(tmpl, doc)
 	doc.set("items", [])
+	include_data = is_format_field_included(doc, "include_data_fields")
 	if frappe.get_meta("IC Document Request").has_field("data_fields"):
 		doc.set("data_fields", [])
 	for row in tmpl.items or []:
 		remark = _row_remark(row)
 		entry = _entry_type(row)
 		if entry == "Fill Field":
+			if not include_data:
+				continue
 			if not frappe.get_meta("IC Document Request").has_field("data_fields"):
 				continue
 			doc.append(
@@ -483,6 +495,7 @@ def save_document_request_as_template(
 			"notes": f"Saved from {doc.name}",
 		}
 	)
+	copy_format_field_flags(doc, tmpl)
 	for row in doc.items or []:
 		tmpl.append(
 			"items",
@@ -494,17 +507,18 @@ def save_document_request_as_template(
 				"category": row.category or "Customer Documents",
 			},
 		)
-	for row in doc.get("data_fields") or []:
-		tmpl.append(
-			"items",
-			{
-				"document_name": row.field_label,
-				"remark": row.get("help_text") or "",
-				"is_mandatory": 1 if row.is_mandatory else 0,
-				"entry_type": "Fill Field",
-				"category": "Other",
-			},
-		)
+	if is_format_field_included(doc, "include_data_fields"):
+		for row in doc.get("data_fields") or []:
+			tmpl.append(
+				"items",
+				{
+					"document_name": row.field_label,
+					"remark": row.get("help_text") or "",
+					"is_mandatory": 1 if row.is_mandatory else 0,
+					"entry_type": "Fill Field",
+					"category": "Other",
+				},
+			)
 	if not tmpl.items:
 		frappe.throw(_("This sheet has no rows to save as a template"))
 	tmpl.insert(ignore_permissions=True)
@@ -517,9 +531,12 @@ def get_document_request_by_token(token: str):
 	if not name:
 		frappe.throw(_("Invalid document link"), frappe.PermissionError)
 	doc = frappe.get_doc("IC Document Request", name)
+	flags = format_field_flags(doc)
+	include_data = bool(flags.get("include_data_fields", 1))
 	return {
 		"title": doc.title,
 		"status": doc.status,
+		"format_fields": flags,
 		"courier_name": doc.get("courier_name"),
 		"tracking_number": doc.get("tracking_number"),
 		"dispatch_date": str(doc.get("dispatch_date") or ""),
@@ -527,14 +544,18 @@ def get_document_request_by_token(token: str):
 		"sample_dispatch_remarks": doc.get("sample_dispatch_remarks"),
 		"company_legal_name": doc.get("company_legal_name"),
 		"gstin": doc.get("gstin"),
-		"company_address": doc.get("company_address"),
+		"company_address": doc.get("company_address") if flags.get("include_company_address", 1) else None,
 		"data_contact_person": doc.get("data_contact_person"),
 		"data_contact_phone": doc.get("data_contact_phone"),
 		"data_contact_email": doc.get("data_contact_email"),
-		"product_name": doc.get("product_name"),
-		"product_model": doc.get("product_model"),
-		"product_brand": doc.get("product_brand"),
-		"data_collection_remarks": doc.get("data_collection_remarks"),
+		"product_name": doc.get("product_name") if flags.get("include_product_name", 1) else None,
+		"product_model": doc.get("product_model") if flags.get("include_product_model", 1) else None,
+		"product_brand": doc.get("product_brand") if flags.get("include_product_brand", 1) else None,
+		"data_collection_remarks": (
+			doc.get("data_collection_remarks")
+			if flags.get("include_data_collection_remarks", 1)
+			else None
+		),
 		"data_fields": [
 			{
 				"name": row.name,
@@ -545,7 +566,9 @@ def get_document_request_by_token(token: str):
 				"help_text": row.get("help_text"),
 			}
 			for row in (doc.get("data_fields") or [])
-		],
+		]
+		if include_data
+		else [],
 		"portal_notice": _(
 			"This is your Documents Collection Sheet and Data Collection Sheet. "
 			"Upload requested documents and fill the data fields. "
@@ -649,17 +672,28 @@ def save_data_collection(
 	if frappe.get_meta("IC Document Request").has_field("company_legal_name"):
 		doc.company_legal_name = company_legal_name or doc.company_legal_name
 		doc.gstin = gstin or doc.gstin
-		doc.company_address = company_address or doc.company_address
 		doc.data_contact_person = data_contact_person or doc.data_contact_person
 		doc.data_contact_phone = data_contact_phone or doc.data_contact_phone
 		doc.data_contact_email = data_contact_email or doc.data_contact_email
-		doc.product_name = product_name or doc.product_name
-		doc.product_model = product_model or doc.product_model
-		doc.product_brand = product_brand or doc.product_brand
-		if data_collection_remarks is not None:
+		if is_format_field_included(doc, "include_company_address"):
+			doc.company_address = company_address or doc.company_address
+		if is_format_field_included(doc, "include_product_name"):
+			doc.product_name = product_name or doc.product_name
+		if is_format_field_included(doc, "include_product_model"):
+			doc.product_model = product_model or doc.product_model
+		if is_format_field_included(doc, "include_product_brand"):
+			doc.product_brand = product_brand or doc.product_brand
+		if (
+			data_collection_remarks is not None
+			and is_format_field_included(doc, "include_data_collection_remarks")
+		):
 			doc.data_collection_remarks = data_collection_remarks
 
-	if data_fields is not None and frappe.get_meta("IC Document Request").has_field("data_fields"):
+	if (
+		data_fields is not None
+		and frappe.get_meta("IC Document Request").has_field("data_fields")
+		and is_format_field_included(doc, "include_data_fields")
+	):
 		if isinstance(data_fields, str):
 			try:
 				data_fields = json.loads(data_fields)
