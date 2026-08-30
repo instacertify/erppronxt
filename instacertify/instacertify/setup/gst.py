@@ -14,20 +14,38 @@ ADDRESS_LINES = ("PK 01 SECTOR 63A NOIDA", "GAUTAM BUDDHA NAGAR")
 CITY = "Noida"
 
 
+def _company_names() -> list[str]:
+	"""All Company records that should get Instacertify GST address setup."""
+	names = []
+	for name in frappe.get_all("Company", pluck="name"):
+		key = (name or "").casefold()
+		if "instacertify" in key or name == COMPANY:
+			names.append(name)
+	if COMPANY not in names and frappe.db.exists("Company", COMPANY):
+		names.append(COMPANY)
+	# Always include default company
+	default = frappe.db.get_single_value("Global Defaults", "default_company")
+	if default and default not in names and frappe.db.exists("Company", default):
+		names.append(default)
+	return names
+
+
 def ensure_gst_setup():
-	"""Configure Instacertify for Indian GST rules and overseas billing."""
-	if not frappe.db.exists("Company", COMPANY):
+	"""Configure Instacertify companies for Indian GST rules and overseas billing."""
+	companies = _company_names()
+	if not companies:
 		return
 
-	_configure_company()
-	_ensure_company_gst_address()
+	for company in companies:
+		_configure_company(company)
+		_ensure_company_gst_address(company)
 	_configure_gst_settings()
 	_ensure_global_defaults_inr()
 	_assign_default_item_tax_template()
 	_sync_customer_gst_fields()
 
 
-def _configure_company():
+def _configure_company(company: str = COMPANY):
 	values = {
 		"default_currency": "INR",
 		"country": "India",
@@ -39,7 +57,7 @@ def _configure_company():
 	if frappe.get_meta("Company").has_field("default_gst_rate"):
 		values["default_gst_rate"] = "18.0"
 
-	frappe.db.set_value("Company", COMPANY, values, update_modified=False)
+	frappe.db.set_value("Company", company, values, update_modified=False)
 
 	# Keep IC Settings in sync for print letterheads
 	if frappe.db.exists("DocType", "IC Settings"):
@@ -58,7 +76,7 @@ def _configure_company():
 			frappe.log_error(frappe.get_traceback(), "IC Settings GST sync")
 
 
-def _ensure_company_gst_address():
+def _ensure_company_gst_address(company: str = COMPANY):
 	existing = frappe.db.sql(
 		"""
 		select a.name
@@ -67,7 +85,7 @@ def _ensure_company_gst_address():
 		where dl.link_doctype = 'Company' and dl.link_name = %s
 		limit 1
 		""",
-		COMPANY,
+		company,
 	)
 	if existing:
 		addr_name = existing[0][0]
@@ -92,7 +110,7 @@ def _ensure_company_gst_address():
 	doc = frappe.get_doc(
 		{
 			"doctype": "Address",
-			"address_title": LEGAL_NAME,
+			"address_title": LEGAL_NAME if "instacertify" in company.casefold() else company,
 			"address_type": "Billing",
 			"address_line1": ADDRESS_LINES[0],
 			"address_line2": ADDRESS_LINES[1],
@@ -101,7 +119,7 @@ def _ensure_company_gst_address():
 			"pincode": PINCODE,
 			"country": "India",
 			"is_your_company_address": 1,
-			"links": [{"link_doctype": "Company", "link_name": COMPANY}],
+			"links": [{"link_doctype": "Company", "link_name": company}],
 		}
 	)
 	if doc.meta.has_field("gstin"):
@@ -132,11 +150,18 @@ def _configure_gst_settings():
 
 
 def _ensure_global_defaults_inr():
-	frappe.db.set_single_value("Global Defaults", "default_company", COMPANY)
+	# Prefer existing default company; only set Instacertify if none
+	current = frappe.db.get_single_value("Global Defaults", "default_company")
+	if not current or not frappe.db.exists("Company", current):
+		preferred = next(iter(_company_names()), None) or COMPANY
+		if frappe.db.exists("Company", preferred):
+			frappe.db.set_single_value("Global Defaults", "default_company", preferred)
+			current = preferred
 	frappe.db.set_single_value("Global Defaults", "default_currency", "INR")
 	try:
 		frappe.db.set_default("currency", "INR")
-		frappe.db.set_default("company", COMPANY)
+		if current:
+			frappe.db.set_default("company", current)
 	except Exception:
 		pass
 
