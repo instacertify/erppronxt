@@ -176,13 +176,14 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 
 	ensure_contact_billing_fields()
 
+	# Always ensure company address/GSTIN first (india_compliance mandatory on Quotation)
+	_ensure_company_address_on_transaction(doc)
+
 	customer = doc.get(customer_field) or (
 		doc.get("party_name") if doc.doctype == "Quotation" and doc.get("quotation_to") == "Customer" else None
 	)
 	if not customer:
 		return
-
-	_ensure_company_address_on_transaction(doc)
 
 	country = get_customer_country(customer)
 	suggested = default_currency_for_country(country)
@@ -199,31 +200,46 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 
 
 def _ensure_company_address_on_transaction(doc):
-	"""india_compliance requires company address to fetch Company GSTIN."""
-	company = doc.get("company") or "Instacertify"
-	if doc.meta.has_field("company_address") and not doc.get("company_address"):
-		addr = frappe.db.sql(
-			"""
-			select a.name
-			from `tabAddress` a
-			inner join `tabDynamic Link` dl on dl.parent = a.name
-			where dl.link_doctype = 'Company' and dl.link_name = %s
-			order by a.is_your_company_address desc, a.is_primary_address desc
-			limit 1
-			""",
-			company,
-		)
-		if addr:
-			doc.company_address = addr[0][0]
+	"""india_compliance requires company address to fetch Company GSTIN.
 
-	if doc.get("company_address") and doc.meta.has_field("company_gstin") and not doc.get("company_gstin"):
-		gstin = frappe.db.get_value("Address", doc.company_address, "gstin") or frappe.db.get_value(
-			"Company", company, "gstin"
-		)
+	Creates a billing Address for the company when none exists so Quotation
+	save is not blocked (only Customer should be mandatory for service quotes).
+	"""
+	company = (doc.get("company") or "").strip()
+	if not company:
+		company = frappe.db.get_single_value("Global Defaults", "default_company") or ""
+	if not company or not frappe.db.exists("Company", company):
+		return
+
+	addr_name = _get_or_create_company_billing_address(company)
+	if doc.meta.has_field("company_address") and not doc.get("company_address") and addr_name:
+		doc.company_address = addr_name
+
+	if doc.meta.has_field("company_gstin") and not doc.get("company_gstin"):
+		gstin = None
+		if doc.get("company_address"):
+			gstin = frappe.db.get_value("Address", doc.company_address, "gstin")
+		if not gstin:
+			gstin = frappe.db.get_value("Company", company, "gstin")
 		if gstin:
 			doc.company_gstin = gstin
 
-	# Customer / party billing address for place of supply
+	# Soft defaults so india_compliance mandatory GST fields don't block quote create
+	if doc.doctype == "Quotation":
+		if doc.meta.has_field("gst_category") and not doc.get("gst_category"):
+			doc.gst_category = "Unregistered"
+		if doc.meta.has_field("place_of_supply") and not doc.get("place_of_supply"):
+			try:
+				from india_compliance.gst_india.utils import get_place_of_supply
+
+				pos = get_place_of_supply(doc, doc.doctype)
+				if pos:
+					doc.place_of_supply = pos
+			except Exception:
+				# Fallback UP (company GSTIN 09…) when POS cannot be resolved yet
+				doc.place_of_supply = "09-Uttar Pradesh"
+
+	# Customer / party billing address for place of supply (optional — do not block)
 	customer = doc.get("customer") or (
 		doc.get("party_name") if doc.doctype == "Quotation" and doc.get("quotation_to") == "Customer" else None
 	)
@@ -250,6 +266,78 @@ def _ensure_company_address_on_transaction(doc):
 			caddr = row[0][0] if row else None
 		if caddr:
 			doc.customer_address = caddr
+
+
+def _get_or_create_company_billing_address(company: str) -> str | None:
+	"""Return an Address linked to Company; create one with GSTIN if missing."""
+	row = frappe.db.sql(
+		"""
+		select a.name
+		from `tabAddress` a
+		inner join `tabDynamic Link` dl on dl.parent = a.name
+		where dl.link_doctype = 'Company' and dl.link_name = %s
+		order by a.is_your_company_address desc, a.is_primary_address desc, a.creation desc
+		limit 1
+		""",
+		company,
+	)
+	if row:
+		addr_name = row[0][0]
+		# Ensure GSTIN on existing address when company has one
+		company_gstin = frappe.db.get_value("Company", company, "gstin")
+		if company_gstin and frappe.get_meta("Address").has_field("gstin"):
+			if not frappe.db.get_value("Address", addr_name, "gstin"):
+				frappe.db.set_value("Address", addr_name, "gstin", company_gstin, update_modified=False)
+		return addr_name
+
+	# Prefer Instacertify GST defaults when creating for our company
+	from instacertify.setup.gst import (
+		ADDRESS_LINES,
+		CITY,
+		GSTIN,
+		LEGAL_NAME,
+		PINCODE,
+		STATE,
+	)
+
+	gstin = frappe.db.get_value("Company", company, "gstin") or GSTIN
+	title = (
+		frappe.db.get_value("Company", company, "company_name")
+		or company
+		or LEGAL_NAME
+	)
+	doc = frappe.get_doc(
+		{
+			"doctype": "Address",
+			"address_title": str(title)[:140],
+			"address_type": "Billing",
+			"address_line1": ADDRESS_LINES[0],
+			"address_line2": ADDRESS_LINES[1],
+			"city": CITY,
+			"state": STATE,
+			"pincode": PINCODE,
+			"country": "India",
+			"is_your_company_address": 1,
+			"is_primary_address": 1,
+			"links": [{"link_doctype": "Company", "link_name": company}],
+		}
+	)
+	if doc.meta.has_field("gstin"):
+		doc.gstin = gstin
+	if doc.meta.has_field("gst_state"):
+		doc.gst_state = STATE
+	if doc.meta.has_field("gst_category"):
+		doc.gst_category = "Registered Regular"
+	try:
+		doc.insert(ignore_permissions=True)
+		# Keep Company.gstin in sync
+		if gstin and frappe.get_meta("Company").has_field("gstin"):
+			if not frappe.db.get_value("Company", company, "gstin"):
+				frappe.db.set_value("Company", company, "gstin", gstin, update_modified=False)
+		return doc.name
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), f"create company address {company}")
+		return None
 
 
 def mark_currency_manual(doc):

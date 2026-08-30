@@ -32,6 +32,10 @@ def ensure_service_quote_rules():
 		"customer_address",
 		"shipping_address_name",
 		"company_address",
+		"company_gstin",
+		"place_of_supply",
+		"gst_category",
+		"billing_address_gstin",
 		"tc_name",
 		"terms",
 	):

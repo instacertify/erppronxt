@@ -10,13 +10,33 @@ from frappe import _
 from frappe.utils import cint, now_datetime
 
 
+def before_validate_quotation(doc, method=None):
+	"""Fill Company Address / GSTIN before india_compliance validate (quote create).
+
+	Only Customer is mandatory for service quotes — GST address must not block save.
+	"""
+	from instacertify.accounting.billing import _ensure_company_address_on_transaction
+	from instacertify.setup.contact_billing import ensure_party_address_contact_fields
+	from instacertify.setup.gst import ensure_gst_setup
+
+	ensure_party_address_contact_fields()
+	try:
+		ensure_gst_setup()
+	except Exception:
+		pass
+	_ensure_company_address_on_transaction(doc)
+
+
 def validate_quotation(doc, method=None):
+	from instacertify.accounting.billing import _ensure_company_address_on_transaction
 	from instacertify.setup.contact_billing import ensure_party_address_contact_fields
 	from instacertify.setup.service_quote import apply_quote_customer_only_rules, ensure_service_quote_rules
 
 	# Avoid MySQL 1054 on Address.tax_category / Contact.is_billing_contact
 	ensure_party_address_contact_fields()
 	ensure_service_quote_rules()
+	# Re-apply before india_compliance sibling validate if it runs after us
+	_ensure_company_address_on_transaction(doc)
 	apply_quote_customer_only_rules(doc)
 	_calculate_test_line_totals(doc)
 	_calculate_revenue_split(doc)
