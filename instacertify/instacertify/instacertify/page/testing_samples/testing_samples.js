@@ -990,7 +990,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<th>${__("Laboratory")}</th>
 							<th style="text-align:right">${__("Buying")}</th>
 							<th style="text-align:center">${__("Samples")}</th>
-							<th style="width:80px"></th>
+							<th style="width:118px">${__("Actions")}</th>
 						</tr>
 					</thead>
 					${body}
