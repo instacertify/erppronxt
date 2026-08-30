@@ -11,8 +11,23 @@ SAMPLE_LOCATIONS = (
 	"At Instacertify Office",
 	"In Transit to Lab",
 	"At Laboratory",
-	"At Instacertify Storage",
+	"At Instacertify Warehouse",
+	"At Instacertify Storage",  # legacy alias → warehouse
+	"In Transit to Client",
+	"Returned to Client",
 	"Discarded",
+)
+
+# Locations that must not be overwritten when TR only advances report workflow
+PRESERVE_LOCATIONS_ON_REPORT = frozenset(
+	{
+		"At Laboratory",
+		"At Instacertify Warehouse",
+		"At Instacertify Storage",
+		"In Transit to Client",
+		"Returned to Client",
+		"Discarded",
+	}
 )
 
 STATUS_TO_LOCATION = {
@@ -23,7 +38,12 @@ STATUS_TO_LOCATION = {
 	"In Transit to Lab": "In Transit to Lab",
 	"Sample Dispatched to Laboratory": "In Transit to Lab",
 	"At Laboratory": "At Laboratory",
-	"At Instacertify Storage": "At Instacertify Storage",
+	"Testing in Progress": "At Laboratory",
+	"At Instacertify Warehouse": "At Instacertify Warehouse",
+	"At Instacertify Storage": "At Instacertify Warehouse",
+	"In Transit to Client": "In Transit to Client",
+	"Returned to Client": "Returned to Client",
+	"Dispatched to Client": "In Transit to Client",
 	"Discarded": "Discarded",
 }
 
@@ -33,7 +53,10 @@ LOCATION_TO_STATUS = {
 	"At Instacertify Office": "Sample Received",
 	"In Transit to Lab": "In Transit to Lab",
 	"At Laboratory": "At Laboratory",
-	"At Instacertify Storage": "At Instacertify Storage",
+	"At Instacertify Warehouse": "At Instacertify Warehouse",
+	"At Instacertify Storage": "At Instacertify Warehouse",
+	"In Transit to Client": "In Transit to Client",
+	"Returned to Client": "Returned to Client",
 	"Discarded": "Discarded",
 }
 
@@ -105,6 +128,9 @@ class ICSampleTracking(Document):
 		loc_changed = self.sample_location != prev_location
 		status_changed = self.status != prev_status
 
+		if self.sample_location == "At Instacertify Storage":
+			self.sample_location = "At Instacertify Warehouse"
+
 		# Prefer explicit location edits; otherwise derive location from status
 		if loc_changed and self.sample_location in LOCATION_TO_STATUS:
 			self.status = LOCATION_TO_STATUS[self.sample_location]
@@ -133,6 +159,9 @@ class ICSampleTracking(Document):
 
 		if self.status in ("In Transit to Lab", "Sample Dispatched to Laboratory") and not self.dispatch_date:
 			self.dispatch_date = today()
+		if self.status in ("In Transit to Client", "Dispatched to Client", "Returned to Client"):
+			# Returned / outbound to client — keep dispatch_date for lab send; no extra stamp required
+			pass
 
 	def _ensure_qr(self):
 		from instacertify.utils.qr import generate_and_attach_qr, sample_qr_payload

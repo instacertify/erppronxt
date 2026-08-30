@@ -16,12 +16,13 @@ def get_dashboard_data(data):
 			"Opportunity": "party_name",
 			"Helpdesk Ticket": "lead",
 			"IC Document Request": "lead",
+			"Customer": "lead_name",
 		}
 	)
 	data.setdefault("dynamic_links", {})
 	data["dynamic_links"].update({"party_name": ["Lead", "quotation_to"]})
 	data["transactions"] = [
-		{"label": _("Pre Sales"), "items": ["Opportunity", "Quotation", "Prospect"]},
+		{"label": _("Pre Sales"), "items": ["Opportunity", "Quotation", "Prospect", "Customer"]},
 		{"label": _("Support"), "items": ["Helpdesk Ticket", "IC Document Request"]},
 	]
 	return data

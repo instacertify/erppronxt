@@ -186,7 +186,15 @@
    "fieldname": "number_of_samples",
    "fieldtype": "Int",
    "label": "Number of Samples",
-   "default": 1
+   "default": 1,
+   "description": "Creates linked Sample Tracking rows when the Testing Request is saved"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "sample_tracking_html",
+   "fieldtype": "HTML",
+   "label": "Sample Tracking",
+   "read_only": 1
   },
   {
    "doctype": "DocField",

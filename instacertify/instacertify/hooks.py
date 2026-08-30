@@ -75,6 +75,7 @@ doc_events = {
 	},
 	"IC Testing Request": {
 		"validate": "instacertify.testing.events.validate_testing_request",
+		"after_insert": "instacertify.testing.events.after_insert_testing_request",
 		"on_update": "instacertify.testing.events.on_update_testing_request",
 	},
 	"Task": {
