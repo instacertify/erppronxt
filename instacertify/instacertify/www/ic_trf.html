@@ -137,10 +137,26 @@
         pdfBtn.style.display = "inline-block";
         if (d.pdf_file) pdfBtn.textContent = "Download TRF PDF";
       }
+      const saveBtn = document.getElementById("btn-save");
+      const fieldIds = ["sample_name","sample_quantity","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"];
       if (d.read_only) {
-        document.getElementById("btn-save").style.display = "none";
-        ["sample_name","sample_quantity","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"]
-          .forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+        saveBtn.style.display = "none";
+        fieldIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = true; });
+        const lock = document.createElement("div");
+        lock.className = "ic-msg ok";
+        lock.style.display = "block";
+        lock.style.marginTop = "12px";
+        lock.textContent = "Submitted — locked for further edits. Contact Instacertify if a correction is needed.";
+        if (!document.getElementById("ic-trf-locked-banner")) {
+          lock.id = "ic-trf-locked-banner";
+          document.getElementById("form").insertBefore(lock, document.getElementById("form").firstChild);
+        }
+      } else {
+        saveBtn.style.display = "inline-block";
+        saveBtn.textContent = (d.status === "Reopened for Edit") ? "Submit corrected TRF" : "Submit TRF";
+        fieldIds.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = false; });
+        const old = document.getElementById("ic-trf-locked-banner");
+        if (old) old.remove();
       }
     }
 
@@ -198,7 +214,7 @@
           description: val("description"),
           other_remarks: val("other_remarks"),
         });
-        showMsg("TRF submitted. You can generate the PDF now.", true);
+        showMsg("TRF submitted. Form is now locked. You can download the PDF. Contact Instacertify if a correction is needed.", true);
         document.getElementById("btn-pdf").style.display = "inline-block";
         if (m && m.status) {
           const d = await api("instacertify.trf.api.get_trf_by_token", { token });
