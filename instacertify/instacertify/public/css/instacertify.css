@@ -4312,37 +4312,47 @@ body.full-width {
 
 .ic-ts-board { display: block; }
 .ic-ts-manage-table-wrap {
-  border-radius: 12px;
-  border: 2px solid #7a9eb3;
+  border-radius: 10px;
+  border: 2px solid #5f8499;
   box-shadow: 0 1px 0 #fff inset, 0 8px 20px rgba(6, 81, 117, 0.06);
   overflow: auto;
   background: #fff;
 }
 .ic-ts-manage-table {
   min-width: 920px;
+  width: 100%;
   border-collapse: collapse;
+  border-spacing: 0;
+}
+.ic-ts-manage-table thead th,
+.ic-ts-manage-table tbody td {
+  border: 1px solid #8eafc0;
 }
 .ic-ts-manage-table thead th {
-  border-bottom: 2px solid #7a9eb3;
-  border-right: 1px solid #c5d8e4;
-}
-.ic-ts-manage-table thead th:last-child {
-  border-right: none;
+  border-bottom: 2px solid #5f8499;
+  background: linear-gradient(180deg, #e8f1f7, #dce8f0);
 }
 .ic-ts-manage-table .ic-ts-tr-row td {
-  border-bottom: 1px solid #c5d8e4;
-  border-right: 1px solid #e0ecf3;
+  background: #fff;
 }
-.ic-ts-manage-table .ic-ts-tr-row td:last-child {
-  border-right: none;
+.ic-ts-manage-table .ic-ts-tr-row.is-open td {
+  background: #f3f9fc;
+  border-bottom-color: #c5d8e4;
 }
 .ic-ts-manage-table .ic-ts-tr-detail td {
-  border-bottom: 2px solid #7a9eb3 !important;
-  border-right: none !important;
+  border: 1px solid #8eafc0;
+  border-top: none;
   background: #f5fafc;
+  padding: 0;
 }
-.ic-ts-manage-table .ic-ts-tr-group + .ic-ts-tr-group .ic-ts-tr-row td {
-  border-top: 0;
+.ic-ts-manage-table .ic-ts-tr-detail .ic-ts-detail-inner {
+  margin: 0;
+  padding: 12px 14px 14px;
+  border-top: 1px dashed #b7cdd9;
+}
+.ic-ts-manage-table .ic-ts-tr-group.ic-ts-flash td {
+  box-shadow: inset 0 0 0 2px var(--ic-primary, #065175);
+  background: #eaf5fb;
 }
 .ic-ts-btn-qr {
   background: var(--ic-primary, #065175) !important;
@@ -4357,10 +4367,6 @@ body.full-width {
 }
 .ic-ts-tr-row { cursor: pointer; transition: background 0.15s ease; }
 .ic-ts-tr-row.is-open { background: #f3f9fc; }
-.ic-ts-tr-group.ic-ts-flash .ic-ts-tr-row {
-  box-shadow: inset 0 0 0 2px var(--ic-primary, #065175);
-  background: #eaf5fb;
-}
 .ic-ts-expand-cell { width: 40px; }
 .ic-ts-expand-btn {
   appearance: none;
