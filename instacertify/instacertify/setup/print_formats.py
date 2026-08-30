@@ -57,7 +57,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   }
   :root {
     --ic-navy: #111111;
-    --ic-orange: #F26D21;
+    --ic-orange: #EC691F;
     --ic-ink: #111111;
     --ic-soft: #E8E8E8;
     --ic-soft-mid: #D9D9D9;
@@ -181,7 +181,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
 QUOTE_LETTERHEAD_HTML = """
 <div id="header-html">
-  <div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #F26D21;width:100%;box-sizing:border-box;background:#fff;">
+  <div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;">
     <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
     <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
       <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:uppercase;margin-bottom:2px;">{{ legal }}</div>
@@ -460,15 +460,15 @@ SAMPLE_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#EC691F; font-weight:700; font-size:11px; text-transform:uppercase; }
   .qr-block { display:flex; align-items:center; gap:14px; margin-top:12px; }
   .qr-block img { width:90px; height:90px; image-rendering: pixelated; }
   .qr-block .trk { font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size:14px; font-weight:700; color:#065175; letter-spacing:0.02em; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -611,12 +611,12 @@ TESTING_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:11px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#EC691F; font-weight:700; font-size:11px; text-transform:uppercase; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -659,14 +659,14 @@ JOINING_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic { font-family: Georgia, 'Times New Roman', serif; font-size:12px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #EC6820; margin-bottom:14px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #EC691F; margin-bottom:14px; }
   .ic-lh-logo img { max-height:52px; max-width:300px; }
   .ic-lh-co { text-align:right; font-family: Arial, Helvetica, sans-serif; color:#222; font-size:10px; line-height:1.4; }
-  .ic-lh-co .name { color:#EC6820; font-weight:700; font-size:12px; text-transform:uppercase; }
+  .ic-lh-co .name { color:#EC691F; font-weight:700; font-size:12px; text-transform:uppercase; }
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC6820 50%, #d85a16 100%);
+    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -1220,7 +1220,7 @@ DOCUMENTS_COLLECTION_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
@@ -1230,7 +1230,7 @@ DOCUMENTS_COLLECTION_HTML = """
   table.ic-table th { background:#065175; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
   <div class="ic-lh">
@@ -1308,7 +1308,7 @@ TRF_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
@@ -1320,7 +1320,7 @@ TRF_HTML = """
   .ic-meta { margin-bottom:10px; }
   .ic-qr-row { display:flex; gap:16px; align-items:center; }
   .ic-qr-row img { width:28mm; height:28mm; border:1px solid #cfd8dc; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
   <div class="ic-lh">
@@ -1388,7 +1388,7 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC6820; margin-bottom:12px; }
+  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
@@ -1398,7 +1398,7 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; vertical-align:top; }
   table.ic-table td:first-child { width:32%; color:#065175; font-weight:600; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC6820 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
   <div class="ic-lh">
@@ -1504,7 +1504,7 @@ def _ensure_instacertify_letter_head():
 	gstin = (getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7"
 	addr_html = (address or "").replace("\n", "<br>")
 	content = f"""
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #F26D21;width:100%;box-sizing:border-box;background:#fff;">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;">
   <div><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
   <div style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
     <div style="font-weight:600;font-size:12.5px;text-transform:uppercase;margin-bottom:2px;">{legal}</div>

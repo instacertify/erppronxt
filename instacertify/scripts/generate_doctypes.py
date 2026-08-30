@@ -646,7 +646,7 @@ def main():
 				field(fieldname="section_branding", fieldtype="Section Break", label="Branding"),
 				field(fieldname="company", fieldtype="Link", options="Company", label="Company"),
 				field(fieldname="primary_color", fieldtype="Color", label="Primary Color", default="#0D47A1"),
-				field(fieldname="accent_color", fieldtype="Color", label="Accent Color", default="#F26D21"),
+				field(fieldname="accent_color", fieldtype="Color", label="Accent Color", default="#EC691F"),
 				field(fieldname="column_break_1", fieldtype="Column Break"),
 				field(fieldname="logo", fieldtype="Attach Image", label="Instacertify Logo"),
 				field(fieldname="header_image", fieldtype="Attach Image", label="Header Asset"),

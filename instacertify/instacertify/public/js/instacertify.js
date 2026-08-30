@@ -3,12 +3,13 @@ frappe.provide("instacertify");
 
 instacertify.brand = {
 	primary: "#0D47A1",
-	accent: "#F26D21",
+	accent: "#EC691F",
 	surface: "#E7F1FC",
 	white: "#FFFFFF",
 	logo: "/assets/instacertify/images/instacertify_logo.png",
-	icon: "/assets/instacertify/images/instacertify_icon.png",
-	app_logo: "/assets/instacertify/images/instacertify_app_logo.png",
+	// Circular favicon mark — home icon logo, navbar, small UI
+	icon: "/assets/instacertify/images/favicon-48.png",
+	app_logo: "/assets/instacertify/images/favicon-48.png",
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
@@ -906,6 +907,71 @@ instacertify.add_helpdesk_buttons = function (frm, defaults) {
 	apple.href = "/assets/instacertify/images/apple-touch-icon.png";
 })();
 
+/** Home greeting + navbar: use circular favicon as icon logo. */
+instacertify.apply_favicon_brand_icons = function (root) {
+	const iconSrc = (instacertify.brand && (instacertify.brand.icon || instacertify.brand.favicon)) ||
+		"/assets/instacertify/images/favicon-48.png";
+	const scope = root || document;
+	try {
+		scope.querySelectorAll(".ic-greeting-brand").forEach((brand) => {
+			if (brand.querySelector(".ic-home-brand-icon")) {
+				const img = brand.querySelector(".ic-home-brand-icon");
+				if (img && img.getAttribute("src") !== iconSrc) img.setAttribute("src", iconSrc);
+				return;
+			}
+			const img = document.createElement("img");
+			img.className = "ic-home-brand-icon";
+			img.src = iconSrc;
+			img.width = 48;
+			img.height = 48;
+			img.alt = "Instacertify";
+			const text = Array.from(brand.childNodes).filter(
+				(n) => !(n.nodeType === 1 && n.classList && n.classList.contains("ic-home-brand-icon"))
+			);
+			brand.innerHTML = "";
+			brand.appendChild(img);
+			const wrap = document.createElement("span");
+			wrap.className = "ic-greeting-brand-text";
+			text.forEach((n) => wrap.appendChild(n));
+			if (!wrap.textContent.trim()) {
+				wrap.innerHTML = 'Insta<span>certify</span>';
+			}
+			brand.appendChild(wrap);
+		});
+	} catch (e) {
+		/* ignore */
+	}
+	try {
+		document.querySelectorAll(
+			".navbar .app-logo, .navbar .navbar-brand img, .navbar img.app-logo, .sidebar-logo img"
+		).forEach((el) => {
+			if (el && el.tagName === "IMG") {
+				el.src = iconSrc;
+			}
+		});
+	} catch (e) {
+		/* ignore */
+	}
+};
+
+(function bindFaviconBrandIcons() {
+	const run = () => {
+		try {
+			instacertify.apply_favicon_brand_icons(document);
+			const home = instacertify.query_deep && instacertify.query_deep("#ic-home-root");
+			if (home && home.getRootNode && home.getRootNode() !== document) {
+				instacertify.apply_favicon_brand_icons(home.getRootNode());
+			}
+		} catch (e) {
+			/* ignore */
+		}
+	};
+	$(document).ready(run);
+	$(document).on("page-change", () => setTimeout(run, 80));
+	setTimeout(run, 400);
+	setTimeout(run, 1200);
+})();
+
 /** Show Workspace Shortcut icons inside tiles (Frappe stores icon but does not render it). */
 (function patchShortcutIcons() {
 	function paint() {
@@ -1219,11 +1285,20 @@ instacertify.render_home_banner = function (wrapper) {
 	// Prefer the Custom HTML Block home dashboard when present (incl. shadow DOM).
 	if (!wrapper || wrapper.find("#ic-home-root, .ic-greeting").length || instacertify.has_home_root()) {
 		instacertify.bind_summary_card_clicks(document);
+		try {
+			instacertify.apply_favicon_brand_icons(document);
+		} catch (e) {
+			/* ignore */
+		}
 		return;
 	}
+	const icon = frappe.utils.escape_html(instacertify.brand.icon || instacertify.brand.favicon);
 	const html = `
 		<div class="ic-greeting">
-			<div class="ic-greeting-brand">Insta<span>certify</span></div>
+			<div class="ic-greeting-brand">
+				<img class="ic-home-brand-icon" src="${icon}" width="48" height="48" alt="Instacertify" />
+				<span class="ic-greeting-brand-text">Insta<span>certify</span></span>
+			</div>
 			<h2>${frappe.utils.escape_html(instacertify.greeting())}</h2>
 			<div class="ic-datetime">
 				<span class="ic-date">${moment().format("dddd, D MMMM YYYY")}</span>
@@ -4067,7 +4142,7 @@ instacertify.open_testing_request_lab_picker = function (frm, offers) {
 				<td>${frappe.utils.escape_html(o.location || "—")}</td>
 				<td>${frappe.utils.escape_html(o.test_name || "")}</td>
 				<td>${frappe.utils.escape_html(o.applicable_standard || "—")}</td>
-				<td style="text-align:right;font-weight:700;color:#EC6820">${frappe.utils.escape_html(buy)}</td>
+				<td style="text-align:right;font-weight:700;color:#EC691F">${frappe.utils.escape_html(buy)}</td>
 				<td style="text-align:right">${frappe.utils.escape_html(sell)}</td>
 			</tr>`;
 		})

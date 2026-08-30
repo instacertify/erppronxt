@@ -108,7 +108,7 @@ Desk uses the Instacertify **dual-tone** palette (not flat white or dark mode):
 |------|--------|
 | Light blue (canvas) | `#E7F1FC` |
 | Deep blue (primary) | `#0D47A1` |
-| Orange accent | `#F26D21` |
+| Orange accent | `#EC691F` |
 | White (cards / forms) | `#FFFFFF` |
 
 Cards and forms stay white for readability.

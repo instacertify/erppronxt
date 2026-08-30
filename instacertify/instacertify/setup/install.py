@@ -956,7 +956,7 @@ def setup_settings():
 	try:
 		doc = frappe.get_single("IC Settings")
 		doc.primary_color = "#0D47A1"
-		doc.accent_color = "#F26D21"
+		doc.accent_color = "#EC691F"
 		doc.legal_name = "INSTACERTIFY LABS PRIVATE LIMITED"
 		doc.address_line = "PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA"
 		doc.phone = doc.phone or "+91 9999118039"
