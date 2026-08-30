@@ -29,11 +29,10 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		"In Transit to Office": "→ Office",
 		"At Instacertify Office": "Office",
 		"In Transit to Lab": "→ Lab",
-		"At Laboratory": "Lab",
+		"At Laboratory": "At Lab",
 		"At Instacertify Warehouse": "Warehouse",
 		"In Transit to Client": "→ Client",
-		"Returned to Client": "Client",
-		Discarded: "Discarded",
+		"Returned to Client": "With Client",
 	};
 
 	page.main.html(`
@@ -43,7 +42,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					<div class="ic-ts-kicker">${__("Laboratory · Testing · Custody")}</div>
 					<div class="ic-ts-title">${__("Testing & Samples")}</div>
 					<div class="ic-ts-sub">${__(
-						"Three menus: generate a Testing Request from the lab library, list all requests, then manage each sample’s journey."
+						"Generate a Testing Request from the lab library, then manage the same TR and every sample’s journey in one place."
 					)}</div>
 				</div>
 				<div class="ic-ts-tools">
@@ -51,135 +50,126 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				</div>
 			</div>
 
-			<nav class="ic-ts-tabs" role="tablist" aria-label="${__("Testing & Samples menus")}">
+			<nav class="ic-ts-tabs" role="tablist">
 				<button type="button" class="ic-ts-tab is-active" data-tab="generate" role="tab" aria-selected="true">
-					${__("Generate Testing Request")}
+					<span class="ic-ts-tab-num">1</span>
+					<span>
+						<span class="ic-ts-tab-label">${__("Generate Testing Request")}</span>
+						<span class="ic-ts-tab-hint">${__("Test → Standard → Lab → Create")}</span>
+					</span>
 				</button>
-				<button type="button" class="ic-ts-tab" data-tab="requests" role="tab" aria-selected="false">
-					${__("Testing Requests List")}
-				</button>
-				<button type="button" class="ic-ts-tab" data-tab="journey" role="tab" aria-selected="false">
-					${__("Sample Journey")}
+				<button type="button" class="ic-ts-tab" data-tab="manage" role="tab" aria-selected="false">
+					<span class="ic-ts-tab-num">2</span>
+					<span>
+						<span class="ic-ts-tab-label">${__("Manage TR & Sample Journey")}</span>
+						<span class="ic-ts-tab-hint">${__("Same requests · update sample location")}</span>
+					</span>
 				</button>
 			</nav>
 
-			<!-- —— Submenu: Generate —— -->
+			<!-- —— Generate —— -->
 			<section class="ic-ts-panel" id="ic-ts-panel-generate" role="tabpanel">
-				<div class="ic-ts-card">
-					<div class="ic-ts-card-title">${__("Generate Testing Request")}</div>
-					<div class="ic-ts-card-sub">${__(
-						"Select Test Name → pick Applicable Standard from the list → select a Laboratory (phone, address, contact) → generate."
-					)}</div>
-
-					<div class="ic-ts-steps" aria-hidden="true">
-						<span class="ic-ts-step is-on" data-step="1">${__("Test")}</span>
-						<span class="ic-ts-step" data-step="2">${__("Standard")}</span>
-						<span class="ic-ts-step" data-step="3">${__("Lab")}</span>
-						<span class="ic-ts-step" data-step="4">${__("Generate")}</span>
-					</div>
-
-					<div class="ic-ts-form" id="ic-ts-form"></div>
-
-					<div class="ic-ts-section" id="ic-ts-standards-wrap" hidden>
-						<div class="ic-ts-section-title">${__("Applicable standards list")}</div>
-						<div class="ic-ts-table-wrap">
-							<table class="ic-ts-table" id="ic-ts-standards-table">
-								<thead>
-									<tr>
-										<th>${__("Applicable Standard")}</th>
-										<th style="text-align:right">${__("Lab scopes")}</th>
-										<th></th>
-									</tr>
-								</thead>
-								<tbody></tbody>
-							</table>
-						</div>
-					</div>
-
-					<div class="ic-ts-section" id="ic-ts-labs-wrap" hidden>
-						<div class="ic-ts-section-title">${__("Laboratories list")}</div>
-						<div class="ic-ts-card-sub" style="margin-top:0">${__(
-							"All Active labs with this test/standard — phone, address, contact person & designation."
+				<div class="ic-ts-gen-layout">
+					<div class="ic-ts-card ic-ts-gen-main">
+						<div class="ic-ts-card-title">${__("Generate Testing Request")}</div>
+						<div class="ic-ts-card-sub">${__(
+							"Start with Customer and Test Name. Standards and labs appear as lists — pick one lab, then create the request with samples."
 						)}</div>
-						<div class="ic-ts-table-wrap">
-							<table class="ic-ts-table" id="ic-ts-labs-table">
-								<thead>
-									<tr>
-										<th>${__("Laboratory")}</th>
-										<th>${__("Phone")}</th>
-										<th>${__("Address")}</th>
-										<th>${__("Contact")}</th>
-										<th>${__("Designation")}</th>
-										<th style="text-align:right">${__("Buying")}</th>
-										<th style="text-align:right">${__("Selling")}</th>
-										<th></th>
-									</tr>
-								</thead>
-								<tbody></tbody>
-							</table>
+
+						<ol class="ic-ts-steps">
+							<li class="ic-ts-step is-on is-current" data-step="1"><b>1</b> ${__("Customer & Test")}</li>
+							<li class="ic-ts-step" data-step="2"><b>2</b> ${__("Standard")}</li>
+							<li class="ic-ts-step" data-step="3"><b>3</b> ${__("Laboratory")}</li>
+							<li class="ic-ts-step" data-step="4"><b>4</b> ${__("Create")}</li>
+						</ol>
+
+						<div class="ic-ts-form" id="ic-ts-form"></div>
+
+						<div class="ic-ts-section" id="ic-ts-standards-wrap" hidden>
+							<div class="ic-ts-section-title">${__("2 — Applicable standards")}</div>
+							<div class="ic-ts-table-wrap">
+								<table class="ic-ts-table" id="ic-ts-standards-table">
+									<thead>
+										<tr>
+											<th>${__("Applicable Standard")}</th>
+											<th style="text-align:right">${__("Lab scopes")}</th>
+											<th style="width:100px"></th>
+										</tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
+						</div>
+
+						<div class="ic-ts-section" id="ic-ts-labs-wrap" hidden>
+							<div class="ic-ts-section-title">${__("3 — Laboratories")}</div>
+							<div class="ic-ts-card-sub" style="margin-top:0">${__(
+								"Phone, address, contact person and designation for coordination."
+							)}</div>
+							<div class="ic-ts-table-wrap">
+								<table class="ic-ts-table" id="ic-ts-labs-table">
+									<thead>
+										<tr>
+											<th>${__("Laboratory")}</th>
+											<th>${__("Phone")}</th>
+											<th>${__("Address")}</th>
+											<th>${__("Contact")}</th>
+											<th>${__("Designation")}</th>
+											<th style="text-align:right">${__("Buying")}</th>
+											<th style="text-align:right">${__("Selling")}</th>
+											<th style="width:100px"></th>
+										</tr>
+									</thead>
+									<tbody></tbody>
+								</table>
+							</div>
 						</div>
 					</div>
 
-					<div class="ic-ts-selected" id="ic-ts-selected" hidden></div>
-
-					<div class="ic-ts-actions">
-						<button type="button" class="btn btn-primary btn-lg" id="ic-ts-generate" disabled>
+					<aside class="ic-ts-card ic-ts-summary" id="ic-ts-summary">
+						<div class="ic-ts-card-title">${__("Ready to create")}</div>
+						<div class="ic-ts-summary-body" id="ic-ts-summary-body">
+							<div class="text-muted">${__("Select customer, test, standard and laboratory.")}</div>
+						</div>
+						<button type="button" class="btn btn-primary btn-block" id="ic-ts-generate" disabled>
 							${__("Generate Testing Request + Samples")}
 						</button>
-					</div>
+						<button type="button" class="btn btn-default btn-block" id="ic-ts-goto-manage" style="margin-top:8px">
+							${__("Open Manage TR & Journey")}
+						</button>
+					</aside>
 				</div>
 			</section>
 
-			<!-- —— Submenu: Testing Requests list —— -->
-			<section class="ic-ts-panel" id="ic-ts-panel-requests" role="tabpanel" hidden>
+			<!-- —— Manage TR + Sample Journey (same place) —— -->
+			<section class="ic-ts-panel" id="ic-ts-panel-manage" role="tabpanel" hidden>
 				<div class="ic-ts-card">
-					<div class="ic-ts-card-title">${__("Testing Requests — listing")}</div>
-					<div class="ic-ts-card-sub">${__(
-						"All generated Testing Requests. Open a row or jump to Sample Journey to update custody."
-					)}</div>
-					<div class="ic-ts-filters">
-						<div class="ic-ts-filter" id="ic-ts-filter-customer-req"></div>
-						<div class="ic-ts-filter" id="ic-ts-filter-project-req"></div>
-						<button type="button" class="btn btn-xs btn-default" id="ic-ts-clear-filters-req">${__("Clear")}</button>
-						<button type="button" class="btn btn-xs btn-default" id="ic-ts-refresh-req">${__("Refresh")}</button>
-						<button type="button" class="btn btn-xs btn-primary" id="ic-ts-goto-generate">${__("+ Generate new")}</button>
+					<div class="ic-ts-manage-head">
+						<div>
+							<div class="ic-ts-card-title">${__("Manage Testing Requests & Sample Journey")}</div>
+							<div class="ic-ts-card-sub" style="margin-bottom:0">${__(
+								"Each Testing Request lists its samples underneath. Advance sample location through the product journey without leaving this page."
+							)}</div>
+						</div>
+						<button type="button" class="btn btn-primary btn-sm" id="ic-ts-goto-generate">${__("+ Generate new")}</button>
 					</div>
-					<div class="ic-ts-table-wrap">
-						<table class="ic-ts-table" id="ic-ts-requests-table">
-							<thead>
-								<tr>
-									<th>${__("Testing Request")}</th>
-									<th>${__("Status")}</th>
-									<th>${__("Product / Test")}</th>
-									<th>${__("Standard")}</th>
-									<th>${__("Laboratory")}</th>
-									<th>${__("Customer")}</th>
-									<th>${__("Project")}</th>
-									<th style="text-align:right">${__("Samples")}</th>
-									<th style="text-align:right">${__("Buying")}</th>
-									<th></th>
-								</tr>
-							</thead>
-							<tbody></tbody>
-						</table>
-					</div>
-					<div id="ic-ts-requests-empty" class="ic-ts-empty" hidden></div>
-				</div>
-			</section>
 
-			<!-- —— Submenu: Sample Journey —— -->
-			<section class="ic-ts-panel" id="ic-ts-panel-journey" role="tabpanel" hidden>
-				<div class="ic-ts-card">
-					<div class="ic-ts-card-title">${__("Sample journey — listing")}</div>
-					<div class="ic-ts-card-sub">${__(
-						"Manage where each sample is for every Testing Request (customer → office → lab → warehouse → client)."
-					)}</div>
 					<div class="ic-ts-filters">
 						<div class="ic-ts-filter" id="ic-ts-filter-customer"></div>
 						<div class="ic-ts-filter" id="ic-ts-filter-project"></div>
 						<button type="button" class="btn btn-xs btn-default" id="ic-ts-clear-filters">${__("Clear")}</button>
 						<button type="button" class="btn btn-xs btn-default" id="ic-ts-refresh">${__("Refresh")}</button>
 					</div>
+
+					<div class="ic-ts-legend">
+						${JOURNEY_STEPS.map(
+							(s) =>
+								`<span class="ic-ts-legend-item"><i class="ic-ts-jdot is-on"></i>${frappe.utils.escape_html(
+									LOC_SHORT[s] || s
+								)}</span>`
+						).join("")}
+					</div>
+
 					<div id="ic-ts-board" class="ic-ts-board" aria-live="polite"></div>
 				</div>
 			</section>
@@ -202,7 +192,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		board_rows: [],
 		filter_customer: "",
 		filter_project: "",
+		expanded: {},
 		tab: "generate",
+		focus_tr: "",
 	};
 
 	const form = new frappe.ui.FieldGroup({
@@ -214,7 +206,8 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				label: __("Customer"),
 				reqd: 1,
 				change() {
-					state.customer = form.get_value("customer");
+					state.customer = form.get_value("customer") || "";
+					update_summary();
 				},
 			},
 			{
@@ -227,7 +220,8 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					return c ? { filters: { customer: c } } : {};
 				},
 				change() {
-					state.project = form.get_value("project");
+					state.project = form.get_value("project") || "";
+					update_summary();
 				},
 			},
 			{ fieldtype: "Column Break" },
@@ -236,7 +230,8 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				fieldtype: "Data",
 				label: __("Product"),
 				change() {
-					state.product = form.get_value("product");
+					state.product = form.get_value("product") || "";
+					update_summary();
 				},
 			},
 			{
@@ -246,15 +241,16 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				default: 1,
 				change() {
 					state.number_of_samples = cint(form.get_value("number_of_samples")) || 1;
+					update_summary();
 				},
 			},
-			{ fieldtype: "Section Break", label: __("1 — Select Test Name") },
+			{ fieldtype: "Section Break", label: __("1 — Test from Laboratory Library") },
 			{
 				fieldname: "test_name",
 				fieldtype: "Autocomplete",
 				label: __("Test Name"),
 				reqd: 1,
-				description: __("From Active laboratory libraries"),
+				description: __("Type to search Active lab libraries"),
 				change() {
 					const v = form.get_value("test_name") || "";
 					if (v === state.test_name) return;
@@ -263,74 +259,44 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					clear_lab_selection();
 					form.set_value("applicable_standard", "");
 					load_standards_for_test();
+					update_summary();
 				},
 			},
 			{ fieldtype: "Column Break" },
 			{
 				fieldname: "applicable_standard",
 				fieldtype: "Data",
-				label: __("Applicable Standard (selected)"),
+				label: __("Applicable Standard"),
 				read_only: 1,
-				description: __("Chosen from the standards list below"),
+				description: __("Selected from the list below"),
 			},
 		],
 		body: page.main.find("#ic-ts-form"),
 	});
 	form.make();
 
-	function make_filter(parent_sel, key) {
-		return frappe.ui.form.make_control({
-			parent: page.main.find(parent_sel),
-			df: {
-				fieldtype: "Link",
-				options: key === "customer" ? "Customer" : "Project",
-				label: key === "customer" ? __("Filter customer") : __("Filter project"),
-				change() {
-					const ctrl = key === "customer" ? filter_customer : filter_project;
-					const val = ctrl.get_value();
-					if (key === "customer") {
-						state.filter_customer = val;
-						if (filter_customer_req.get_value() !== val) filter_customer_req.set_value(val || "");
-					} else {
-						state.filter_project = val;
-						if (filter_project_req.get_value() !== val) filter_project_req.set_value(val || "");
-					}
-					refresh_lists();
-				},
-			},
-			render_input: true,
-		});
-	}
-
-	const filter_customer = make_filter("#ic-ts-filter-customer", "customer");
-	const filter_project = make_filter("#ic-ts-filter-project", "project");
-
-	const filter_customer_req = frappe.ui.form.make_control({
-		parent: page.main.find("#ic-ts-filter-customer-req"),
+	const filter_customer = frappe.ui.form.make_control({
+		parent: page.main.find("#ic-ts-filter-customer"),
 		df: {
 			fieldtype: "Link",
 			options: "Customer",
 			label: __("Filter customer"),
 			change() {
-				const val = filter_customer_req.get_value();
-				state.filter_customer = val;
-				if (filter_customer.get_value() !== val) filter_customer.set_value(val || "");
-				refresh_lists();
+				state.filter_customer = filter_customer.get_value() || "";
+				refresh_manage();
 			},
 		},
 		render_input: true,
 	});
-	const filter_project_req = frappe.ui.form.make_control({
-		parent: page.main.find("#ic-ts-filter-project-req"),
+	const filter_project = frappe.ui.form.make_control({
+		parent: page.main.find("#ic-ts-filter-project"),
 		df: {
 			fieldtype: "Link",
 			options: "Project",
 			label: __("Filter project"),
 			change() {
-				const val = filter_project_req.get_value();
-				state.filter_project = val;
-				if (filter_project.get_value() !== val) filter_project.set_value(val || "");
-				refresh_lists();
+				state.filter_project = filter_project.get_value() || "";
+				refresh_manage();
 			},
 		},
 		render_input: true,
@@ -349,9 +315,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		state.lab_scope_row = "";
 		state.lab_offer = "";
 		state.selected_offer = null;
-		page.main.find("#ic-ts-selected").prop("hidden", true).empty();
 		page.main.find("#ic-ts-generate").prop("disabled", true);
 		page.main.find("#ic-ts-labs-table tbody tr").removeClass("is-selected");
+		update_summary();
 	}
 
 	function custody_color(loc) {
@@ -369,6 +335,14 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		return map[loc] || "#546e7a";
 	}
 
+	function next_locations(loc) {
+		const idx = JOURNEY_STEPS.indexOf(loc);
+		if (idx < 0) return JOURNEY_STEPS.slice(0, 3);
+		// Prefer next step + nearby
+		const next = JOURNEY_STEPS.slice(Math.max(0, idx), Math.min(JOURNEY_STEPS.length, idx + 3));
+		return next.length ? next : JOURNEY_STEPS.slice(-3);
+	}
+
 	function switch_tab(tab) {
 		state.tab = tab;
 		page.main.find(".ic-ts-tab").each(function () {
@@ -376,9 +350,42 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			$(this).toggleClass("is-active", on).attr("aria-selected", on ? "true" : "false");
 		});
 		page.main.find("#ic-ts-panel-generate").prop("hidden", tab !== "generate");
-		page.main.find("#ic-ts-panel-requests").prop("hidden", tab !== "requests");
-		page.main.find("#ic-ts-panel-journey").prop("hidden", tab !== "journey");
-		if (tab === "requests" || tab === "journey") refresh_lists();
+		page.main.find("#ic-ts-panel-manage").prop("hidden", tab !== "manage");
+		if (tab === "manage") refresh_manage();
+	}
+
+	function update_summary() {
+		const offer = state.selected_offer;
+		const rows = [
+			[__("Customer"), state.customer || "—"],
+			[__("Project"), state.project || "—"],
+			[__("Product"), state.product || "—"],
+			[__("Samples"), String(state.number_of_samples || 1)],
+			[__("Test"), state.test_name || "—"],
+			[__("Standard"), state.applicable_standard || "—"],
+			[__("Laboratory"), offer ? offer.laboratory_name || offer.laboratory : "—"],
+		];
+		if (offer) {
+			rows.push([__("Phone"), offer.phone || "—"]);
+			rows.push([
+				__("Contact"),
+				[offer.contact_person, offer.contact_designation].filter(Boolean).join(" · ") || "—",
+			]);
+			rows.push([
+				__("Buying"),
+				format_currency(offer.purchase_price || 0, offer.currency || "INR"),
+			]);
+		}
+		const html = rows
+			.map(
+				([k, v]) =>
+					`<div class="ic-ts-sum-row"><span>${frappe.utils.escape_html(k)}</span><b>${frappe.utils.escape_html(
+						String(v)
+					)}</b></div>`
+			)
+			.join("");
+		page.main.find("#ic-ts-summary-body").html(html);
+		page.main.find("#ic-ts-generate").prop("disabled", !(state.customer && state.selected_offer));
 	}
 
 	function load_library_options() {
@@ -425,7 +432,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		if (!standards.length) {
 			$tbody.html(
 				`<tr><td colspan="3" class="text-muted">${__(
-					"No applicable standard listed for this test — labs will be listed by test name."
+					"No standard mapped — labs will list by test name alone."
 				)}</td></tr>`
 			);
 			return;
@@ -439,7 +446,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						<td><b>${frappe.utils.escape_html(label)}</b></td>
 						<td style="text-align:right">${cint(s.lab_count) || "—"}</td>
 						<td style="text-align:right">
-							<button type="button" class="btn btn-xs btn-default ic-ts-pick-std" data-idx="${idx}">
+							<button type="button" class="btn btn-xs ${
+								active ? "btn-primary" : "btn-default"
+							} ic-ts-pick-std" data-idx="${idx}">
 								${active ? __("Selected") : __("Select")}
 							</button>
 						</td>
@@ -448,8 +457,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				.join("")
 		);
 		$tbody.find(".ic-ts-pick-std").on("click", function () {
-			const s = standards[cint($(this).data("idx"))];
-			pick_standard(s.value || s);
+			pick_standard(standards[cint($(this).data("idx"))].value || standards[cint($(this).data("idx"))]);
 		});
 		$tbody.find("tr[data-idx]").on("click", function (e) {
 			if ($(e.target).closest("button").length) return;
@@ -464,6 +472,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		clear_lab_selection();
 		render_standards_table(state.standards);
 		load_labs();
+		update_summary();
 	}
 
 	function load_labs() {
@@ -476,10 +485,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		set_step(3);
 		frappe.call({
 			method: "instacertify.laboratory.api.get_labs_for_standard",
-			args: {
-				applicable_standard: standard || "",
-				test_name: test_name || "",
-			},
+			args: { applicable_standard: standard || "", test_name: test_name || "" },
 			callback(r) {
 				state.offers = r.message || [];
 				render_labs_table(state.offers);
@@ -494,7 +500,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		if (!offers.length) {
 			$tbody.html(
 				`<tr><td colspan="8" class="text-muted">${__(
-					"No Active labs list this test/standard. Add scope & pricing on Laboratories."
+					"No Active labs for this test/standard. Add scope & pricing on Laboratories."
 				)}</td></tr>`
 			);
 			return;
@@ -514,13 +520,15 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 							<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(o.test_name || "")}</div>
 						</td>
 						<td>${frappe.utils.escape_html(o.phone || "—")}</td>
-						<td style="max-width:220px">${frappe.utils.escape_html(o.address || o.location || "—")}</td>
+						<td style="max-width:200px">${frappe.utils.escape_html(o.address || o.location || "—")}</td>
 						<td>${frappe.utils.escape_html(o.contact_person || "—")}</td>
 						<td>${frappe.utils.escape_html(o.contact_designation || "—")}</td>
 						<td style="text-align:right;font-weight:700;color:#EC6820">${frappe.utils.escape_html(buy)}</td>
 						<td style="text-align:right">${frappe.utils.escape_html(sell)}</td>
 						<td style="text-align:right">
-							<button type="button" class="btn btn-xs ${selected ? "btn-primary" : "btn-default"} ic-ts-pick-lab" data-idx="${idx}">
+							<button type="button" class="btn btn-xs ${
+								selected ? "btn-primary" : "btn-default"
+							} ic-ts-pick-lab" data-idx="${idx}">
 								${selected ? __("Selected") : __("Select")}
 							</button>
 						</td>
@@ -548,22 +556,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			form.set_value("applicable_standard", offer.applicable_standard);
 		}
 		render_labs_table(state.offers);
-		const buy = format_currency(offer.purchase_price || 0, offer.currency || "INR");
-		page.main.find("#ic-ts-selected").prop("hidden", false).html(`
-			<div class="ic-ts-selected-inner">
-				<div class="ic-ts-selected-label">${__("Selected laboratory")}</div>
-				<div class="ic-ts-selected-name">${frappe.utils.escape_html(offer.laboratory_name || "")}</div>
-				<div class="text-muted" style="font-size:12px;margin-top:4px">
-					${frappe.utils.escape_html(offer.contact_person || "")}
-					${offer.contact_designation ? ` (${frappe.utils.escape_html(offer.contact_designation)})` : ""}
-					· ${frappe.utils.escape_html(offer.phone || "—")}
-					· ${frappe.utils.escape_html(offer.address || offer.location || "—")}
-					· ${__("Buying")} ${frappe.utils.escape_html(buy)}
-				</div>
-			</div>
-		`);
-		page.main.find("#ic-ts-generate").prop("disabled", false);
 		set_step(4);
+		update_summary();
+		frappe.show_alert({
+			message: __("Lab selected — review summary and generate"),
+			indicator: "green",
+		});
 	}
 
 	function generate() {
@@ -594,19 +592,17 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			freeze_message: __("Generating Testing Request and samples…"),
 			callback(r) {
 				const m = r.message || {};
+				state.focus_tr = m.testing_request || "";
+				state.expanded[m.testing_request] = true;
 				frappe.show_alert({
-					message: __("Created {0} with {1} sample(s)", [
-						m.testing_request,
-						(m.samples || []).length,
-					]),
+					message: __("Created {0} — manage sample journey below", [m.testing_request]),
 					indicator: "green",
 				});
 				if (customer) {
 					filter_customer.set_value(customer);
-					filter_customer_req.set_value(customer);
 					state.filter_customer = customer;
 				}
-				switch_tab("requests");
+				switch_tab("manage");
 			},
 		});
 	}
@@ -618,165 +614,167 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			freeze: true,
 			callback() {
 				frappe.show_alert({
-					message: __("Sample location → {0}", [location]),
+					message: __("Sample → {0}", [location]),
 					indicator: "green",
 				});
-				refresh_lists();
+				refresh_manage();
 			},
 		});
 	}
 
-	function journey_bar(loc) {
+	function journey_track(loc) {
 		const idx = JOURNEY_STEPS.indexOf(loc);
-		return `<div class="ic-ts-journey" title="${frappe.utils.escape_html(loc || "")}">
+		return `<div class="ic-ts-track" aria-label="${frappe.utils.escape_html(loc || "")}">
 			${JOURNEY_STEPS.map((step, i) => {
 				const on = idx >= 0 && i <= idx;
 				const cur = i === idx;
-				return `<span class="ic-ts-jdot ${on ? "is-on" : ""} ${cur ? "is-current" : ""}" title="${frappe.utils.escape_html(
+				return `<div class="ic-ts-track-step ${on ? "is-on" : ""} ${cur ? "is-current" : ""}" title="${frappe.utils.escape_html(
 					step
-				)}"></span>`;
+				)}">
+					<span class="ic-ts-track-dot"></span>
+					<span class="ic-ts-track-label">${frappe.utils.escape_html(LOC_SHORT[step] || step)}</span>
+				</div>`;
 			}).join("")}
 		</div>`;
 	}
 
-	function render_requests_table(rows) {
-		const $tbody = page.main.find("#ic-ts-requests-table tbody");
-		const $empty = page.main.find("#ic-ts-requests-empty");
+	function render_manage(rows) {
+		const $board = page.main.find("#ic-ts-board");
 		if (!rows.length) {
-			$tbody.empty();
-			$empty
-				.prop("hidden", false)
-				.text(__("No testing requests yet. Use Generate Testing Request to create one."));
+			$board.html(`
+				<div class="ic-ts-empty">
+					<div style="font-weight:650;margin-bottom:6px">${__("No Testing Requests yet")}</div>
+					<div>${__("Use Generate Testing Request to create the first one from the lab library.")}</div>
+					<button type="button" class="btn btn-primary btn-sm" style="margin-top:12px" id="ic-ts-empty-gen">${__(
+						"Generate Testing Request"
+					)}</button>
+				</div>
+			`);
+			$board.find("#ic-ts-empty-gen").on("click", () => switch_tab("generate"));
 			return;
 		}
-		$empty.prop("hidden", true);
-		$tbody.html(
+
+		$board.html(
 			rows
 				.map((tr) => {
-					const sample_count = (tr.samples || []).length || cint(tr.number_of_samples) || 0;
+					const open = state.expanded[tr.name] !== false; // default open
+					const samples = tr.samples || [];
+					const sample_rows = samples
+						.map((s) => {
+							const loc = s.sample_location || s.status || "With Customer";
+							const color = custody_color(loc);
+							const moves = next_locations(loc);
+							const all_btns = JOURNEY_STEPS.map(
+								(l) =>
+									`<button type="button" class="btn btn-xs ${
+										loc === l ? "btn-primary" : moves.includes(l) ? "btn-default" : "btn-default"
+									} ic-ts-loc" data-sample="${frappe.utils.escape_html(s.name)}" data-loc="${frappe.utils.escape_html(
+										l
+									)}" ${loc === l ? "disabled" : ""}>${frappe.utils.escape_html(
+										LOC_SHORT[l] || l
+									)}</button>`
+							).join("");
+							return `<div class="ic-ts-sample">
+								<div class="ic-ts-sample-top">
+									<div>
+										<a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}"><b>${frappe.utils.escape_html(
+											s.tracking_number || s.name
+										)}</b></a>
+										<div class="text-muted" style="font-size:12px;margin-top:2px">${frappe.utils.escape_html(
+											s.sample_description || ""
+										)}</div>
+									</div>
+									<span class="ic-ts-pill" style="background:${color}22;color:${color}">${frappe.utils.escape_html(
+										loc
+									)}</span>
+								</div>
+								${journey_track(loc)}
+								<div class="ic-ts-loc-label">${__("Move sample to")}</div>
+								<div class="ic-ts-loc-btns">${all_btns}</div>
+							</div>`;
+						})
+						.join("");
+
 					const buy = tr.library_buying_price
 						? format_currency(tr.library_buying_price)
-						: "—";
-					return `<tr>
-						<td><a href="/app/ic-testing-request/${encodeURIComponent(tr.name)}"><b>${frappe.utils.escape_html(
-							tr.name
-						)}</b></a></td>
-						<td>${frappe.utils.escape_html(tr.status || "")}</td>
-						<td>${frappe.utils.escape_html(tr.product || tr.title || "—")}<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(
-							tr.test_name || ""
-						)}</div></td>
-						<td>${frappe.utils.escape_html(tr.applicable_standard || "—")}</td>
-						<td>${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}</td>
-						<td>${
-							tr.customer
-								? `<a href="/app/customer/${encodeURIComponent(tr.customer)}">${frappe.utils.escape_html(
-										tr.customer
-								  )}</a>`
-								: "—"
-						}</td>
-						<td>${
-							tr.project
-								? `<a href="/app/project/${encodeURIComponent(tr.project)}">${frappe.utils.escape_html(
-										tr.project
-								  )}</a>`
-								: "—"
-						}</td>
-						<td style="text-align:right">${sample_count}</td>
-						<td style="text-align:right">${frappe.utils.escape_html(buy)}</td>
-						<td style="text-align:right;white-space:nowrap">
-							<button type="button" class="btn btn-xs btn-default ic-ts-open-journey" data-tr="${frappe.utils.escape_html(
+						: "";
+					const focus = state.focus_tr === tr.name ? "ic-ts-flash" : "";
+
+					return `<article class="ic-ts-tr ${focus}" data-tr="${frappe.utils.escape_html(tr.name)}">
+						<button type="button" class="ic-ts-tr-toggle" data-tr="${frappe.utils.escape_html(tr.name)}" aria-expanded="${
+							open ? "true" : "false"
+						}">
+							<div class="ic-ts-tr-main">
+								<div>
+									<span class="ic-ts-tr-id">${frappe.utils.escape_html(tr.name)}</span>
+									<span class="ic-ts-status">${frappe.utils.escape_html(tr.status || "")}</span>
+									<div class="ic-ts-tr-title">${frappe.utils.escape_html(tr.title || tr.product || tr.test_name || "")}</div>
+									<div class="ic-ts-tr-meta">
+										${frappe.utils.escape_html(tr.test_name || "—")}
+										${tr.applicable_standard ? ` · ${frappe.utils.escape_html(tr.applicable_standard)}` : ""}
+										· ${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}
+										${buy ? ` · ${__("Buy")} ${frappe.utils.escape_html(buy)}` : ""}
+										· ${samples.length} ${__("sample(s)")}
+									</div>
+								</div>
+								<span class="ic-ts-chevron">${open ? "▾" : "▸"}</span>
+							</div>
+						</button>
+						<div class="ic-ts-tr-links">
+							<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
 								tr.name
-							)}">${__("Sample journey")}</button>
-						</td>
-					</tr>`;
+							)}">${__("Open TR")}</a>
+							${
+								tr.customer
+									? `<a class="btn btn-xs btn-default" href="/app/customer/${encodeURIComponent(
+											tr.customer
+									  )}">${__("Customer")}</a>`
+									: ""
+							}
+							${
+								tr.project
+									? `<a class="btn btn-xs btn-default" href="/app/project/${encodeURIComponent(
+											tr.project
+									  )}">${__("Project")}</a>`
+									: ""
+							}
+						</div>
+						<div class="ic-ts-tr-body" ${open ? "" : "hidden"}>
+							<div class="ic-ts-samples-title">${__("Samples on this Testing Request")}</div>
+							${
+								sample_rows ||
+								`<div class="text-muted">${__("No samples linked yet.")}</div>`
+							}
+						</div>
+					</article>`;
 				})
 				.join("")
 		);
-		$tbody.find(".ic-ts-open-journey").on("click", function () {
-			switch_tab("journey");
-			const tr = $(this).data("tr");
-			const $card = page.main.find(`.ic-ts-tr[data-tr="${CSS.escape(tr)}"]`);
-			if ($card.length) {
-				$("html, body").animate({ scrollTop: $card.offset().top - 80 }, 200);
-				$card.addClass("ic-ts-flash");
-				setTimeout(() => $card.removeClass("ic-ts-flash"), 1200);
-			}
-		});
-	}
 
-	function render_journey_board(rows) {
-		const $board = page.main.find("#ic-ts-board");
-		if (!rows.length) {
-			$board.html(
-				`<div class="ic-ts-empty">${__(
-					"No testing requests yet. Generate one from the first submenu."
-				)}</div>`
-			);
-			return;
-		}
-		const html = rows
-			.map((tr) => {
-				const samples = (tr.samples || [])
-					.map((s) => {
-						const loc = s.sample_location || s.status || "—";
-						const color = custody_color(loc);
-						const btns = JOURNEY_STEPS.map(
-							(l) =>
-								`<button type="button" class="btn btn-xs btn-default ic-ts-loc" data-sample="${frappe.utils.escape_html(
-									s.name
-								)}" data-loc="${frappe.utils.escape_html(l)}" ${
-									loc === l ? "disabled" : ""
-								}>${frappe.utils.escape_html(LOC_SHORT[l] || l)}</button>`
-						).join("");
-						return `<tr>
-							<td><a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}"><b>${frappe.utils.escape_html(
-								s.tracking_number || s.name
-							)}</b></a>
-							<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(
-								s.sample_description || ""
-							)}</div></td>
-							<td><span class="ic-ts-pill" style="background:${color}22;color:${color}">${frappe.utils.escape_html(
-								loc
-							)}</span>${journey_bar(loc)}</td>
-							<td><div class="ic-ts-loc-btns">${btns}</div></td>
-						</tr>`;
-					})
-					.join("");
-				return `<article class="ic-ts-tr" data-tr="${frappe.utils.escape_html(tr.name)}">
-					<div class="ic-ts-tr-head">
-						<div>
-							<a href="/app/ic-testing-request/${encodeURIComponent(tr.name)}"><b>${frappe.utils.escape_html(
-								tr.name
-							)}</b></a>
-							<span class="text-muted"> · ${frappe.utils.escape_html(tr.status || "")}</span>
-							<div style="font-weight:600;margin-top:2px">${frappe.utils.escape_html(tr.title || tr.product || "")}</div>
-							<div class="text-muted" style="font-size:12px">
-								${frappe.utils.escape_html(tr.test_name || "—")}
-								${tr.applicable_standard ? ` · ${frappe.utils.escape_html(tr.applicable_standard)}` : ""}
-								· ${frappe.utils.escape_html(tr.laboratory_name || tr.laboratory || "—")}
-							</div>
-						</div>
-					</div>
-					<div class="ic-ts-table-wrap">
-						<table class="ic-ts-table">
-							<thead><tr>
-								<th>${__("Sample")}</th>
-								<th>${__("Location")}</th>
-								<th>${__("Update journey")}</th>
-							</tr></thead>
-							<tbody>${samples || `<tr><td colspan="3" class="text-muted">${__("No samples linked")}</td></tr>`}</tbody>
-						</table>
-					</div>
-				</article>`;
-			})
-			.join("");
-		$board.html(html);
-		$board.find(".ic-ts-loc").on("click", function () {
+		$board.find(".ic-ts-tr-toggle").on("click", function () {
+			const name = $(this).data("tr");
+			state.expanded[name] = !($(this).attr("aria-expanded") === "true");
+			render_manage(state.board_rows);
+		});
+		$board.find(".ic-ts-loc").on("click", function (e) {
+			e.stopPropagation();
 			set_location($(this).data("sample"), $(this).data("loc"));
 		});
+
+		if (state.focus_tr) {
+			const $card = $board.find(`.ic-ts-tr[data-tr="${CSS.escape(state.focus_tr)}"]`);
+			if ($card.length) {
+				setTimeout(() => {
+					$("html, body").animate({ scrollTop: $card.offset().top - 72 }, 250);
+				}, 50);
+			}
+			setTimeout(() => {
+				state.focus_tr = "";
+			}, 1600);
+		}
 	}
 
-	function refresh_lists() {
+	function refresh_manage() {
 		frappe.call({
 			method: "instacertify.testing.events.list_testing_samples_board",
 			args: {
@@ -786,8 +784,11 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			},
 			callback(r) {
 				state.board_rows = r.message || [];
-				render_requests_table(state.board_rows);
-				render_journey_board(state.board_rows);
+				// default expand all first time
+				state.board_rows.forEach((tr) => {
+					if (state.expanded[tr.name] === undefined) state.expanded[tr.name] = true;
+				});
+				render_manage(state.board_rows);
 			},
 		});
 	}
@@ -796,41 +797,41 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		switch_tab($(this).data("tab"));
 	});
 	page.main.find("#ic-ts-generate").on("click", generate);
-	page.main.find("#ic-ts-refresh, #ic-ts-refresh-req").on("click", refresh_lists);
+	page.main.find("#ic-ts-refresh").on("click", refresh_manage);
 	page.main.find("#ic-ts-labs").on("click", () => frappe.set_route("List", "IC Laboratory"));
 	page.main.find("#ic-ts-goto-generate").on("click", () => switch_tab("generate"));
-	page.main.find("#ic-ts-clear-filters, #ic-ts-clear-filters-req").on("click", () => {
+	page.main.find("#ic-ts-goto-manage").on("click", () => switch_tab("manage"));
+	page.main.find("#ic-ts-clear-filters").on("click", () => {
 		filter_customer.set_value("");
 		filter_project.set_value("");
-		filter_customer_req.set_value("");
-		filter_project_req.set_value("");
 		state.filter_customer = "";
 		state.filter_project = "";
-		refresh_lists();
+		refresh_manage();
 	});
 
 	if (frappe.route_options) {
 		if (frappe.route_options.customer) {
 			form.set_value("customer", frappe.route_options.customer);
 			filter_customer.set_value(frappe.route_options.customer);
-			filter_customer_req.set_value(frappe.route_options.customer);
 			state.filter_customer = frappe.route_options.customer;
+			state.customer = frappe.route_options.customer;
 		}
 		if (frappe.route_options.project) {
 			form.set_value("project", frappe.route_options.project);
 			filter_project.set_value(frappe.route_options.project);
-			filter_project_req.set_value(frappe.route_options.project);
 			state.filter_project = frappe.route_options.project;
+			state.project = frappe.route_options.project;
 		}
-		if (frappe.route_options.tab) {
-			switch_tab(frappe.route_options.tab);
+		if (frappe.route_options.tab === "manage" || frappe.route_options.tab === "journey") {
+			switch_tab("manage");
 		}
 		frappe.route_options = null;
 	}
 
 	set_step(1);
+	update_summary();
 	load_library_options();
-	refresh_lists();
+	refresh_manage();
 };
 
 frappe.pages["testing-samples"].on_page_show = function () {};
