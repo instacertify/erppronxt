@@ -31,7 +31,7 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 					<div class="ic-doclib-kicker">${__("Templates")}</div>
 					<div class="ic-doclib-title">${__("Document Collection Sheet Library")}</div>
 					<div class="ic-doclib-sub">${__(
-						"Customise rows: Name, Remark, Mandatory, Collect As (Upload File or Fill Field). Use a template to create a customer request with a sharable upload link."
+						"Customise format fields (check/uncheck optional built-ins) and rows: Name, Remark, Mandatory, Collect As. Use a template to create a customer request with a sharable upload link."
 					)}</div>
 				</div>
 				<div class="ic-doclib-tools">

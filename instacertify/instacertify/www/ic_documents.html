@@ -39,15 +39,19 @@
           <div><label>Contact person</label><input id="data_contact_person" type="text"/></div>
           <div><label>Contact phone</label><input id="data_contact_phone" type="text"/></div>
           <div><label>Contact email</label><input id="data_contact_email" type="email"/></div>
-          <div><label>Product name</label><input id="product_name" type="text"/></div>
-          <div><label>Model / variant</label><input id="product_model" type="text"/></div>
-          <div><label>Brand</label><input id="product_brand" type="text"/></div>
+          <div data-ff="include_product_name"><label>Product name</label><input id="product_name" type="text"/></div>
+          <div data-ff="include_product_model"><label>Model / variant</label><input id="product_model" type="text"/></div>
+          <div data-ff="include_product_brand"><label>Brand</label><input id="product_brand" type="text"/></div>
         </div>
-        <label>Company address</label>
-        <textarea id="company_address" rows="2"></textarea>
-        <label>Remarks</label>
-        <textarea id="data_collection_remarks" rows="2"></textarea>
-        <div id="data-fields"></div>
+        <div data-ff="include_company_address">
+          <label>Company address</label>
+          <textarea id="company_address" rows="2"></textarea>
+        </div>
+        <div data-ff="include_data_collection_remarks">
+          <label>Remarks</label>
+          <textarea id="data_collection_remarks" rows="2"></textarea>
+        </div>
+        <div id="data-fields" data-ff="include_data_fields"></div>
         <button class="ic-btn ic-btn-primary" id="btn-data" style="margin-top:8px;">Save data collection</button>
       </div>
     </div>
@@ -152,19 +156,27 @@
           });
 
           document.getElementById('data-box').style.display = 'block';
+          const flags = d.format_fields || {};
+          document.querySelectorAll('[data-ff]').forEach(el => {
+            const key = el.getAttribute('data-ff');
+            const on = flags[key] === undefined || flags[key] === null || Number(flags[key]) === 1;
+            el.style.display = on ? '' : 'none';
+          });
           ['company_legal_name','gstin','company_address','data_contact_person','data_contact_phone',
            'data_contact_email','product_name','product_model','product_brand','data_collection_remarks'
           ].forEach(k => fill(k, d[k]));
           const df = document.getElementById('data-fields');
           df.innerHTML = '';
-          (d.data_fields || []).forEach(row => {
-            const wrap = document.createElement('div');
-            wrap.innerHTML =
-              '<label>' + esc(row.field_label || '') + (row.is_mandatory ? ' *' : '') + '</label>' +
-              (row.help_text ? '<div class="ic-doc-meta">' + esc(row.help_text) + '</div>' : '') +
-              '<textarea data-df="' + esc(row.name) + '" rows="2">' + esc(row.field_value || '') + '</textarea>';
-            df.appendChild(wrap);
-          });
+          if (flags.include_data_fields === undefined || Number(flags.include_data_fields) === 1) {
+            (d.data_fields || []).forEach(row => {
+              const wrap = document.createElement('div');
+              wrap.innerHTML =
+                '<label>' + esc(row.field_label || '') + (row.is_mandatory ? ' *' : '') + '</label>' +
+                (row.help_text ? '<div class="ic-doc-meta">' + esc(row.help_text) + '</div>' : '') +
+                '<textarea data-df="' + esc(row.name) + '" rows="2">' + esc(row.field_value || '') + '</textarea>';
+              df.appendChild(wrap);
+            });
+          }
         });
     }
     document.getElementById('btn-data').onclick = async () => {

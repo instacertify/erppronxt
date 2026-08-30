@@ -166,6 +166,80 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_format_fields",
+   "fieldtype": "Section Break",
+   "label": "Format Fields (optional)",
+   "collapsible": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "format_fields_help",
+   "fieldtype": "HTML",
+   "options": "<p class=\"text-muted\">Uncheck to hide non-mandatory built-in fields from this sheet (desk, customer portal, and print).</p>"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_company_address",
+   "fieldtype": "Check",
+   "label": "Company Address",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_product_name",
+   "fieldtype": "Check",
+   "label": "Product Name",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_product_model",
+   "fieldtype": "Check",
+   "label": "Model / Variant",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_product_brand",
+   "fieldtype": "Check",
+   "label": "Brand",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_break_format_fields",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_data_collection_remarks",
+   "fieldtype": "Check",
+   "label": "Data Collection Remarks",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_data_fields",
+   "fieldtype": "Check",
+   "label": "Additional Data Fields",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_sample_dispatch",
+   "fieldtype": "Check",
+   "label": "Sample Dispatch (legacy)",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "include_remarks",
+   "fieldtype": "Check",
+   "label": "Notes / Remarks",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_data_product",
    "fieldtype": "Section Break",
    "label": "Product / Application Data"
