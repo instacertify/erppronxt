@@ -14,6 +14,7 @@ SHORTCUT_ICONS = {
 	"Project Board": "layout-grid",
 	"Team Collaboration": "message-circle",
 	"Team Calendar": "calendar",
+	"Testing & Samples": "flask-conical",
 	"Testing Requests": "flask-conical",
 	"Laboratories": "microscope",
 	"Quote Format Library": "book-open",

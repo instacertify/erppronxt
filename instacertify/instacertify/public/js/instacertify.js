@@ -2341,6 +2341,10 @@ frappe.ui.form.on("Customer", {
 			frm.add_custom_button(__("Open Data Drive"), () => {
 				frm.scroll_to_field("ic_customer_files_html");
 			});
+			frm.add_custom_button(__("Testing & Samples"), () => {
+				frappe.route_options = { customer: frm.doc.name };
+				frappe.set_route("testing-samples");
+			});
 			frm.add_custom_button(__("Sync Team Access"), () => {
 				frappe.call({
 					method: "instacertify.crm.customer_permissions.sync_customer_team",
@@ -2371,6 +2375,14 @@ instacertify.load_customer_related = function (frm) {
 		callback(r) {
 			const d = r.message || {};
 			frm.set_df_property("ic_history_html", "options", ic_render_customer_related(d));
+			const $hist = frm.fields_dict.ic_history_html && frm.fields_dict.ic_history_html.$wrapper;
+			if ($hist) {
+				$hist.find("[data-ic-ts-customer]").off("click.icTs").on("click.icTs", function (e) {
+					e.preventDefault();
+					frappe.route_options = { customer: $(this).attr("data-ic-ts-customer") };
+					frappe.set_route("testing-samples");
+				});
+			}
 			if (frm.fields_dict.ic_customer_files_html) {
 				frm.set_df_property(
 					"ic_customer_files_html",
@@ -3092,13 +3104,17 @@ function ic_render_customer_related(d) {
 					: ""
 			)}
 			${ic_related_section(
-				__("Testing Requests"),
+				__("Testing & Samples"),
 				ic_table(
 					[__("Request"), __("Status"), __("Product / Test"), __("Laboratory"), __("Project"), __("Quotation")],
 					testing_rows
 				),
 				__("No testing requests"),
-				customer ? ic_list_link("IC Testing Request", customer) : ""
+				customer
+					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
+							customer
+					  )}">${ic_esc(__("Open Testing & Samples"))}</a>`
+					: ""
 			)}
 			${ic_related_section(
 				__("Document Requests"),
@@ -3128,7 +3144,11 @@ function ic_render_customer_related(d) {
 					sample_rows
 				),
 				__("No samples"),
-				customer ? ic_list_link("IC Sample Tracking", customer) : ""
+				customer
+					? `<a href="/app/testing-samples" class="ic-view-all" data-ic-ts-customer="${ic_esc(
+							customer
+					  )}">${ic_esc(__("Update locations"))}</a>`
+					: ""
 			)}
 			${ic_related_section(
 				__("Project Records"),
@@ -3195,17 +3215,17 @@ frappe.ui.form.on("Project", {
 			}, __("Links"));
 		}
 		if (!frm.is_new()) {
-			frm.add_custom_button(__("New Testing Request"), () => {
-				frappe.new_doc("IC Testing Request", {
+			frm.add_custom_button(__("Testing & Samples"), () => {
+				frappe.route_options = {
 					customer: frm.doc.customer,
 					project: frm.doc.name,
-					quotation: frm.doc.ic_quotation,
-				});
+				};
+				frappe.set_route("testing-samples");
 			}, __("Testing"));
-			frm.add_custom_button(__("Testing Requests"), () => {
+			frm.add_custom_button(__("Testing Requests (list)"), () => {
 				frappe.set_route("List", "IC Testing Request", { project: frm.doc.name });
 			}, __("Testing"));
-			frm.add_custom_button(__("Samples"), () => {
+			frm.add_custom_button(__("Samples (list)"), () => {
 				frappe.set_route("List", "IC Sample Tracking", { project: frm.doc.name });
 			}, __("Testing"));
 			instacertify.render_project_testing_panel(frm);
@@ -3905,9 +3925,12 @@ instacertify.render_project_testing_panel = function (frm) {
 
 			const html = `
 				<div class="ic-project-testing form-dashboard-section" style="margin:12px 0;padding:12px;border:1px solid #d7e6ef;border-radius:10px;background:#F5F9FD;">
-					<div style="font-weight:650;color:#0D47A1;margin-bottom:4px;">${__("Testing & Sample Custody")}</div>
+					<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:4px;">
+						<div style="font-weight:650;color:#0D47A1;">${__("Testing & Sample Custody")}</div>
+						<button type="button" class="btn btn-xs btn-primary ic-open-testing-samples">${__("Open Testing & Samples")}</button>
+					</div>
 					<div class="text-muted" style="font-size:12px;margin-bottom:8px;">
-						${__("Linked testing requests (lab library) and where each sample is — lab, warehouse, or back with the client.")}
+						${__("Generate requests from lab pricing, then update where each sample is — lab, warehouse, or back with the client.")}
 					</div>
 					<div style="font-size:12px;margin-bottom:10px;">${custody_bits || `<span class="text-muted">${__("No samples yet")}</span>`}</div>
 					<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -3935,14 +3958,26 @@ instacertify.render_project_testing_panel = function (frm) {
 				</div>
 			`;
 			// Prefer progress HTML area; else inject above form layout
+			let $panel;
 			if (frm.fields_dict.ic_progress_html && frm.fields_dict.ic_progress_html.$wrapper) {
 				const $host = frm.fields_dict.ic_progress_html.$wrapper;
 				$host.find(".ic-project-testing").remove();
 				$host.append(html);
+				$panel = $host.find(".ic-project-testing");
 			} else if (frm.layout && frm.layout.wrapper) {
 				const $body = $(frm.layout.wrapper).find(".form-layout").first();
 				$body.find(".ic-project-testing").remove();
 				$body.prepend(html);
+				$panel = $body.find(".ic-project-testing");
+			}
+			if ($panel && $panel.length) {
+				$panel.find(".ic-open-testing-samples").on("click", () => {
+					frappe.route_options = {
+						customer: frm.doc.customer,
+						project: frm.doc.name,
+					};
+					frappe.set_route("testing-samples");
+				});
 			}
 		},
 	});
@@ -4596,17 +4631,16 @@ frappe.ui.form.on("Lead", {
 				});
 			}, __("Create"));
 			if (frm.doc.customer) {
-				frm.add_custom_button(__("New Testing Request"), () => {
-					frappe.new_doc("IC Testing Request", {
-						customer: frm.doc.customer,
-						product: frm.doc.ic_party_name || frm.doc.company_name || "",
-					});
+				frm.add_custom_button(__("Testing & Samples"), () => {
+					frappe.route_options = { customer: frm.doc.customer };
+					frappe.set_route("testing-samples");
 				}, __("Create"));
 				frm.add_custom_button(__("Open Customer"), () => {
 					frappe.set_route("Form", "Customer", frm.doc.customer);
 				}, __("View"));
 				frm.add_custom_button(__("Customer Testing / Samples"), () => {
-					frappe.set_route("List", "IC Testing Request", { customer: frm.doc.customer });
+					frappe.route_options = { customer: frm.doc.customer };
+					frappe.set_route("testing-samples");
 				}, __("View"));
 			}
 			frm.add_custom_button(__("Open Dashboard"), () => {

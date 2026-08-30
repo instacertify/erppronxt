@@ -3862,3 +3862,54 @@ body.full-width {
     flex: 1 1 100% !important;
   }
 }
+
+
+/* —— Testing & Samples unified page —— */
+.ic-ts-page .layout-main-section { max-width: none; }
+.ic-ts { padding: 4px 2px 28px; }
+.ic-ts-head {
+  display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between;
+  align-items: flex-start; margin-bottom: 16px;
+}
+.ic-ts-kicker { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #5b7380; }
+.ic-ts-title { font-size: 1.45rem; font-weight: 650; color: #0D47A1; margin-top: 2px; }
+.ic-ts-sub { color: #5b7380; max-width: 46rem; margin-top: 4px; }
+.ic-ts-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.ic-ts-grid {
+  display: grid; grid-template-columns: minmax(280px, 420px) 1fr; gap: 16px; align-items: start;
+}
+@media (max-width: 960px) {
+  .ic-ts-grid { grid-template-columns: 1fr; }
+}
+.ic-ts-card {
+  background: #F5F9FD; border: 1px solid #d7e6ef; border-radius: 12px; padding: 14px 16px;
+}
+.ic-ts-card-title { font-weight: 650; color: #0D47A1; }
+.ic-ts-card-sub { color: #5b7380; font-size: 13px; margin: 4px 0 12px; }
+.ic-ts-actions { margin-top: 12px; }
+.ic-ts-price {
+  display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline;
+  padding: 8px 10px; background: #fff; border: 1px solid #d7e6ef; border-radius: 8px;
+}
+.ic-ts-price b { margin-left: 6px; color: #0D47A1; }
+.ic-ts-offers-title { font-weight: 600; margin: 10px 0 6px; color: #234; }
+.ic-ts-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
+.ic-ts-filter { min-width: 180px; flex: 1; }
+.ic-ts-board { display: flex; flex-direction: column; gap: 12px; }
+.ic-ts-tr {
+  background: #fff; border: 1px solid #d7e6ef; border-radius: 10px; padding: 12px;
+}
+.ic-ts-tr-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.ic-ts-tr-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.ic-ts-samples { display: flex; flex-direction: column; gap: 8px; }
+.ic-ts-sample {
+  border: 1px solid #e3edf4; border-radius: 8px; padding: 8px 10px; background: #fafcfe;
+}
+.ic-ts-sample-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.ic-ts-pill {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 650;
+}
+.ic-ts-loc-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+.ic-ts-empty {
+  padding: 28px; text-align: center; color: #5b7380; border: 1px dashed #cfd8dc; border-radius: 10px; background: #fff;
+}

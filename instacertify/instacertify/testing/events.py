@@ -284,6 +284,183 @@ def _sample_description_from_tr(tr, index: int, total: int) -> str:
 
 
 @frappe.whitelist()
+def create_testing_and_samples(
+	customer: str,
+	product: str | None = None,
+	test_name: str | None = None,
+	applicable_standard: str | None = None,
+	laboratory: str | None = None,
+	lab_scope_row: str | None = None,
+	lab_offer: str | None = None,
+	number_of_samples: int | None = 1,
+	project: str | None = None,
+	quotation: str | None = None,
+	title: str | None = None,
+):
+	"""One-shot: create Testing Request from lab library pricing + linked samples.
+
+	Used by the unified Testing & Samples desk page.
+	"""
+	from frappe.utils import cint, flt
+
+	if not customer:
+		frappe.throw(_("Customer is required"))
+	if not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer {0} not found").format(customer))
+
+	needed = max(cint(number_of_samples) or 1, 1)
+	buying = 0
+	selling = 0
+	scope_label = ""
+	lab_loc = ""
+
+	# Resolve lab scope / prices from laboratory library
+	if laboratory and (lab_scope_row or test_name or applicable_standard):
+		try:
+			from instacertify.laboratory.api import get_lab_offer_details, get_lab_test_scope_details
+
+			if lab_scope_row:
+				detail = get_lab_test_scope_details(
+					laboratory=laboratory,
+					scope_key="",
+					scope_row=lab_scope_row,
+				)
+			else:
+				detail = get_lab_offer_details(
+					lab_offer=lab_offer,
+					applicable_standard=applicable_standard,
+					test_name=test_name,
+					laboratory=laboratory,
+					scope_row=lab_scope_row,
+				)
+			if detail:
+				buying = flt(detail.get("purchase_price") or detail.get("buying_price"))
+				selling = flt(detail.get("selling_price"))
+				scope_label = detail.get("label") or detail.get("scope_label") or ""
+				lab_scope_row = detail.get("name") or detail.get("scope_row") or lab_scope_row
+				if not test_name:
+					test_name = detail.get("test_name") or test_name
+				if not applicable_standard:
+					applicable_standard = detail.get("applicable_standard") or applicable_standard
+				if not laboratory:
+					laboratory = detail.get("laboratory") or laboratory
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "create_testing_and_samples lab resolve")
+
+	if laboratory and frappe.db.exists("IC Laboratory", laboratory):
+		lab_loc = frappe.db.get_value("IC Laboratory", laboratory, "location") or ""
+
+	tr_title = (title or "").strip() or " / ".join(
+		[b for b in [(test_name or "").strip(), (product or "").strip()] if b]
+	) or _("Testing Request")
+
+	payload = {
+		"doctype": "IC Testing Request",
+		"title": tr_title[:140],
+		"customer": customer,
+		"number_of_samples": needed,
+		"suggested_selling_price": selling,
+		"library_buying_price": buying,
+		"status": "Sample Awaited",
+	}
+	for key, val in {
+		"project": project,
+		"quotation": quotation,
+		"product": product,
+		"test_name": test_name,
+		"applicable_standard": applicable_standard,
+		"laboratory": laboratory,
+		"lab_scope_row": lab_scope_row,
+		"lab_test_scope": scope_label,
+		"lab_offer": lab_offer,
+	}.items():
+		if val:
+			payload[key] = val
+	tr = frappe.get_doc(payload)
+	# after_insert creates samples; set status already Sample Awaited
+	tr.insert(ignore_permissions=True)
+	# Force sync samples + lab links (covers race if after_insert failed)
+	bundle = ensure_samples_for_testing_request(tr.name, force_sync=1)
+
+	return {
+		"testing_request": tr.name,
+		"title": tr.title,
+		"status": tr.status,
+		"laboratory": laboratory,
+		"laboratory_location": lab_loc,
+		"library_buying_price": buying,
+		"suggested_selling_price": selling,
+		"samples": bundle.get("samples") or [],
+		"created_samples": bundle.get("created") or [],
+	}
+
+
+@frappe.whitelist()
+def list_testing_samples_board(
+	customer: str | None = None,
+	project: str | None = None,
+	status: str | None = None,
+	limit: int | None = 40,
+):
+	"""Board rows for the Testing & Samples page — TR + nested sample custody."""
+	from frappe.utils import cint
+
+	filters = {}
+	if customer:
+		filters["customer"] = customer
+	if project:
+		filters["project"] = project
+	if status:
+		filters["status"] = status
+
+	trs = frappe.get_all(
+		"IC Testing Request",
+		filters=filters,
+		fields=[
+			"name",
+			"title",
+			"status",
+			"customer",
+			"project",
+			"quotation",
+			"product",
+			"test_name",
+			"applicable_standard",
+			"laboratory",
+			"number_of_samples",
+			"library_buying_price",
+			"suggested_selling_price",
+			"modified",
+		],
+		order_by="modified desc",
+		limit_page_length=cint(limit) or 40,
+	)
+	lab_ids = {t.laboratory for t in trs if t.laboratory}
+	lab_map = {}
+	if lab_ids:
+		for lab in frappe.get_all(
+			"IC Laboratory",
+			filters={"name": ["in", list(lab_ids)]},
+			fields=["name", "laboratory_name", "location"],
+		):
+			lab_map[lab.name] = lab
+
+	out = []
+	for tr in trs:
+		lab = lab_map.get(tr.laboratory) or {}
+		samples = get_samples_for_testing_request(tr.name)
+		out.append(
+			{
+				**tr,
+				"laboratory_name": lab.get("laboratory_name") or tr.laboratory,
+				"laboratory_city": lab.get("location") or "",
+				"samples": samples,
+			}
+		)
+	return out
+
+
+@frappe.whitelist()
 def ensure_samples_for_testing_request(testing_request: str, force_sync: int | None = 0):
 	"""Create missing Sample Tracking rows for a Testing Request and sync lab links.
 
