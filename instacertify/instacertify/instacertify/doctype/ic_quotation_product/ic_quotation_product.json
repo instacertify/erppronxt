@@ -10,7 +10,8 @@
    "fieldtype": "Data",
    "label": "Product Name",
    "in_list_view": 1,
-   "reqd": 1
+   "reqd": 0,
+   "description": "Free-text customer product — not linked to inventory Items"
   },
   {
    "doctype": "DocField",

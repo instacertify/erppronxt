@@ -65,6 +65,8 @@ def after_install():
 	setup_lead_capture_properties()
 	setup_items_and_groups()
 	setup_consulting_billing()
+	setup_service_quote_rules()
+	setup_contact_billing_fields()
 	setup_settings()
 	setup_branding()
 	setup_workflows()
@@ -173,6 +175,8 @@ def after_migrate():
 	setup_disable_pos()
 	setup_gst_returns()
 	setup_consulting_billing()
+	setup_service_quote_rules()
+	setup_contact_billing_fields()
 	setup_invoice_naming_series()
 	setup_quotation_naming_series()
 	setup_hrms_alignment()
@@ -290,6 +294,20 @@ def setup_team_calendar():
 		repair_participant_emails()
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "repair_participant_emails")
+
+
+def setup_service_quote_rules():
+	"""Customer-only mandatory quotes; free-text non-stock products/services."""
+	from instacertify.setup.service_quote import ensure_service_quote_rules
+
+	ensure_service_quote_rules()
+
+
+def setup_contact_billing_fields():
+	"""Ensure Contact.is_billing_contact exists (ERPNext party/quote lookups)."""
+	from instacertify.setup.contact_billing import ensure_contact_billing_fields
+
+	ensure_contact_billing_fields()
 
 
 def setup_consulting_billing():
@@ -595,7 +613,8 @@ def _apply_quotation_type_options():
 			"Quotation-ic_quotation_type",
 			{
 				"options": "\nConsulting\nTesting\nRenewal\nOther\nMultiple Products / Multiple Services\nService",
-				"description": "Consulting, Testing, or Renewal. Pick a matching template below.",
+				"reqd": 0,
+				"description": "Optional category. Only Customer is required to create a quote.",
 			},
 		)
 

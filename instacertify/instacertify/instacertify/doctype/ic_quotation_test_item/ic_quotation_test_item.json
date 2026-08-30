@@ -17,8 +17,8 @@
    "fieldtype": "Autocomplete",
    "label": "Applicable Standard",
    "in_list_view": 1,
-   "reqd": 1,
-   "description": "Enter the test standard — then pick which lab to use (same standard may be offered by multiple labs at different prices)"
+   "reqd": 0,
+   "description": "Optional — enter the test standard, then pick a lab offer (price from lab library)"
   },
   {
    "doctype": "DocField",
@@ -56,10 +56,11 @@
   {
    "doctype": "DocField",
    "fieldname": "test_name",
-   "fieldtype": "Data",
+   "fieldtype": "Autocomplete",
    "label": "Testing",
    "in_list_view": 1,
-   "reqd": 1
+   "reqd": 0,
+   "description": "From lab library scopes — pick Lab Offer to suggest selling price"
   },
   {
    "doctype": "DocField",

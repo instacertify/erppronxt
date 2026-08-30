@@ -134,8 +134,8 @@
    "fieldname": "product",
    "fieldtype": "Data",
    "label": "Product",
-   "reqd": 1,
-   "placeholder": "Product name"
+   "reqd": 0,
+   "placeholder": "Product name (optional free text — not inventory)"
   },
   {
    "doctype": "DocField",
@@ -147,8 +147,8 @@
    "fieldname": "test_name",
    "fieldtype": "Autocomplete",
    "label": "Test",
-   "reqd": 1,
-   "description": "From Active lab libraries \u2014 interrelated with Applicable Standard; includes Other"
+   "reqd": 0,
+   "description": "Optional — from Active lab libraries; interrelated with Applicable Standard; includes Other"
   },
   {
    "doctype": "DocField",
