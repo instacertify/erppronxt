@@ -54,9 +54,17 @@ html {
   --btn-primary: #065175;
   --btn-primary-hover: #033447;
   --btn-primary-color: #ffffff;
+  /* Text on filled brand surfaces — never use brand blue as button label */
+  --text-on-primary: #ffffff;
+  --text-on-accent: #ffffff;
+  --text-on-danger: #ffffff;
   --text-primary: #065175;
   --text-on-blue: #ffffff;
   --icon-stroke: #065175;
+  /* Uniform soft highlight brightness (same luminance family) */
+  --ic-hl-bg: rgba(6, 81, 117, 0.08);
+  --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
+  --ic-hl-edge: rgba(236, 105, 31, 0.55);
   --alert-text-info: #065175;
   --blue-500: #065175;
   --blue-600: #033447;
@@ -131,26 +139,28 @@ select:focus {
 .dropdown-item.active,
 .dropdown-item:active,
 .dropdown-menu .dropdown-item:hover {
-  background: linear-gradient(90deg, var(--ic-primary-soft), #fff) !important;
-  color: var(--ic-primary) !important;
-  box-shadow: inset 3px 0 0 var(--ic-accent);
+  background: var(--ic-hl-bg) !important;
+  color: var(--ic-ink) !important;
+  box-shadow: inset 3px 0 0 var(--ic-hl-edge);
 }
 
 .list-row:hover,
 .list-row.list-row-highlight,
 .list-row-container .list-row:hover {
-  background: rgba(6, 81, 117, 0.04) !important;
-  box-shadow: inset 3px 0 0 rgba(236, 105, 31, 0.55);
+  background: var(--ic-hl-bg) !important;
+  box-shadow: inset 3px 0 0 var(--ic-hl-edge);
 }
 
 .list-row.list-row-highlight {
-  background: var(--ic-primary-soft) !important;
+  background: var(--ic-hl-bg-strong) !important;
+  color: var(--ic-ink) !important;
 }
 
 .grid-row:hover .data-row,
 .grid-row > .data-row.highlight,
 .grid-body .data-row:hover {
-  background: linear-gradient(90deg, rgba(6, 81, 117, 0.06), #fff) !important;
+  background: var(--ic-hl-bg) !important;
+  color: var(--ic-ink) !important;
 }
 
 .checkbox input:checked,
@@ -159,14 +169,15 @@ input[type="radio"]:checked {
   accent-color: var(--ic-accent);
 }
 
-a,
-.btn-link,
-.text-primary {
+/* Links only — never force brand ink onto filled .btn surfaces */
+a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-warning):not(.btn-danger):not(.btn-success):not(.btn-info):not(.btn-accent),
+.btn-link:not(.btn-primary),
+.text-primary:not(.btn):not(.btn-primary) {
   color: var(--ic-primary) !important;
   transition: color 0.15s var(--ic-ease);
 }
-a:hover,
-.btn-link:hover {
+a:not(.btn):hover,
+.btn-link:not(.btn-primary):hover {
   color: var(--ic-accent) !important;
 }
 
@@ -1492,14 +1503,19 @@ body.for-login,
 .btn-primary, .btn-primary:not(:disabled) {
   background: var(--ic-primary) !important;
   border-color: var(--ic-primary) !important;
+  color: #ffffff !important;
 }
 .btn-primary:hover {
   background: #023a52 !important;
+  color: #ffffff !important;
 }
 .page-head .page-title .title-text,
-.workspace-sidebar .item-anchor.active,
-.list-row .level-left .ellipsis {
+.workspace-sidebar .item-anchor.active {
   color: var(--ic-primary) !important;
+}
+/* List titles stay dark ink — not brand-blue-on-blue highlight */
+.list-row .level-left .ellipsis {
+  color: var(--ic-ink) !important;
 }
 .indicator-pill.blue, .indicator.blue {
   background: var(--ic-primary-soft);
@@ -4078,15 +4094,19 @@ body.full-width {
 }
 .ic-ts-tab-gen.is-active {
   background: var(--ic-primary, #065175);
-  color: #fff;
+  color: #fff !important;
   border-color: var(--ic-primary, #065175);
   box-shadow: 0 4px 12px rgba(6, 81, 117, 0.22);
 }
 .ic-ts-tab-manage.is-active {
   background: var(--ic-accent, #EC691F);
-  color: #fff;
+  color: #fff !important;
   border-color: var(--ic-accent, #EC691F);
   box-shadow: 0 4px 12px rgba(236, 105, 31, 0.25);
+}
+.ic-ts-tab.is-active .ic-ts-tab-label,
+.ic-ts-tab.is-active .ic-ts-tab-hint {
+  color: #fff !important;
 }
 .ic-ts-tab.is-active .ic-ts-tab-dot { opacity: 1; background: #fff; }
 .ic-ts-panel { min-width: 0; }
@@ -4746,3 +4766,283 @@ body.full-width {
   .ic-ts-head { padding: 14px; }
 }
 
+
+/* ==========================================================================
+   Contrast & highlight uniformity (desk-wide)
+   Dark fill → light text. Light fill → dark ink. No brand-blue-on-blue.
+   Highlights share the same soft brightness (--ic-hl-*).
+   ========================================================================== */
+
+:root,
+[data-theme="light"],
+html {
+  --btn-primary-color: #ffffff !important;
+  --text-on-primary: #ffffff;
+  --text-on-accent: #ffffff;
+  --text-on-danger: #ffffff;
+  --ic-hl-bg: rgba(6, 81, 117, 0.08);
+  --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
+  --ic-hl-edge: rgba(236, 105, 31, 0.55);
+}
+
+/* ——— Filled actions: always white (and light icons) ——— */
+.btn-primary,
+.btn.btn-primary,
+a.btn-primary,
+button.btn-primary,
+.btn-primary:not(:disabled),
+.btn-primary:active,
+.btn-primary:focus,
+.btn-primary:hover,
+.btn-primary:focus-visible,
+.btn-primary:disabled,
+.btn-primary.disabled,
+.btn-warning,
+.btn.btn-warning,
+a.btn-warning,
+.btn-orange,
+.btn.btn-accent,
+.btn-accent,
+.page-actions .btn-primary-dark,
+.standard-actions .btn-primary,
+.modal-footer .btn-primary,
+.page-actions .btn-primary,
+.ic-btn-primary,
+.ic-btn-accent,
+.ic-ts-btn-qr,
+.ic-ts-tab-gen.is-active,
+.ic-ts-tab-manage.is-active,
+.ic-ts-step.is-current,
+.ic-quote-lib-tag.active,
+.ic-doclib-cat.is-active,
+.btn-danger,
+.btn.btn-danger,
+.btn-success,
+.btn.btn-success,
+.btn-info,
+.btn.btn-info,
+.primary-action,
+.btn.btn-primary-dark {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.btn-primary *,
+.btn.btn-primary *,
+a.btn-primary *,
+.btn-warning *,
+.btn-orange *,
+.btn-accent *,
+.btn.btn-accent *,
+.btn-danger *,
+.btn-success *,
+.btn-info *,
+.ic-btn-primary *,
+.ic-btn-accent *,
+.ic-ts-btn-qr *,
+.ic-ts-tab-gen.is-active *,
+.ic-ts-tab-manage.is-active *,
+.ic-ts-step.is-current *,
+.ic-quote-lib-tag.active *,
+.ic-doclib-cat.is-active *,
+.primary-action * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.btn-primary .es-icon use,
+.btn-primary svg,
+.btn-primary .icon,
+.btn-warning svg,
+.btn-warning .es-icon use,
+.btn-accent svg,
+.btn-danger svg,
+.btn-success svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Soft / outline buttons: dark ink on light surface */
+.btn-default,
+.btn.btn-default,
+.btn-secondary,
+.btn.btn-secondary,
+.btn-light,
+.ic-btn-ghost,
+.ic-ts-expand-btn,
+.ic-list-cat-btn,
+.filter-button {
+  color: var(--ic-ink, #152833) !important;
+  -webkit-text-fill-color: var(--ic-ink, #152833) !important;
+}
+.btn-default:hover,
+.btn-secondary:hover,
+.btn-default:focus,
+.btn-secondary:focus {
+  color: var(--ic-primary-deep, #033447) !important;
+  -webkit-text-fill-color: var(--ic-primary-deep, #033447) !important;
+}
+
+/* Category chips stay tinted light + dark label (never dark fill + dark text) */
+.ic-list-cat-btn.cat-consulting,
+.ic-list-cat-btn.cat-testing,
+.ic-list-cat-btn.cat-renewal,
+.ic-list-cat-btn.cat-other,
+.ic-list-cat-btn.cat-all {
+  background-image: none !important;
+}
+.ic-list-cat-btn.btn-primary {
+  /* if Frappe flips category filter to primary, keep soft surface + dark label */
+  background: var(--ic-primary-soft, #e4f1f8) !important;
+  border-color: var(--ic-primary, #065175) !important;
+  color: var(--ic-primary-deep, #033447) !important;
+  -webkit-text-fill-color: var(--ic-primary-deep, #033447) !important;
+  box-shadow: none !important;
+}
+
+/* Active Testing & Samples tabs — force light labels on dark pills */
+.ic-ts-tab-gen.is-active,
+.ic-ts-tab-gen.is-active .ic-ts-tab-label,
+.ic-ts-tab-gen.is-active .ic-ts-tab-hint,
+.ic-ts-tab-manage.is-active,
+.ic-ts-tab-manage.is-active .ic-ts-tab-label,
+.ic-ts-tab-manage.is-active .ic-ts-tab-hint {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Soft surfaces → dark readable ink */
+.ic-explore-count,
+.ic-lead-prompt-when,
+.ic-lead-hub-counts,
+.ic-lead-hub-chip.overdue,
+.ic-lead-hub-chip.upcoming,
+.ic-lead-hub-chip.today {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.ic-explore-card,
+.ic-summary-card,
+.ic-workdesk-panel,
+.ic-lead-prompt,
+.ic-lead-hub-card,
+.indicator-pill,
+.indicator-pill.blue,
+.indicator-pill.orange,
+.indicator-pill.green,
+.indicator-pill.yellow,
+.desk-sidebar .standard-sidebar-item.selected,
+.workspace-sidebar .item-anchor.active,
+.list-sidebar .list-link.active a {
+  color: var(--ic-ink, #152833);
+}
+.indicator-pill.blue,
+.indicator.blue,
+.indicator-pill.green {
+  background: var(--ic-primary-soft, #e4f1f8) !important;
+  color: var(--ic-primary-deep, #033447) !important;
+}
+.indicator-pill.orange,
+.indicator.orange,
+.indicator-pill.yellow {
+  background: var(--ic-accent-soft, #fff1e6) !important;
+  color: var(--ic-accent-deep, #c44710) !important;
+}
+.indicator-pill.red,
+.indicator.red {
+  background: #ffe5e0 !important;
+  color: #922b21 !important;
+}
+
+/* Uniform soft highlights — same brightness, no random word boxes */
+::selection {
+  background: var(--ic-hl-bg-strong) !important;
+  color: var(--ic-ink, #152833) !important;
+}
+::-moz-selection {
+  background: var(--ic-hl-bg-strong) !important;
+  color: var(--ic-ink, #152833) !important;
+}
+
+mark,
+.highlight,
+.hljs-highlight,
+.search-highlight,
+.frappe-list .highlight,
+.ql-editor mark,
+span.highlight,
+.matched,
+.awesomplete mark {
+  background: var(--ic-hl-bg) !important;
+  color: var(--ic-ink, #152833) !important;
+  border-radius: 2px;
+  box-shadow: none !important;
+  padding: 0 1px;
+}
+
+.list-row:hover,
+.list-row.list-row-highlight,
+.list-row-container .list-row:hover,
+.grid-row:hover .data-row,
+.grid-row > .data-row.highlight,
+.grid-body .data-row:hover,
+.awesomplete > ul > li[aria-selected="true"],
+.awesomplete > ul > li:hover,
+.dropdown-item.active,
+.dropdown-item:active,
+.dropdown-menu .dropdown-item:hover,
+.ic-ts-table tbody tr:hover,
+.ic-ts-tr-row.is-open,
+.ic-ts-table tbody tr.is-selected {
+  background: var(--ic-hl-bg) !important;
+  color: var(--ic-ink, #152833) !important;
+  box-shadow: inset 3px 0 0 var(--ic-hl-edge);
+}
+
+.list-row.list-row-highlight {
+  background: var(--ic-hl-bg-strong) !important;
+}
+
+/* Sidebar active — soft tint + dark ink (not dark-on-dark) */
+.desk-sidebar .standard-sidebar-item.selected,
+.desk-sidebar .standard-sidebar-item.active,
+.workspace-sidebar .item-anchor.active,
+.sidebar-item-container .item-anchor.active {
+  background: var(--ic-hl-bg-strong) !important;
+  color: var(--ic-primary-deep, #033447) !important;
+}
+
+.desk-sidebar .standard-sidebar-item:hover,
+.workspace-sidebar .item-anchor:hover {
+  background: var(--ic-hl-bg) !important;
+  color: var(--ic-primary-deep, #033447) !important;
+}
+
+/* Soften always-on checkbox “random box” outlines to match highlight weight */
+.frappe-control input[type="checkbox"],
+.frappe-control input[type="radio"] {
+  outline: 1px solid rgba(6, 81, 117, 0.28) !important;
+  outline-offset: 1px !important;
+}
+
+/* Modal / dialog primary actions */
+.modal .btn-primary,
+.modal-dialog .btn-primary,
+.msgprint-dialog .btn-primary,
+.frappe-control .btn-primary {
+  background: var(--ic-primary, #065175) !important;
+  border-color: var(--ic-primary, #065175) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Disabled filled buttons stay readable */
+.btn-primary:disabled,
+.btn-primary.disabled,
+.btn-warning:disabled {
+  color: #ffffff !important;
+  opacity: 0.65;
+}
