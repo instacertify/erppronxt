@@ -13,6 +13,113 @@ instacertify.brand = {
 	favicon: "/assets/instacertify/images/favicon-32.png",
 };
 
+/**
+ * Desk-wide contrast guard: dark fills get white labels; soft fills get dark ink.
+ * Uniform highlight brightness. Runs early so buttons stay readable without hover.
+ */
+instacertify.ensure_contrast_guard = function () {
+	const ID = "ic-contrast-guard-style";
+	if (document.getElementById(ID)) return;
+	const s = document.createElement("style");
+	s.id = ID;
+	s.textContent = `
+:root {
+  --btn-primary-color: #ffffff !important;
+  --text-on-primary: #ffffff;
+  --ic-hl-bg: rgba(6, 81, 117, 0.08);
+  --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
+  --ic-hl-edge: rgba(236, 105, 31, 0.55);
+}
+.btn-primary, .btn.btn-primary, a.btn-primary, button.btn-primary,
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active, .btn-primary:disabled,
+.btn-warning, .btn-orange, .btn-accent, .btn.btn-accent, .btn-danger, .btn-success, .btn-info,
+.ic-btn-primary, .ic-btn-accent, .ic-ts-btn-qr,
+.ic-ts-tab-gen.is-active, .ic-ts-tab-manage.is-active, .ic-ts-step.is-current,
+.ic-quote-lib-tag.active, .ic-doclib-cat.is-active, .primary-action {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+.btn-primary *, a.btn-primary *, .btn-warning *, .btn-accent *, .btn-danger *,
+.btn-success *, .ic-btn-primary *, .ic-ts-tab-gen.is-active *, .ic-ts-tab-manage.is-active *,
+.ic-quote-lib-tag.active *, .ic-doclib-cat.is-active *, .primary-action * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+.btn-default, .btn-secondary, .btn-light, .ic-btn-ghost, .ic-list-cat-btn, .filter-button {
+  color: #152833 !important;
+  -webkit-text-fill-color: #152833 !important;
+}
+.ic-list-cat-btn.btn-primary {
+  background: #e4f1f8 !important;
+  border-color: #065175 !important;
+  color: #033447 !important;
+  -webkit-text-fill-color: #033447 !important;
+  box-shadow: none !important;
+}
+.ic-ts-tab.is-active .ic-ts-tab-label, .ic-ts-tab.is-active .ic-ts-tab-hint {
+  color: #ffffff !important;
+}
+.ic-explore-count, .ic-lead-prompt-when, .ic-lead-hub-counts,
+.ic-lead-hub-chip.overdue, .ic-lead-hub-chip.upcoming, .ic-lead-hub-chip.today {
+  color: #ffffff !important;
+}
+::selection, ::-moz-selection {
+  background: rgba(6, 81, 117, 0.12) !important;
+  color: #152833 !important;
+}
+mark, .highlight, .search-highlight, .frappe-list .highlight, .ql-editor mark, span.highlight, .awesomplete mark {
+  background: rgba(6, 81, 117, 0.08) !important;
+  color: #152833 !important;
+  box-shadow: none !important;
+  border-radius: 2px;
+}
+.list-row:hover, .list-row.list-row-highlight,
+.grid-row:hover .data-row, .grid-row > .data-row.highlight,
+.awesomplete > ul > li[aria-selected="true"], .awesomplete > ul > li:hover,
+.dropdown-item.active, .dropdown-item:hover,
+.ic-ts-table tbody tr:hover, .ic-ts-tr-row.is-open, .ic-ts-table tbody tr.is-selected {
+  background: rgba(6, 81, 117, 0.08) !important;
+  color: #152833 !important;
+  box-shadow: inset 3px 0 0 rgba(236, 105, 31, 0.55);
+}
+.desk-sidebar .standard-sidebar-item.selected,
+.workspace-sidebar .item-anchor.active {
+  background: rgba(6, 81, 117, 0.12) !important;
+  color: #033447 !important;
+}
+.indicator-pill.blue, .indicator.blue, .indicator-pill.green {
+  background: #e4f1f8 !important;
+  color: #033447 !important;
+}
+.indicator-pill.orange, .indicator.orange, .indicator-pill.yellow {
+  background: #fff1e6 !important;
+  color: #c44710 !important;
+}
+.modal .btn-primary, .page-actions .btn-primary, .standard-actions .btn-primary {
+  background: #065175 !important;
+  border-color: #065175 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+`;
+	(document.head || document.documentElement).appendChild(s);
+};
+
+try {
+	instacertify.ensure_contrast_guard();
+} catch (e) {
+	/* ignore */
+}
+$(document).on("page-change", function () {
+	try {
+		instacertify.ensure_contrast_guard();
+	} catch (e) {
+		/* ignore */
+	}
+});
+
 /** Prefer ERPNext File Library (internal drive) over pasted URLs / Google Drive. */
 instacertify.attach_options = {
 	allow_web_link: false,
