@@ -791,8 +791,9 @@ _SHADOW_THEME_CSS = """
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
   background: transparent;
 }
+.ic-greeting-brand-text,
 .ic-greeting-brand-text span,
-.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #ffd7b8; }
+.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #ffffff !important; }
 .ic-greeting h2 {
   margin: 0 0 6px;
   font-weight: 500;
