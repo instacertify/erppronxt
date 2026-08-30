@@ -47,6 +47,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				</div>
 				<div class="ic-ts-tools">
 					<button type="button" class="btn btn-default btn-sm" id="ic-ts-labs">${__("Laboratories")}</button>
+					<button type="button" class="btn btn-primary btn-sm" id="ic-ts-bulk-scope">${__(
+						"Bulk Upload Scope"
+					)}</button>
 				</div>
 			</div>
 
@@ -1087,6 +1090,13 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 	page.main.find("#ic-ts-generate").on("click", generate);
 	page.main.find("#ic-ts-refresh").on("click", refresh_manage);
 	page.main.find("#ic-ts-labs").on("click", () => frappe.set_route("List", "IC Laboratory"));
+	page.main.find("#ic-ts-bulk-scope").on("click", () => {
+		if (window.instacertify && instacertify.open_lab_scope_bulk_upload) {
+			instacertify.open_lab_scope_bulk_upload();
+		} else {
+			frappe.set_route("List", "IC Laboratory");
+		}
+	});
 	page.main.find("#ic-ts-goto-generate").on("click", () => switch_tab("generate"));
 	page.main.find("#ic-ts-goto-manage").on("click", () => switch_tab("manage"));
 	page.main.find("#ic-ts-clear-filters").on("click", () => {
