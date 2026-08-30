@@ -150,7 +150,30 @@ ls ~/frappe-bench/apps/instacertify/pyproject.toml
 ls ~/frappe-bench/apps/instacertify/instacertify/hooks.py
 
 cd ~/frappe-bench
-grep -q '^instacertify$' sites/apps.txt || echo instacertify >> sites/apps.txt
+# Rewrite apps.txt cleanly (avoids "hrmsinstacertify" if a prior line lacked a trailing newline)
+python3 - <<'PY'
+from pathlib import Path
+p = Path("sites/apps.txt")
+apps = [ln.strip() for ln in p.read_text().splitlines() if ln.strip()]
+# undo accidental concatenations from a missing trailing newline
+fixed = []
+for a in apps:
+    if a == "hrmsinstacertify":
+        fixed.extend(["hrms", "instacertify"])
+    else:
+        fixed.append(a)
+for name in ("frappe", "erpnext", "india_compliance", "hrms", "gameplan", "instacertify"):
+    if name not in fixed and (Path("apps") / name).exists():
+        fixed.append(name)
+# keep unique order
+seen, out = set(), []
+for a in fixed:
+    if a not in seen:
+        seen.add(a)
+        out.append(a)
+p.write_text("\n".join(out) + "\n")
+print(p.read_text())
+PY
 ./env/bin/pip install -e ./apps/instacertify
 bench build --app instacertify
 ```
@@ -298,6 +321,7 @@ Download a copy off the VPS before `git pull` / migrate.
 | App not found | Confirm `apps/instacertify/instacertify/hooks.py` exists and `instacertify` is in `sites/apps.txt` |
 | `FileNotFoundError: .../erppronxt/setup.py` | Expected — do not use `bench get-app` on this repo. Clone to `~/src/erppronxt` and `ln -sfn ~/src/erppronxt/instacertify apps/instacertify` |
 | `ls .../instacertify/instacertify/hooks.py` missing after `mv erppronxt instacertify` | You renamed the **repo** folder, not the app. Remove it and use the symlink install above |
+| `No module named 'hrmsinstacertify'` | `sites/apps.txt` glued two app names (missing newline). Fix with the apps.txt rewrite block in §3, or edit so each app is on its own line |
 | `requires-python` / pip errors | Use **Python 3.14+** for `bench init` |
 | Smoke FAIL | Fix listed DocType/workspace gaps; re-run migrate + ensure_workspaces |
 
