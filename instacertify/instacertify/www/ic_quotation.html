@@ -123,9 +123,6 @@
             (d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
             '<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
             costTable(d.cost_items, d.currency) +
-            '<p><b>Commercial:</b> ' + esc(money(d.ic_commercial_value, d.currency)) + '</p>' +
-            '<p><b>Pass-through:</b> ' + esc(money(d.ic_passthrough_value, d.currency)) + '</p>' +
-            '<p><b>Total:</b> ' + esc(money(d.ic_total_quoted_value || d.grand_total, d.currency)) + '</p>' +
             (d.ic_payment_terms ? ('<h4 style="color:#0D47A1;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
 
