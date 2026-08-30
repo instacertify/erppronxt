@@ -3440,7 +3440,7 @@ frappe.ui.form.on("IC Testing Request", {
 						laboratory: frm.doc.laboratory,
 						testing_request: frm.doc.name,
 						project: frm.doc.project,
-						amount: frm.doc.library_buying_price || frm.doc.suggested_selling_price,
+						amount: frm.doc.library_buying_price || 0,
 					},
 					freeze: true,
 					callback(r) {

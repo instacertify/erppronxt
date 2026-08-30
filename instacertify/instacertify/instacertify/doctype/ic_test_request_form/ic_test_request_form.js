@@ -1,7 +1,24 @@
-# Copyright (c) Instacertify
+// Copyright (c) Instacertify
 frappe.ui.form.on("IC Test Request Form", {
 	refresh(frm) {
 		if (frm.is_new()) return;
+
+		// Always surface key filled values at the top so Open TRF is readable
+		frm.dashboard.clear_headline();
+		const bits = [
+			frm.doc.sample_name ? __("Sample: {0}", [frm.doc.sample_name]) : "",
+			frm.doc.product_name ? __("Product: {0}", [frm.doc.product_name]) : "",
+			frm.doc.brand_name ? __("Brand: {0}", [frm.doc.brand_name]) : "",
+			frm.doc.testing_requested ? __("Test: {0}", [frm.doc.testing_requested]) : "",
+			frm.doc.applicable_standard ? __("Std: {0}", [frm.doc.applicable_standard]) : "",
+			frm.doc.sample_tracking_number
+				? __("Tracking: {0}", [frm.doc.sample_tracking_number])
+				: "",
+		].filter(Boolean);
+		if (bits.length) {
+			frm.dashboard.set_headline(bits.join(" · "));
+		}
+
 		frm.add_custom_button(__("Share with Customer"), () => {
 			frappe.call({
 				method: "instacertify.trf.api.share_trf",
