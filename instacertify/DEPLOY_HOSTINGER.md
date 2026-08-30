@@ -121,19 +121,68 @@ bench get-app https://github.com/resilient-tech/india-compliance --branch versio
 bench get-app hrms --branch version-16
 bench get-app gameplan --branch develop
 
-# Instacertify app (this repo — app name is instacertify)
-bench get-app https://github.com/instacertify/erppronxt.git --branch main
+# Instacertify — do NOT use bench get-app on this repo.
+# GitHub repo root is erppronxt; the Frappe app lives in the nested
+# folder `instacertify/` (pyproject.toml + package). bench get-app
+# looks for setup.py at the clone root and fails with FileNotFoundError.
 ```
 
-If `get-app` clones as `erppronxt` but hooks expect the app name `instacertify`, rename so `apps/instacertify/instacertify/hooks.py` exists:
+Install Instacertify by cloning the repo and symlinking the nested app:
 
 ```bash
-cd apps
-# only if the folder is still named erppronxt:
-mv erppronxt instacertify
-cd ..
-# ensure sites/apps.txt lists: instacertify
-grep -q instacertify sites/apps.txt || echo instacertify >> sites/apps.txt
+cd ~/frappe-bench/apps
+# Remove any failed get-app / bad rename leftovers
+rm -rf erppronxt instacertify
+
+mkdir -p ~/src
+if [ -d ~/src/erppronxt/.git ]; then
+  git -C ~/src/erppronxt fetch origin
+  git -C ~/src/erppronxt checkout main
+  git -C ~/src/erppronxt pull origin main
+else
+  git clone --branch main https://github.com/instacertify/erppronxt.git ~/src/erppronxt
+fi
+
+ln -sfn ~/src/erppronxt/instacertify ~/frappe-bench/apps/instacertify
+
+# Must exist:
+ls ~/frappe-bench/apps/instacertify/pyproject.toml
+ls ~/frappe-bench/apps/instacertify/instacertify/hooks.py
+
+cd ~/frappe-bench
+# Rewrite apps.txt cleanly (avoids "hrmsinstacertify" if a prior line lacked a trailing newline)
+python3 - <<'PY'
+from pathlib import Path
+p = Path("sites/apps.txt")
+apps = [ln.strip() for ln in p.read_text().splitlines() if ln.strip()]
+# undo accidental concatenations from a missing trailing newline
+fixed = []
+for a in apps:
+    if a == "hrmsinstacertify":
+        fixed.extend(["hrms", "instacertify"])
+    else:
+        fixed.append(a)
+for name in ("frappe", "erpnext", "india_compliance", "hrms", "gameplan", "instacertify"):
+    if name not in fixed and (Path("apps") / name).exists():
+        fixed.append(name)
+# keep unique order
+seen, out = set(), []
+for a in fixed:
+    if a not in seen:
+        seen.add(a)
+        out.append(a)
+p.write_text("\n".join(out) + "\n")
+print(p.read_text())
+PY
+./env/bin/pip install -e ./apps/instacertify
+bench build --app instacertify
+
+# Redis must be up before new-site / install-app / migrate
+sudo systemctl enable --now redis-server
+bench set-config -g redis_cache "redis://127.0.0.1:6379"
+bench set-config -g redis_queue "redis://127.0.0.1:6379"
+bench set-config -g redis_socketio "redis://127.0.0.1:6379"
+redis-cli ping
 ```
 
 ### 4. Create the site and install apps
@@ -193,11 +242,11 @@ cd ~/frappe-bench
 
 bench --site erp.yourdomain.com backup --with-files
 
-cd apps/instacertify   # or apps/erppronxt if not renamed
-git fetch origin
-git checkout main
-git pull origin main
-cd ../..
+# Prefer the update script (handles nested repo + symlink).
+# Manual git pull must run on the clone root, not apps/instacertify alone:
+git -C ~/src/erppronxt fetch origin
+git -C ~/src/erppronxt checkout main
+git -C ~/src/erppronxt pull origin main
 
 bench --site erp.yourdomain.com migrate
 bench build --app instacertify
@@ -236,8 +285,11 @@ tar czf instacertify-main.tar.gz \
   --exclude .git --exclude '__pycache__' --exclude '*.pyc' .
 ```
 
-2. Upload to the VPS (`scp` / SFTP) into `~/frappe-bench/apps/`.
-3. Extract over `apps/instacertify/`, then run the same `migrate` / `build` / `clear-cache` / `ensure_workspaces` / smoke / `supervisorctl restart` as in Option B.
+2. Upload to the VPS and extract so the **nested** app lands at `apps/instacertify/`
+   (archive root should contain `instacertify/pyproject.toml`, then:
+   `tar xzf instacertify-main.tar.gz -C /tmp && mv /tmp/instacertify ~/frappe-bench/apps/instacertify`).
+3. Run `pip install -e ./apps/instacertify`, then the same `migrate` / `build` /
+   `clear-cache` / `ensure_workspaces` / smoke / `supervisorctl restart` as in Option B.
 
 ---
 
@@ -274,6 +326,10 @@ Download a copy off the VPS before `git pull` / migrate.
 | 502 Bad Gateway | `sudo supervisorctl status` — restart `frappe-bench-web` / workers |
 | SSL fail | DNS A record must point to this VPS before Let's Encrypt |
 | App not found | Confirm `apps/instacertify/instacertify/hooks.py` exists and `instacertify` is in `sites/apps.txt` |
+| `FileNotFoundError: .../erppronxt/setup.py` | Expected — do not use `bench get-app` on this repo. Clone to `~/src/erppronxt` and `ln -sfn ~/src/erppronxt/instacertify apps/instacertify` |
+| `ls .../instacertify/instacertify/hooks.py` missing after `mv erppronxt instacertify` | You renamed the **repo** folder, not the app. Remove it and use the symlink install above |
+| `No module named 'hrmsinstacertify'` | `sites/apps.txt` glued two app names (missing newline). Fix with the apps.txt rewrite block in §3, or edit so each app is on its own line |
+| `Error 111 connecting to 127.0.0.1:11000` / redis_cache not running | Start Redis before `install-app` / `migrate`. Either point bench at system Redis (`bench set-config -g redis_* redis://127.0.0.1:6379` + `systemctl enable --now redis-server`) or daemonize bench configs: `redis-server config/redis_queue.conf --daemonize yes` and `redis-server config/redis_cache.conf --daemonize yes` |
 | `requires-python` / pip errors | Use **Python 3.14+** for `bench init` |
 | Smoke FAIL | Fix listed DocType/workspace gaps; re-run migrate + ensure_workspaces |
 
