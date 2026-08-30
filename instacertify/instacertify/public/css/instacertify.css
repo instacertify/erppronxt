@@ -4326,27 +4326,27 @@ body.full-width {
 }
 .ic-ts-manage-table thead th,
 .ic-ts-manage-table tbody td {
-  border: 1px solid #7a9eb3;
+  border: 1.5px solid #5f8499 !important;
 }
 .ic-ts-manage-table thead th {
-  border-bottom: 2px solid #4f738a;
+  border-bottom: 2.5px solid #3d5f73 !important;
   background: linear-gradient(180deg, #e8f1f7, #dce8f0);
 }
 .ic-ts-manage-table .ic-ts-tr-row td {
   background: #fff;
-  border-bottom: 2px solid #5f8499;
+  border-bottom: 2.5px solid #3d5f73 !important;
 }
 .ic-ts-manage-table .ic-ts-tr-row.is-alt td {
-  background: #f7fbfd;
+  background: #f3f8fb;
 }
 .ic-ts-manage-table .ic-ts-tr-row.is-open td {
   background: #eef6fb;
-  border-bottom: 1px solid #c5d8e4;
+  border-bottom: 1px solid #c5d8e4 !important;
 }
 .ic-ts-manage-table .ic-ts-tr-detail td {
-  border: 1px solid #7a9eb3;
-  border-top: none;
-  border-bottom: 2px solid #4f738a;
+  border: 1.5px solid #5f8499 !important;
+  border-top: none !important;
+  border-bottom: 2.5px solid #3d5f73 !important;
   background: #f5fafc;
   padding: 0;
 }
