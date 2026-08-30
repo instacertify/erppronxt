@@ -55,7 +55,7 @@ def get_dashboard_data(data):
 			"Helpdesk Ticket",
 		],
 	)
-	# Quotation is linked from Project.ic_quotation (parent field)
+	# Quotation is linked from Project.ic_quotation (parent field — must be a string)
 	data.setdefault("internal_links", {})
-	data["internal_links"]["Quotation"] = ["ic_quotation"]
+	data["internal_links"]["Quotation"] = "ic_quotation"
 	return data
