@@ -283,11 +283,7 @@ def _upsert_role_profile(name: str, roles: list[str]):
 		return
 	if frappe.db.exists("Role Profile", name):
 		doc = frappe.get_doc("Role Profile", name)
-		doc.set("roles", [])
-		for r in valid:
-			doc.append("roles", {"role": r})
-		doc.flags.ignore_permissions = True
-		doc.save(ignore_permissions=True)
+		_save_role_profile(doc, valid)
 		return
 	doc = frappe.get_doc(
 		{
@@ -297,6 +293,34 @@ def _upsert_role_profile(name: str, roles: list[str]):
 		}
 	)
 	doc.insert(ignore_permissions=True)
+
+
+def _save_role_profile(doc, roles: list[str]):
+	"""Save Role Profile, clearing stale document locks from failed installs / migrate."""
+	import time
+
+	doc.set("roles", [])
+	for r in roles:
+		doc.append("roles", {"role": r})
+	doc.flags.ignore_permissions = True
+	last_err = None
+	for attempt in range(5):
+		try:
+			doc.unlock()
+		except Exception:
+			pass
+		try:
+			doc.save(ignore_permissions=True)
+			return
+		except frappe.DocumentLockedError as e:
+			last_err = e
+			time.sleep(0.5 * (attempt + 1))
+			doc.reload()
+			doc.set("roles", [])
+			for r in roles:
+				doc.append("roles", {"role": r})
+	if last_err:
+		raise last_err
 
 
 def _apply_permissions():

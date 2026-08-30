@@ -19,6 +19,26 @@ def ensure_workspaces():
 	from instacertify.setup.navigation_icons import ensure_navigation_icons
 
 	ensure_navigation_icons()
+	# Programmatic workspaces have no JSON fixtures — clear module/app so
+	# frappe.model.sync.remove_orphan_entities does not delete them on migrate.
+	for ws_name in ("Instacertify Home", "HRMS & Expenses"):
+		_protect_workspace_from_orphan_cleanup(ws_name)
+
+
+def _protect_workspace_from_orphan_cleanup(name: str):
+	"""Keep public workspaces but exclude them from migrate orphan deletion.
+
+	Orphan cleanup only targets public workspaces with both module and app set
+	that lack a matching JSON fixture under the app tree.
+	"""
+	if not frappe.db.exists("Workspace", name):
+		return
+	frappe.db.set_value(
+		"Workspace",
+		name,
+		{"module": None, "app": None},
+		update_modified=False,
+	)
 
 
 def _ensure_unified_testing_samples_sidebar():
@@ -1360,6 +1380,8 @@ def _ensure_home_workspace():
 				if frappe.db.exists("Dashboard Chart", ch):
 					ws.append("charts", {"chart_name": ch, "label": ch})
 		ws.insert(ignore_permissions=True)
+
+	_protect_workspace_from_orphan_cleanup(name)
 
 
 def ensure_hrms_expenses_workspace():
