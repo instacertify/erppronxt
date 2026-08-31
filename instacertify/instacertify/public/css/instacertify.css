@@ -6354,3 +6354,98 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   opacity: 1 !important;
   visibility: visible !important;
 }
+
+/* ==========================================================================
+   Complete boxes + no text overflow + even tile spread
+   ========================================================================== */
+.ic-explore-grid,
+.ic-summary-grid,
+.ic-project-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.ic-explore-card,
+.ic-summary-card,
+.ic-project-tile {
+  border: 1.5px solid rgba(6, 81, 117, 0.22) !important;
+  border-radius: 12px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Accent bar via ::before only — keeps all four sides of the box intact */
+.ic-explore-card.accent-coral,
+.ic-explore-card.accent-citrus,
+.ic-explore-card.accent-teal,
+.ic-summary-card.accent,
+.ic-summary-card:nth-child(even),
+.ic-summary-card:nth-child(3n) {
+  border-left-color: rgba(6, 81, 117, 0.22) !important;
+  border-right-color: rgba(6, 81, 117, 0.22) !important;
+  border-bottom-color: rgba(6, 81, 117, 0.22) !important;
+}
+
+.ic-explore-card-title,
+.ic-explore-card-sub,
+.ic-summary-card .label,
+.ic-summary-card .value,
+.ic-project-tile-title,
+.ic-project-tile-customer,
+.ic-project-pending,
+.ic-workdesk-title,
+.ic-lead-prompt-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.ic-summary-card .value {
+  white-space: nowrap !important;
+}
+
+.ic-explore-card-title,
+.ic-project-tile-title {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  white-space: normal !important;
+}
+
+/* Form entry boxes — full closed outline (not partial) */
+body .form-control:not([disabled]):not([readonly]),
+body .input-with-feedback:not([disabled]):not([readonly]),
+body textarea.form-control:not([disabled]):not([readonly]),
+body select.form-control:not([disabled]):not([readonly]),
+[data-page-route="Form/Customer"] .form-control,
+[data-page-route="Form/Customer"] .input-with-feedback {
+  border: 1.5px solid #9eb8c8 !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  background: #ffffff !important;
+}
+
+[data-page-route="Form/Customer"] .frappe-control[data-fieldname="ic_portal_credentials"] .form-grid,
+[data-page-route="Form/Customer"] .frappe-control[data-fieldname="ic_team_members"] .form-grid {
+  border: 1.5px solid #9eb8c8 !important;
+  border-radius: 8px !important;
+  overflow: visible !important;
+}
+
+/* Icon buttons: dark glyphs, no broken/partial box frames */
+.page-icon-group .icon-btn,
+.page-icon-group .ic-print-action,
+.page-icon-group .ic-line-icon-btn {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}

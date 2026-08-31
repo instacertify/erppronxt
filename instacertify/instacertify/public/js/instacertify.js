@@ -3307,22 +3307,39 @@ frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] ||
 // Customer Related Data tab — full per-customer history + completed project files
 frappe.ui.form.on("Customer", {
 	refresh(frm) {
+		// Website Link + Login ID + Password must stay visible on Customer
+		[
+			"ic_section_login",
+			"ic_website_link",
+			"ic_customer_user_id",
+			"ic_column_login",
+			"ic_customer_password",
+			"ic_login_notes",
+			"ic_section_more_portals",
+			"ic_portal_credentials",
+		].forEach((fn) => {
+			if (frm.fields_dict[fn]) frm.set_df_property(fn, "hidden", 0);
+		});
 		if (frm.fields_dict.ic_section_login) {
-			frm.set_df_property("ic_section_login", "hidden", 0);
-			frm.set_df_property(
-				"ic_section_login",
-				"label",
-				__("Customer Login Credentials")
-			);
+			frm.set_df_property("ic_section_login", "label", __("Customer Login Credentials"));
 		}
-		if (frm.fields_dict.ic_portal_credentials) {
-			frm.set_df_property("ic_portal_credentials", "hidden", 0);
+		if (frm.fields_dict.ic_website_link) {
+			frm.set_df_property("ic_website_link", "label", __("Website Link"));
 		}
-		["ic_customer_user_id", "ic_customer_password", "ic_login_notes", "ic_column_login"].forEach(
-			(fn) => {
-				if (frm.fields_dict[fn]) frm.set_df_property(fn, "hidden", 1);
-			}
-		);
+		if (frm.fields_dict.ic_customer_user_id) {
+			frm.set_df_property("ic_customer_user_id", "label", __("Login ID"));
+		}
+		if (frm.fields_dict.ic_customer_password) {
+			frm.set_df_property("ic_customer_password", "label", __("Password"));
+		}
+		if (!frm.__ic_login_btn) {
+			frm.__ic_login_btn = 1;
+			frm.add_custom_button(__("Login Credentials"), () => {
+				frm.scroll_to_field(
+					frm.fields_dict.ic_website_link ? "ic_website_link" : "ic_section_login"
+				);
+			});
+		}
 		if (!frm.doc.name || frm.is_new()) return;
 		if (frm.fields_dict.ic_section_files) {
 			frm.set_df_property("ic_section_files", "label", __("Customer Data Drive"));
