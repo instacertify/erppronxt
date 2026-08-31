@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
-from frappe.utils import strip_html
+from frappe.utils import flt, strip_html
 
 
 no_cache = 1
@@ -56,12 +56,20 @@ def get_quotation(token: str):
 
 	test_items = []
 	for row in doc.get("ic_test_items") or []:
+		qty = row.number_of_samples or 1
+		unit = row.suggested_selling_price
+		if unit in (None, ""):
+			unit = row.per_unit_charges
+		if unit in (None, ""):
+			unit = (flt(row.testing_charges) / qty) if qty else 0
 		test_items.append(
 			{
-				"product_name": _plain(row.product_name),
 				"test_name": _plain(row.test_name),
 				"applicable_standard": _plain(row.applicable_standard),
-				"testing_charges": row.testing_charges,
+				"description": _plain(getattr(row, "description", None) or ""),
+				"quantity": qty,
+				"price": unit,
+				"amount": row.testing_charges if row.testing_charges not in (None, "") else flt(unit) * qty,
 			}
 		)
 

@@ -294,17 +294,20 @@ QUOTATION_HTML = """
     <h3>Testing Details</h3>
     <table class="ic-table">
       <thead><tr>
-        <th>Product</th><th>Test</th><th>Standard</th><th>Samples</th><th>Laboratory</th><th>Charges</th>
+        <th>Test Name</th><th>Standard</th><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th>
       </tr></thead>
       <tbody>
       {% for row in doc.ic_test_items %}
+        {%- set units = row.number_of_samples or 1 -%}
+        {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
+        {%- set total = row.testing_charges or (per * units) -%}
         <tr>
-          <td>{{ row.product_name }}</td>
-          <td>{{ row.test_name }}</td>
+          <td>{{ row.test_name or '' }}</td>
           <td>{{ row.applicable_standard or '' }}</td>
-          <td>{{ row.number_of_samples or '' }}</td>
-          <td>{{ row.laboratory or '' }}</td>
-          <td>{{ frappe.utils.fmt_money(row.testing_charges, currency=doc.currency) }}</td>
+          <td>{{ row.description or '' }}</td>
+          <td>{{ units }}</td>
+          <td>{{ frappe.utils.fmt_money(per, currency=doc.currency) }}</td>
+          <td>{{ frappe.utils.fmt_money(total, currency=doc.currency) }}</td>
         </tr>
       {% endfor %}
       </tbody>
@@ -820,23 +823,25 @@ TESTING_QUOTATION_HTML = """
         <table class="tq-comm">
           <thead>
             <tr>
-              <th class="num" style="width:8%">S. No.</th>
-              <th style="width:18%">Applicable Standard</th>
-              <th style="width:28%">Testing</th>
-              <th class="num" style="width:10%">Units</th>
-              <th style="width:18%">Per Unit Charges ({{ curr }})</th>
-              <th style="width:18%">Total Charges ({{ curr }})</th>
+              <th class="num" style="width:6%">S. No.</th>
+              <th style="width:18%">Test Name</th>
+              <th style="width:16%">Standard</th>
+              <th style="width:22%">Description</th>
+              <th class="num" style="width:8%">Qty</th>
+              <th style="width:15%">Price ({{ curr }})</th>
+              <th style="width:15%">Amount ({{ curr }})</th>
             </tr>
           </thead>
           <tbody>
           {% for row in doc.ic_test_items or [] %}
             {%- set units = row.number_of_samples or 1 -%}
-            {%- set per = row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
+            {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
             {%- set total = row.testing_charges or (per * units) -%}
             <tr>
               <td class="num">{{ loop.index }}</td>
-              <td>{{ row.applicable_standard or '' }}</td>
               <td>{{ row.test_name or '' }}</td>
+              <td>{{ row.applicable_standard or '' }}</td>
+              <td>{{ row.description or '' }}</td>
               <td class="num">{{ units }}</td>
               <td class="amt">{{ inr(per) }}</td>
               <td class="amt">{{ inr(total) }}</td>

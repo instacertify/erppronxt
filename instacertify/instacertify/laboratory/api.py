@@ -111,6 +111,8 @@ def _iter_active_lab_scopes():
 	]
 	if frappe.db.has_column("IC Laboratory", "contact_designation"):
 		lab_fields.append("contact_designation")
+	if frappe.db.has_column("IC Laboratory", "lab_initials"):
+		lab_fields.append("lab_initials")
 	labs = frappe.get_all(
 		"IC Laboratory",
 		filters={"status": "Active"},
@@ -150,11 +152,13 @@ def _lab_address_line(lab) -> str:
 def _offer_dict(lab, row) -> dict:
 	location = lab.get("location") or lab.get("city") or ""
 	label = _lab_offer_label(lab.name, lab.get("laboratory_name"), location, row)
+	initials = (lab.get("lab_initials") or "").strip()
 	return {
 		"value": label,
 		"label": label,
 		"laboratory": lab.name,
 		"laboratory_name": lab.get("laboratory_name") or lab.name,
+		"lab_initials": initials,
 		"location": location,
 		"address": _lab_address_line(lab),
 		"phone": (lab.get("phone") or "").strip(),
@@ -166,12 +170,52 @@ def _offer_dict(lab, row) -> dict:
 		"scope_row": row.name,
 		"test_name": row.test_name,
 		"applicable_standard": row.applicable_standard,
+		"description": (getattr(row, "description", None) or "").strip(),
 		"category": row.category,
 		"selling_price": flt(row.selling_price),
 		"purchase_price": flt(row.purchase_price),
 		"currency": row.currency or "INR",
 		"scope_label": _scope_label(row),
 	}
+
+
+@frappe.whitelist()
+def get_lab_suggest_options(txt: str | None = None):
+	"""Active labs for Testing quotes — label prefers Lab Initials."""
+	needle = _normalize_standard(txt)
+	out = []
+	fields = ["name", "laboratory_name", "location", "city"]
+	if frappe.db.has_column("IC Laboratory", "lab_initials"):
+		fields.append("lab_initials")
+	for lab in frappe.get_all(
+		"IC Laboratory",
+		filters={"status": "Active"},
+		fields=fields,
+		order_by="laboratory_name asc",
+	):
+		title = (lab.get("laboratory_name") or lab.name or "").strip()
+		initials = (lab.get("lab_initials") or "").strip().upper()
+		if not initials:
+			parts = [p for p in title.replace("-", " ").split() if p]
+			initials = (
+				parts[0][:4].upper()
+				if len(parts) == 1
+				else "".join(p[0] for p in parts[:4]).upper()
+			)
+		label = f"{initials} — {title}" if initials else title
+		hay = f"{initials} {title} {lab.get('location') or ''} {lab.get('city') or ''}"
+		if needle and needle not in _normalize_standard(hay):
+			continue
+		out.append(
+			{
+				"value": lab.name,
+				"label": label,
+				"lab_initials": initials,
+				"laboratory_name": title,
+				"location": lab.get("location") or lab.get("city") or "",
+			}
+		)
+	return out
 
 
 @frappe.whitelist()
@@ -187,6 +231,7 @@ def get_lab_test_scope_options(laboratory: str):
 				"name": row.name,
 				"test_name": row.test_name,
 				"applicable_standard": row.applicable_standard,
+				"description": (getattr(row, "description", None) or "").strip(),
 				"selling_price": flt(row.selling_price),
 				"purchase_price": flt(row.purchase_price),
 				"currency": row.currency or "INR",
@@ -197,14 +242,19 @@ def get_lab_test_scope_options(laboratory: str):
 
 
 @frappe.whitelist()
-def get_standard_options(txt: str | None = None, test_name: str | None = None):
+def get_standard_options(
+	txt: str | None = None,
+	test_name: str | None = None,
+	laboratory: str | None = None,
+):
 	"""Distinct applicable standards from Active lab libraries (for autocomplete).
 
+	When laboratory is set, only that lab's scope is used (Testing quote cascade).
 	When test_name is set, delegates to get_standards_for_test so Test and
 	Standard stay interrelated. Always includes Other.
 	"""
-	if (test_name or "").strip():
-		return get_standards_for_test(test_name=test_name, txt=txt)
+	if (test_name or "").strip() or (laboratory or "").strip():
+		return get_standards_for_test(test_name=test_name, txt=txt, laboratory=laboratory)
 	needle = _normalize_standard(txt)
 	seen = {}
 	for _lab, row in _iter_active_lab_scopes():
@@ -220,9 +270,14 @@ def get_standard_options(txt: str | None = None, test_name: str | None = None):
 
 
 @frappe.whitelist()
-def get_test_name_options(txt: str | None = None, applicable_standard: str | None = None):
+def get_test_name_options(
+	txt: str | None = None,
+	applicable_standard: str | None = None,
+	laboratory: str | None = None,
+):
 	"""Distinct test names from Active lab libraries (for autocomplete).
 
+	When laboratory is set, only return tests in that lab's active scope.
 	When applicable_standard is set (and not Other), only tests that offer that
 	standard are returned. Always includes Other for unlisted / custom tests.
 	"""
@@ -231,7 +286,11 @@ def get_test_name_options(txt: str | None = None, applicable_standard: str | Non
 	if _is_other(applicable_standard):
 		standard_key = ""
 	seen = {}
-	for _lab, row in _iter_active_lab_scopes():
+	if laboratory:
+		scope_iter = [(None, row) for row in _active_scopes(laboratory)]
+	else:
+		scope_iter = _iter_active_lab_scopes()
+	for _lab, row in scope_iter:
 		name = (row.test_name or "").strip()
 		if not name:
 			continue
@@ -244,26 +303,44 @@ def get_test_name_options(txt: str | None = None, applicable_standard: str | Non
 			continue
 		seen.setdefault(key, name)
 	values = sorted(seen.values(), key=lambda s: s.casefold())
+	# Lab-scoped lists: do not invent tests outside scope (skip Other)
+	if laboratory:
+		return [{"value": v, "label": v} for v in values]
 	return _append_other([{"value": v, "label": v} for v in values])
 
 
 @frappe.whitelist()
-def get_standards_for_test(test_name: str | None = None, txt: str | None = None):
+def get_standards_for_test(
+	test_name: str | None = None,
+	txt: str | None = None,
+	laboratory: str | None = None,
+):
 	"""Applicable standards related to a selected test name (from Active labs).
 
-	One test can map to multiple standards across multiple labs. Each option
-	includes the lab names that carry that standard for the test. Always ends
-	with Other for unlisted / custom standards.
+	When laboratory is set, only that lab's scope is considered — tests/standards
+	outside the lab are not suggested. Always ends with Other unless lab-scoped.
 	"""
 	test_key = _normalize_standard(test_name)
-	# No test yet → all standards (+ Other) so fields stay interrelated either way
 	needle = _normalize_standard(txt)
 	seen = {}
 	labs_by_std: dict[str, dict[str, str]] = {}
-	for lab, row in _iter_active_lab_scopes():
+	if laboratory:
+		lab_doc = (
+			frappe.get_doc("IC Laboratory", laboratory)
+			if frappe.db.exists("IC Laboratory", laboratory)
+			else None
+		)
+		lab_meta = {
+			"name": laboratory,
+			"laboratory_name": (lab_doc.laboratory_name if lab_doc else laboratory),
+		}
+		scope_iter = [(lab_meta, row) for row in _active_scopes(laboratory)]
+	else:
+		scope_iter = _iter_active_lab_scopes()
+
+	for lab, row in scope_iter:
 		row_test = _normalize_standard(row.test_name)
 		if test_key and not _is_other(test_name):
-			# Exact test name — dropdown selection is a concrete library value
 			if row_test != test_key:
 				continue
 		std = (row.applicable_standard or "").strip()
@@ -274,15 +351,22 @@ def get_standards_for_test(test_name: str | None = None, txt: str | None = None)
 			continue
 		seen.setdefault(key, std)
 		labs_by_std.setdefault(key, {})
-		lab_id = lab.name
-		labs_by_std[key][lab_id] = lab.get("laboratory_name") or lab.name
+		lab_id = lab["name"] if isinstance(lab, dict) else lab.name
+		if isinstance(lab, dict):
+			lab_title = lab.get("laboratory_name") or lab_id
+		else:
+			lab_title = lab.get("laboratory_name") or lab_id
+		labs_by_std[key][lab_id] = lab_title
 
 	values = sorted(seen.values(), key=lambda s: s.casefold())
 	out = []
 	for v in values:
 		key = _normalize_standard(v)
 		lab_map = labs_by_std.get(key) or {}
-		lab_list = [{"name": n, "laboratory_name": title} for n, title in sorted(lab_map.items(), key=lambda x: x[1].casefold())]
+		lab_list = [
+			{"name": n, "laboratory_name": title}
+			for n, title in sorted(lab_map.items(), key=lambda x: x[1].casefold())
+		]
 		out.append(
 			{
 				"value": v,
@@ -293,7 +377,52 @@ def get_standards_for_test(test_name: str | None = None, txt: str | None = None)
 				"is_other": 0,
 			}
 		)
+	if laboratory:
+		return out
 	return _append_other(out)
+
+
+@frappe.whitelist()
+def resolve_lab_test_pricing(
+	laboratory: str | None = None,
+	test_name: str | None = None,
+	applicable_standard: str | None = None,
+):
+	"""Resolve purchase + suggested selling from one lab's scope for Test + Standard."""
+	if not laboratory:
+		return None
+	test_key = _normalize_standard(test_name)
+	std_key = _normalize_standard(applicable_standard)
+	if _is_other(test_name):
+		test_key = ""
+	if _is_other(applicable_standard):
+		std_key = ""
+	matches = []
+	for row in _active_scopes(laboratory):
+		if test_key and _normalize_standard(row.test_name) != test_key:
+			continue
+		if std_key and not _match_standard(_normalize_standard(row.applicable_standard), std_key, exact=True):
+			continue
+		matches.append(row)
+	if not matches:
+		return None
+	# Prefer exact test+standard; otherwise first scope match
+	match = matches[0]
+	lab = frappe.get_doc("IC Laboratory", laboratory)
+	initials = (lab.get("lab_initials") or "").strip()
+	return {
+		"laboratory": laboratory,
+		"lab_initials": initials,
+		"laboratory_name": lab.laboratory_name or laboratory,
+		"scope_row": match.name,
+		"test_name": match.test_name,
+		"applicable_standard": match.applicable_standard,
+		"description": (getattr(match, "description", None) or "").strip(),
+		"selling_price": flt(match.selling_price),
+		"purchase_price": flt(match.purchase_price),
+		"currency": match.currency or "INR",
+		"label": _scope_label(match),
+	}
 
 
 @frappe.whitelist()
@@ -412,6 +541,7 @@ def get_lab_test_scope_details(laboratory: str, scope_key: str = None, scope_row
 		"name": match.name,
 		"test_name": match.test_name,
 		"applicable_standard": match.applicable_standard,
+		"description": (getattr(match, "description", None) or "").strip(),
 		"category": match.category,
 		"selling_price": flt(match.selling_price),
 		"purchase_price": flt(match.purchase_price),

@@ -23,6 +23,13 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Test Description",
+   "description": "Copied onto Testing quotations for the customer"
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "category",
    "fieldtype": "Data",
    "label": "Category",

@@ -105,11 +105,31 @@
           '</td><td>' + esc(money(r.amount, currency)) + '</td></tr>').join('') +
         '</tbody></table>';
     }
+    function testTable(rows, currency) {
+      if (!rows || !rows.length) return '';
+      return '<table class="ic-portal-table"><thead><tr>' +
+        '<th>Test Name</th><th>Standard</th><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th>' +
+        '</tr></thead><tbody>' +
+        rows.map(r => '<tr>' +
+          '<td>' + esc(r.test_name || '') + '</td>' +
+          '<td>' + esc(r.applicable_standard || '') + '</td>' +
+          '<td>' + esc(r.description || '') + '</td>' +
+          '<td>' + esc(r.quantity || 1) + '</td>' +
+          '<td>' + esc(money(r.price, currency)) + '</td>' +
+          '<td>' + esc(money(r.amount, currency)) + '</td>' +
+          '</tr>').join('') +
+        '</tbody></table>';
+    }
     function load() {
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
+          const commercials =
+            (d.test_items && d.test_items.length
+              ? testTable(d.test_items, d.currency)
+              : '') +
+            costTable(d.cost_items, d.currency);
           document.getElementById('content').innerHTML =
             (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
             '<p><b>' + esc(d.reference || d.customer_name || 'Quotation') + '</b> · Revision ' + esc(d.ic_revision_number || 0) +
@@ -122,7 +142,7 @@
             (d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
             (d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
             '<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
-            costTable(d.cost_items, d.currency) +
+            (commercials || '<p class="ic-portal-muted">No commercial lines yet.</p>') +
             (d.ic_payment_terms ? ('<h4 style="color:#0D47A1;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
 

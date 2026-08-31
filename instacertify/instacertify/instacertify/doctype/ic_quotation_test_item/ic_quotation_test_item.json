@@ -6,44 +6,118 @@
  "fields": [
   {
    "doctype": "DocField",
-   "fieldname": "product_name",
+   "fieldname": "laboratory",
+   "fieldtype": "Link",
+   "options": "IC Laboratory",
+   "label": "Lab",
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "Select lab first — only tests/standards in that lab's scope will be suggested"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_initials",
    "fieldtype": "Data",
-   "label": "Product Name",
-   "in_list_view": 1
+   "label": "Lab Initials",
+   "fetch_from": "laboratory.lab_initials",
+   "read_only": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "test_name",
+   "fieldtype": "Autocomplete",
+   "label": "Test Name",
+   "in_list_view": 1,
+   "columns": 2,
+   "reqd": 0,
+   "description": "Only tests in the selected lab's accreditation scope"
   },
   {
    "doctype": "DocField",
    "fieldname": "applicable_standard",
    "fieldtype": "Autocomplete",
-   "label": "Applicable Standard",
+   "label": "Standard",
    "in_list_view": 1,
+   "columns": 2,
    "reqd": 0,
-   "description": "Optional — enter the test standard, then pick a lab offer (price from lab library)"
+   "description": "Only standards offered by this lab for the selected test"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Test Description",
+   "description": "Shown to the customer with the test line"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "purchase_price",
+   "fieldtype": "Currency",
+   "label": "Purchase Price",
+   "options": "currency",
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "Lab buy / cost — editable; never shown to the customer"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "suggested_selling_price",
+   "fieldtype": "Currency",
+   "label": "Suggested Selling Price",
+   "options": "currency",
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "Editable selling price — shown to the customer as Price"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "number_of_samples",
+   "fieldtype": "Int",
+   "label": "Quantity",
+   "default": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "per_unit_charges",
+   "fieldtype": "Currency",
+   "label": "Selling Price / Unit",
+   "options": "currency",
+   "hidden": 1,
+   "description": "Mirrors Suggested Selling Price for totals"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "testing_charges",
+   "fieldtype": "Currency",
+   "label": "Total Charges",
+   "in_list_view": 1,
+   "columns": 1,
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "product_name",
+   "fieldtype": "Data",
+   "label": "Product Name"
   },
   {
    "doctype": "DocField",
    "fieldname": "lab_offer",
    "fieldtype": "Autocomplete",
-   "label": "Lab Offer (price compare)",
-   "in_list_view": 1,
-   "description": "Labs that offer this standard with their selling price — select one"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "laboratory",
-   "fieldtype": "Link",
-   "options": "IC Laboratory",
-   "label": "Laboratory",
-   "in_list_view": 1,
-   "description": "Filled when you pick a Lab Offer (or pick lab first, then Lab Test / Pricing)"
+   "label": "Lab Offer (compare)",
+   "description": "Optional multi-lab price compare"
   },
   {
    "doctype": "DocField",
    "fieldname": "lab_test_scope",
    "fieldtype": "Autocomplete",
    "label": "Lab Test / Pricing",
-   "in_list_view": 1,
-   "description": "Accreditation scope tests with suggested selling price from the lab library"
+   "hidden": 1
   },
   {
    "doctype": "DocField",
@@ -52,50 +126,6 @@
    "label": "Lab Scope Row",
    "read_only": 1,
    "hidden": 1
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "test_name",
-   "fieldtype": "Autocomplete",
-   "label": "Testing",
-   "in_list_view": 1,
-   "reqd": 0,
-   "description": "From lab library scopes — pick Lab Offer to suggest selling price"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "number_of_samples",
-   "fieldtype": "Int",
-   "label": "Units / Samples",
-   "default": 1,
-   "in_list_view": 1
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "suggested_selling_price",
-   "fieldtype": "Currency",
-   "label": "Suggested Selling",
-   "options": "currency",
-   "read_only": 1,
-   "description": "From lab library — copy into Per Unit Charges (editable)"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "per_unit_charges",
-   "fieldtype": "Currency",
-   "label": "Selling Price / Unit",
-   "in_list_view": 1,
-   "options": "currency",
-   "description": "Editable selling price used on this quotation"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "testing_charges",
-   "fieldtype": "Currency",
-   "label": "Total Charges",
-   "in_list_view": 1,
-   "options": "currency",
-   "read_only": 1
   },
   {
    "doctype": "DocField",
