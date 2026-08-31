@@ -3311,13 +3311,17 @@ select.form-control[readonly],
   border: 1.5px solid #c9d3db !important;
 }
 
-/* Checkbox / radio — clearer hit area without relying on hover */
+/* Checkbox / radio — no always-on square outline; accent only */
 .frappe-control[data-fieldtype="Check"] .checkbox,
 .frappe-control input[type="checkbox"],
 .frappe-control input[type="radio"] {
   accent-color: var(--ic-field-border);
-  outline: 2px solid rgba(6, 81, 117, 0.35);
-  outline-offset: 2px;
+  outline: none !important;
+}
+.frappe-control input[type="checkbox"]:focus-visible,
+.frappe-control input[type="radio"]:focus-visible {
+  outline: 2px solid rgba(6, 81, 117, 0.45) !important;
+  outline-offset: 2px !important;
 }
 
 /* MultiSelect / Tag fields */
@@ -5355,11 +5359,15 @@ span.highlight,
   color: var(--ic-primary-deep, #033447) !important;
 }
 
-/* Soften always-on checkbox “random box” outlines to match highlight weight */
+/* Soften checkbox outlines — only on keyboard focus, not always-on boxes */
 .frappe-control input[type="checkbox"],
 .frappe-control input[type="radio"] {
-  outline: 1px solid rgba(6, 81, 117, 0.28) !important;
-  outline-offset: 1px !important;
+  outline: none !important;
+}
+.frappe-control input[type="checkbox"]:focus-visible,
+.frappe-control input[type="radio"]:focus-visible {
+  outline: 2px solid rgba(6, 81, 117, 0.45) !important;
+  outline-offset: 2px !important;
 }
 
 /* Modal / dialog primary actions */
@@ -5631,13 +5639,15 @@ button[title="Minimize"],
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 34px !important;
-  height: 34px !important;
-  min-width: 34px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
   padding: 0 !important;
-  border-radius: 9px !important;
-  border: 1.75px solid rgba(11, 24, 32, 0.55) !important;
-  background: #ffffff !important;
+  border-radius: 8px !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
   color: #0B1820 !important;
   -webkit-text-fill-color: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
@@ -5649,8 +5659,8 @@ button[title="Minimize"],
 .page-icon-group .icon-btn:hover,
 .page-icon-group .ic-line-icon-btn:hover,
 .page-icon-group .ic-print-action:hover {
-  border-color: #033447 !important;
-  background: #e7f1f8 !important;
+  border: none !important;
+  background: rgba(6, 81, 117, 0.1) !important;
   color: #033447 !important;
   --icon-stroke: #033447 !important;
 }
@@ -6267,8 +6277,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   line-height: 0 !important;
 }
 /* ==========================================================================
-   Reload List + Print icons — human-eye visibility (Lead / Customer /
-   Quotation / Calendar / Helpdesk lists & forms)
+   Reload List + Print icons — dark glyphs, no square button frames
    Espresso icons (es-line-reload) are FILL glyphs; Lucide print is STROKE.
    ========================================================================== */
 .page-icon-group,
@@ -6277,7 +6286,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   display: inline-flex !important;
   visibility: visible !important;
   opacity: 1 !important;
-  gap: 6px !important;
+  gap: 4px !important;
 }
 .page-icon-group .icon-btn,
 .page-icon-group .icon-btn.text-muted,
@@ -6291,19 +6300,21 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   opacity: 1 !important;
   color: #0B1820 !important;
   -webkit-text-fill-color: #0B1820 !important;
-  background: #ffffff !important;
-  border: 2px solid #0B1820 !important;
-  border-radius: 9px !important;
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  box-shadow: 0 1px 2px rgba(11, 24, 32, 0.12) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
 }
 .page-icon-group .icon-btn:hover,
 .page-icon-group .ic-print-action:hover,
 .page-icon-group .ic-line-icon-btn:hover {
-  background: #e7f1f8 !important;
-  border-color: #033447 !important;
+  background: rgba(6, 81, 117, 0.1) !important;
+  border: none !important;
+  box-shadow: none !important;
   color: #033447 !important;
 }
 /* Reload List = es-line-reload (fill) */

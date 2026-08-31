@@ -1529,8 +1529,10 @@ instacertify.apply_favicon_brand_icons = function (root) {
 							visibility: "visible",
 							opacity: 1,
 							color: "#0B1820",
-							borderColor: "rgba(11, 24, 32, 0.55)",
-							background: "#ffffff",
+							border: "none",
+							boxShadow: "none",
+							outline: "none",
+							background: "transparent",
 						});
 					$b.find("svg.es-icon, .es-icon").css({
 						fill: "#0B1820",
