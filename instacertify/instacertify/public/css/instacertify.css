@@ -842,6 +842,198 @@ body {
   white-space: nowrap;
 }
 
+/* ——— Testing Request: Sample Tracking embedded table ——— */
+.ic-tr-samples {
+  margin: 4px 0 10px;
+  padding: 12px 14px 14px;
+  border: 1.5px solid #9eb8c8;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f7fbfd 0%, #eef5fa 100%);
+}
+.ic-tr-samples--empty {
+  border-style: dashed;
+  background: #f7fbfd;
+}
+.ic-tr-samples-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.ic-tr-samples-title {
+  font-weight: 700;
+  color: #065175;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ic-tr-samples-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 6px;
+  background: #e4f1f8;
+  border: 1px solid #9eb8c8;
+  color: #033447;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ic-tr-samples-sub {
+  margin: 4px 0 0;
+  max-width: 42rem;
+  color: #5a7382;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.ic-tr-samples-table-wrap {
+  overflow-x: auto;
+  border: 1.5px solid #7a9eb3;
+  border-radius: 8px;
+  background: #fff;
+}
+.ic-tr-samples-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+.ic-tr-samples-table thead th {
+  text-align: left;
+  vertical-align: middle;
+  padding: 9px 11px;
+  background: #e8f1f6;
+  color: #033447;
+  font-weight: 700;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid #3d5f73;
+  border-right: 1px solid #c9dce8;
+  white-space: nowrap;
+}
+.ic-tr-samples-table thead th:last-child,
+.ic-tr-samples-table tbody td:last-child {
+  border-right: none;
+}
+.ic-tr-samples-table tbody td {
+  vertical-align: middle;
+  padding: 10px 11px;
+  border-bottom: 1px solid #d5e4ee;
+  border-right: 1px solid #e8f0f5;
+  color: #243945;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.ic-tr-samples-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.ic-tr-samples-table tbody tr:nth-child(even) td {
+  background: #f7fbfd;
+}
+.ic-tr-samples-table tbody tr.ic-tr-samples-row {
+  cursor: pointer;
+}
+.ic-tr-samples-table tbody tr.ic-tr-samples-row:hover td {
+  background: rgba(6, 81, 117, 0.08) !important;
+  box-shadow: inset 3px 0 0 #ec691f;
+}
+.ic-tr-col-track { width: 18%; }
+.ic-tr-col-desc { width: 22%; }
+.ic-tr-col-loc { width: 18%; }
+.ic-tr-col-lab { width: 18%; }
+.ic-tr-col-status { width: 14%; }
+.ic-tr-col-act {
+  width: 10%;
+  text-align: right;
+  white-space: nowrap;
+}
+.ic-tr-track-link {
+  font-weight: 700;
+  color: #065175 !important;
+  text-decoration: none;
+}
+.ic-tr-track-link:hover {
+  color: #033447 !important;
+  text-decoration: underline;
+}
+.ic-tr-samples-muted {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #5a7382;
+}
+.ic-tr-loc-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #9eb8c8;
+  background: #eef4f8;
+  font-weight: 650;
+  font-size: 12px;
+  line-height: 1.25;
+  white-space: normal;
+}
+.ic-tr-col-status {
+  color: #3a5563;
+  font-size: 12.5px;
+}
+.ic-tr-col-act .btn {
+  border: 1.5px solid rgba(3, 52, 71, 0.35) !important;
+  color: #033447 !important;
+  font-weight: 600 !important;
+  background: #fff !important;
+}
+.ic-tr-col-act .btn:hover {
+  background: #e7f1f8 !important;
+  border-color: #065175 !important;
+}
+
+/* Testing Request child grids (Assignees / Test Reports / Test Items) — aligned outlines */
+[data-page-route="Form/IC Testing Request"] .form-grid,
+[data-page-route="Form/IC Sample Tracking"] .form-grid {
+  border: 1.5px solid #9eb8c8 !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  background: #fff !important;
+}
+[data-page-route="Form/IC Testing Request"] .form-grid .grid-heading-row,
+[data-page-route="Form/IC Sample Tracking"] .form-grid .grid-heading-row {
+  background: #e8f1f6 !important;
+  border-bottom: 2px solid #3d5f73 !important;
+  min-height: 38px !important;
+}
+[data-page-route="Form/IC Testing Request"] .form-grid .grid-heading-row .grid-static-col,
+[data-page-route="Form/IC Sample Tracking"] .form-grid .grid-heading-row .grid-static-col {
+  font-weight: 700 !important;
+  color: #033447 !important;
+  font-size: 11.5px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  vertical-align: middle !important;
+}
+[data-page-route="Form/IC Testing Request"] .form-grid .grid-row .data-row,
+[data-page-route="Form/IC Sample Tracking"] .form-grid .grid-row .data-row {
+  min-height: 40px !important;
+  align-items: center !important;
+  border-bottom: 1px solid #d5e4ee !important;
+}
+[data-page-route="Form/IC Testing Request"] .form-grid .grid-row:hover .data-row,
+[data-page-route="Form/IC Sample Tracking"] .form-grid .grid-row:hover .data-row {
+  background: rgba(6, 81, 117, 0.08) !important;
+  box-shadow: inset 3px 0 0 #ec691f !important;
+}
+[data-page-route="Form/IC Testing Request"] .form-grid .grid-row:nth-child(even) .data-row {
+  background: #f7fbfd;
+}
+
 .ic-project-grid {
   display: grid;
   grid-template-columns: var(--ic-tile-cols);
@@ -5479,18 +5671,48 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   width: 100% !important;
 }
 
-/* Sticky / always-visible Save when form is dirty */
+/* Sticky / always-visible Save when form is dirty — and always for Testing Request */
 .page-actions .btn-primary.primary-action,
 .standard-actions .btn-primary.primary-action,
 .page-head .btn-primary[data-label="Save"],
-.page-actions .btn-primary[data-label="Save"] {
+.page-actions .btn-primary[data-label="Save"],
+.page-actions .btn-primary.ic-always-save-btn,
+.standard-actions .btn-primary.ic-always-save-btn,
+.page-head .btn-primary.ic-always-save-btn,
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary,
+[data-page-route="Form/IC Testing Request"] .standard-actions .btn-primary,
+[data-page-route="Form/IC Sample Tracking"] .page-actions .btn-primary,
+[data-page-route="Form/IC Document Request"] .page-actions .btn-primary,
+[data-page-route="Form/IC Laboratory"] .page-actions .btn-primary {
   display: inline-flex !important;
   visibility: visible !important;
   opacity: 1 !important;
+  pointer-events: auto !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   background: #065175 !important;
   border-color: #065175 !important;
+  font-weight: 700 !important;
+  min-width: 72px !important;
+  z-index: 5;
+}
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary .ic-action-label,
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary.ic-always-save-btn {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+/* Keep Save on the right of the page head, above other custom groups */
+[data-page-route="Form/IC Testing Request"] .page-head .page-actions,
+[data-page-route="Form/IC Sample Tracking"] .page-head .page-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary.primary-action,
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary.ic-always-save-btn {
+  order: -1;
+  margin-left: 0 !important;
 }
 
 /* ==========================================================================

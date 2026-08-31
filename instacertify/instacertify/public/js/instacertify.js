@@ -4328,44 +4328,112 @@ frappe.ui.form.on("Task", {
 });
 
 /**
- * Keep the form Save button visible and usable after field edits
- * (status / priority / project assignment, etc.).
+ * Keep the form Save button visible and usable after field edits.
+ * Frappe often clears/hides primary Save after toolbar refresh when the doc
+ * looks "clean" — always re-apply, with short delayed retries.
  */
+instacertify.ALWAYS_SAVE_DOCTYPES = [
+	"IC Testing Request",
+	"IC Sample Tracking",
+	"IC Document Request",
+	"IC Laboratory",
+	"IC Quotation Template",
+	"IC Document Checklist Template",
+	"IC Test Request Form",
+];
+
 instacertify.ensure_form_save_button = function (frm) {
 	if (!frm || !frm.page) return;
-	try {
-		if (typeof frm.enable_save === "function") {
-			frm.enable_save();
-		}
-		const page = frm.page;
-		if (page && typeof page.set_primary_action === "function") {
-			const label =
-				(page.btn_primary && page.btn_primary.attr("data-label")) ||
-				(page.btn_primary && page.btn_primary.text && page.btn_primary.text()) ||
-				"";
-			const visible =
-				page.btn_primary && page.btn_primary.length && page.btn_primary.is(":visible");
-			const isSaveLike = /save|update|submit/i.test(String(label || "").trim());
-			// Always keep Save available on Testing Request (new + existing)
-			if (!visible || !isSaveLike) {
-				page.set_primary_action(__("Save"), () => frm.save());
+	const force = () => {
+		try {
+			if (typeof frm.enable_save === "function") {
+				frm.enable_save();
 			}
+			frm.save_disabled = false;
+			const page = frm.page;
+			if (!page || typeof page.set_primary_action !== "function") return;
+
+			// Always set primary = Save (do not wait for dirty state).
+			page.set_primary_action(__("Save"), () => frm.save());
+
+			const $btn = page.btn_primary;
+			if ($btn && $btn.length) {
+				$btn
+					.addClass("ic-always-save-btn primary-action")
+					.attr("data-label", "Save")
+					.removeClass("hide hidden d-none disabled")
+					.prop("disabled", false)
+					.css({
+						display: "inline-flex",
+						visibility: "visible",
+						opacity: 1,
+						pointerEvents: "auto",
+					});
+				const labelText = ($btn.text() || "").replace(/\s+/g, " ").trim();
+				if (!/save/i.test(labelText)) {
+					if (!$btn.find(".ic-action-label").length) {
+						$btn.append(` <span class="ic-action-label">${__("Save")}</span>`);
+					} else {
+						$btn.find(".ic-action-label").text(__("Save"));
+					}
+				}
+			}
+			instacertify._ensure_actions_save_fallback(frm);
+		} catch (e) {
+			/* ignore */
 		}
-		if (page && page.btn_primary && page.btn_primary.length) {
-			page.btn_primary
-				.removeClass("hide hidden d-none")
-				.css({ display: "inline-flex", visibility: "visible", opacity: 1 });
-		}
+	};
+
+	force();
+	clearTimeout(frm._ic_save_btn_t1);
+	clearTimeout(frm._ic_save_btn_t2);
+	clearTimeout(frm._ic_save_btn_t3);
+	frm._ic_save_btn_t1 = setTimeout(force, 120);
+	frm._ic_save_btn_t2 = setTimeout(force, 400);
+	frm._ic_save_btn_t3 = setTimeout(force, 1000);
+};
+
+/** Fallback under Actions if page-head Save is crowded off-screen. */
+instacertify._ensure_actions_save_fallback = function (frm) {
+	try {
+		if (frm._ic_actions_save_added) return;
+		frm.add_custom_button(__("Save"), () => frm.save(), __("Actions"));
+		frm._ic_actions_save_added = true;
 	} catch (e) {
 		/* ignore */
 	}
 };
 
+// Desk-wide: keep Save on key Instacertify forms (toolbar can clear it after refresh).
+$(document).on("form-refresh", function (_e, frm) {
+	try {
+		if (!frm || !frm.doctype) return;
+		if ((instacertify.ALWAYS_SAVE_DOCTYPES || []).indexOf(frm.doctype) < 0) return;
+		instacertify.ensure_form_save_button(frm);
+	} catch (err) {
+		/* ignore */
+	}
+});
+$(document).on("form-dirty", function (_e, frm) {
+	try {
+		if (!frm || !frm.doctype) return;
+		if ((instacertify.ALWAYS_SAVE_DOCTYPES || []).indexOf(frm.doctype) < 0) return;
+		instacertify.ensure_form_save_button(frm);
+	} catch (err) {
+		/* ignore */
+	}
+});
+
 frappe.ui.form.on("IC Testing Request", {
 	onload(frm) {
 		instacertify.load_testing_request_library_options(frm);
+		instacertify.ensure_form_save_button(frm);
+	},
+	onload_post_render(frm) {
+		instacertify.ensure_form_save_button(frm);
 	},
 	refresh(frm) {
+		frm._ic_actions_save_added = false;
 		instacertify.ensure_form_save_button(frm);
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
 		instacertify.load_testing_request_library_options(frm);
@@ -4605,6 +4673,7 @@ frappe.ui.form.on("IC Testing Request", {
 			}, __("Samples"));
 			instacertify.render_testing_request_samples(frm);
 		}
+		instacertify.ensure_form_save_button(frm);
 	},
 	number_of_samples(frm) {
 		if (frm.is_new() || frm._ic_skip_lab_picker) return;
@@ -5051,11 +5120,13 @@ instacertify.render_testing_request_samples = function (frm, samples) {
 		rows = rows || [];
 		if (!rows.length) {
 			wrap.$wrapper.html(`
-				<div class="ic-tr-samples" style="padding:10px 12px;border:1px dashed #cfd8dc;border-radius:8px;background:#fafbfc;">
-					<div style="font-weight:600;color:#0D47A1;margin-bottom:4px;">${__("Sample Tracking")}</div>
-					<p class="text-muted" style="margin:0 0 8px;">
-						${__("No samples linked yet. Samples are created from Number of Samples using Product / Test / Laboratory from this request.")}
-					</p>
+				<div class="ic-tr-samples ic-tr-samples--empty">
+					<div class="ic-tr-samples-head">
+						<div class="ic-tr-samples-title">${__("Sample Tracking")}</div>
+						<p class="ic-tr-samples-sub">
+							${__("No samples linked yet. Samples are created from Number of Samples using Product / Test / Laboratory from this request.")}
+						</p>
+					</div>
 					<button type="button" class="btn btn-sm btn-primary ic-tr-ensure-samples">${__("Create Samples")}</button>
 				</div>
 			`);
@@ -5069,48 +5140,66 @@ instacertify.render_testing_request_samples = function (frm, samples) {
 				const loc = s.sample_location || s.status || "—";
 				const color = instacertify._sample_custody_color(loc);
 				const lab = s.laboratory_name || s.laboratory || "—";
-				return `<tr>
-					<td><a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}">
-						${frappe.utils.escape_html(s.tracking_number || s.name)}</a></td>
-					<td>${frappe.utils.escape_html(s.sample_description || "—")}</td>
-					<td><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${color}22;color:${color};font-weight:600;font-size:12px;">
-						${frappe.utils.escape_html(loc)}</span></td>
-					<td>${frappe.utils.escape_html(lab)}
-						${s.laboratory_city ? `<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(s.laboratory_city)}</div>` : ""}</td>
-					<td class="text-muted" style="font-size:12px">${frappe.utils.escape_html(s.status || "")}</td>
-					<td><button type="button" class="btn btn-xs btn-default ic-open-sample" data-name="${frappe.utils.escape_html(s.name)}">${__("Open")}</button></td>
+				const city = s.laboratory_city
+					? `<div class="ic-tr-samples-muted">${frappe.utils.escape_html(s.laboratory_city)}</div>`
+					: "";
+				return `<tr class="ic-tr-samples-row" data-name="${frappe.utils.escape_html(s.name)}">
+					<td class="ic-tr-col-track">
+						<a class="ic-tr-track-link" href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}">
+							${frappe.utils.escape_html(s.tracking_number || s.name)}
+						</a>
+					</td>
+					<td class="ic-tr-col-desc">${frappe.utils.escape_html(s.sample_description || "—")}</td>
+					<td class="ic-tr-col-loc">
+						<span class="ic-tr-loc-badge" style="--ic-loc:${color};">${frappe.utils.escape_html(loc)}</span>
+					</td>
+					<td class="ic-tr-col-lab">${frappe.utils.escape_html(lab)}${city}</td>
+					<td class="ic-tr-col-status">${frappe.utils.escape_html(s.status || "")}</td>
+					<td class="ic-tr-col-act">
+						<button type="button" class="btn btn-xs btn-default ic-open-sample" data-name="${frappe.utils.escape_html(s.name)}">${__("Open")}</button>
+					</td>
 				</tr>`;
 			})
 			.join("");
 		wrap.$wrapper.html(`
-			<div class="ic-tr-samples" style="padding:10px 12px;border:1px solid #d7e6ef;border-radius:10px;background:#F5F9FD;">
-				<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+			<div class="ic-tr-samples">
+				<div class="ic-tr-samples-head">
 					<div>
-						<div style="font-weight:650;color:#0D47A1;">${__("Sample Tracking")}</div>
-						<div class="text-muted" style="font-size:12px;max-width:40rem;">
-							${__("Where each sample is now — at lab, Instacertify warehouse, or returned to the client. Update location on the sample form after testing.")}
+						<div class="ic-tr-samples-title">${__("Sample Tracking")}
+							<span class="ic-tr-samples-count">${rows.length}</span>
 						</div>
+						<p class="ic-tr-samples-sub">
+							${__("Where each sample is now — at lab, Instacertify warehouse, or returned to the client. Update location on the sample form after testing.")}
+						</p>
 					</div>
 					<button type="button" class="btn btn-xs btn-default ic-tr-ensure-samples">${__("Sync from Lab / Count")}</button>
 				</div>
-				<table class="table table-bordered" style="margin:0;background:#fff;">
-					<thead><tr>
-						<th>${__("Tracking #")}</th>
-						<th>${__("Description")}</th>
-						<th>${__("Location")}</th>
-						<th>${__("Laboratory")}</th>
-						<th>${__("Status")}</th>
-						<th></th>
-					</tr></thead>
-					<tbody>${rows_html}</tbody>
-				</table>
+				<div class="ic-tr-samples-table-wrap">
+					<table class="ic-tr-samples-table">
+						<thead>
+							<tr>
+								<th class="ic-tr-col-track">${__("Tracking #")}</th>
+								<th class="ic-tr-col-desc">${__("Description")}</th>
+								<th class="ic-tr-col-loc">${__("Location")}</th>
+								<th class="ic-tr-col-lab">${__("Laboratory")}</th>
+								<th class="ic-tr-col-status">${__("Status")}</th>
+								<th class="ic-tr-col-act"></th>
+							</tr>
+						</thead>
+						<tbody>${rows_html}</tbody>
+					</table>
+				</div>
 			</div>
 		`);
 		wrap.$wrapper.find(".ic-tr-ensure-samples").on("click", () => {
 			instacertify.ensure_testing_request_samples(frm, { force_sync: 1 });
 		});
-		wrap.$wrapper.find(".ic-open-sample").on("click", function () {
-			frappe.set_route("Form", "IC Sample Tracking", $(this).data("name"));
+		wrap.$wrapper.find(".ic-open-sample, .ic-tr-samples-row").on("click", function (e) {
+			if ($(e.target).closest("a, button").length && !$(e.target).closest(".ic-open-sample").length) {
+				return;
+			}
+			const name = $(this).data("name") || $(this).closest("tr").data("name");
+			if (name) frappe.set_route("Form", "IC Sample Tracking", name);
 		});
 	};
 
@@ -5240,6 +5329,8 @@ instacertify.render_project_testing_panel = function (frm) {
 
 frappe.ui.form.on("IC Document Request", {
 	refresh(frm) {
+		frm._ic_actions_save_added = false;
+		instacertify.ensure_form_save_button(frm);
 		frm.add_custom_button(__("Open Library"), () => {
 			frappe.set_route("document-collection-library");
 		});
@@ -5422,6 +5513,8 @@ frappe.ui.form.on("IC Sample Dispatch Collection", {
 
 frappe.ui.form.on("IC Laboratory", {
 	refresh(frm) {
+		frm._ic_actions_save_added = false;
+		instacertify.ensure_form_save_button(frm);
 		if (frm.is_new()) {
 			frm.set_intro(
 				__(
@@ -6728,6 +6821,10 @@ instacertify.show_testing_request_sample_qr_dialog = function (payload) {
 };
 
 frappe.ui.form.on("IC Sample Tracking", {
+	refresh(frm) {
+		frm._ic_actions_save_added = false;
+		instacertify.ensure_form_save_button(frm);
+	},
 	status(frm) {
 		const map = {
 			"Sample Awaited": "With Customer",
