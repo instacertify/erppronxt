@@ -17,7 +17,7 @@ html {
   --ic-surface: #e8f1f6;
   --ic-surface-2: #dde9f1;
   --ic-mist: #c9dce8;
-  --ic-ink: #152833;
+  --ic-ink: #0B1820;
   --ic-muted: #5a7382;
   --ic-radius: 14px;
   --ic-radius-sm: 10px;
@@ -45,7 +45,7 @@ html {
   --surface-white: #ffffff;
   --border-color: #c8dae6;
   --navbar-bg: rgba(244, 249, 252, 0.88);
-  --text-color: #152833;
+  --text-color: #0B1820;
   --heading-color: #065175;
   --font-stack: "Poppins", "Segoe UI", sans-serif;
 
@@ -60,8 +60,8 @@ html {
   --text-on-danger: #ffffff;
   --text-primary: #065175;
   --text-on-blue: #ffffff;
-  --icon-stroke: #152833;
-  --icon-stroke-muted: #334955;
+  --icon-stroke: #0B1820;
+  --icon-stroke-muted: #5a7382;
   /* Uniform soft highlight brightness (same luminance family) */
   --ic-hl-bg: rgba(6, 81, 117, 0.08);
   --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
@@ -330,14 +330,14 @@ body {
 .btn-secondary,
 .btn-default,
 .btn.btn-default {
-  border-color: rgba(6, 81, 117, 0.25) !important;
-  color: var(--ic-primary) !important;
+  border-color: rgba(6, 81, 117, 0.35) !important;
+  color: var(--ic-primary-deep, #033447) !important;
 }
 .btn-secondary:hover,
 .btn-default:hover {
-  border-color: var(--ic-accent) !important;
-  color: var(--ic-accent) !important;
-  background: var(--ic-accent-soft) !important;
+  border-color: var(--ic-primary, #065175) !important;
+  color: var(--ic-primary-deep, #033447) !important;
+  background: var(--ic-primary-soft, #e4f1f8) !important;
 }
 
 /* Orange for high-visibility actions */
@@ -4916,8 +4916,6 @@ a.btn-primary *,
 .primary-action * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  fill: #ffffff !important;
-  stroke: #ffffff !important;
 }
 
 .btn-primary .es-icon use,
@@ -4930,6 +4928,8 @@ a.btn-primary *,
 .btn-success svg {
   stroke: #ffffff !important;
   color: #ffffff !important;
+  --icon-stroke: #ffffff !important;
+  fill: none !important;
 }
 
 /* Soft / outline buttons: dark ink on light surface */
@@ -5122,11 +5122,12 @@ span.highlight,
 :root,
 [data-theme="light"],
 html {
-  --icon-stroke: #152833 !important;
-  --text-muted: #334955;
+  --icon-stroke: #0B1820 !important;
+  --ic-line-ink: #0B1820;
+  --text-muted: #2A3F4A;
 }
 
-/* Desk Lucide / es-icons — dark ink, not washed gray */
+/* Desk Lucide / es-icons — near-black ink so line art is readable */
 .desk-page svg.icon,
 .desk-page svg.es-icon,
 .page-container svg.icon,
@@ -5140,9 +5141,9 @@ html {
 .navbar svg.es-icon,
 .ic-action-icon svg.icon,
 .menu-item-icon svg.icon {
-  stroke: #152833 !important;
-  color: #152833 !important;
-  --icon-stroke: #152833 !important;
+  stroke: #0B1820 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
   opacity: 1 !important;
 }
 
@@ -5153,7 +5154,7 @@ html {
 .dropdown-menu svg.icon use,
 .ic-action-icon svg use,
 .menu-item-icon svg use {
-  stroke: #152833 !important;
+  stroke: #0B1820 !important;
   fill: none;
 }
 
@@ -5179,8 +5180,8 @@ button[title="Minimize"],
 .grid-row .btn,
 .row-check,
 .btn-open-row {
-  color: #152833 !important;
-  -webkit-text-fill-color: #152833 !important;
+  color: #0B1820 !important;
+  -webkit-text-fill-color: #0B1820 !important;
   opacity: 1 !important;
 }
 
@@ -5207,30 +5208,30 @@ button[title="Minimize"],
 .comment-box .btn svg,
 .filter-section svg,
 .sort-selector svg {
-  stroke: #152833 !important;
-  color: #152833 !important;
-  --icon-stroke: #152833 !important;
+  stroke: #0B1820 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
   opacity: 1 !important;
 }
 
 /* Quill / text editor toolbar (Cut, bold, etc.) */
 .ql-toolbar.ql-snow,
 .ql-toolbar {
-  color: #152833 !important;
+  color: #0B1820 !important;
 }
 .ql-toolbar button,
 .ql-toolbar .ql-picker,
 .ql-toolbar .ql-picker-label {
-  color: #152833 !important;
+  color: #0B1820 !important;
   opacity: 1 !important;
 }
 .ql-toolbar .ql-stroke {
-  stroke: #152833 !important;
-  stroke-width: 1.6 !important;
+  stroke: #0B1820 !important;
+  stroke-width: 1.7 !important;
 }
 .ql-toolbar .ql-fill,
 .ql-toolbar .ql-stroke.ql-fill {
-  fill: #152833 !important;
+  fill: #0B1820 !important;
 }
 .ql-toolbar button:hover,
 .ql-toolbar button.ql-active,
@@ -5247,14 +5248,14 @@ button[title="Minimize"],
 .standard-actions .btn-secondary,
 .btn.btn-default.btn-sm,
 .btn.btn-default.ellipsis {
-  color: #152833 !important;
-  border-color: rgba(21, 40, 51, 0.35) !important;
+  color: #033447 !important;
+  border-color: rgba(3, 52, 71, 0.4) !important;
 }
 .page-actions .btn-default:hover,
 .btn-modal-close:hover,
 .btn-modal-minimize:hover {
   color: #033447 !important;
-  background: rgba(6, 81, 117, 0.08) !important;
+  background: rgba(6, 81, 117, 0.1) !important;
 }
 
 /* Keep white strokes only on filled dark buttons */
@@ -5286,15 +5287,16 @@ button[title="Minimize"],
   flex: 0 0 auto;
   line-height: 0;
   --icon-stroke: currentColor;
-  color: #152833;
+  color: #0B1820;
 }
 
 .ic-action-icon .icon,
 .ic-action-icon svg {
   width: 15px;
   height: 15px;
-  stroke: #152833 !important;
-  --icon-stroke: #152833 !important;
+  stroke: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
+  stroke-width: 1.85 !important;
   opacity: 1 !important;
 }
 
@@ -5326,11 +5328,11 @@ button[title="Minimize"],
   min-width: 34px !important;
   padding: 0 !important;
   border-radius: 9px !important;
-  border: 1.5px solid rgba(21, 40, 51, 0.45) !important;
+  border: 1.75px solid rgba(11, 24, 32, 0.55) !important;
   background: #ffffff !important;
-  color: #152833 !important;
-  -webkit-text-fill-color: #152833 !important;
-  --icon-stroke: #152833 !important;
+  color: #0B1820 !important;
+  -webkit-text-fill-color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
   margin-left: 2px;
   visibility: visible !important;
   opacity: 1 !important;
@@ -5339,10 +5341,10 @@ button[title="Minimize"],
 .page-icon-group .icon-btn:hover,
 .page-icon-group .ic-line-icon-btn:hover,
 .page-icon-group .ic-print-action:hover {
-  border-color: #065175 !important;
+  border-color: #033447 !important;
   background: #e7f1f8 !important;
-  color: #065175 !important;
-  --icon-stroke: #065175 !important;
+  color: #033447 !important;
+  --icon-stroke: #033447 !important;
 }
 
 .page-icon-group .icon-btn .icon,
@@ -5352,9 +5354,10 @@ button[title="Minimize"],
 .page-icon-group .ic-print-action svg {
   width: 17px !important;
   height: 17px !important;
-  stroke: #152833 !important;
-  color: #152833 !important;
-  --icon-stroke: #152833 !important;
+  stroke: #0B1820 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
+  stroke-width: 1.9 !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -5363,8 +5366,8 @@ button[title="Minimize"],
 .dropdown-menu .menu-item-icon {
   width: 18px;
   margin-right: 8px;
-  color: #152833;
-  --icon-stroke: #152833;
+  color: #0B1820;
+  --icon-stroke: #0B1820;
 }
 
 .dropdown-menu a.dropdown-item,
@@ -5390,8 +5393,8 @@ button[title="Cut"] {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: #152833 !important;
-  -webkit-text-fill-color: #152833 !important;
+  color: #0B1820 !important;
+  -webkit-text-fill-color: #0B1820 !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -5403,9 +5406,10 @@ button[title="Cut"] {
 .btn[title="Cut"] svg,
 button[aria-label="Cut"] svg,
 button[title="Cut"] svg {
-  stroke: #152833 !important;
-  color: #152833 !important;
-  --icon-stroke: #152833 !important;
+  stroke: #0B1820 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
+  stroke-width: 1.85 !important;
   opacity: 1 !important;
 }
 
@@ -5705,4 +5709,173 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   .ic-lr-hero { padding: 14px; }
   .ic-lr-filters { width: 100%; }
   .ic-lr-filter { flex: 1 1 auto; justify-content: center; text-align: center; }
+}
+
+/* ==========================================================================
+   Site-wide line-icon + toolbar button visibility (final overrides)
+   Prev / Next / Print / Cut + form custom groups (Quotation Template, etc.)
+   ========================================================================== */
+
+/* Form toolbar groups: Library / Actions / Test / Finance — teal ink, not muted gray */
+.page-head .inner-group-button > .btn-default,
+.page-head .custom-actions .btn-default,
+.page-head .actions-btn-group .btn-default,
+.page-actions .inner-group-button > .btn-default,
+.standard-actions .inner-group-button > .btn-default,
+.page-actions .custom-btn-group .btn-default {
+  color: #033447 !important;
+  -webkit-text-fill-color: #033447 !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(3, 52, 71, 0.42) !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.page-head .inner-group-button > .btn-default:hover,
+.page-head .custom-actions .btn-default:hover,
+.page-actions .inner-group-button > .btn-default:hover {
+  color: #033447 !important;
+  background: #e7f1f8 !important;
+  border-color: #065175 !important;
+}
+
+/* Dropdown items under those groups stay dark and readable */
+.page-head .inner-group-button .dropdown-menu a.dropdown-item,
+.page-head .custom-actions .dropdown-menu a.dropdown-item,
+.page-head .actions-btn-group .dropdown-menu a.dropdown-item {
+  color: #0B1820 !important;
+}
+.page-head .inner-group-button .dropdown-menu .menu-item-icon svg,
+.page-head .custom-actions .dropdown-menu .ic-action-icon svg {
+  stroke: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
+}
+
+/* Quote Format Library / Document library row actions — brand teal */
+.ic-quote-lib-row-actions .btn-primary,
+.ic-doclib-card-actions .btn-primary {
+  background: #065175 !important;
+  border-color: #065175 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 650 !important;
+}
+.ic-quote-lib-row-actions .btn-default,
+.ic-doclib-card-actions .btn-default {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(3, 52, 71, 0.4) !important;
+  color: #033447 !important;
+  -webkit-text-fill-color: #033447 !important;
+  font-weight: 600 !important;
+}
+.ic-quote-lib-row-actions .btn-default:hover,
+.ic-doclib-card-actions .btn-default:hover {
+  background: #e7f1f8 !important;
+  border-color: #065175 !important;
+  color: #033447 !important;
+}
+
+/* Prev / Next / Print icon cluster — always on, darker line art */
+.page-head .page-icon-group,
+.page-actions .page-icon-group,
+.standard-actions .page-icon-group {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.page-icon-group .icon-btn svg use,
+.page-icon-group .ic-line-icon-btn svg use,
+.page-icon-group .ic-print-action svg use,
+.ic-action-icon svg use {
+  stroke: #0B1820 !important;
+  stroke-width: 1.9px !important;
+  fill: none !important;
+  opacity: 1 !important;
+}
+
+/* Filled primary / Save: white icons must win after dark line rules */
+.btn-primary svg,
+.btn-primary svg.icon,
+.btn-primary svg.es-icon,
+.btn-primary .ic-action-icon,
+.btn-primary .ic-action-icon svg,
+.btn-primary .ic-action-icon svg use,
+.page-actions .btn-primary svg,
+.standard-actions .btn-primary svg,
+.primary-action svg,
+.btn-warning svg,
+.btn-accent svg,
+.btn-danger svg,
+.btn-success svg {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  --icon-stroke: #ffffff !important;
+  fill: none !important;
+  opacity: 1 !important;
+}
+.btn-primary .ic-action-icon,
+.primary-action .ic-action-icon {
+  color: #ffffff !important;
+}
+
+/* Protect Testing & Samples + Testing Request surfaces (gradients stay intact) */
+.ic-ts,
+.ic-ts-page,
+.ic-ts-head,
+.ic-ts-card,
+.ic-ts-summary,
+.ic-ts-tabs,
+[data-page-route="testing-samples"] .layout-main-section,
+[data-page-route="Form/IC Testing Request"] .form-layout,
+[data-page-route="Form/IC Quotation Template"] .form-layout {
+  /* Do not force opaque white over branded section backgrounds */
+  background-clip: padding-box;
+}
+.ic-ts-head {
+  background:
+    linear-gradient(135deg, rgba(6, 81, 117, 0.08), rgba(236, 105, 31, 0.06)),
+    linear-gradient(180deg, #ffffff, #f4f9fc) !important;
+}
+.ic-ts-card {
+  background: #ffffff !important;
+}
+.ic-ts-summary {
+  background: linear-gradient(180deg, #fff 0%, #f7fbfe 100%) !important;
+}
+.ic-ts-tabs {
+  background: #eef4f8 !important;
+}
+.ic-ts-tab-gen.is-active {
+  background: #065175 !important;
+  color: #ffffff !important;
+}
+.ic-ts-tab-manage.is-active {
+  background: #EC691F !important;
+  color: #ffffff !important;
+}
+.ic-ts-tab-gen.is-active .ic-ts-tab-label,
+.ic-ts-tab-gen.is-active .ic-ts-tab-hint,
+.ic-ts-tab-manage.is-active .ic-ts-tab-label,
+.ic-ts-tab-manage.is-active .ic-ts-tab-hint {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Align action icons with labels (no vertical drift) */
+.page-head .btn.ic-has-action-icon,
+.page-actions .btn.ic-has-action-icon,
+.standard-actions .btn.ic-has-action-icon,
+.modal .btn.ic-has-action-icon,
+.ic-quote-lib-row-actions .btn,
+.ic-doclib-card-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle;
+}
+.ic-action-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 0 !important;
 }
