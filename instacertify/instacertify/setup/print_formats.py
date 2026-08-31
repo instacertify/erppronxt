@@ -30,6 +30,16 @@ BANK_UPI_PAYMENT_HTML = """
 <div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
 """
 
+# Shared GST note under commercial grand totals (currency-aware).
+GST_APPLICABLE_NOTE_HTML = """
+{%- set _curr = doc.currency or 'INR' -%}
+{%- set _gst_default = 'Note: GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).' -%}
+{%- if _curr != 'INR' -%}
+{%- set _gst_default = 'Note: Amounts are in ' ~ _curr ~ '. GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).' -%}
+{%- endif -%}
+<div style="margin-top:10px;font-size:9.5pt;"><b>{{ doc.ic_gst_note or _gst_default }}</b></div>
+"""
+
 # Instacertify Aptos Display / Aptos print typography (quotations + printable docs)
 # Hierarchy: Display for titles/headings; Aptos for body/tables/terms.
 # Quote print look: black text with grey-highlighted section/step bars.
@@ -225,7 +235,7 @@ LETTERHEAD_CONTEXT_JINJA = """
 {%- else -%}
 {%- set logo = frappe.utils.get_url(logo_raw) -%}
 {%- endif -%}
-{%- set bank = frappe.get_attr('instacertify.accounting.banking.bank_for_document')(doc) -%}
+{%- set bank = bank_for_document(doc) -%}
 """
 
 # Kept for callers that still compose with the old name — body letterhead (not header-only).
@@ -298,20 +308,22 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
 
-  {% if doc.ic_test_items %}
+  {% if doc.ic_test_items or doc.ic_cost_items %}
   <div class="ic-box">
-    <h3>Testing Details</h3>
+    <h3>Commercials</h3>
+    {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
+    {% if doc.ic_test_items %}
+    <div style="font-weight:600;margin:4px 0 6px;">Testing Charges</div>
     <table class="ic-table">
       <thead><tr>
         <th>Test Name</th><th>Standard</th><th>Description</th><th>No. of Samples</th><th>Price</th><th>Total Price</th>
       </tr></thead>
       <tbody>
-      {%- set ns = namespace(grand=0) -%}
       {% for row in doc.ic_test_items %}
         {%- set units = row.number_of_samples or 1 -%}
         {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
         {%- set total = row.testing_charges or (per * units) -%}
-        {%- set ns.grand = ns.grand + (total or 0) -%}
+        {%- set ns.testing_grand = ns.testing_grand + (total or 0) -%}
         <tr>
           <td>{{ row.test_name or '' }}</td>
           <td>{{ row.applicable_standard or '' }}</td>
@@ -322,37 +334,39 @@ QUOTATION_HTML = """
         </tr>
       {% endfor %}
         <tr>
-          <td colspan="5" style="text-align:right;font-weight:700;">Grand Total</td>
-          <td><b>{{ frappe.utils.fmt_money(ns.grand, currency=doc.currency) }}</b></td>
+          <td colspan="5" style="text-align:right;font-weight:700;">Testing Total</td>
+          <td><b>{{ frappe.utils.fmt_money(ns.testing_grand, currency=doc.currency) }}</b></td>
         </tr>
       </tbody>
     </table>
-  </div>
-  {% endif %}
-
-  {% if doc.ic_cost_items %}
-  <div class="ic-box">
-    <h3>Cost Breakdown</h3>
+    {% endif %}
+    {% if doc.ic_cost_items %}
+    <div style="font-weight:600;margin:12px 0 6px;">Consulting &amp; Other Charges</div>
     <table class="ic-table">
       <thead><tr>
-        <th>Component</th><th>Description</th><th>Destination</th><th>Amount</th>
+        <th>Particulars</th><th>Description</th><th>Amount</th>
       </tr></thead>
       <tbody>
       {% for row in doc.ic_cost_items %}
+        {%- set amt = row.amount or 0 -%}
+        {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
         <tr>
-          <td>{{ row.cost_component }}</td>
-          <td>{{ row.description or '' }} {% if row.is_passthrough %}<span class="badge-pass">Pass-through</span>{% endif %}</td>
-          <td>{{ row.payment_destination }}</td>
-          <td>{{ frappe.utils.fmt_money(row.amount, currency=doc.currency) }}</td>
+          <td>{{ row.particulars or row.cost_component }}</td>
+          <td>{{ row.description or '' }}</td>
+          <td>{{ frappe.utils.fmt_money(amt, currency=doc.currency) }}</td>
         </tr>
       {% endfor %}
+        <tr>
+          <td colspan="2" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
+          <td><b>{{ frappe.utils.fmt_money(ns.cost_grand, currency=doc.currency) }}</b></td>
+        </tr>
       </tbody>
     </table>
-    <div style="margin-top:10px;">
-      <div><b>Instacertify Commercial Value:</b> {{ frappe.utils.fmt_money(doc.ic_commercial_value, currency=doc.currency) }}</div>
-      <div><b>Pass-Through Charges:</b> {{ frappe.utils.fmt_money(doc.ic_passthrough_value, currency=doc.currency) }}</div>
-      <div class="ic-grand-total">Total Quoted Value: {{ frappe.utils.fmt_money(doc.ic_total_quoted_value or doc.grand_total, currency=doc.currency) }}</div>
+    {% endif %}
+    <div class="ic-grand-total" style="margin-top:10px;">
+      Grand Total: {{ frappe.utils.fmt_money(ns.testing_grand + ns.cost_grand, currency=doc.currency) }}
     </div>
+""" + GST_APPLICABLE_NOTE_HTML + """
   </div>
   {% endif %}
 
@@ -848,7 +862,7 @@ TESTING_QUOTATION_HTML = """
             </tr>
           </thead>
           <tbody>
-          {%- set ns = namespace(testing_grand=0) -%}
+          {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
           {% for row in doc.ic_test_items or [] %}
             {%- set units = row.number_of_samples or 1 -%}
             {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
@@ -870,7 +884,44 @@ TESTING_QUOTATION_HTML = """
             </tr>
           </tbody>
         </table>
-        <div class="tq-note"><b>{{ doc.ic_gst_note or 'Note: GST @ 18% shall be charged additionally on the above testing charges.' }}</b></div>
+        {% if doc.ic_cost_items %}
+        <div class="tq-h" style="margin-top:14px;">Consulting &amp; Other Charges</div>
+        <table class="tq-comm">
+          <thead>
+            <tr>
+              <th class="num" style="width:8%">S. No.</th>
+              <th style="width:32%">Particulars</th>
+              <th style="width:36%">Description</th>
+              <th style="width:24%">Amount ({{ curr }})</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in doc.ic_cost_items or [] %}
+            {%- set amt = row.amount or 0 -%}
+            {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
+            <tr>
+              <td class="num">{{ loop.index }}</td>
+              <td>{{ row.particulars or row.cost_component or '' }}</td>
+              <td>{{ row.description or row.charges_display or '' }}</td>
+              <td class="amt">{% if row.charges_display %}{{ row.charges_display }}{% else %}{{ inr(amt) }}{% endif %}</td>
+            </tr>
+          {% endfor %}
+            <tr>
+              <td colspan="3" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
+              <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
+            </tr>
+          </tbody>
+        </table>
+        {% endif %}
+        <table class="tq-comm" style="margin-top:8px;">
+          <tbody>
+            <tr>
+              <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Grand Total (Testing{% if doc.ic_cost_items %} + Consulting / Other{% endif %})</td>
+              <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
+            </tr>
+          </tbody>
+        </table>
+""" + GST_APPLICABLE_NOTE_HTML + """
       </td>
     </tr>
     <tr>
@@ -1105,7 +1156,10 @@ CONSULTING_QUOTATION_HTML = """
         <table class="cq-comm">
           <thead><tr><th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th><th style="text-align:right;">{{ doc.ic_label_charges_col or 'Charges' }} ({{ doc.currency or 'INR' }})</th></tr></thead>
           <tbody>
+          {%- set ns = namespace(cost_grand=0) -%}
           {% for row in doc.ic_cost_items or [] %}
+            {%- set amt = row.amount or 0 -%}
+            {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
             <tr>
               <td>{{ row.particulars or row.description or row.cost_component }}</td>
               <td class="amt">
@@ -1114,8 +1168,13 @@ CONSULTING_QUOTATION_HTML = """
               </td>
             </tr>
           {% endfor %}
+            <tr>
+              <td style="text-align:right;font-weight:700;">Grand Total</td>
+              <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
+            </tr>
           </tbody>
         </table>
+""" + GST_APPLICABLE_NOTE_HTML + """
         {% if doc.ic_commercials_notes %}
           <div style="margin-top:10px;">{{ doc.ic_commercials_notes }}</div>
         {% endif %}

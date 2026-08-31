@@ -2661,12 +2661,9 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 	return p
 		.then(() => {
 			frm.clear_table("ic_cost_items");
-			const qtype = fields.ic_quotation_type || frm.doc.ic_quotation_type;
-			if (qtype !== "Testing") {
-				(payload.cost_items || []).forEach((row) => {
-					frm.add_child("ic_cost_items", row);
-				});
-			}
+			(payload.cost_items || []).forEach((row) => {
+				frm.add_child("ic_cost_items", row);
+			});
 			frm.clear_table("ic_test_items");
 			(payload.test_items || []).forEach((row) => {
 				frm.add_child("ic_test_items", row);
@@ -2843,12 +2840,6 @@ instacertify.toggle_quotation_sections = function (frm) {
 		if (frm.fields_dict[f]) frm.toggle_display(f, true);
 	});
 
-	// Testing quotes: commercials = test lines only — no separate consulting/other table
-	const isPureTesting = t === "Testing";
-	["ic_section_costing", "ic_cost_items", "ic_section_cost_totals"].forEach((f) => {
-		if (frm.fields_dict[f]) frm.toggle_display(f, !isPureTesting);
-	});
-
 	// Prefill fields stay fully editable on every quote (Testing + Consulting)
 	[
 		"ic_bank_account",
@@ -2872,56 +2863,42 @@ instacertify.toggle_quotation_sections = function (frm) {
 		}));
 		frm.set_df_property(
 			"ic_bank_account",
+			"label",
+			__("Bank Account for this Quote")
+		);
+		frm.set_df_property(
+			"ic_bank_account",
 			"description",
-			__("Choose YES BANK or Indian Overseas Bank for this quote’s print / PDF.")
+			__("Required for Print/PDF — choose YES BANK or Indian Overseas Bank (or other active accounts).")
 		);
 	}
-	if (isTesting) {
-		if (frm.fields_dict.ic_estimated_timeline) {
-			frm.set_df_property("ic_estimated_timeline", "label", __("Estimated Testing Timeline"));
-			frm.set_df_property(
-				"ic_estimated_timeline",
-				"description",
-				__("Prefilled — edit for this quote (e.g. 5–7 working days).")
-			);
-		}
-		if (frm.fields_dict.ic_deliverables) {
-			frm.set_df_property(
-				"ic_deliverables",
-				"description",
-				__("Prefilled from settings/template — edit freely for this quote before Print / Share.")
-			);
-		}
-		if (frm.fields_dict.ic_sample_handling_policy) {
-			frm.set_df_property(
-				"ic_sample_handling_policy",
-				"description",
-				__("Prefilled sample handling & disposal — edit on this quote if needed.")
-			);
-		}
-	}
-
 	if (frm.fields_dict.ic_section_costing) {
 		frm.set_df_property(
 			"ic_section_costing",
 			"label",
-			__("7. Cost Breakdown / Commercials")
+			isTesting
+				? __("Consulting & Other Commercials (added to Testing Total on print)")
+				: __("7. Cost Breakdown / Commercials")
 		);
 	}
 	if (frm.fields_dict.ic_cost_items) {
 		frm.set_df_property(
 			"ic_cost_items",
 			"description",
-			__(
-				"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
-			)
+			isTesting
+				? __(
+						"Optional consulting / govt / other charges. On Print these are shown with Testing prices and summed into one Grand Total (+ GST @ 18% note)."
+				  )
+				: __(
+						"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
+				  )
 		);
 	}
 	if (frm.fields_dict.ic_section_policies) {
 		frm.set_df_property(
 			"ic_section_policies",
 			"label",
-			__("Payment, Cancellation & Confidentiality (editable)")
+			__("Payment, Bank, Cancellation & Confidentiality (editable)")
 		);
 	}
 	if (t === "Testing") {

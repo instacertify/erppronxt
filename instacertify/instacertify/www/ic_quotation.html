@@ -98,7 +98,7 @@
       document.getElementById('remarks-box').style.display = 'block';
     }
     function costTable(rows, currency) {
-      if (!rows || !rows.length) return '';
+      if (!rows || !rows.length) return { html: '', total: 0 };
       let grand = 0;
       const body = rows.map(r => {
         const amount = Number(r.amount || 0);
@@ -108,14 +108,18 @@
           (r.payment_destination ? '<div class="ic-portal-muted">' + esc(r.payment_destination) + '</div>' : '') +
           '</td><td><b>' + esc(money(amount, currency)) + '</b></td></tr>';
       }).join('');
-      return '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Amount</th></tr></thead><tbody>' +
-        body +
-        '<tr><td style="text-align:right;font-weight:700;">Total</td>' +
-        '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
-        '</tbody></table>';
+      return {
+        total: grand,
+        html: '<h4 style="color:#0D47A1;margin:18px 0 6px;">Consulting &amp; Other Charges</h4>' +
+          '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Amount</th></tr></thead><tbody>' +
+          body +
+          '<tr><td style="text-align:right;font-weight:700;">Consulting / Other Total</td>' +
+          '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
+          '</tbody></table>'
+      };
     }
     function testTable(rows, currency) {
-      if (!rows || !rows.length) return '';
+      if (!rows || !rows.length) return { html: '', total: 0 };
       let grand = 0;
       const body = rows.map(r => {
         const qty = Number(r.quantity || 1);
@@ -131,27 +135,39 @@
           '<td><b>' + esc(money(amount, currency)) + '</b></td>' +
           '</tr>';
       }).join('');
-      return '<h4 style="color:#0D47A1;margin:12px 0 6px;">Testing Prices</h4>' +
-        '<table class="ic-portal-table"><thead><tr>' +
-        '<th>Test Name</th><th>Standard</th><th>Description</th>' +
-        '<th>No. of Samples</th><th>Price</th><th>Total Price</th>' +
-        '</tr></thead><tbody>' + body +
-        '<tr><td colspan="5" style="text-align:right;font-weight:700;">Testing Total</td>' +
-        '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
-        '</tbody></table>';
+      return {
+        total: grand,
+        html: '<h4 style="color:#0D47A1;margin:12px 0 6px;">Testing Prices</h4>' +
+          '<table class="ic-portal-table"><thead><tr>' +
+          '<th>Test Name</th><th>Standard</th><th>Description</th>' +
+          '<th>No. of Samples</th><th>Price</th><th>Total Price</th>' +
+          '</tr></thead><tbody>' + body +
+          '<tr><td colspan="5" style="text-align:right;font-weight:700;">Testing Total</td>' +
+          '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
+          '</tbody></table>'
+      };
+    }
+    function gstNote(currency) {
+      const cur = currency || 'INR';
+      let msg = 'Note: GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).';
+      if (cur !== 'INR') {
+        msg = 'Note: Amounts are in ' + cur + '. GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).';
+      }
+      return '<p class="ic-portal-muted" style="margin-top:8px;"><b>' + esc(msg) + '</b></p>';
     }
     function load() {
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
-          const isTesting = (d.ic_quotation_type || '') === 'Testing';
-          const commercials = isTesting
-            ? (d.test_items && d.test_items.length ? testTable(d.test_items, d.currency) : '')
-            : (
-              (d.test_items && d.test_items.length ? testTable(d.test_items, d.currency) : '') +
-              costTable(d.cost_items, d.currency)
-            );
+          const tests = testTable(d.test_items, d.currency);
+          const costs = costTable(d.cost_items, d.currency);
+          const combined = tests.total + costs.total;
+          let commercials = tests.html + costs.html;
+          if (combined > 0) {
+            commercials += '<p style="margin-top:12px;font-weight:700;color:#0D47A1;">Grand Total: ' +
+              esc(money(combined, d.currency)) + '</p>' + gstNote(d.currency);
+          }
           document.getElementById('content').innerHTML =
             (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
             '<p><b>' + esc(d.reference || d.customer_name || 'Quotation') + '</b> · Revision ' + esc(d.ic_revision_number || 0) +
