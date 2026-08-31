@@ -485,6 +485,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				reqd: 1,
 				description: __("From Active lab libraries — includes Other for custom tests"),
 				change() {
+					if (state._skip_test_change) return;
 					const v = form.get_value("test_name") || "";
 					if (v === state.test_name) return;
 					state.test_name = v;
@@ -762,14 +763,16 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				})
 				.join("")
 		);
-		$tbody.find(".ic-ts-pick-std").on("click", function () {
-			const s = rows[cint($(this).data("idx"))];
-			pick_standard(s.value || s);
+		$tbody.find(".ic-ts-pick-std").on("click", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			const s = rows[cint($(this).attr("data-idx"))];
+			if (s) pick_standard(s.value || s);
 		});
 		$tbody.find("tr[data-idx]").on("click", function (e) {
-			if ($(e.target).closest("button").length) return;
-			const s = rows[cint($(this).data("idx"))];
-			pick_standard(s.value || s);
+			if ($(e.target).closest("button, a, input").length) return;
+			const s = rows[cint($(this).attr("data-idx"))];
+			if (s) pick_standard(s.value || s);
 		});
 	}
 
@@ -777,7 +780,9 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		state.applicable_standard = label;
 		state._skip_std_change = true;
 		form.set_value("applicable_standard", label);
-		state._skip_std_change = false;
+		setTimeout(() => {
+			state._skip_std_change = false;
+		}, 0);
 		clear_lab_selection();
 		render_standards_table(state.standards);
 		load_labs();
@@ -861,13 +866,22 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 				})
 				.join("")
 		);
-		$tbody.find(".ic-ts-pick-lab").on("click", function () {
-			select_lab(offers[cint($(this).data("idx"))]);
+		$tbody.find(".ic-ts-pick-lab").on("click", function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			select_lab(offers[cint($(this).attr("data-idx"))]);
+		});
+		$tbody.find("tr[data-idx]").on("click", function (e) {
+			if ($(e.target).closest("button, a, input").length) return;
+			select_lab(offers[cint($(this).attr("data-idx"))]);
 		});
 	}
 
 	function select_lab(offer) {
 		if (!offer) return;
+		// Prevent Autocomplete change handlers from wiping this selection
+		state._skip_test_change = true;
+		state._skip_std_change = true;
 		state.selected_offer = offer;
 		state.laboratory = offer.laboratory;
 		state.lab_scope_row = offer.scope_row;
@@ -884,7 +898,12 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			state.applicable_standard = offer.applicable_standard;
 			form.set_value("applicable_standard", offer.applicable_standard);
 		}
+		setTimeout(() => {
+			state._skip_test_change = false;
+			state._skip_std_change = false;
+		}, 0);
 		render_labs_table(state.offers);
+		render_standards_table(state.standards);
 		load_reusable_samples();
 		set_step(4);
 		update_summary();

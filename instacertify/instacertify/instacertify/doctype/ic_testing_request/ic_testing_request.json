@@ -281,9 +281,19 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "test_reports",
+   "fieldtype": "Table",
+   "label": "Test Reports (PDF)",
+   "options": "IC Testing Report File",
+   "description": "Upload one or more PDF test reports. The first file is used as the primary share link."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "test_report",
    "fieldtype": "Attach",
-   "label": "Test Report"
+   "label": "Primary Test Report",
+   "read_only": 1,
+   "description": "Auto-filled from the first PDF in Test Reports (used for customer share)"
   },
   {
    "doctype": "DocField",

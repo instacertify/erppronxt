@@ -19,7 +19,7 @@ def _scope_label(row) -> str:
 
 
 def _lab_offer_label(lab_name: str, lab_title: str, location: str, row) -> str:
-	"""User-facing option: Lab · location · buy · sell · test."""
+	"""User-facing option: Lab · location · buy · sell · test · standard (unique)."""
 	currency = row.currency or "INR"
 	try:
 		buy = fmt_money(flt(row.purchase_price), currency=currency)
@@ -30,7 +30,9 @@ def _lab_offer_label(lab_name: str, lab_title: str, location: str, row) -> str:
 	loc = (location or "").strip() or "—"
 	title = (lab_title or lab_name or "").strip()
 	test = (row.test_name or "").strip() or "Test"
-	return f"{title} · {loc} · Buy {buy} · Sell {sell} · {test}"
+	std = (row.applicable_standard or "").strip() or "—"
+	# Include standard so two scopes with same prices stay distinguishable
+	return f"{title} · {loc} · Buy {buy} · Sell {sell} · {test} · {std}"
 
 
 OTHER_OPTION = "Other"
