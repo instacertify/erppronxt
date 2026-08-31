@@ -5110,14 +5110,25 @@ a.btn-primary *,
   -webkit-text-fill-color: #ffffff !important;
 }
 
+.btn-primary .es-icon,
 .btn-primary .es-icon use,
-.btn-primary svg,
-.btn-primary .icon,
-.btn-warning svg,
+.btn-primary svg.es-icon,
+.btn-warning .es-icon,
 .btn-warning .es-icon use,
-.btn-accent svg,
-.btn-danger svg,
-.btn-success svg {
+.btn-accent .es-icon,
+.btn-danger .es-icon,
+.btn-success .es-icon {
+  fill: #ffffff !important;
+  stroke: none !important;
+  --icon-stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+.btn-primary svg.icon:not(.es-icon),
+.btn-primary .icon:not(.es-icon),
+.btn-warning svg.icon:not(.es-icon),
+.btn-accent svg.icon:not(.es-icon),
+.btn-danger svg.icon:not(.es-icon),
+.btn-success svg.icon:not(.es-icon) {
   stroke: #ffffff !important;
   color: #ffffff !important;
   --icon-stroke: #ffffff !important;
@@ -5319,35 +5330,62 @@ html {
   --text-muted: #2A3F4A;
 }
 
-/* Desk Lucide / es-icons — near-black ink so line art is readable */
-.desk-page svg.icon,
-.desk-page svg.es-icon,
-.page-container svg.icon,
-.page-container svg.es-icon,
-.form-layout svg.icon,
-.modal svg.icon,
-.dropdown-menu svg.icon,
-.list-row-container svg.icon,
-.workspace-sidebar svg.icon,
-.navbar svg.icon,
-.navbar svg.es-icon,
-.ic-action-icon svg.icon,
-.menu-item-icon svg.icon {
+/* Desk Lucide / es-icons — near-black ink so line art is readable.
+   Lucide (.icon) = stroke glyphs. Espresso (.es-icon) = fill glyphs (e.g. Reload List).
+   Never force fill:none on .es-icon — that makes Reload / filter icons invisible. */
+.desk-page svg.icon:not(.es-icon),
+.page-container svg.icon:not(.es-icon),
+.form-layout svg.icon:not(.es-icon),
+.modal svg.icon:not(.es-icon),
+.dropdown-menu svg.icon:not(.es-icon),
+.list-row-container svg.icon:not(.es-icon),
+.workspace-sidebar svg.icon:not(.es-icon),
+.navbar svg.icon:not(.es-icon),
+.ic-action-icon svg.icon:not(.es-icon),
+.menu-item-icon svg.icon:not(.es-icon) {
   stroke: #0B1820 !important;
   color: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
   opacity: 1 !important;
 }
 
-.desk-page svg.icon use,
-.desk-page svg.es-icon use,
-.page-container svg.icon use,
-.modal svg.icon use,
-.dropdown-menu svg.icon use,
-.ic-action-icon svg use,
-.menu-item-icon svg use {
+.desk-page svg.es-icon,
+.page-container svg.es-icon,
+.form-layout svg.es-icon,
+.modal svg.es-icon,
+.dropdown-menu svg.es-icon,
+.list-row-container svg.es-icon,
+.navbar svg.es-icon,
+.page-icon-group svg.es-icon,
+.ic-action-icon svg.es-icon,
+.menu-item-icon svg.es-icon {
+  fill: #0B1820 !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.desk-page svg.icon:not(.es-icon) use,
+.page-container svg.icon:not(.es-icon) use,
+.modal svg.icon:not(.es-icon) use,
+.dropdown-menu svg.icon:not(.es-icon) use,
+.ic-action-icon svg.icon:not(.es-icon) use,
+.menu-item-icon svg.icon:not(.es-icon) use {
   stroke: #0B1820 !important;
   fill: none;
+}
+
+.desk-page svg.es-icon use,
+.page-container svg.es-icon use,
+.modal svg.es-icon use,
+.page-icon-group svg.es-icon use,
+.ic-action-icon svg.es-icon use,
+.menu-item-icon svg.es-icon use {
+  fill: #0B1820 !important;
+  stroke: none !important;
 }
 
 /* Page head icon buttons: previous / next / print / menu */
@@ -5482,22 +5520,37 @@ button[title="Minimize"],
   color: #0B1820;
 }
 
-.ic-action-icon .icon,
-.ic-action-icon svg {
+.ic-action-icon .icon:not(.es-icon),
+.ic-action-icon svg.icon:not(.es-icon) {
   width: 15px;
   height: 15px;
   stroke: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
   stroke-width: 1.85 !important;
+  fill: none !important;
+  opacity: 1 !important;
+}
+.ic-action-icon svg.es-icon {
+  width: 15px;
+  height: 15px;
+  fill: #0B1820 !important;
+  stroke: none !important;
+  --icon-stroke: #0B1820 !important;
   opacity: 1 !important;
 }
 
 .btn-primary .ic-action-icon,
-.btn-primary .ic-action-icon .icon,
-.btn-primary .ic-action-icon svg {
+.btn-primary .ic-action-icon .icon:not(.es-icon),
+.btn-primary .ic-action-icon svg.icon:not(.es-icon) {
   --icon-stroke: #ffffff !important;
   color: #ffffff !important;
   stroke: #ffffff !important;
+}
+.btn-primary .ic-action-icon svg.es-icon {
+  --icon-stroke: #ffffff !important;
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: none !important;
 }
 
 .page-icon-group {
@@ -5539,17 +5592,30 @@ button[title="Minimize"],
   --icon-stroke: #033447 !important;
 }
 
-.page-icon-group .icon-btn .icon,
-.page-icon-group .icon-btn svg,
-.page-icon-group .ic-line-icon-btn svg,
-.page-icon-group .ic-print-action .icon,
-.page-icon-group .ic-print-action svg {
-  width: 17px !important;
-  height: 17px !important;
+.page-icon-group .icon-btn svg.icon:not(.es-icon),
+.page-icon-group .ic-line-icon-btn svg.icon:not(.es-icon),
+.page-icon-group .ic-print-action svg.icon:not(.es-icon) {
+  width: 18px !important;
+  height: 18px !important;
   stroke: #0B1820 !important;
   color: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
-  stroke-width: 1.9 !important;
+  stroke-width: 2 !important;
+  fill: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.page-icon-group .icon-btn svg.es-icon,
+.page-icon-group .ic-line-icon-btn svg.es-icon,
+.page-icon-group .ic-print-action svg.es-icon,
+.page-icon-group .icon-btn .es-icon {
+  width: 18px !important;
+  height: 18px !important;
+  fill: #0B1820 !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -5997,42 +6063,78 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   color: #033447 !important;
 }
 
-/* Prev / Next / Print icon cluster — always on, darker line art */
+/* Prev / Next / Print / Reload List icon cluster — always on, darker line art */
 .page-head .page-icon-group,
 .page-actions .page-icon-group,
-.standard-actions .page-icon-group {
+.standard-actions .page-icon-group,
+[data-page-route^="List/"] .page-icon-group,
+[data-page-route="Lead"] .page-icon-group,
+[data-page-route="Customer"] .page-icon-group,
+[data-page-route="Quotation"] .page-icon-group,
+[data-page-route^="List/HD"] .page-icon-group,
+[data-page-route*="Calendar"] .page-icon-group,
+[data-page-route*="Event"] .page-icon-group {
   display: inline-flex !important;
   visibility: visible !important;
   opacity: 1 !important;
 }
-.page-icon-group .icon-btn svg use,
-.page-icon-group .ic-line-icon-btn svg use,
-.page-icon-group .ic-print-action svg use,
-.ic-action-icon svg use {
+/* Reload List uses espresso fill icon — must keep fill, not stroke-only */
+.page-icon-group .icon-btn,
+.page-icon-group .icon-btn.text-muted,
+.page-icon-group button.text-muted {
+  color: #0B1820 !important;
+  -webkit-text-fill-color: #0B1820 !important;
+  opacity: 1 !important;
+}
+.page-icon-group .icon-btn svg.icon:not(.es-icon) use,
+.page-icon-group .ic-line-icon-btn svg.icon:not(.es-icon) use,
+.page-icon-group .ic-print-action svg.icon:not(.es-icon) use,
+.ic-action-icon svg.icon:not(.es-icon) use {
   stroke: #0B1820 !important;
-  stroke-width: 1.9px !important;
+  stroke-width: 2px !important;
   fill: none !important;
+  opacity: 1 !important;
+}
+.page-icon-group .icon-btn svg.es-icon use,
+.page-icon-group .ic-line-icon-btn svg.es-icon use,
+.page-icon-group .ic-print-action svg.es-icon use,
+.ic-action-icon svg.es-icon use {
+  fill: #0B1820 !important;
+  stroke: none !important;
   opacity: 1 !important;
 }
 
 /* Filled primary / Save: white icons must win after dark line rules */
-.btn-primary svg,
-.btn-primary svg.icon,
-.btn-primary svg.es-icon,
-.btn-primary .ic-action-icon,
-.btn-primary .ic-action-icon svg,
-.btn-primary .ic-action-icon svg use,
-.page-actions .btn-primary svg,
-.standard-actions .btn-primary svg,
-.primary-action svg,
-.btn-warning svg,
-.btn-accent svg,
-.btn-danger svg,
-.btn-success svg {
+.btn-primary svg.icon:not(.es-icon),
+.btn-primary .ic-action-icon svg.icon:not(.es-icon),
+.btn-primary .ic-action-icon svg.icon:not(.es-icon) use,
+.page-actions .btn-primary svg.icon:not(.es-icon),
+.standard-actions .btn-primary svg.icon:not(.es-icon),
+.primary-action svg.icon:not(.es-icon),
+.btn-warning svg.icon:not(.es-icon),
+.btn-accent svg.icon:not(.es-icon),
+.btn-danger svg.icon:not(.es-icon),
+.btn-success svg.icon:not(.es-icon) {
   stroke: #ffffff !important;
   color: #ffffff !important;
   --icon-stroke: #ffffff !important;
   fill: none !important;
+  opacity: 1 !important;
+}
+.btn-primary svg.es-icon,
+.btn-primary .ic-action-icon svg.es-icon,
+.btn-primary .ic-action-icon svg.es-icon use,
+.page-actions .btn-primary svg.es-icon,
+.standard-actions .btn-primary svg.es-icon,
+.primary-action svg.es-icon,
+.btn-warning svg.es-icon,
+.btn-accent svg.es-icon,
+.btn-danger svg.es-icon,
+.btn-success svg.es-icon {
+  fill: #ffffff !important;
+  stroke: none !important;
+  color: #ffffff !important;
+  --icon-stroke: #ffffff !important;
   opacity: 1 !important;
 }
 .btn-primary .ic-action-icon,
@@ -6100,4 +6202,81 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   align-items: center !important;
   justify-content: center !important;
   line-height: 0 !important;
+}
+/* ==========================================================================
+   Reload List + Print icons — human-eye visibility (Lead / Customer /
+   Quotation / Calendar / Helpdesk lists & forms)
+   Espresso icons (es-line-reload) are FILL glyphs; Lucide print is STROKE.
+   ========================================================================== */
+.page-icon-group,
+.page-head .page-icon-group,
+.page-actions .page-icon-group {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  gap: 6px !important;
+}
+.page-icon-group .icon-btn,
+.page-icon-group .icon-btn.text-muted,
+.page-icon-group button,
+.page-icon-group .ic-print-action,
+.page-icon-group .ic-line-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #0B1820 !important;
+  -webkit-text-fill-color: #0B1820 !important;
+  background: #ffffff !important;
+  border: 2px solid #0B1820 !important;
+  border-radius: 9px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  box-shadow: 0 1px 2px rgba(11, 24, 32, 0.12) !important;
+}
+.page-icon-group .icon-btn:hover,
+.page-icon-group .ic-print-action:hover,
+.page-icon-group .ic-line-icon-btn:hover {
+  background: #e7f1f8 !important;
+  border-color: #033447 !important;
+  color: #033447 !important;
+}
+/* Reload List = es-line-reload (fill) */
+.page-icon-group svg.es-icon,
+.page-icon-group .es-icon,
+.page-icon-group svg.es-icon use,
+.page-actions svg.es-icon,
+.standard-actions svg.es-icon,
+[data-page-route^="List/"] .page-icon-group svg.es-icon,
+[data-page-route*="Calendar"] .page-icon-group svg.es-icon,
+[data-page-route*="Event"] .page-icon-group svg.es-icon,
+[data-page-route^="List/HD"] .page-icon-group svg.es-icon,
+[data-page-route="List/Lead"] .page-icon-group svg.es-icon,
+[data-page-route="List/Customer"] .page-icon-group svg.es-icon,
+[data-page-route="List/Quotation"] .page-icon-group svg.es-icon {
+  fill: #0B1820 !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
+  width: 18px !important;
+  height: 18px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+/* Print / prev / next = Lucide stroke icons */
+.page-icon-group svg.icon:not(.es-icon),
+.page-icon-group .ic-print-action svg.icon:not(.es-icon),
+.page-icon-group svg.icon:not(.es-icon) use {
+  stroke: #0B1820 !important;
+  stroke-width: 2.1px !important;
+  fill: none !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
+  width: 18px !important;
+  height: 18px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
