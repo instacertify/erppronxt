@@ -6485,3 +6485,189 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   outline: none !important;
   background: transparent !important;
 }
+
+/* ==========================================================================
+   List pages from home sidebar (Quotation / Lead / Labs / …):
+   Reload + Print dark, no outline; fluid layout, no bleed / empty gaps
+   ========================================================================== */
+[data-page-route^="List/"] .page-head,
+[data-page-route^="List/"] .page-head .container,
+[data-page-route^="query-report"] .page-head,
+.list-view-container .page-head {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+[data-page-route^="List/"] .page-head .container,
+[data-page-route^="List/"] .page-head .page-head-content {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px 12px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+[data-page-route^="List/"] .page-title,
+[data-page-route^="List/"] .title-area,
+[data-page-route^="List/"] .page-head .sidebar-toggle-btn + .title-text,
+[data-page-route^="List/"] .page-head h3,
+[data-page-route^="List/"] .page-head .ellipsis {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+[data-page-route^="List/"] .page-head .page-actions,
+[data-page-route^="List/"] .standard-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 4px 6px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex: 1 1 auto !important;
+  margin-left: auto !important;
+}
+[data-page-route^="List/"] .page-icon-group,
+[data-page-route^="List/"] .page-head .page-icon-group {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 2px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  margin-left: 2px !important;
+  flex-shrink: 0 !important;
+}
+[data-page-route^="List/"] .page-icon-group .icon-btn,
+[data-page-route^="List/"] .page-icon-group .ic-print-action,
+[data-page-route^="List/"] .page-icon-group .ic-line-icon-btn,
+[data-page-route^="List/"] .page-icon-group button {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #0B1820 !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+[data-page-route^="List/"] .page-icon-group svg.es-icon,
+[data-page-route^="List/"] .page-icon-group svg.es-icon use {
+  fill: #0B1820 !important;
+  stroke: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+[data-page-route^="List/"] .page-icon-group svg.icon:not(.es-icon) {
+  stroke: #0B1820 !important;
+  fill: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Fluid main area — fill screen, no horizontal bleed */
+html,
+body,
+.main-section,
+#body,
+#page-container,
+.desk-page {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+.desk-page .layout-main,
+.desk-page .layout-main-section-wrapper,
+.desk-page .layout-main-section,
+[data-page-route^="List/"] .layout-main,
+[data-page-route^="List/"] .layout-main-section,
+[data-page-route="instacertify-home"] .layout-main-section,
+[data-page-route="Workspaces"] .layout-main-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+.frappe-list,
+.list-paging-area,
+.page-form,
+.filter-section,
+.list-filters,
+.filter-list {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+.list-row-container,
+.list-row,
+.result,
+.frappe-list .list-row-head {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.list-row .level-left,
+.list-row .level-right,
+.list-row-col,
+.list-subject,
+.list-row-col .ellipsis,
+.list-row .ellipsis {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Home / workspace grids fill width evenly — no sparse empty columns */
+.ic-explore-grid,
+.ic-summary-grid,
+.ic-project-grid,
+.ic-workdesk-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 148px), 1fr)) !important;
+  justify-content: stretch !important;
+}
+@media (max-width: 960px) {
+  [data-page-route^="List/"] .page-head .page-actions,
+  [data-page-route^="List/"] .standard-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+}
+@media (max-width: 720px) {
+  .ic-explore-grid,
+  .ic-summary-grid,
+  .ic-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .page-head .page-actions {
+    width: 100% !important;
+  }
+}
+@media (max-width: 420px) {
+  .ic-explore-grid,
+  .ic-summary-grid,
+  .ic-project-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
