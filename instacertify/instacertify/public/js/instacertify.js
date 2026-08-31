@@ -2887,7 +2887,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"description",
 			isTesting
 				? __(
-						"Optional consulting / govt / other charges. On Print these are shown with Testing prices and summed into one Grand Total (+ GST @ 18% note)."
+						"Optional consulting / govt / other charges. On Print these are shown with Testing prices and summed into one Grand Total."
 				  )
 				: __(
 						"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
