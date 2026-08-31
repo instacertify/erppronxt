@@ -29,8 +29,9 @@ instacertify.ensure_contrast_guard = function () {
 :root {
   --btn-primary-color: #ffffff !important;
   --text-on-primary: #ffffff;
-  --icon-stroke: #152833 !important;
-  --text-muted: #334955 !important;
+  --icon-stroke: #0B1820 !important;
+  --text-muted: #2A3F4A !important;
+  --ic-line-ink: #0B1820;
   --ic-hl-bg: rgba(6, 81, 117, 0.08);
   --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
   --ic-hl-edge: rgba(236, 105, 31, 0.55);
@@ -46,52 +47,72 @@ instacertify.ensure_contrast_guard = function () {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
-.btn-primary *, a.btn-primary *, .btn-warning *, .btn-accent *, .btn-danger *,
-.btn-success *, .ic-btn-primary *, .ic-ts-tab-gen.is-active *, .ic-ts-tab-manage.is-active *,
-.ic-quote-lib-tag.active *, .ic-doclib-cat.is-active *, .primary-action *,
-.for-login .btn-primary *, .for-login .btn-login *, .for-login button[type="submit"] *,
-.login-content .btn-primary * {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-  fill: #ffffff !important;
-  stroke: #ffffff !important;
-}
 .for-login .btn-primary, .for-login .btn-login, .for-login button[type="submit"],
 .login-content .btn-primary, .page-card .btn-primary {
   background: #065175 !important;
   border-color: #065175 !important;
 }
 .for-login label, .for-login .form-control, .login-content label, .login-content .form-control {
-  color: #152833 !important;
-  -webkit-text-fill-color: #152833 !important;
+  color: #0B1820 !important;
+  -webkit-text-fill-color: #0B1820 !important;
 }
 .btn-default, .btn-secondary, .btn-light, .ic-btn-ghost, .ic-list-cat-btn, .filter-button,
 .btn-modal-close, .btn-modal-minimize, .btn[data-label="Cut"], .btn[aria-label="Cut"],
-.btn[title="Cut"], .btn[data-label="Cancel"], .page-icon-group .icon-btn {
-  color: #152833 !important;
-  -webkit-text-fill-color: #152833 !important;
+.btn[title="Cut"], .btn[data-label="Cancel"], .page-icon-group .icon-btn,
+.page-head .inner-group-button > .btn-default,
+.custom-actions .btn-default, .actions-btn-group .btn-default {
+  color: #033447 !important;
+  -webkit-text-fill-color: #033447 !important;
 }
-svg.icon, svg.es-icon, .icon use, .es-icon use,
+/* Dark line icons on light chrome — exclude filled primary/accent buttons */
+svg.icon:not(.btn-primary svg):not(.btn-warning svg):not(.btn-accent svg):not(.btn-danger svg):not(.btn-success svg),
+svg.es-icon,
+.icon use, .es-icon use,
 .page-icon-group .icon-btn svg,
+.page-icon-group button svg,
 .page-actions .btn-default svg,
 .standard-actions .btn-default svg,
 .menu-btn-group .dropdown-item svg,
 .menu-item-icon svg, .ic-action-icon svg,
 .form-sidebar svg.icon, .form-sidebar .sidebar-image-section ~ * svg,
 .btn-modal-close svg, .btn-modal-minimize svg,
-.modal-header .btn svg, .section-head .icon,
+.modal-header .btn:not(.btn-primary) svg, .section-head .icon,
 .grid-row-check, .row-actions svg, .btn-open-row svg,
 .ql-toolbar button svg, .ql-toolbar .ql-stroke,
 .link-btn svg, .btn-search svg, .control-input .link-btn svg {
-  stroke: #152833 !important;
-  color: #152833 !important;
-  --icon-stroke: #152833 !important;
-}
-.ql-toolbar .ql-stroke { stroke: #152833 !important; }
-.ql-toolbar .ql-fill { fill: #152833 !important; }
-.ql-toolbar button, .ql-toolbar .ql-picker {
-  color: #152833 !important;
+  stroke: #0B1820 !important;
+  color: #0B1820 !important;
+  --icon-stroke: #0B1820 !important;
   opacity: 1 !important;
+  visibility: visible !important;
+}
+.page-icon-group .icon-btn svg,
+.page-icon-group button svg,
+.ic-action-icon svg,
+.btn-modal-close svg,
+.btn[data-label="Cut"] svg,
+.btn[title="Cut"] svg {
+  stroke-width: 1.85 !important;
+}
+.ql-toolbar .ql-stroke { stroke: #0B1820 !important; stroke-width: 1.7 !important; }
+.ql-toolbar .ql-fill { fill: #0B1820 !important; }
+.ql-toolbar button, .ql-toolbar .ql-picker {
+  color: #0B1820 !important;
+  opacity: 1 !important;
+}
+/* Filled buttons: white glyphs last so they win over dark line-icon rules */
+.btn-primary *, a.btn-primary *, .btn-warning *, .btn-accent *, .btn-danger *,
+.btn-success *, .ic-btn-primary *, .ic-ts-tab-gen.is-active *, .ic-ts-tab-manage.is-active *,
+.ic-quote-lib-tag.active *, .ic-doclib-cat.is-active *, .primary-action *,
+.for-login .btn-primary *, .for-login .btn-login *, .for-login button[type="submit"] *,
+.login-content .btn-primary *,
+.btn-primary svg, .btn-primary .icon, .btn-primary .es-icon use,
+.btn-warning svg, .btn-accent svg, .btn-danger svg, .btn-success svg {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  --icon-stroke: #ffffff !important;
 }
 .ic-list-cat-btn.btn-primary {
   background: #e4f1f8 !important;
@@ -1440,14 +1461,44 @@ instacertify.apply_favicon_brand_icons = function (root) {
 					display: "inline-flex",
 					visibility: "visible",
 					opacity: 1,
+					color: "#0B1820",
+					borderColor: "rgba(11, 24, 32, 0.55)",
+					background: "#ffffff",
+				});
+				$group.find("svg, .icon").css({
+					stroke: "#0B1820",
+					color: "#0B1820",
+					opacity: 1,
+					visibility: "visible",
 				});
 			}
 			ensurePrintActionIcon(page);
+			// Form custom groups (Library / Actions / Test on Quotation Template, etc.)
+			(page.page_actions || $()).find(".inner-group-button > .btn, .custom-actions .btn, .actions-btn-group .btn").each(
+				function () {
+					const $b = $(this);
+					if ($b.hasClass("btn-primary") || $b.hasClass("btn-warning") || $b.hasClass("btn-danger")) return;
+					$b.css({
+						color: "#033447",
+						borderColor: "rgba(3, 52, 71, 0.4)",
+						background: "#ffffff",
+						opacity: 1,
+						visibility: "visible",
+					});
+					ensureIconOnButton($b);
+				}
+			);
 			// Cut / Minimize on any open modal
 			$(".modal.show .btn-modal-close, .modal.show .btn-modal-minimize, .modal.show .btn[data-label='Cut'], .modal.show button[title='Cut'], .modal.show button[aria-label='Cut']").each(
 				function () {
 					const $b = $(this);
-					$b.css({ display: "inline-flex", visibility: "visible", opacity: 1 });
+					$b.css({
+						display: "inline-flex",
+						visibility: "visible",
+						opacity: 1,
+						color: "#0B1820",
+					});
+					$b.find("svg, .icon").css({ stroke: "#0B1820", color: "#0B1820", opacity: 1 });
 					ensureIconOnButton($b);
 				}
 			);
