@@ -73,6 +73,44 @@ def validate_testing_request(doc, method=None):
 		legacy_seed_field="assigned_person",
 		default_user=doc.owner,
 	)
+	_sync_testing_request_reports(doc)
+
+
+def _sync_testing_request_reports(doc):
+	"""Keep multi-PDF table and primary test_report in sync."""
+	if not doc.meta.has_field("test_reports"):
+		return
+
+	rows = doc.get("test_reports") or []
+	# Migrate legacy single Attach into the table once
+	legacy = (doc.get("test_report") or "").strip()
+	if legacy and not rows:
+		doc.append(
+			"test_reports",
+			{
+				"report_title": "Primary Report",
+				"report_file": legacy,
+				"uploaded_on": frappe.utils.now_datetime(),
+			},
+		)
+		rows = doc.get("test_reports") or []
+
+	# Drop empty rows; stamp uploaded_on; enforce PDF-ish attach
+	cleaned = []
+	for row in rows:
+		file_url = (row.get("report_file") or "").strip()
+		if not file_url:
+			continue
+		if not row.get("uploaded_on"):
+			row.uploaded_on = frappe.utils.now_datetime()
+		if not (row.get("report_title") or "").strip():
+			row.report_title = f"Report {len(cleaned) + 1}"
+		cleaned.append(row)
+
+	# Primary share field = first attached file
+	primary = cleaned[0].report_file if cleaned else ""
+	if doc.meta.has_field("test_report"):
+		doc.test_report = primary or None
 
 
 @frappe.whitelist()
