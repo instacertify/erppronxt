@@ -6943,6 +6943,22 @@ body,
   transform: none !important;
   outline: none !important;
   box-shadow: none !important;
+  margin: inherit !important;
+  padding-top: inherit !important;
+  padding-bottom: inherit !important;
+}
+/* Selection / filter toggles must not shift neighboring action buttons */
+.page-head .page-actions,
+.page-head .standard-actions,
+.list-row-head,
+.filter-section .filter-button,
+.filter-section .btn {
+  flex-shrink: 0;
+}
+.page-head .page-actions .btn,
+.page-head .standard-actions .btn {
+  min-height: 28px;
+  line-height: 1.2 !important;
 }
 /* Policy / Text Editor blocks — clean readable text (no tab ghosts) */
 .ql-editor,

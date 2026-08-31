@@ -2839,18 +2839,43 @@ instacertify.toggle_quotation_sections = function (frm) {
 		if (frm.fields_dict[f]) frm.toggle_display(f, true);
 	});
 
+	// Prefill fields stay fully editable on every quote (Testing + Consulting)
+	[
+		"ic_deliverables",
+		"ic_estimated_timeline",
+		"ic_sample_handling_policy",
+		"ic_payment_terms",
+		"ic_cancellation_policy",
+		"ic_confidentiality",
+		"ic_force_majeure",
+		"ic_terms_and_conditions",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.toggle_display(f, true);
+			frm.set_df_property(f, "read_only", 0);
+		}
+	});
 	if (isTesting) {
-		["ic_deliverables", "ic_estimated_timeline", "ic_sample_handling_policy"].forEach((f) => {
-			if (frm.fields_dict[f]) {
-				frm.toggle_display(f, true);
-				frm.set_df_property(f, "read_only", 0);
-			}
-		});
+		if (frm.fields_dict.ic_estimated_timeline) {
+			frm.set_df_property("ic_estimated_timeline", "label", __("Estimated Testing Timeline"));
+			frm.set_df_property(
+				"ic_estimated_timeline",
+				"description",
+				__("Prefilled — edit for this quote (e.g. 5–7 working days).")
+			);
+		}
 		if (frm.fields_dict.ic_deliverables) {
 			frm.set_df_property(
 				"ic_deliverables",
 				"description",
-				__("Prefilled from settings — edit freely for this quote before Print / Share.")
+				__("Prefilled from settings/template — edit freely for this quote before Print / Share.")
+			);
+		}
+		if (frm.fields_dict.ic_sample_handling_policy) {
+			frm.set_df_property(
+				"ic_sample_handling_policy",
+				"description",
+				__("Prefilled sample handling & disposal — edit on this quote if needed.")
 			);
 		}
 	}
@@ -3031,10 +3056,7 @@ instacertify.open_quote_test_name_picker = function (frm, cdt, cdn, tests) {
 		});
 		return;
 	}
-	if (list.length === 1) {
-		frappe.model.set_value(cdt, cdn, "test_name", list[0]);
-		return;
-	}
+	// Always show picker (even for one test) so nothing silent-autofills without a choice
 	const rows_html = list
 		.map(
 			(name, idx) =>
@@ -3049,7 +3071,7 @@ instacertify.open_quote_test_name_picker = function (frm, cdt, cdn, tests) {
 			{
 				fieldtype: "HTML",
 				options: `<p class="text-muted">${__(
-					"Only tests in this lab's accreditation scope are listed. Click a row to select."
+					"Only tests in this lab's accreditation scope are listed. Click a row, or type in Test Name for suggestions."
 				)}</p>
 				<div style="max-height:360px;overflow:auto">
 				<table class="table table-bordered table-hover" style="margin:0">
