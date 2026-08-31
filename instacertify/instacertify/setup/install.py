@@ -407,6 +407,7 @@ def setup_custom_fields():
 	_ensure_lead_project_type_field()
 	_ensure_lead_party_name_field()
 	_ensure_pipeline_and_quote_accept_fields()
+	_ensure_quotation_bank_account_field()
 
 
 def _sync_custom_field_columns(doctypes: list[str] | None = None):
@@ -570,6 +571,59 @@ def _ensure_pipeline_and_quote_accept_fields():
 					)
 	except Exception:
 		pass
+
+
+def _ensure_quotation_bank_account_field():
+	"""Ensure Quotation.ic_bank_account exists (Link → IC Bank Account)."""
+	if not frappe.db.exists("DocType", "IC Bank Account"):
+		return
+	cf_name = "Quotation-ic_bank_account"
+	payload = {
+		"doctype": "Custom Field",
+		"dt": "Quotation",
+		"module": "Instacertify",
+		"fieldname": "ic_bank_account",
+		"label": "Bank Account for this Quote",
+		"fieldtype": "Link",
+		"options": "IC Bank Account",
+		"insert_after": "ic_section_policies",
+		"in_standard_filter": 1,
+		"description": "Select YES BANK or Indian Overseas Bank. Print/PDF uses this account.",
+	}
+	try:
+		if frappe.db.exists("Custom Field", cf_name):
+			# Keep options / label current
+			frappe.db.set_value(
+				"Custom Field",
+				cf_name,
+				{
+					"options": "IC Bank Account",
+					"label": "Bank Account for this Quote",
+					"fieldtype": "Link",
+				},
+				update_modified=False,
+			)
+		else:
+			# Prefer inserting before payment terms when that field already exists
+			if frappe.db.exists("Custom Field", "Quotation-ic_payment_terms"):
+				payload["insert_after"] = "ic_section_policies"
+			frappe.get_doc(payload).insert(ignore_permissions=True)
+		if not frappe.db.has_column("Quotation", "ic_bank_account"):
+			from frappe.database.schema import add_column
+
+			add_column("Quotation", "ic_bank_account", "Link")
+		# Point Payment Terms insert_after at bank field when both exist
+		if frappe.db.exists("Custom Field", "Quotation-ic_payment_terms"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_payment_terms",
+				"insert_after",
+				"ic_bank_account",
+				update_modified=False,
+			)
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure quotation bank account field")
 
 
 def _ensure_lead_source_link_field():
