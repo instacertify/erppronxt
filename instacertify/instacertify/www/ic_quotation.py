@@ -56,20 +56,25 @@ def get_quotation(token: str):
 
 	test_items = []
 	for row in doc.get("ic_test_items") or []:
-		qty = row.number_of_samples or 1
+		qty = int(row.number_of_samples or 1) or 1
 		unit = row.suggested_selling_price
 		if unit in (None, ""):
 			unit = row.per_unit_charges
 		if unit in (None, ""):
 			unit = (flt(row.testing_charges) / qty) if qty else 0
+		amount = row.testing_charges
+		if amount in (None, ""):
+			amount = flt(unit) * qty
 		test_items.append(
 			{
 				"test_name": _plain(row.test_name),
 				"applicable_standard": _plain(row.applicable_standard),
 				"description": _plain(getattr(row, "description", None) or ""),
 				"quantity": qty,
+				"number_of_samples": qty,
 				"price": unit,
-				"amount": row.testing_charges if row.testing_charges not in (None, "") else flt(unit) * qty,
+				"amount": amount,
+				"total_price": amount,
 			}
 		)
 

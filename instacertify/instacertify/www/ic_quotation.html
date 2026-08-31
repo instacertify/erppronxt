@@ -107,17 +107,27 @@
     }
     function testTable(rows, currency) {
       if (!rows || !rows.length) return '';
-      return '<table class="ic-portal-table"><thead><tr>' +
-        '<th>Test Name</th><th>Standard</th><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th>' +
-        '</tr></thead><tbody>' +
-        rows.map(r => '<tr>' +
+      let grand = 0;
+      const body = rows.map(r => {
+        const qty = Number(r.quantity || 1);
+        const price = Number(r.price || 0);
+        const amount = Number(r.amount != null ? r.amount : (price * qty));
+        grand += amount;
+        return '<tr>' +
           '<td>' + esc(r.test_name || '') + '</td>' +
           '<td>' + esc(r.applicable_standard || '') + '</td>' +
           '<td>' + esc(r.description || '') + '</td>' +
-          '<td>' + esc(r.quantity || 1) + '</td>' +
-          '<td>' + esc(money(r.price, currency)) + '</td>' +
-          '<td>' + esc(money(r.amount, currency)) + '</td>' +
-          '</tr>').join('') +
+          '<td>' + esc(qty) + '</td>' +
+          '<td>' + esc(money(price, currency)) + '</td>' +
+          '<td><b>' + esc(money(amount, currency)) + '</b></td>' +
+          '</tr>';
+      }).join('');
+      return '<table class="ic-portal-table"><thead><tr>' +
+        '<th>Test Name</th><th>Standard</th><th>Description</th>' +
+        '<th>No. of Samples</th><th>Price</th><th>Total Price</th>' +
+        '</tr></thead><tbody>' + body +
+        '<tr><td colspan="5" style="text-align:right;font-weight:700;">Grand Total</td>' +
+        '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
         '</tbody></table>';
     }
     function load() {

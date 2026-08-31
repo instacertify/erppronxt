@@ -294,22 +294,28 @@ QUOTATION_HTML = """
     <h3>Testing Details</h3>
     <table class="ic-table">
       <thead><tr>
-        <th>Test Name</th><th>Standard</th><th>Description</th><th>Qty</th><th>Price</th><th>Amount</th>
+        <th>Test Name</th><th>Standard</th><th>Description</th><th>No. of Samples</th><th>Price</th><th>Total Price</th>
       </tr></thead>
       <tbody>
+      {%- set ns = namespace(grand=0) -%}
       {% for row in doc.ic_test_items %}
         {%- set units = row.number_of_samples or 1 -%}
         {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
         {%- set total = row.testing_charges or (per * units) -%}
+        {%- set ns.grand = ns.grand + (total or 0) -%}
         <tr>
           <td>{{ row.test_name or '' }}</td>
           <td>{{ row.applicable_standard or '' }}</td>
           <td>{{ row.description or '' }}</td>
           <td>{{ units }}</td>
           <td>{{ frappe.utils.fmt_money(per, currency=doc.currency) }}</td>
-          <td>{{ frappe.utils.fmt_money(total, currency=doc.currency) }}</td>
+          <td><b>{{ frappe.utils.fmt_money(total, currency=doc.currency) }}</b></td>
         </tr>
       {% endfor %}
+        <tr>
+          <td colspan="5" style="text-align:right;font-weight:700;">Grand Total</td>
+          <td><b>{{ frappe.utils.fmt_money(ns.grand, currency=doc.currency) }}</b></td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -824,19 +830,21 @@ TESTING_QUOTATION_HTML = """
           <thead>
             <tr>
               <th class="num" style="width:6%">S. No.</th>
-              <th style="width:18%">Test Name</th>
-              <th style="width:16%">Standard</th>
-              <th style="width:22%">Description</th>
-              <th class="num" style="width:8%">Qty</th>
-              <th style="width:15%">Price ({{ curr }})</th>
-              <th style="width:15%">Amount ({{ curr }})</th>
+              <th style="width:16%">Test Name</th>
+              <th style="width:14%">Standard</th>
+              <th style="width:20%">Description</th>
+              <th class="num" style="width:10%">No. of Samples</th>
+              <th style="width:14%">Price ({{ curr }})</th>
+              <th style="width:14%">Total Price ({{ curr }})</th>
             </tr>
           </thead>
           <tbody>
+          {%- set ns = namespace(grand=0) -%}
           {% for row in doc.ic_test_items or [] %}
             {%- set units = row.number_of_samples or 1 -%}
             {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
             {%- set total = row.testing_charges or (per * units) -%}
+            {%- set ns.grand = ns.grand + (total or 0) -%}
             <tr>
               <td class="num">{{ loop.index }}</td>
               <td>{{ row.test_name or '' }}</td>
@@ -844,9 +852,13 @@ TESTING_QUOTATION_HTML = """
               <td>{{ row.description or '' }}</td>
               <td class="num">{{ units }}</td>
               <td class="amt">{{ inr(per) }}</td>
-              <td class="amt">{{ inr(total) }}</td>
+              <td class="amt"><b>{{ inr(total) }}</b></td>
             </tr>
           {% endfor %}
+            <tr>
+              <td colspan="6" style="text-align:right;font-weight:700;">Grand Total</td>
+              <td class="amt"><b>{{ inr(ns.grand) }}</b></td>
+            </tr>
           </tbody>
         </table>
         <div class="tq-note"><b>{{ doc.ic_gst_note or 'Note: GST @ 18% shall be charged additionally on the above testing charges.' }}</b></div>
