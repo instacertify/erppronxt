@@ -177,11 +177,14 @@ def bank_as_dict(name: str | None = None) -> dict[str, Any]:
 		}
 
 
-def bank_for_document(doc) -> dict[str, Any]:
-	"""Resolve bank for a Quotation / Sales Invoice / template-like doc."""
+def bank_for_document(doc=None) -> dict[str, Any]:
+	"""Resolve bank for a Quotation / Sales Invoice / template-like doc (Jinja-safe)."""
 	name = None
 	if doc:
-		name = doc.get("ic_bank_account") or doc.get("bank_account")
+		try:
+			name = doc.get("ic_bank_account") or doc.get("bank_account")
+		except Exception:
+			name = getattr(doc, "ic_bank_account", None) or getattr(doc, "bank_account", None)
 	return bank_as_dict(name)
 
 

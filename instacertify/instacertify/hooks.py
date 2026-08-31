@@ -199,6 +199,7 @@ fixtures = [
 jinja = {
 	"methods": [
 		"instacertify.utils.qr.get_qr_code_data_uri",
+		"instacertify.accounting.banking.bank_for_document",
 	],
 }
 

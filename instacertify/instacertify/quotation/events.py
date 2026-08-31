@@ -46,9 +46,6 @@ def validate_quotation(doc, method=None):
 	# Re-apply before india_compliance sibling validate if it runs after us
 	_ensure_company_address_on_transaction(doc)
 	apply_quote_customer_only_rules(doc)
-	# Testing quotes: commercials come only from test lines — drop stray consulting/other rows
-	if doc.get("ic_quotation_type") == "Testing" and doc.get("ic_cost_items"):
-		doc.set("ic_cost_items", [])
 
 	_calculate_test_line_totals(doc)
 	_calculate_revenue_split(doc)
@@ -445,11 +442,8 @@ def apply_quotation_template(quotation: str, template: str):
 			continue
 		qt.set(key, val)
 	qt.set("ic_cost_items", [])
-	# Testing quotes use test-line commercials only — do not load consulting/other cost rows
-	qtype = (payload.get("fields") or {}).get("ic_quotation_type") or qt.get("ic_quotation_type")
-	if qtype != "Testing":
-		for row in payload.get("cost_items") or []:
-			qt.append("ic_cost_items", row)
+	for row in payload.get("cost_items") or []:
+		qt.append("ic_cost_items", row)
 	qt.set("ic_test_items", [])
 	for row in payload.get("test_items") or []:
 		qt.append("ic_test_items", row)
