@@ -82,17 +82,24 @@ def get_quotation(token: str):
 	status = doc.ic_workflow_status or "Draft"
 	can_decide = status in DECIDABLE
 
-	# Payment / UPI details from company settings (for portal prompt)
+	# Payment / UPI details from selected bank account on the quote
 	pay = {}
 	try:
-		s = frappe.get_cached_doc("IC Settings")
+		from instacertify.accounting.banking import bank_for_document
+
+		b = bank_for_document(doc)
 		pay = {
-			"beneficiary_name": _plain(s.beneficiary_name) or "Instacertify Labs Private Limited",
-			"bank_name": _plain(s.bank_name) or "YES BANK",
-			"account_number": _plain(s.account_number) or "026485800001318",
-			"ifsc_code": _plain(s.ifsc_code) or "YESB0000264",
-			"upi_id": _plain(getattr(s, "upi_id", None)) or "yespay.bizsbiz31008@yesbankltd",
-			"prompt": _("Use the UPI ID below to pay, or transfer to our bank account."),
+			"beneficiary_name": _plain(b.get("beneficiary_name")) or "Instacertify Labs Private Limited",
+			"bank_name": _plain(b.get("bank_name")) or "",
+			"account_number": _plain(b.get("account_number")) or "",
+			"ifsc_code": _plain(b.get("ifsc_code")) or "",
+			"upi_id": _plain(b.get("upi_id")) or "",
+			"swift_code": _plain(b.get("swift_code")) or "",
+			"branch_address": _plain(b.get("branch_address")) or "",
+			"gstin": _plain(b.get("gstin")) or "09AAGCI8396C1Z7",
+			"prompt": _("Use the UPI ID below to pay, or transfer to our bank account.")
+			if b.get("upi_id")
+			else _("Transfer to our bank account using the details below."),
 		}
 	except Exception:
 		pay = {

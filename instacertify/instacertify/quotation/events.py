@@ -153,6 +153,14 @@ def _apply_quotation_defaults(doc):
 		doc.ic_confidentiality = _clean(settings.default_confidentiality)
 	if not doc.ic_force_majeure and settings.get("default_force_majeure"):
 		doc.ic_force_majeure = _clean(settings.default_force_majeure)
+	# Default bank account for print (YES BANK / Indian Overseas Bank selector)
+	if doc.meta.has_field("ic_bank_account") and not doc.get("ic_bank_account"):
+		from instacertify.accounting.banking import get_default_bank_account_name
+
+		default_bank = None
+		if settings.meta.has_field("default_bank_account"):
+			default_bank = settings.get("default_bank_account")
+		doc.ic_bank_account = default_bank or get_default_bank_account_name()
 	# Scrub tabs on existing values so Print/PDF stay clean (tabs only — keep HTML spacing)
 	for field in (
 		"ic_deliverables",
@@ -346,6 +354,7 @@ def _template_field_map(tmpl) -> dict:
 		"ic_samples_note": tmpl.get("samples_note"),
 		"ic_gst_note": tmpl.get("gst_note"),
 		"ic_sample_handling_policy": tmpl.get("sample_handling_policy"),
+		"ic_bank_account": tmpl.get("bank_account"),
 	}
 	for key in _LABEL_FIELDS:
 		fields[f"ic_{key}"] = tmpl.get(key)
@@ -684,6 +693,8 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 	tmpl.samples_note = qt.ic_samples_note
 	tmpl.gst_note = qt.ic_gst_note
 	tmpl.sample_handling_policy = qt.ic_sample_handling_policy
+	if tmpl.meta.has_field("bank_account"):
+		tmpl.bank_account = qt.get("ic_bank_account")
 	for key in _LABEL_FIELDS:
 		tmpl.set(key, qt.get(f"ic_{key}"))
 
@@ -1288,6 +1299,8 @@ def create_invoice_from_quotation(quotation: str, submit: int = 0):
 		si = frappe.get_doc("Sales Invoice", si)
 
 	si.ic_quotation = qt.name
+	if si.meta.has_field("ic_bank_account") and qt.get("ic_bank_account"):
+		si.ic_bank_account = qt.ic_bank_account
 	from instacertify.setup.naming_series import apply_sales_invoice_series
 
 	apply_sales_invoice_series(si)

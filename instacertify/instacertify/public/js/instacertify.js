@@ -2830,6 +2830,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 		"ic_cost_items",
 		"ic_section_cost_totals",
 		"ic_section_policies",
+		"ic_bank_account",
 		"ic_payment_terms",
 		"ic_cancellation_policy",
 		"ic_confidentiality",
@@ -2841,6 +2842,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 
 	// Prefill fields stay fully editable on every quote (Testing + Consulting)
 	[
+		"ic_bank_account",
 		"ic_deliverables",
 		"ic_estimated_timeline",
 		"ic_sample_handling_policy",
@@ -2855,6 +2857,16 @@ instacertify.toggle_quotation_sections = function (frm) {
 			frm.set_df_property(f, "read_only", 0);
 		}
 	});
+	if (frm.fields_dict.ic_bank_account) {
+		frm.set_query("ic_bank_account", () => ({
+			filters: { is_active: 1 },
+		}));
+		frm.set_df_property(
+			"ic_bank_account",
+			"description",
+			__("Choose YES BANK or Indian Overseas Bank for this quote’s print / PDF.")
+		);
+	}
 	if (isTesting) {
 		if (frm.fields_dict.ic_estimated_timeline) {
 			frm.set_df_property("ic_estimated_timeline", "label", __("Estimated Testing Timeline"));

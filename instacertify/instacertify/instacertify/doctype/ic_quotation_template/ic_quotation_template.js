@@ -11,6 +11,9 @@ frappe.ui.form.on("IC Quotation Template", {
 		_render_edit_guide(frm);
 		_toggle_sections(frm);
 		_lock_template_id(frm);
+		if (frm.fields_dict.bank_account) {
+			frm.set_query("bank_account", () => ({ filters: { is_active: 1 } }));
+		}
 
 		frm.add_custom_button(__("Upload Quote Format"), () => {
 			instacertify.open_quote_format_upload({

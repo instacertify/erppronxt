@@ -5,20 +5,27 @@ from __future__ import annotations
 
 import frappe
 
-# Shared bank details block (expects `s` = IC Settings in Jinja context).
-# UPI ID is shown as text only — no QR image on quotation/invoice prints.
+# Shared bank details block.
+# Expects `bank` dict (from LETTERHEAD_CONTEXT_JINJA via selected IC Bank Account).
+# UPI row is omitted when the account has no UPI ID.
 BANK_UPI_PAYMENT_HTML = """
-{%- set upi_id = s.upi_id or 'yespay.bizsbiz31008@yesbankltd' -%}
+{%- set upi_id = (bank.upi_id if bank else '') or '' -%}
 <table class="ic-bank-tbl" style="width:100%;border-collapse:collapse;margin-top:6px;">
   <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Particulars</td><td style="border:1px solid #555;padding:7px 8px;"><b>Details</b></td></tr>
-  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Beneficiary Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
-  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Bank Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_name or 'YES BANK' }}</td></tr>
-  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Account Number</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.account_number or '026485800001318' }}</td></tr>
-  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">IFSC Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.ifsc_code or 'YESB0000264' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Beneficiary Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ bank.beneficiary_name or 'Instacertify Labs Private Limited' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Bank Name</td><td style="border:1px solid #555;padding:7px 8px;">{{ bank.bank_name or '' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Account Number</td><td style="border:1px solid #555;padding:7px 8px;">{{ bank.account_number or '' }}</td></tr>
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">IFSC Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ bank.ifsc_code or '' }}</td></tr>
+  {% if upi_id %}
   <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">UPI ID</td><td style="border:1px solid #555;padding:7px 8px;"><b>{{ upi_id }}</b></td></tr>
-  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">SWIFT Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.swift_code or 'YESBINBBDEL (For International USD Transfers)' }}</td></tr>
-  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">GSTIN</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.gstin or '09AAGCI8396C1Z7' }}</td></tr>
-  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Branch Address</td><td style="border:1px solid #555;padding:7px 8px;">{{ s.bank_branch_address or 'Ground, Mezzanine & First Floor, Plot No. 6, Basant Lok, Vasant Vihar, New Delhi, Delhi – 110057, India' }}</td></tr>
+  {% endif %}
+  {% if bank.swift_code %}
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">SWIFT Code</td><td style="border:1px solid #555;padding:7px 8px;">{{ bank.swift_code }}</td></tr>
+  {% endif %}
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">GSTIN</td><td style="border:1px solid #555;padding:7px 8px;">{{ bank.gstin or gstin or '09AAGCI8396C1Z7' }}</td></tr>
+  {% if bank.branch_address %}
+  <tr><td class="k" style="width:34%;background:#f5f5f5;font-weight:600;border:1px solid #555;padding:7px 8px;">Branch Address</td><td style="border:1px solid #555;padding:7px 8px;">{{ bank.branch_address }}</td></tr>
+  {% endif %}
 </table>
 <div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
 """
@@ -202,6 +209,7 @@ LETTERHEAD_BLOCK_HTML = """
 """
 
 # Shared Jinja to load IC Settings + absolute logo URL (PDF engines need full URLs).
+# Also resolves `bank` from the document's selected IC Bank Account (or default).
 LETTERHEAD_CONTEXT_JINJA = """
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
 {%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
@@ -217,6 +225,7 @@ LETTERHEAD_CONTEXT_JINJA = """
 {%- else -%}
 {%- set logo = frappe.utils.get_url(logo_raw) -%}
 {%- endif -%}
+{%- set bank = frappe.get_attr('instacertify.accounting.banking.bank_for_document')(doc) -%}
 """
 
 # Kept for callers that still compose with the old name — body letterhead (not header-only).
