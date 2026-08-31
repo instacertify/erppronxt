@@ -848,7 +848,7 @@ TESTING_QUOTATION_HTML = """
             </tr>
           </thead>
           <tbody>
-          {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
+          {%- set ns = namespace(testing_grand=0) -%}
           {% for row in doc.ic_test_items or [] %}
             {%- set units = row.number_of_samples or 1 -%}
             {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
@@ -871,39 +871,6 @@ TESTING_QUOTATION_HTML = """
           </tbody>
         </table>
         <div class="tq-note"><b>{{ doc.ic_gst_note or 'Note: GST @ 18% shall be charged additionally on the above testing charges.' }}</b></div>
-        {% if doc.ic_cost_items %}
-        <div class="tq-h" style="margin-top:16px;">Consulting &amp; Other Commercials</div>
-        <table class="tq-comm">
-          <thead>
-            <tr>
-              <th class="num" style="width:8%">S. No.</th>
-              <th style="width:32%">Particulars</th>
-              <th style="width:36%">Description</th>
-              <th style="width:24%">Amount ({{ curr }})</th>
-            </tr>
-          </thead>
-          <tbody>
-          {% for row in doc.ic_cost_items or [] %}
-            {%- set amt = row.amount or 0 -%}
-            {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
-            <tr>
-              <td class="num">{{ loop.index }}</td>
-              <td>{{ row.particulars or row.cost_component or '' }}</td>
-              <td>{{ row.description or row.charges_display or '' }}</td>
-              <td class="amt">{% if row.charges_display %}{{ row.charges_display }}{% else %}{{ inr(amt) }}{% endif %}</td>
-            </tr>
-          {% endfor %}
-            <tr>
-              <td colspan="3" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
-              <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
-            </tr>
-            <tr>
-              <td colspan="3" style="text-align:right;font-weight:700;">Combined Total (Testing + Consulting / Other)</td>
-              <td class="amt"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
-            </tr>
-          </tbody>
-        </table>
-        {% endif %}
       </td>
     </tr>
     <tr>

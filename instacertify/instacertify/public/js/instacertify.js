@@ -2661,9 +2661,12 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 	return p
 		.then(() => {
 			frm.clear_table("ic_cost_items");
-			(payload.cost_items || []).forEach((row) => {
-				frm.add_child("ic_cost_items", row);
-			});
+			const qtype = fields.ic_quotation_type || frm.doc.ic_quotation_type;
+			if (qtype !== "Testing") {
+				(payload.cost_items || []).forEach((row) => {
+					frm.add_child("ic_cost_items", row);
+				});
+			}
 			frm.clear_table("ic_test_items");
 			(payload.test_items || []).forEach((row) => {
 				frm.add_child("ic_test_items", row);
@@ -2840,6 +2843,12 @@ instacertify.toggle_quotation_sections = function (frm) {
 		if (frm.fields_dict[f]) frm.toggle_display(f, true);
 	});
 
+	// Testing quotes: commercials = test lines only — no separate consulting/other table
+	const isPureTesting = t === "Testing";
+	["ic_section_costing", "ic_cost_items", "ic_section_cost_totals"].forEach((f) => {
+		if (frm.fields_dict[f]) frm.toggle_display(f, !isPureTesting);
+	});
+
 	// Prefill fields stay fully editable on every quote (Testing + Consulting)
 	[
 		"ic_bank_account",
@@ -2896,22 +2905,16 @@ instacertify.toggle_quotation_sections = function (frm) {
 		frm.set_df_property(
 			"ic_section_costing",
 			"label",
-			isTesting
-				? __("Consulting & Other Commercials (below Testing)")
-				: __("7. Cost Breakdown / Commercials")
+			__("7. Cost Breakdown / Commercials")
 		);
 	}
 	if (frm.fields_dict.ic_cost_items) {
 		frm.set_df_property(
 			"ic_cost_items",
 			"description",
-			isTesting
-				? __(
-						"Add consulting fees, government fees, or other charges here. On the customer quote they appear in a table below Testing Prices."
-				  )
-				: __(
-						"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
-				  )
+			__(
+				"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
+			)
 		);
 	}
 	if (frm.fields_dict.ic_section_policies) {
