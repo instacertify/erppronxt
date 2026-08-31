@@ -99,10 +99,20 @@
     }
     function costTable(rows, currency) {
       if (!rows || !rows.length) return '';
-      return '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Amount</th></tr></thead><tbody>' +
-        rows.map(r => '<tr><td>' + esc(r.particulars || '') +
+      let grand = 0;
+      const body = rows.map(r => {
+        const amount = Number(r.amount || 0);
+        grand += amount;
+        return '<tr><td>' + esc(r.particulars || '') +
+          (r.description ? '<div class="ic-portal-muted">' + esc(r.description) + '</div>' : '') +
           (r.payment_destination ? '<div class="ic-portal-muted">' + esc(r.payment_destination) + '</div>' : '') +
-          '</td><td>' + esc(money(r.amount, currency)) + '</td></tr>').join('') +
+          '</td><td><b>' + esc(money(amount, currency)) + '</b></td></tr>';
+      }).join('');
+      return '<h4 style="color:#0D47A1;margin:18px 0 6px;">Consulting &amp; Other Commercials</h4>' +
+        '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Amount</th></tr></thead><tbody>' +
+        body +
+        '<tr><td style="text-align:right;font-weight:700;">Consulting / Other Total</td>' +
+        '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
         '</tbody></table>';
     }
     function testTable(rows, currency) {
@@ -122,13 +132,27 @@
           '<td><b>' + esc(money(amount, currency)) + '</b></td>' +
           '</tr>';
       }).join('');
-      return '<table class="ic-portal-table"><thead><tr>' +
+      return '<h4 style="color:#0D47A1;margin:12px 0 6px;">Testing Prices</h4>' +
+        '<table class="ic-portal-table"><thead><tr>' +
         '<th>Test Name</th><th>Standard</th><th>Description</th>' +
         '<th>No. of Samples</th><th>Price</th><th>Total Price</th>' +
         '</tr></thead><tbody>' + body +
-        '<tr><td colspan="5" style="text-align:right;font-weight:700;">Grand Total</td>' +
+        '<tr><td colspan="5" style="text-align:right;font-weight:700;">Testing Total</td>' +
         '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
         '</tbody></table>';
+    }
+    function combinedTotal(testRows, costRows, currency) {
+      let t = 0, c = 0;
+      (testRows || []).forEach(r => {
+        const qty = Number(r.quantity || 1);
+        const price = Number(r.price || 0);
+        t += Number(r.amount != null ? r.amount : (price * qty));
+      });
+      (costRows || []).forEach(r => { c += Number(r.amount || 0); });
+      if (!t && !c) return '';
+      if (!(testRows && testRows.length) || !(costRows && costRows.length)) return '';
+      return '<p style="margin-top:12px;font-weight:700;color:#0D47A1;">Combined Total (Testing + Consulting / Other): ' +
+        esc(money(t + c, currency)) + '</p>';
     }
     function load() {
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
@@ -136,10 +160,9 @@
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
           const commercials =
-            (d.test_items && d.test_items.length
-              ? testTable(d.test_items, d.currency)
-              : '') +
-            costTable(d.cost_items, d.currency);
+            (d.test_items && d.test_items.length ? testTable(d.test_items, d.currency) : '') +
+            costTable(d.cost_items, d.currency) +
+            combinedTotal(d.test_items, d.cost_items, d.currency);
           document.getElementById('content').innerHTML =
             (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
             '<p><b>' + esc(d.reference || d.customer_name || 'Quotation') + '</b> · Revision ' + esc(d.ic_revision_number || 0) +

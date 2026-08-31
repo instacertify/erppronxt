@@ -182,9 +182,16 @@ def _calculate_revenue_split(doc):
 			row.is_passthrough = 0
 			row.revenue_treatment = "Counted Revenue"
 			commercial += amount
-	doc.ic_commercial_value = commercial
+	# Testing line totals count as commercial (selling price × samples)
+	testing_total = 0.0
+	for row in doc.get("ic_test_items") or []:
+		testing_total += float(row.testing_charges or 0)
+	doc.ic_commercial_value = commercial + testing_total
 	doc.ic_passthrough_value = passthrough
-	doc.ic_total_quoted_value = commercial + passthrough
+	doc.ic_total_quoted_value = commercial + testing_total + passthrough
+	if hasattr(doc, "flags"):
+		doc.flags.ic_testing_commercial_total = testing_total
+		doc.flags.ic_cost_commercial_total = commercial
 
 
 def _ensure_qr(doc):

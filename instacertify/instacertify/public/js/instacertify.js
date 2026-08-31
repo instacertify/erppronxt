@@ -2780,6 +2780,32 @@ instacertify.toggle_quotation_sections = function (frm) {
 	].forEach((f) => frm.toggle_display(f, isConsulting));
 	["ic_section_testing", "ic_section_test_lines"].forEach((f) => frm.toggle_display(f, isTesting));
 	frm.toggle_display("ic_section_products", t === "Multiple Products / Multiple Services");
+	// Cost / commercials always available — on Testing quotes they sit under test lines
+	["ic_section_costing", "ic_cost_items", "ic_section_cost_totals"].forEach((f) => {
+		if (frm.fields_dict[f]) frm.toggle_display(f, true);
+	});
+	if (frm.fields_dict.ic_section_costing) {
+		frm.set_df_property(
+			"ic_section_costing",
+			"label",
+			isTesting
+				? __("Consulting & Other Commercials (below Testing)")
+				: __("7. Cost Breakdown / Commercials")
+		);
+	}
+	if (frm.fields_dict.ic_cost_items) {
+		frm.set_df_property(
+			"ic_cost_items",
+			"description",
+			isTesting
+				? __(
+						"Add consulting fees, government fees, or other charges here. On the customer quote they appear in a table below Testing Prices."
+				  )
+				: __(
+						"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
+				  )
+		);
+	}
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {

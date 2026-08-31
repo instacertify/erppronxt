@@ -49,6 +49,7 @@ def get_quotation(token: str):
 		cost_items.append(
 			{
 				"particulars": _plain(row.particulars or row.cost_component or row.description),
+				"description": _plain(row.description or row.charges_display or ""),
 				"amount": row.amount,
 				"payment_destination": _plain(row.payment_destination),
 			}
