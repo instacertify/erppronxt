@@ -30,6 +30,9 @@ def validate_sales_invoice(doc, method=None):
 	from instacertify.setup.naming_series import apply_sales_invoice_series
 
 	apply_sales_invoice_series(doc)
+	if doc.meta.has_field("letter_head") and not doc.get("letter_head"):
+		if frappe.db.exists("Letter Head", "Instacertify"):
+			doc.letter_head = "Instacertify"
 	apply_transaction_billing_defaults(doc, customer_field="customer")
 	# Consulting: sell services without warehouse / stock update
 	strip_warehouse_from_service_items(doc)
