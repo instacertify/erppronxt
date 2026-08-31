@@ -21,8 +21,9 @@
    "label": "Lab Initials",
    "fetch_from": "laboratory.lab_initials",
    "read_only": 1,
-   "in_list_view": 1,
-   "columns": 1
+   "hidden": 1,
+   "in_list_view": 0,
+   "description": "Fetched from Laboratory — shown in Lab search, not as a separate column"
   },
   {
    "doctype": "DocField",

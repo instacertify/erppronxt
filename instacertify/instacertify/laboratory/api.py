@@ -561,8 +561,56 @@ def get_laboratory_summary(laboratory: str):
 	return {
 		"name": lab.name,
 		"laboratory_name": lab.laboratory_name,
+		"lab_initials": (lab.get("lab_initials") or "").strip(),
 		"location": lab.location,
 		"status": lab.status,
 		"accreditation_summary": details or scope,
 		"active_scope_count": len(_active_scopes(laboratory)),
 	}
+
+
+@frappe.whitelist()
+@frappe.validate_and_sanitize_search_inputs
+def laboratory_link_query(doctype, txt, searchfield, start, page_len, filters):
+	"""Link search showing Lab Initials — Name (Active labs only)."""
+	filters = filters or {}
+	conditions = ["status = 'Active'"]
+	values = {
+		"txt": f"%{txt}%",
+		"start": start,
+		"page_len": page_len,
+	}
+	if filters.get("status"):
+		conditions = ["status = %(status)s"]
+		values["status"] = filters.get("status")
+
+	has_initials = frappe.db.has_column("IC Laboratory", "lab_initials")
+	initials_sel = "lab_initials" if has_initials else "''"
+	search_bits = [
+		"name LIKE %(txt)s",
+		"laboratory_name LIKE %(txt)s",
+		"IFNULL(location,'') LIKE %(txt)s",
+	]
+	if has_initials:
+		search_bits.append("IFNULL(lab_initials,'') LIKE %(txt)s")
+
+	rows = frappe.db.sql(
+		f"""
+		SELECT name,
+			CASE
+				WHEN IFNULL({initials_sel},'') != ''
+				THEN CONCAT(IFNULL({initials_sel},''), ' — ', IFNULL(laboratory_name, name))
+				ELSE IFNULL(laboratory_name, name)
+			END AS label
+		FROM `tabIC Laboratory`
+		WHERE {' AND '.join(conditions)}
+			AND ({' OR '.join(search_bits)})
+		ORDER BY
+			CASE WHEN IFNULL({initials_sel},'') LIKE %(txt)s THEN 0 ELSE 1 END,
+			laboratory_name ASC
+		LIMIT %(start)s, %(page_len)s
+		""",
+		values,
+	)
+	return rows
+

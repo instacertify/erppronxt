@@ -132,17 +132,39 @@ def _apply_quotation_defaults(doc):
 		settings = frappe.get_cached_doc("IC Settings")
 	except Exception:
 		return
+
+	def _clean(html):
+		if not html:
+			return html
+		text = str(html).replace("\t", " ")
+		# collapse runs of spaces that look like tab-separated PDF paste
+		while "  " in text:
+			text = text.replace("  ", " ")
+		return text
+
 	if not doc.ic_payment_terms and settings.get("default_payment_terms"):
-		doc.ic_payment_terms = settings.default_payment_terms
+		doc.ic_payment_terms = _clean(settings.default_payment_terms)
 	if doc.ic_quotation_type == "Testing":
 		if not doc.ic_sample_handling_policy and settings.get("default_sample_handling"):
-			doc.ic_sample_handling_policy = settings.default_sample_handling
+			doc.ic_sample_handling_policy = _clean(settings.default_sample_handling)
 	if not doc.ic_cancellation_policy and settings.get("default_cancellation_policy"):
-		doc.ic_cancellation_policy = settings.default_cancellation_policy
+		doc.ic_cancellation_policy = _clean(settings.default_cancellation_policy)
 	if not doc.ic_confidentiality and settings.get("default_confidentiality"):
-		doc.ic_confidentiality = settings.default_confidentiality
+		doc.ic_confidentiality = _clean(settings.default_confidentiality)
 	if not doc.ic_force_majeure and settings.get("default_force_majeure"):
-		doc.ic_force_majeure = settings.default_force_majeure
+		doc.ic_force_majeure = _clean(settings.default_force_majeure)
+	# Always scrub tabs on existing values so Print/PDF stay clean
+	for field in (
+		"ic_deliverables",
+		"ic_payment_terms",
+		"ic_sample_handling_policy",
+		"ic_cancellation_policy",
+		"ic_confidentiality",
+		"ic_force_majeure",
+		"ic_estimated_timeline",
+	):
+		if doc.get(field):
+			doc.set(field, _clean(doc.get(field)))
 
 
 # Keep old name for any external callers
