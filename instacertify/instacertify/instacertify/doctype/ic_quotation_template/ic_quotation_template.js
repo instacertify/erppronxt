@@ -3,13 +3,14 @@ frappe.ui.form.on("IC Quotation Template", {
 	refresh(frm) {
 		frm.set_intro(
 			__(
-				"Fully editable quote format — rename print headings, edit narrative text, and set every price line (default amounts). Use Print / PDF to test after Save. Active templates appear when creating a Quotation of the same category."
+				"Fully editable quote format — rename with Display Name (keeps system Template ID stable). Edit print headings, narrative text, and price lines. Use Print / PDF to test after Save."
 			),
 			"blue"
 		);
 
 		_render_edit_guide(frm);
 		_toggle_sections(frm);
+		_lock_template_id(frm);
 
 		frm.add_custom_button(__("Upload Quote Format"), () => {
 			instacertify.open_quote_format_upload({
@@ -27,15 +28,48 @@ frappe.ui.form.on("IC Quotation Template", {
 		}, __("Library"));
 
 		if (!frm.is_new()) {
+			frm.add_custom_button(__("Rename Display Name"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "display_name",
+							fieldtype: "Data",
+							label: __("Display Name"),
+							reqd: 1,
+							default: frm.doc.display_name || frm.doc.template_name || "",
+						},
+					],
+					(values) => {
+						frappe.call({
+							method: "instacertify.quotation.events.rename_quotation_template_display_name",
+							args: {
+								template: frm.doc.name,
+								display_name: values.display_name,
+							},
+							freeze: true,
+							callback() {
+								frm.reload_doc();
+								frappe.show_alert({
+									message: __("Display name updated (Template ID unchanged)"),
+									indicator: "green",
+								});
+							},
+						});
+					},
+					__("Rename Template"),
+					__("Save")
+				);
+			}, __("Actions"));
+
 			frm.add_custom_button(__("Duplicate Template"), () => {
 				frappe.prompt(
 					[
 						{
 							fieldname: "template_name",
 							fieldtype: "Data",
-							label: "New Template Name",
+							label: __("New Display Name"),
 							reqd: 1,
-							default: (frm.doc.template_name || "") + " Copy",
+							default: (frm.doc.display_name || frm.doc.template_name || "") + " Copy",
 						},
 					],
 					(values) => {
@@ -104,6 +138,15 @@ frappe.ui.form.on("IC Quotation Template", {
 		_render_edit_guide(frm);
 	},
 });
+
+function _lock_template_id(frm) {
+	if (!frm.fields_dict.template_name) return;
+	// Template ID is the document name — editable only on create.
+	frm.set_df_property("template_name", "read_only", frm.is_new() ? 0 : 1);
+	if (frm.fields_dict.display_name) {
+		frm.set_df_property("display_name", "reqd", 0);
+	}
+}
 
 function _preview_template(frm, mode) {
 	const run = () => {
@@ -175,6 +218,7 @@ function _render_edit_guide(frm) {
 			font-size:13px;line-height:1.45;">
 			<div style="font-weight:600;margin-bottom:6px;">${__("What you can edit on this template")}</div>
 			<ul style="margin:0 0 0 18px;padding:0;">
+				<li><b>${__("Display Name")}</b>: ${__("Rename anytime — does not change Template ID or linked quotes.")}</li>
 				<li><b>${__("Section 2 — Rename headings")}</b>: ${__("Change printed names (ABOUT, Commercials, Payment Terms, column titles).")}</li>
 				<li><b>${__("Narrative sections")}</b>: ${__("Edit all body text for {0} quotes.", [__(qtype)])}</li>
 				<li><b>${__("Section 6 — Pricing")}</b>: ${__("Add default amounts the sales team can change on each quote. Set Revenue = Do Not Count as Revenue for govt/lab/third-party lines (shown on the quote, not counted as Instacertify revenue).")}</li>

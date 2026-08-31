@@ -81,6 +81,11 @@ def create_quote_format_from_upload(
 	else:
 		doc = frappe.new_doc("IC Quotation Template")
 		doc.template_name = template_name
+		if doc.meta.has_field("display_name"):
+			doc.display_name = template_name
+	# Keep display label in sync when user uploads under a friendly name for an existing ID.
+	if doc.meta.has_field("display_name") and not (doc.display_name or "").strip():
+		doc.display_name = template_name
 
 	doc.quotation_type = quotation_type
 	if service_family:
@@ -511,19 +516,22 @@ def get_library_summary():
 @frappe.whitelist()
 def get_quote_library_catalog():
 	"""Category + tag catalog for Quote Format Library page."""
+	fields = [
+		"name",
+		"template_name",
+		"quotation_type",
+		"service_family",
+		"service_name",
+		"is_active",
+		"uploaded_format",
+		"template_notes",
+		"modified",
+	]
+	if frappe.get_meta("IC Quotation Template").has_field("display_name"):
+		fields.append("display_name")
 	rows = frappe.get_all(
 		"IC Quotation Template",
-		fields=[
-			"name",
-			"template_name",
-			"quotation_type",
-			"service_family",
-			"service_name",
-			"is_active",
-			"uploaded_format",
-			"template_notes",
-			"modified",
-		],
+		fields=fields,
 		order_by="quotation_type asc, template_name asc",
 		limit_page_length=500,
 	)
@@ -556,6 +564,8 @@ def get_quote_library_catalog():
 		r["cost_line_count"] = line_counts.get(r.name, 0)
 		r["default_amount_total"] = totals.get(r.name, 0.0)
 		r["passthrough_line_count"] = passthrough_counts.get(r.name, 0)
+		# User-facing label; Template ID (name / template_name) stays for hierarchy / Links.
+		r["display_name"] = (r.get("display_name") or r.template_name or r.name or "").strip()
 	return {"counts": counts, "templates": rows}
 
 
@@ -901,6 +911,10 @@ def import_quote_templates_from_spreadsheet(file_url: str):
 		doc = frappe.get_doc("IC Quotation Template", name) if exists else frappe.new_doc("IC Quotation Template")
 		if not exists:
 			doc.template_name = name
+			if doc.meta.has_field("display_name"):
+				doc.display_name = name
+		elif doc.meta.has_field("display_name") and not (doc.display_name or "").strip():
+			doc.display_name = name
 
 		doc.quotation_type = qtype
 		for field in (

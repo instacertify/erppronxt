@@ -3138,7 +3138,7 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				? frappe.utils.escape_html(String(f.template_notes).slice(0, 180))
 				: "";
 			$hint.html(
-				`<strong>${frappe.utils.escape_html(f.template_name || f.name)}</strong>` +
+				`<strong>${frappe.utils.escape_html(f.display_name || f.template_name || f.name)}</strong>` +
 					(f.service_family ? ` · ${frappe.utils.escape_html(f.service_family)}` : "") +
 					(note ? `<div class="text-muted" style="margin-top:4px;">${note}</div>` : "")
 			);

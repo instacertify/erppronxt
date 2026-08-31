@@ -10,5 +10,6 @@ from instacertify.quotation.events import (  # noqa: F401
 	ensure_template_preview_quotation,
 	get_quotation_template_payload,
 	list_quote_formats_for_type,
+	rename_quotation_template_display_name,
 	save_quotation_as_template,
 )
