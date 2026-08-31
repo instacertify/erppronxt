@@ -632,11 +632,10 @@ body {
 .ic-summary-card {
   background: linear-gradient(180deg, #ffffff 0%, #f7fbfd 100%);
   padding: 14px 12px;
-  border: 1px solid rgba(6, 81, 117, 0.1);
-  border-top: 4px solid var(--ic-primary);
-  border-left: 1px solid rgba(6, 81, 117, 0.1);
-  box-shadow: var(--ic-shadow);
-  transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease), border-color 0.22s ease;
+  border: none;
+  border-top: 3px solid var(--ic-primary);
+  box-shadow: none;
+  transition: transform 0.22s var(--ic-ease), border-color 0.22s ease;
   animation: ic-rise-in 0.55s var(--ic-rise) both;
   justify-content: space-between;
   align-items: flex-start;
@@ -1058,17 +1057,18 @@ body {
   min-height: 120px;
 }
 
-/* Project tiles — square & compact */
+/* Project tiles — square & compact, no boxed outline */
 .ic-project-tile {
   position: relative;
   gap: 6px;
   padding: 12px;
-  border: 1px solid #d3e3ee;
+  border: none;
+  box-shadow: none;
   background:
     linear-gradient(165deg, rgba(255,255,255,0.95) 0%, rgba(243,249,252,0.98) 100%);
   cursor: pointer;
   font-family: var(--ic-font);
-  transition: transform 0.2s var(--ic-ease), box-shadow 0.2s var(--ic-ease), border-color 0.2s ease;
+  transition: transform 0.2s var(--ic-ease), border-color 0.2s ease;
 }
 
 .ic-project-tile-glow {
