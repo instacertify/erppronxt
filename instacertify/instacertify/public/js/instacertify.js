@@ -3547,7 +3547,7 @@ function ic_render_quotation_links(d) {
 			${ic_related_section(__("Projects"), ic_table([__("Project"), __("Status"), __("Stage"), __("Deadline")], project_rows), __("No projects from this quotation yet"))}
 			${ic_related_section(__("Sales Invoices"), ic_table([__("Invoice"), __("Status"), __("Amount"), __("Date")], invoice_rows), __("No invoices yet"))}
 			${ic_related_section(__("Testing Requests"), ic_table([__("Request"), __("Status"), __("Project"), __("Product")], testing_rows), __("No testing requests"))}
-			${ic_related_section(__("Document Requests"), ic_table([__("Request"), __("Status"), __("Project")], doc_rows), __("No document requests"))}
+			${ic_related_section(__("Document Collection / Customer Data Sheets"), ic_table([__("Sheet"), __("Status"), __("Project")], doc_rows), __("No document collection sheets"))}
 		</div>
 	`;
 }
@@ -5412,6 +5412,33 @@ frappe.ui.form.on("IC Document Request", {
 				);
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Push to Customer Data Sheet"), () => {
+				if (!frm.doc.customer) {
+					frappe.msgprint(__("Map this sheet to a Customer first."));
+					return;
+				}
+				frappe.call({
+					method: "instacertify.documents.api.push_document_request_to_customer",
+					args: { document_request: frm.doc.name },
+					freeze: true,
+					callback() {
+						frappe.show_alert({
+							message: __("Collected data mapped to Customer Data Sheet"),
+							indicator: "green",
+						});
+						frappe.set_route("Form", "Customer", frm.doc.customer);
+					},
+				});
+			}, __("Actions"));
+
+			frm.add_custom_button(__("Open Customer"), () => {
+				if (!frm.doc.customer) {
+					frappe.msgprint(__("No customer linked."));
+					return;
+				}
+				frappe.set_route("Form", "Customer", frm.doc.customer);
+			}, __("Links"));
+
 			if (frm.doc.share_url || frm.doc.share_token) {
 				frm.add_custom_button(__("Copy Share Link"), () => {
 					const url =
@@ -5473,15 +5500,26 @@ frappe.ui.form.on("IC Document Request", {
 	},
 	checklist_template(frm) {
 		if (!frm.doc.checklist_template) return;
+		const apply = () => {
+			frappe.call({
+				method: "instacertify.documents.api.apply_checklist_template",
+				args: { document_request: frm.doc.name, template: frm.doc.checklist_template },
+				freeze: true,
+				freeze_message: __("Applying template…"),
+				callback() {
+					frm.reload_doc();
+					frappe.show_alert({
+						message: __("Template applied — upload rows and fill fields are ready"),
+						indicator: "green",
+					});
+				},
+			});
+		};
 		if (frm.is_new()) {
-			frappe.msgprint(__("Save the sheet first, then pick a template — or create from the Document Collection Library."));
+			frm.save().then(apply);
 			return;
 		}
-		frappe.call({
-			method: "instacertify.documents.api.apply_checklist_template",
-			args: { document_request: frm.doc.name, template: frm.doc.checklist_template },
-			callback() { frm.reload_doc(); },
-		});
+		apply();
 	},
 });
 

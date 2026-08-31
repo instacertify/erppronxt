@@ -120,7 +120,7 @@
    "doctype": "DocField",
    "fieldname": "include_data_fields",
    "fieldtype": "Check",
-   "label": "Additional Data Fields",
+   "label": "Customer Data Fields",
    "default": "1"
   },
   {

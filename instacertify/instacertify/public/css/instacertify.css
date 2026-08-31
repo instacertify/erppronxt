@@ -1704,6 +1704,69 @@ body.for-login,
 .ic-btn-accent { background: var(--ic-accent); color: #fff; }
 .ic-btn-ghost { background: #eef4f8; color: var(--ic-primary); }
 
+/* Documents Collection portal — keep inputs always editable */
+.ic-portal-body input,
+.ic-portal-body textarea,
+.ic-portal-card input,
+.ic-portal-card textarea {
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  background: #ffffff !important;
+  color: #0B1820 !important;
+}
+.ic-portal-card label {
+  pointer-events: auto !important;
+}
+
+/* Desk Document Request — data field grid readable / editable.
+   Do NOT set overflow:hidden on .form-grid — it clips the open row form
+   and blocks typing into child-table fields. */
+[data-page-route="Form/IC Document Request"] .form-grid,
+[data-page-route="Form/IC Document Checklist Template"] .form-grid {
+  border: 1.5px solid #9eb8c8 !important;
+  border-radius: 8px !important;
+  overflow: visible !important;
+  background: #fff !important;
+}
+[data-page-route="Form/IC Document Request"] .form-grid .grid-heading-row,
+[data-page-route="Form/IC Document Checklist Template"] .form-grid .grid-heading-row {
+  background: #e8f1f6 !important;
+  border-bottom: 2px solid #3d5f73 !important;
+}
+[data-page-route="Form/IC Document Request"] .form-grid .grid-row .data-row,
+[data-page-route="Form/IC Document Checklist Template"] .form-grid .grid-row .data-row {
+  min-height: 40px !important;
+  align-items: center !important;
+}
+[data-page-route="Form/IC Document Request"] .form-grid .grid-row:hover .data-row {
+  background: rgba(6, 81, 117, 0.08) !important;
+  box-shadow: inset 3px 0 0 #ec691f !important;
+}
+[data-page-route="Form/IC Document Request"] .grid-row-open,
+[data-page-route="Form/IC Document Checklist Template"] .grid-row-open,
+[data-page-route="Form/IC Document Request"] .grid-form-heading,
+[data-page-route="Form/IC Document Request"] .form-in-grid {
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+[data-page-route="Form/IC Document Request"] .frappe-control[data-fieldname="data_fields"] textarea,
+[data-page-route="Form/IC Document Request"] .frappe-control[data-fieldname="company_legal_name"] input,
+[data-page-route="Form/IC Document Request"] .frappe-control input.input-with-feedback,
+[data-page-route="Form/IC Document Request"] .frappe-control textarea.input-with-feedback,
+[data-page-route="Form/IC Document Request"] .grid-row-open input,
+[data-page-route="Form/IC Document Request"] .grid-row-open textarea,
+[data-page-route="Form/IC Document Request"] .form-grid input.form-control,
+[data-page-route="Form/IC Document Request"] .form-grid textarea.form-control {
+  pointer-events: auto !important;
+  background: #fff !important;
+  color: #0B1820 !important;
+  opacity: 1 !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
 @media (max-width: 768px) {
   .ic-summary-grid,
   .ic-explore-grid,

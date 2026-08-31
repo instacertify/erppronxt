@@ -7,17 +7,26 @@
   <link rel="icon" type="image/png" href="/assets/instacertify/images/favicon-32.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
   <style>
-    .ic-doc-item { border:1px solid #d7e6ef; border-radius:12px; padding:14px; margin:12px 0; background:#fff; }
-    .ic-doc-item textarea { width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; margin-top:8px; }
-    .ic-doc-meta { font-size:12px; color:#667; margin-top:4px; }
-    .ic-data-box { margin-top:18px; padding:14px; border-radius:12px; background:#F5F9FD; border:1px solid #d7e6ef; }
-    .ic-data-box input, .ic-data-box textarea { width:100%; border-radius:10px; border:1px solid #cfe0ea; padding:8px; margin:6px 0 10px; box-sizing:border-box; }
-    .ic-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
+    .ic-doc-item { border:1.5px solid #9eb8c8; border-radius:10px; padding:14px; margin:12px 0; background:#fff; }
+    .ic-doc-item textarea, .ic-data-box input, .ic-data-box textarea {
+      width:100%; border-radius:8px; border:1.5px solid #9eb8c8; padding:10px 12px; margin-top:6px;
+      box-sizing:border-box; background:#fff; color:#0B1820; font-size:15px; line-height:1.4;
+      pointer-events:auto !important; opacity:1 !important; position:relative; z-index:2;
+    }
+    .ic-doc-item textarea:focus, .ic-data-box input:focus, .ic-data-box textarea:focus {
+      outline:2px solid #065175; border-color:#065175;
+    }
+    .ic-doc-meta { font-size:12px; color:#5a7382; margin-top:4px; }
+    .ic-data-box { margin-top:18px; padding:16px; border-radius:12px; background:#F5F9FD; border:1.5px solid #9eb8c8; }
+    .ic-data-box label { display:block; font-weight:650; color:#033447; font-size:13px; margin-top:4px; }
+    .ic-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
     @media (max-width:720px){ .ic-form-grid { grid-template-columns:1fr; } }
     .ic-msg { margin-top:10px; padding:10px 12px; border-radius:10px; display:none; }
     .ic-msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     .ic-msg.err { display:block; background:#fdecea; color:#b42318; }
-    .ic-section-title { color:#0D47A1; margin:0 0 10px; }
+    .ic-section-title { color:#065175; margin:0 0 10px; }
+    .ic-df-row { margin:12px 0; padding:10px 12px; background:#fff; border:1px solid #d5e4ee; border-radius:8px; }
+    .ic-empty { padding:14px; border:1.5px dashed #9eb8c8; border-radius:10px; color:#5a7382; background:#fff; }
   </style>
 </head>
 <body class="ic-portal-body">
@@ -26,33 +35,33 @@
       <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
     </div>
     <div class="ic-portal-card">
-      <h2 style="color:#0D47A1;margin-top:0;">Documents Collection Sheet</h2>
+      <h2 style="color:#065175;margin-top:0;">Documents Collection Sheet</h2>
       <div id="content">Loading…</div>
       <div id="msg" class="ic-msg"></div>
       <div id="list"></div>
       <div class="ic-data-box" id="data-box" style="display:none;">
-        <h3 class="ic-section-title">Data Collection Sheet</h3>
-        <p style="color:#5b7380;font-size:0.92rem;">Fill company / product details required for this project.</p>
+        <h3 class="ic-section-title">Customer Data Sheet</h3>
+        <p style="color:#5b7380;font-size:0.92rem;margin-top:0;">Fill company / product details. Saved data is mapped to your Instacertify customer record.</p>
         <div class="ic-form-grid">
-          <div><label>Company legal name</label><input id="company_legal_name" type="text"/></div>
-          <div><label>GSTIN</label><input id="gstin" type="text"/></div>
-          <div><label>Contact person</label><input id="data_contact_person" type="text"/></div>
-          <div><label>Contact phone</label><input id="data_contact_phone" type="text"/></div>
-          <div><label>Contact email</label><input id="data_contact_email" type="email"/></div>
-          <div data-ff="include_product_name"><label>Product name</label><input id="product_name" type="text"/></div>
-          <div data-ff="include_product_model"><label>Model / variant</label><input id="product_model" type="text"/></div>
-          <div data-ff="include_product_brand"><label>Brand</label><input id="product_brand" type="text"/></div>
+          <div><label for="company_legal_name">Company legal name</label><input id="company_legal_name" type="text" autocomplete="organization"/></div>
+          <div><label for="gstin">GSTIN</label><input id="gstin" type="text" autocomplete="off"/></div>
+          <div><label for="data_contact_person">Contact person</label><input id="data_contact_person" type="text" autocomplete="name"/></div>
+          <div><label for="data_contact_phone">Contact phone</label><input id="data_contact_phone" type="tel" autocomplete="tel"/></div>
+          <div><label for="data_contact_email">Contact email</label><input id="data_contact_email" type="email" autocomplete="email"/></div>
+          <div data-ff="include_product_name"><label for="product_name">Product name</label><input id="product_name" type="text"/></div>
+          <div data-ff="include_product_model"><label for="product_model">Model / variant</label><input id="product_model" type="text"/></div>
+          <div data-ff="include_product_brand"><label for="product_brand">Brand</label><input id="product_brand" type="text"/></div>
         </div>
         <div data-ff="include_company_address">
-          <label>Company address</label>
+          <label for="company_address">Company address</label>
           <textarea id="company_address" rows="2"></textarea>
         </div>
         <div data-ff="include_data_collection_remarks">
-          <label>Remarks</label>
+          <label for="data_collection_remarks">Remarks</label>
           <textarea id="data_collection_remarks" rows="2"></textarea>
         </div>
         <div id="data-fields" data-ff="include_data_fields"></div>
-        <button class="ic-btn ic-btn-primary" id="btn-data" style="margin-top:8px;">Save data collection</button>
+        <button type="button" class="ic-btn ic-btn-primary" id="btn-data" style="margin-top:12px;">Save customer data sheet</button>
       </div>
     </div>
   </div>
@@ -75,17 +84,47 @@
         throw new Error('File type not allowed. Use PDF, image, Excel/CSV, or Word.');
       }
     }
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not read file'));
+        reader.readAsDataURL(file);
+      });
+    }
     async function uploadFile(file) {
       assertAllowedFile(file);
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('is_private', 1);
-      const up = await fetch('/api/method/upload_file', {
-        method: 'POST', body: fd, headers: {'X-Frappe-CSRF-Token': csrf}
-      });
-      const uj = await up.json();
-      if (!uj.message || !uj.message.file_url) throw new Error('Upload failed');
-      return uj.message.file_url;
+      // Prefer guest-safe portal upload API
+      try {
+        const b64 = await fileToBase64(file);
+        const r = await fetch('/api/method/instacertify.documents.api.upload_portal_file', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': csrf},
+          body: JSON.stringify({ token, filename: file.name, filedata: b64 })
+        });
+        const uj = await r.json();
+        if (uj.message && uj.message.file_url) return uj.message.file_url;
+        if (uj.exc || uj._server_messages) {
+          let msg = 'Upload failed';
+          try {
+            const sm = JSON.parse(uj._server_messages || '[]');
+            if (sm[0]) msg = JSON.parse(sm[0]).message || msg;
+          } catch (e) {}
+          throw new Error(msg);
+        }
+      } catch (e) {
+        // Fallback to core upload_file for logged-in sessions
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('is_private', 1);
+        const up = await fetch('/api/method/upload_file', {
+          method: 'POST', body: fd, headers: {'X-Frappe-CSRF-Token': csrf}
+        });
+        const uj = await up.json();
+        if (!uj.message || !uj.message.file_url) throw (e.message ? e : new Error('Upload failed'));
+        return uj.message.file_url;
+      }
+      throw new Error('Upload failed');
     }
     async function post(method, body) {
       const r = await fetch('/api/method/' + method, {
@@ -117,6 +156,9 @@
             '<h3 class="ic-section-title">List of documents</h3>';
           const list = document.getElementById('list');
           list.innerHTML = '';
+          if (!(d.items || []).length) {
+            list.innerHTML = '<div class="ic-empty">No document uploads are required on this sheet. Complete the Customer Data Sheet below.</div>';
+          }
           (d.items || []).forEach(item => {
             const div = document.createElement('div');
             div.className = 'ic-doc-item';
@@ -129,7 +171,7 @@
               '<label class="ic-doc-meta">Your remarks</label>' +
               '<textarea data-remarks="' + esc(item.name) + '" rows="2" placeholder="Remarks for this requirement">' + esc(item.customer_remarks || '') + '</textarea>' +
               '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">' +
-              '<button class="ic-btn ic-btn-ghost" data-save-remarks="' + esc(item.name) + '">Save remarks</button>' +
+              '<button type="button" class="ic-btn ic-btn-ghost" data-save-remarks="' + esc(item.name) + '">Save remarks</button>' +
               '<label class="ic-btn ic-btn-accent" style="cursor:pointer;margin:0;">Upload file<input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff,.xls,.xlsx,.csv,.doc,.docx,application/pdf,image/*,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" data-item="' + esc(item.name) + '" style="display:none;"/></label>' +
               '</div>';
             list.appendChild(div);
@@ -168,15 +210,22 @@
           const df = document.getElementById('data-fields');
           df.innerHTML = '';
           if (flags.include_data_fields === undefined || Number(flags.include_data_fields) === 1) {
-            (d.data_fields || []).forEach(row => {
+            const rows = d.data_fields || [];
+            if (!rows.length) {
+              df.innerHTML = '<div class="ic-empty" style="margin-top:10px;">No additional fields on this template. Company / contact fields above are still editable.</div>';
+            }
+            rows.forEach(row => {
               const wrap = document.createElement('div');
+              wrap.className = 'ic-df-row';
               wrap.innerHTML =
                 '<label>' + esc(row.field_label || '') + (row.is_mandatory ? ' *' : '') + '</label>' +
                 (row.help_text ? '<div class="ic-doc-meta">' + esc(row.help_text) + '</div>' : '') +
-                '<textarea data-df="' + esc(row.name) + '" rows="2">' + esc(row.field_value || '') + '</textarea>';
+                '<textarea data-df="' + esc(row.name) + '" rows="3" placeholder="Enter value">' + esc(row.field_value || '') + '</textarea>';
               df.appendChild(wrap);
             });
           }
+        }).catch(() => {
+          document.getElementById('content').innerText = 'Could not load this sheet. Check the link or ask your coordinator for a new one.';
         });
     }
     document.getElementById('btn-data').onclick = async () => {
@@ -199,7 +248,7 @@
           data_collection_remarks: document.getElementById('data_collection_remarks').value,
           data_fields: JSON.stringify(data_fields)
         });
-        showMsg('Data collection saved.', true);
+        showMsg('Customer data sheet saved.', true);
         setTimeout(load, 600);
       } catch (e) { showMsg(e.message || 'Could not save data collection', false); }
     };
