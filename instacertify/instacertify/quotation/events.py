@@ -115,10 +115,16 @@ def _sync_quote_number_from_name(doc):
 def _calculate_test_line_totals(doc):
 	for row in doc.get("ic_test_items") or []:
 		units = float(row.number_of_samples or 0) or 1
-		if row.per_unit_charges:
-			row.testing_charges = float(row.per_unit_charges) * units
+		rate = row.get("suggested_selling_price")
+		if rate in (None, ""):
+			rate = row.get("per_unit_charges")
+		if rate not in (None, ""):
+			row.per_unit_charges = float(rate)
+			row.testing_charges = float(rate) * units
 		elif row.testing_charges and not row.per_unit_charges:
 			row.per_unit_charges = float(row.testing_charges) / units
+			if row.get("suggested_selling_price") in (None, ""):
+				row.suggested_selling_price = row.per_unit_charges
 
 
 def _apply_quotation_defaults(doc):
@@ -176,9 +182,16 @@ def _calculate_revenue_split(doc):
 			row.is_passthrough = 0
 			row.revenue_treatment = "Counted Revenue"
 			commercial += amount
-	doc.ic_commercial_value = commercial
+	# Testing line totals count as commercial (selling price × samples)
+	testing_total = 0.0
+	for row in doc.get("ic_test_items") or []:
+		testing_total += float(row.testing_charges or 0)
+	doc.ic_commercial_value = commercial + testing_total
 	doc.ic_passthrough_value = passthrough
-	doc.ic_total_quoted_value = commercial + passthrough
+	doc.ic_total_quoted_value = commercial + testing_total + passthrough
+	if hasattr(doc, "flags"):
+		doc.flags.ic_testing_commercial_total = testing_total
+		doc.flags.ic_cost_commercial_total = commercial
 
 
 def _ensure_qr(doc):

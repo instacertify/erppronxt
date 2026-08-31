@@ -5,7 +5,7 @@
  "module": "Instacertify",
  "track_changes": 1,
  "title_field": "laboratory_name",
- "search_fields": "laboratory_name,location,city,country,contact_person,phone",
+ "search_fields": "laboratory_name,lab_initials,location,city,country,contact_person,phone",
  "image_field": "logo",
  "sort_field": "laboratory_name",
  "sort_order": "ASC",
@@ -26,6 +26,15 @@
    "label": "Laboratory Name",
    "reqd": 1,
    "in_list_view": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "lab_initials",
+   "fieldtype": "Data",
+   "label": "Lab Initials",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Short code shown when building Testing quotations (e.g. NABL, SGS)"
   },
   {
    "doctype": "DocField",
