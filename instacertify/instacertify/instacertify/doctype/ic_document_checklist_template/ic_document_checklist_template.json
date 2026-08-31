@@ -4,17 +4,28 @@
  "naming_rule": "By fieldname",
  "module": "Instacertify",
  "track_changes": 1,
- "title_field": "template_name",
- "search_fields": "service_name,category",
+ "title_field": "display_name",
+ "search_fields": "display_name,template_name,service_name,category",
  "fields": [
+  {
+   "doctype": "DocField",
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "label": "Display Name",
+   "reqd": 0,
+   "in_list_view": 1,
+   "bold": 1,
+   "description": "Shown in Document Collection Library. Change freely — does not break existing document requests."
+  },
   {
    "doctype": "DocField",
    "fieldname": "template_name",
    "fieldtype": "Data",
-   "label": "Template Name",
+   "label": "Template ID",
    "reqd": 1,
    "unique": 1,
-   "in_list_view": 1
+   "in_list_view": 0,
+   "description": "Internal system ID (stable). Use Display Name to rename what users see."
   },
   {
    "doctype": "DocField",

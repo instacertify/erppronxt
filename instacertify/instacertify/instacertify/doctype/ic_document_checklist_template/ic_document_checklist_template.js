@@ -6,12 +6,49 @@ frappe.ui.form.on("IC Document Checklist Template", {
 		});
 		frm.set_intro(
 			__(
-				"Use Format Fields (optional) to check/uncheck built-in Data Collection fields. Unchecked fields are hidden on sheets created from this template."
+				"Rename with Display Name anytime (Template ID stays fixed). Use Format Fields to check/uncheck built-in Data Collection fields. Unchecked fields are hidden on sheets created from this template."
 			),
 			"blue"
 		);
+		if (frm.fields_dict.template_name) {
+			frm.set_df_property("template_name", "read_only", frm.is_new() ? 0 : 1);
+		}
 		if (!frm.is_new()) {
+			frm.add_custom_button(__("Rename Display Name"), () => {
+				frappe.prompt(
+					[
+						{
+							fieldname: "display_name",
+							fieldtype: "Data",
+							label: __("Display Name"),
+							reqd: 1,
+							default: frm.doc.display_name || frm.doc.template_name || "",
+						},
+					],
+					(values) => {
+						frappe.call({
+							method: "instacertify.documents.api.rename_checklist_template_display_name",
+							args: {
+								template: frm.doc.name,
+								display_name: values.display_name,
+							},
+							freeze: true,
+							callback() {
+								frm.reload_doc();
+								frappe.show_alert({
+									message: __("Display name updated (Template ID unchanged)"),
+									indicator: "green",
+								});
+							},
+						});
+					},
+					__("Rename Template"),
+					__("Save")
+				);
+			}, __("Actions"));
+
 			frm.add_custom_button(__("Use for Customer"), () => {
+				const shown = frm.doc.display_name || frm.doc.template_name || frm.doc.name;
 				const d = new frappe.ui.Dialog({
 					title: __("Create Document Collection Request"),
 					fields: [
@@ -26,7 +63,7 @@ frappe.ui.form.on("IC Document Checklist Template", {
 							fieldname: "title",
 							fieldtype: "Data",
 							label: __("Sheet Title"),
-							default: __("Documents — {0}", [frm.doc.template_name || frm.doc.name]),
+							default: __("Documents — {0}", [shown]),
 						},
 						{
 							fieldname: "share",

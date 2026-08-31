@@ -4,3 +4,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 instacertify.patches.v1_0.sync_missing_custom_field_columns
+instacertify.patches.v1_0.backfill_template_display_names

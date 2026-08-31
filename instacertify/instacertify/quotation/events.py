@@ -207,24 +207,28 @@ def list_quote_formats_for_type(quotation_type: str | None = None):
 	elif quotation_type:
 		filters["quotation_type"] = quotation_type
 
+	fields = [
+		"name",
+		"template_name",
+		"quotation_type",
+		"service_family",
+		"service_name",
+		"template_notes",
+		"uploaded_format",
+	]
+	if frappe.get_meta("IC Quotation Template").has_field("display_name"):
+		fields.append("display_name")
 	rows = frappe.get_all(
 		"IC Quotation Template",
 		filters=filters,
-		fields=[
-			"name",
-			"template_name",
-			"quotation_type",
-			"service_family",
-			"service_name",
-			"template_notes",
-			"uploaded_format",
-		],
+		fields=fields,
 		order_by="template_name asc",
 		limit_page_length=300,
 	)
 	out = []
 	for r in rows:
-		label_parts = [r.template_name or r.name]
+		shown = (r.get("display_name") or r.template_name or r.name or "").strip()
+		label_parts = [shown]
 		if r.service_family:
 			label_parts.append(f"— {r.service_family}")
 		elif r.service_name:
@@ -234,6 +238,7 @@ def list_quote_formats_for_type(quotation_type: str | None = None):
 				"name": r.name,
 				"label": " ".join(label_parts),
 				"template_name": r.template_name,
+				"display_name": shown,
 				"quotation_type": r.quotation_type,
 				"service_family": r.service_family,
 				"service_name": r.service_name,
@@ -367,9 +372,11 @@ def get_quotation_template_payload(template: str):
 		frappe.throw(_("Quote format not found"))
 	tmpl = frappe.get_doc("IC Quotation Template", template)
 	fields = _template_field_map(tmpl)
+	shown = (tmpl.get("display_name") or tmpl.template_name or tmpl.name or "").strip()
 	return {
 		"template": tmpl.name,
 		"template_name": tmpl.template_name,
+		"display_name": shown,
 		"quotation_type": fields["ic_quotation_type"],
 		"fields": fields,
 		"cost_items": _template_cost_rows(tmpl),
@@ -399,17 +406,43 @@ def apply_quotation_template(quotation: str, template: str):
 
 @frappe.whitelist()
 def duplicate_quotation_template(template: str, new_name: str):
-	"""Clone an existing template under a new name."""
+	"""Clone an existing template under a new display name (Template ID stays unique)."""
 	src = frappe.get_doc("IC Quotation Template", template)
-	name = (new_name or "").strip()
-	if not name:
+	label = (new_name or "").strip()
+	if not label:
 		frappe.throw(_("Template name is required"))
-	if frappe.db.exists("IC Quotation Template", name):
-		frappe.throw(_("Template {0} already exists").format(name), frappe.DuplicateEntryError)
 	doc = frappe.copy_doc(src)
-	doc.template_name = name
+	# Prefer display_name for the user-facing label; Template ID is derived on insert if needed.
+	if doc.meta.has_field("display_name"):
+		doc.display_name = label
+	# Keep a distinct Template ID when the label matches an existing document name.
+	if frappe.db.exists("IC Quotation Template", label):
+		doc.template_name = ""
+	else:
+		doc.template_name = label
 	doc.insert(ignore_permissions=True)
-	return {"template": doc.name}
+	return {"template": doc.name, "display_name": doc.get("display_name") or doc.template_name}
+
+
+@frappe.whitelist()
+def rename_quotation_template_display_name(template: str, display_name: str):
+	"""Change only the user-facing label — does not rename the document or break Links."""
+	label = (display_name or "").strip()
+	if not label:
+		frappe.throw(_("Display name is required"))
+	if not template or not frappe.db.exists("IC Quotation Template", template):
+		frappe.throw(_("Quote format not found"))
+	frappe.has_permission("IC Quotation Template", "write", throw=True)
+	doc = frappe.get_doc("IC Quotation Template", template)
+	if not doc.meta.has_field("display_name"):
+		frappe.throw(_("Display Name field is not available yet — run migrate."))
+	doc.display_name = label
+	doc.save(ignore_permissions=True)
+	return {
+		"template": doc.name,
+		"template_name": doc.template_name,
+		"display_name": doc.display_name,
+	}
 
 
 _PREVIEW_LEAD_NAME = "Template Preview (Internal)"
@@ -461,7 +494,8 @@ def ensure_template_preview_quotation(template: str):
 	qtype = tmpl.quotation_type or "Consulting"
 	if qtype == "Service":
 		qtype = "Consulting"
-	title = _preview_title(tmpl.template_name)
+	shown = (tmpl.get("display_name") or tmpl.template_name or tmpl.name or "").strip()
+	title = _preview_title(shown)
 
 	existing = frappe.db.get_value(
 		"Quotation",
@@ -497,6 +531,7 @@ def ensure_template_preview_quotation(template: str):
 			"print_format": fmt,
 			"template": tmpl.name,
 			"template_name": tmpl.template_name,
+			"display_name": shown,
 			"message": _("Preview quotation refreshed from template."),
 		}
 
@@ -543,6 +578,7 @@ def ensure_template_preview_quotation(template: str):
 		"print_format": fmt,
 		"template": tmpl.name,
 		"template_name": tmpl.template_name,
+		"display_name": shown,
 		"message": _("Preview quotation created from template."),
 	}
 
@@ -560,9 +596,13 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 		)
 	if exists:
 		tmpl = frappe.get_doc("IC Quotation Template", name)
+		if tmpl.meta.has_field("display_name"):
+			tmpl.display_name = name
 	else:
 		tmpl = frappe.new_doc("IC Quotation Template")
 		tmpl.template_name = name
+		if tmpl.meta.has_field("display_name"):
+			tmpl.display_name = name
 
 	tmpl.quotation_type = (
 		"Consulting"

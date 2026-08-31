@@ -87,7 +87,7 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 		return (state.rows || []).filter((r) => {
 			if (state.category && (r.category || "General") !== state.category) return false;
 			if (!q) return true;
-			const hay = [r.template_name, r.service_name, r.category, r.notes]
+			const hay = [r.display_name, r.template_name, r.service_name, r.category, r.notes]
 				.concat((r.items || []).map((i) => i.document_name))
 				.join(" ")
 				.toLowerCase();
@@ -112,6 +112,7 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 			return;
 		}
 		rows.forEach((r) => {
+			const shown = r.display_name || r.template_name || r.name;
 			const preview = (r.items || [])
 				.slice(0, 4)
 				.map((i) => {
@@ -126,12 +127,17 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 				(r.items || []).length > 4
 					? `<div class="text-muted">${__("+{0} more", [(r.items || []).length - 4])}</div>`
 					: "";
+			const idHint =
+				r.template_name && shown !== r.template_name
+					? `<div class="text-muted" style="font-size:11px;">${__("ID")}: ${frappe.utils.escape_html(r.template_name)}</div>`
+					: "";
 			const card = $(`
 				<article class="ic-doclib-card" data-name="${frappe.utils.escape_html(r.name)}">
 					<div class="ic-doclib-card-top">
 						<div>
 							<div class="ic-doclib-card-cat">${frappe.utils.escape_html(r.category || "General")}</div>
-							<div class="ic-doclib-card-title">${frappe.utils.escape_html(r.template_name)}</div>
+							<div class="ic-doclib-card-title">${frappe.utils.escape_html(shown)}</div>
+							${idHint}
 							<div class="ic-doclib-card-meta">${frappe.utils.escape_html(r.service_name || "")}</div>
 						</div>
 						<div class="ic-doclib-card-counts">
@@ -143,6 +149,7 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 					${more}
 					<div class="ic-doclib-card-actions">
 						<button type="button" class="btn btn-default btn-sm" data-act="edit">${__("Edit")}</button>
+						<button type="button" class="btn btn-default btn-sm" data-act="rename">${__("Rename")}</button>
 						<button type="button" class="btn btn-primary btn-sm" data-act="use">${__("Use for Customer")}</button>
 					</div>
 				</article>
@@ -150,18 +157,51 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 			card.find('[data-act="edit"]').on("click", () => {
 				frappe.set_route("Form", "IC Document Checklist Template", r.name);
 			});
+			card.find('[data-act="rename"]').on("click", () => rename_template(r));
 			card.find('[data-act="use"]').on("click", () => use_template(r));
 			grid.append(card);
 		});
 	}
 
+	function rename_template(row) {
+		if (!row || !row.name) return;
+		frappe.prompt(
+			[
+				{
+					fieldname: "display_name",
+					fieldtype: "Data",
+					label: __("Display Name"),
+					reqd: 1,
+					default: row.display_name || row.template_name || "",
+				},
+			],
+			(values) => {
+				frappe.call({
+					method: "instacertify.documents.api.rename_checklist_template_display_name",
+					args: { template: row.name, display_name: values.display_name },
+					freeze: true,
+					callback() {
+						frappe.show_alert({
+							message: __("Display name updated (Template ID unchanged)"),
+							indicator: "green",
+						});
+						load();
+					},
+				});
+			},
+			__("Rename Template"),
+			__("Save")
+		);
+	}
+
 	function use_template(row) {
+		const shown = row.display_name || row.template_name || row.name;
 		const d = new frappe.ui.Dialog({
 			title: __("Create Document Collection Request"),
 			fields: [
 				{
 					fieldtype: "HTML",
-					options: `<p class="text-muted">${__("Template")}: <b>${frappe.utils.escape_html(row.template_name)}</b>. ${__("Customer is mandatory. After create you get a sharable upload link.")}</p>`,
+					options: `<p class="text-muted">${__("Template")}: <b>${frappe.utils.escape_html(shown)}</b>. ${__("Customer is mandatory. After create you get a sharable upload link.")}</p>`,
 				},
 				{
 					fieldname: "customer",
@@ -174,7 +214,7 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 					fieldname: "title",
 					fieldtype: "Data",
 					label: __("Sheet Title"),
-					default: __("Documents — {0}", [row.template_name]),
+					default: __("Documents — {0}", [shown]),
 				},
 				{
 					fieldname: "project",

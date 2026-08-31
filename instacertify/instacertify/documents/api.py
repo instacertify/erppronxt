@@ -126,6 +126,8 @@ def get_document_checklist_templates(service_name: str | None = None):
 	meta = frappe.get_meta("IC Document Checklist Template")
 	if meta.has_field("category"):
 		fields.append("category")
+	if meta.has_field("display_name"):
+		fields.append("display_name")
 	rows = frappe.get_all(
 		"IC Document Checklist Template",
 		filters=filters,
@@ -135,7 +137,7 @@ def get_document_checklist_templates(service_name: str | None = None):
 	)
 	out = []
 	for r in rows:
-		label = r.template_name or r.name
+		label = (r.get("display_name") or r.template_name or r.name or "").strip()
 		if r.service_name:
 			label = f"{label} ({r.service_name})"
 		item_fields = ["document_name", "category", "is_mandatory"]
@@ -154,6 +156,8 @@ def get_document_checklist_templates(service_name: str | None = None):
 			{
 				"name": r.name,
 				"label": label,
+				"template_name": r.template_name,
+				"display_name": (r.get("display_name") or r.template_name or r.name or "").strip(),
 				"service_name": r.service_name,
 				"category": r.get("category"),
 				"item_count": len(items),
@@ -177,6 +181,8 @@ def get_document_collection_library(active_only: int | bool = 1, category: str |
 		fields.append("category")
 	if meta.has_field("notes"):
 		fields.append("notes")
+	if meta.has_field("display_name"):
+		fields.append("display_name")
 	rows = frappe.get_all(
 		"IC Document Checklist Template",
 		filters=filters,
@@ -200,10 +206,12 @@ def get_document_collection_library(active_only: int | bool = 1, category: str |
 		)
 		uploads = sum(1 for i in items if _entry_type(i) == "Upload File")
 		fills = sum(1 for i in items if _entry_type(i) == "Fill Field")
+		shown = (r.get("display_name") or r.template_name or r.name or "").strip()
 		out.append(
 			{
 				"name": r.name,
 				"template_name": r.template_name or r.name,
+				"display_name": shown,
 				"service_name": r.service_name,
 				"category": r.get("category") or "General",
 				"is_active": r.is_active,
@@ -233,9 +241,11 @@ def preview_checklist_template(template: str):
 	if not template or not frappe.db.exists("IC Document Checklist Template", template):
 		frappe.throw(_("Checklist template not found"))
 	tmpl = frappe.get_doc("IC Document Checklist Template", template)
+	shown = (tmpl.get("display_name") or tmpl.template_name or tmpl.name or "").strip()
 	return {
 		"name": tmpl.name,
 		"template_name": tmpl.template_name,
+		"display_name": shown,
 		"service_name": tmpl.get("service_name"),
 		"category": tmpl.get("category"),
 		"items": [
@@ -489,6 +499,7 @@ def save_document_request_as_template(
 		{
 			"doctype": "IC Document Checklist Template",
 			"template_name": name,
+			"display_name": name,
 			"service_name": service_name or "",
 			"category": category or "Custom",
 			"is_active": 1,
@@ -522,7 +533,32 @@ def save_document_request_as_template(
 	if not tmpl.items:
 		frappe.throw(_("This sheet has no rows to save as a template"))
 	tmpl.insert(ignore_permissions=True)
-	return {"template": tmpl.name, "template_name": tmpl.template_name}
+	return {
+		"template": tmpl.name,
+		"template_name": tmpl.template_name,
+		"display_name": tmpl.get("display_name") or tmpl.template_name,
+	}
+
+
+@frappe.whitelist()
+def rename_checklist_template_display_name(template: str, display_name: str):
+	"""Change only the user-facing label — does not rename the document or break Links."""
+	label = (display_name or "").strip()
+	if not label:
+		frappe.throw(_("Display name is required"))
+	if not template or not frappe.db.exists("IC Document Checklist Template", template):
+		frappe.throw(_("Checklist template not found"))
+	frappe.has_permission("IC Document Checklist Template", "write", throw=True)
+	doc = frappe.get_doc("IC Document Checklist Template", template)
+	if not doc.meta.has_field("display_name"):
+		frappe.throw(_("Display Name field is not available yet — run migrate."))
+	doc.display_name = label
+	doc.save(ignore_permissions=True)
+	return {
+		"template": doc.name,
+		"template_name": doc.template_name,
+		"display_name": doc.display_name,
+	}
 
 
 @frappe.whitelist(allow_guest=True)

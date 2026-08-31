@@ -147,7 +147,13 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			}
 			if (state.search) {
 				const q = state.search.toLowerCase();
-				const blob = [t.template_name, t.service_family, t.service_name, t.quotation_type]
+				const blob = [
+					t.display_name,
+					t.template_name,
+					t.service_family,
+					t.service_name,
+					t.quotation_type,
+				]
 					.concat(t.tags || [])
 					.join(" ")
 					.toLowerCase();
@@ -176,9 +182,46 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		return order.map((fam) => ({
 			family: fam,
 			rows: map[fam].sort((a, b) =>
-				String(a.template_name || a.name).localeCompare(String(b.template_name || b.name))
+				String(a.display_name || a.template_name || a.name).localeCompare(
+					String(b.display_name || b.template_name || b.name)
+				)
 			),
 		}));
+	}
+
+	function shown_name(t) {
+		return (t && (t.display_name || t.template_name || t.name)) || "";
+	}
+
+	function rename_template(row) {
+		if (!row || !row.name) return;
+		frappe.prompt(
+			[
+				{
+					fieldname: "display_name",
+					fieldtype: "Data",
+					label: __("Display Name"),
+					reqd: 1,
+					default: shown_name(row),
+				},
+			],
+			(values) => {
+				frappe.call({
+					method: "instacertify.quotation.events.rename_quotation_template_display_name",
+					args: { template: row.name, display_name: values.display_name },
+					freeze: true,
+					callback() {
+						frappe.show_alert({
+							message: __("Display name updated (Template ID unchanged)"),
+							indicator: "green",
+						});
+						load();
+					},
+				});
+			},
+			__("Rename Template"),
+			__("Save")
+		);
 	}
 
 	function open_template(name) {
@@ -454,9 +497,14 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			t.name
 		)}" tabindex="0" role="button" title="${__("Click to edit")}">
 			<div class="ic-quote-lib-row-main">
-				<div class="ic-quote-lib-row-name">${esc(t.template_name || t.name)}</div>
+				<div class="ic-quote-lib-row-name">${esc(shown_name(t))}</div>
 				<div class="ic-quote-lib-row-meta">
 					${family ? `<span>${esc(family)}</span>` : ""}
+					${
+						t.template_name && shown_name(t) !== t.template_name
+							? `<span class="text-muted" title="${__("Template ID")}">${esc(t.template_name)}</span>`
+							: ""
+					}
 					${active ? `<span class="ic-quote-lib-badge on">${__("Active")}</span>` : `<span class="ic-quote-lib-badge off">${__("Inactive")}</span>`}
 					${t.uploaded_format ? `<span class="ic-quote-lib-file">${__("File")}</span>` : ""}
 					${tagHtml}
@@ -465,6 +513,7 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			<div class="ic-quote-lib-row-pricing">${amount}</div>
 			<div class="ic-quote-lib-row-actions">
 				<button type="button" class="btn btn-primary btn-xs ic-qlib-open">${__("Edit")}</button>
+				<button type="button" class="btn btn-default btn-xs ic-qlib-rename" title="${__("Rename display name")}">${__("Rename")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-use">${__("Use")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-print" title="${__("Print")}">${__("Print")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-pdf" title="${__("PDF")}">${__("PDF")}</button>
@@ -476,6 +525,11 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		$scope.find(".ic-qlib-open").on("click", function (e) {
 			e.stopPropagation();
 			open_template($(this).closest(".ic-quote-lib-row").data("name"));
+		});
+		$scope.find(".ic-qlib-rename").on("click", function (e) {
+			e.stopPropagation();
+			const name = $(this).closest(".ic-quote-lib-row").data("name");
+			rename_template(rows.find((r) => r.name === name));
 		});
 		$scope.find(".ic-qlib-use").on("click", function (e) {
 			e.stopPropagation();
