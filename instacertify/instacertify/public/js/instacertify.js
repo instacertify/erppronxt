@@ -4328,44 +4328,112 @@ frappe.ui.form.on("Task", {
 });
 
 /**
- * Keep the form Save button visible and usable after field edits
- * (status / priority / project assignment, etc.).
+ * Keep the form Save button visible and usable after field edits.
+ * Frappe often clears/hides primary Save after toolbar refresh when the doc
+ * looks "clean" — always re-apply, with short delayed retries.
  */
+instacertify.ALWAYS_SAVE_DOCTYPES = [
+	"IC Testing Request",
+	"IC Sample Tracking",
+	"IC Document Request",
+	"IC Laboratory",
+	"IC Quotation Template",
+	"IC Document Checklist Template",
+	"IC Test Request Form",
+];
+
 instacertify.ensure_form_save_button = function (frm) {
 	if (!frm || !frm.page) return;
-	try {
-		if (typeof frm.enable_save === "function") {
-			frm.enable_save();
-		}
-		const page = frm.page;
-		if (page && typeof page.set_primary_action === "function") {
-			const label =
-				(page.btn_primary && page.btn_primary.attr("data-label")) ||
-				(page.btn_primary && page.btn_primary.text && page.btn_primary.text()) ||
-				"";
-			const visible =
-				page.btn_primary && page.btn_primary.length && page.btn_primary.is(":visible");
-			const isSaveLike = /save|update|submit/i.test(String(label || "").trim());
-			// Always keep Save available on Testing Request (new + existing)
-			if (!visible || !isSaveLike) {
-				page.set_primary_action(__("Save"), () => frm.save());
+	const force = () => {
+		try {
+			if (typeof frm.enable_save === "function") {
+				frm.enable_save();
 			}
+			frm.save_disabled = false;
+			const page = frm.page;
+			if (!page || typeof page.set_primary_action !== "function") return;
+
+			// Always set primary = Save (do not wait for dirty state).
+			page.set_primary_action(__("Save"), () => frm.save());
+
+			const $btn = page.btn_primary;
+			if ($btn && $btn.length) {
+				$btn
+					.addClass("ic-always-save-btn primary-action")
+					.attr("data-label", "Save")
+					.removeClass("hide hidden d-none disabled")
+					.prop("disabled", false)
+					.css({
+						display: "inline-flex",
+						visibility: "visible",
+						opacity: 1,
+						pointerEvents: "auto",
+					});
+				const labelText = ($btn.text() || "").replace(/\s+/g, " ").trim();
+				if (!/save/i.test(labelText)) {
+					if (!$btn.find(".ic-action-label").length) {
+						$btn.append(` <span class="ic-action-label">${__("Save")}</span>`);
+					} else {
+						$btn.find(".ic-action-label").text(__("Save"));
+					}
+				}
+			}
+			instacertify._ensure_actions_save_fallback(frm);
+		} catch (e) {
+			/* ignore */
 		}
-		if (page && page.btn_primary && page.btn_primary.length) {
-			page.btn_primary
-				.removeClass("hide hidden d-none")
-				.css({ display: "inline-flex", visibility: "visible", opacity: 1 });
-		}
+	};
+
+	force();
+	clearTimeout(frm._ic_save_btn_t1);
+	clearTimeout(frm._ic_save_btn_t2);
+	clearTimeout(frm._ic_save_btn_t3);
+	frm._ic_save_btn_t1 = setTimeout(force, 120);
+	frm._ic_save_btn_t2 = setTimeout(force, 400);
+	frm._ic_save_btn_t3 = setTimeout(force, 1000);
+};
+
+/** Fallback under Actions if page-head Save is crowded off-screen. */
+instacertify._ensure_actions_save_fallback = function (frm) {
+	try {
+		if (frm._ic_actions_save_added) return;
+		frm.add_custom_button(__("Save"), () => frm.save(), __("Actions"));
+		frm._ic_actions_save_added = true;
 	} catch (e) {
 		/* ignore */
 	}
 };
 
+// Desk-wide: keep Save on key Instacertify forms (toolbar can clear it after refresh).
+$(document).on("form-refresh", function (_e, frm) {
+	try {
+		if (!frm || !frm.doctype) return;
+		if ((instacertify.ALWAYS_SAVE_DOCTYPES || []).indexOf(frm.doctype) < 0) return;
+		instacertify.ensure_form_save_button(frm);
+	} catch (err) {
+		/* ignore */
+	}
+});
+$(document).on("form-dirty", function (_e, frm) {
+	try {
+		if (!frm || !frm.doctype) return;
+		if ((instacertify.ALWAYS_SAVE_DOCTYPES || []).indexOf(frm.doctype) < 0) return;
+		instacertify.ensure_form_save_button(frm);
+	} catch (err) {
+		/* ignore */
+	}
+});
+
 frappe.ui.form.on("IC Testing Request", {
 	onload(frm) {
 		instacertify.load_testing_request_library_options(frm);
+		instacertify.ensure_form_save_button(frm);
+	},
+	onload_post_render(frm) {
+		instacertify.ensure_form_save_button(frm);
 	},
 	refresh(frm) {
+		frm._ic_actions_save_added = false;
 		instacertify.ensure_form_save_button(frm);
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
 		instacertify.load_testing_request_library_options(frm);
@@ -4605,6 +4673,7 @@ frappe.ui.form.on("IC Testing Request", {
 			}, __("Samples"));
 			instacertify.render_testing_request_samples(frm);
 		}
+		instacertify.ensure_form_save_button(frm);
 	},
 	number_of_samples(frm) {
 		if (frm.is_new() || frm._ic_skip_lab_picker) return;
@@ -5240,6 +5309,8 @@ instacertify.render_project_testing_panel = function (frm) {
 
 frappe.ui.form.on("IC Document Request", {
 	refresh(frm) {
+		frm._ic_actions_save_added = false;
+		instacertify.ensure_form_save_button(frm);
 		frm.add_custom_button(__("Open Library"), () => {
 			frappe.set_route("document-collection-library");
 		});
@@ -5422,6 +5493,8 @@ frappe.ui.form.on("IC Sample Dispatch Collection", {
 
 frappe.ui.form.on("IC Laboratory", {
 	refresh(frm) {
+		frm._ic_actions_save_added = false;
+		instacertify.ensure_form_save_button(frm);
 		if (frm.is_new()) {
 			frm.set_intro(
 				__(
@@ -6728,6 +6801,10 @@ instacertify.show_testing_request_sample_qr_dialog = function (payload) {
 };
 
 frappe.ui.form.on("IC Sample Tracking", {
+	refresh(frm) {
+		frm._ic_actions_save_added = false;
+		instacertify.ensure_form_save_button(frm);
+	},
 	status(frm) {
 		const map = {
 			"Sample Awaited": "With Customer",

@@ -5479,18 +5479,48 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   width: 100% !important;
 }
 
-/* Sticky / always-visible Save when form is dirty */
+/* Sticky / always-visible Save when form is dirty — and always for Testing Request */
 .page-actions .btn-primary.primary-action,
 .standard-actions .btn-primary.primary-action,
 .page-head .btn-primary[data-label="Save"],
-.page-actions .btn-primary[data-label="Save"] {
+.page-actions .btn-primary[data-label="Save"],
+.page-actions .btn-primary.ic-always-save-btn,
+.standard-actions .btn-primary.ic-always-save-btn,
+.page-head .btn-primary.ic-always-save-btn,
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary,
+[data-page-route="Form/IC Testing Request"] .standard-actions .btn-primary,
+[data-page-route="Form/IC Sample Tracking"] .page-actions .btn-primary,
+[data-page-route="Form/IC Document Request"] .page-actions .btn-primary,
+[data-page-route="Form/IC Laboratory"] .page-actions .btn-primary {
   display: inline-flex !important;
   visibility: visible !important;
   opacity: 1 !important;
+  pointer-events: auto !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   background: #065175 !important;
   border-color: #065175 !important;
+  font-weight: 700 !important;
+  min-width: 72px !important;
+  z-index: 5;
+}
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary .ic-action-label,
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary.ic-always-save-btn {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+/* Keep Save on the right of the page head, above other custom groups */
+[data-page-route="Form/IC Testing Request"] .page-head .page-actions,
+[data-page-route="Form/IC Sample Tracking"] .page-head .page-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary.primary-action,
+[data-page-route="Form/IC Testing Request"] .page-actions .btn-primary.ic-always-save-btn {
+  order: -1;
+  margin-left: 0 !important;
 }
 
 /* ==========================================================================
