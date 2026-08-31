@@ -2652,24 +2652,38 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 	const chain = Promise.resolve();
 	let p = chain;
 	Object.keys(fields).forEach((key) => {
+		// Skip fields not on this Quotation form (e.g. custom field not migrated yet)
+		if (!frm.fields_dict[key] && !(frm.meta && frm.meta.has_field && frm.meta.has_field(key))) {
+			return;
+		}
 		const val = fields[key];
 		if (val === undefined || val === null || val === "") {
 			if (key === "ic_subject") return;
 		}
-		p = p.then(() => frm.set_value(key, val));
+		p = p.then(() => {
+			try {
+				return frm.set_value(key, val);
+			} catch (e) {
+				console.warn("Instacertify: skip template field", key, e);
+			}
+		});
 	});
 	return p
 		.then(() => {
-			frm.clear_table("ic_cost_items");
-			(payload.cost_items || []).forEach((row) => {
-				frm.add_child("ic_cost_items", row);
-			});
-			frm.clear_table("ic_test_items");
-			(payload.test_items || []).forEach((row) => {
-				frm.add_child("ic_test_items", row);
-			});
-			frm.refresh_field("ic_cost_items");
-			frm.refresh_field("ic_test_items");
+			if (frm.fields_dict.ic_cost_items) {
+				frm.clear_table("ic_cost_items");
+				(payload.cost_items || []).forEach((row) => {
+					frm.add_child("ic_cost_items", row);
+				});
+				frm.refresh_field("ic_cost_items");
+			}
+			if (frm.fields_dict.ic_test_items) {
+				frm.clear_table("ic_test_items");
+				(payload.test_items || []).forEach((row) => {
+					frm.add_child("ic_test_items", row);
+				});
+				frm.refresh_field("ic_test_items");
+			}
 			instacertify.toggle_quotation_sections(frm);
 			instacertify.apply_quotation_naming_series(frm);
 			instacertify.render_quotation_entry_guide(frm);

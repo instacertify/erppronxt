@@ -323,7 +323,11 @@ _LABEL_FIELDS = (
 
 
 def _template_field_map(tmpl) -> dict:
-	"""Scalar quotation fields filled from an IC Quotation Template."""
+	"""Scalar quotation fields filled from an IC Quotation Template.
+
+	Only includes keys that exist on Quotation so template apply never errors
+	with "Field … not found" when a custom field is not migrated yet.
+	"""
 	qtype = "Consulting" if tmpl.quotation_type == "Service" else tmpl.quotation_type
 	fields = {
 		"ic_quotation_type": qtype,
@@ -359,7 +363,9 @@ def _template_field_map(tmpl) -> dict:
 	}
 	for key in _LABEL_FIELDS:
 		fields[f"ic_{key}"] = tmpl.get(key)
-	return fields
+
+	meta = frappe.get_meta("Quotation")
+	return {k: v for k, v in fields.items() if meta.has_field(k)}
 
 
 def _template_cost_rows(tmpl) -> list[dict]:
