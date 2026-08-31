@@ -2782,6 +2782,7 @@ instacertify.render_quotation_entry_guide = function (frm) {
 instacertify.setup_quotation_lab_queries = function (frm) {
 	frm.set_query("laboratory", "ic_test_items", () => ({
 		filters: { status: "Active" },
+		query: "instacertify.laboratory.api.laboratory_link_query",
 	}));
 };
 
@@ -2801,7 +2802,6 @@ instacertify.setup_quotation_template_filter = function (frm) {
 instacertify.hide_sales_order_button = function (frm) {
 	const hide = () => {
 		frm.remove_custom_button(__("Sales Order"), __("Create"));
-		// Also remove from inner button group if present
 		frm.page &&
 			frm.page.btn_secondary &&
 			frm.page.btn_secondary.find('.inner-group-button:contains("Sales Order")').remove();
@@ -2824,10 +2824,62 @@ instacertify.toggle_quotation_sections = function (frm) {
 	].forEach((f) => frm.toggle_display(f, isConsulting));
 	["ic_section_testing", "ic_section_test_lines"].forEach((f) => frm.toggle_display(f, isTesting));
 	frm.toggle_display("ic_section_products", t === "Multiple Products / Multiple Services");
-	// Cost / commercials always available — on Testing quotes they sit under test lines
-	["ic_section_costing", "ic_cost_items", "ic_section_cost_totals"].forEach((f) => {
+
+	[
+		"ic_section_costing",
+		"ic_cost_items",
+		"ic_section_cost_totals",
+		"ic_section_policies",
+		"ic_payment_terms",
+		"ic_cancellation_policy",
+		"ic_confidentiality",
+		"ic_section_terms",
+		"ic_force_majeure",
+	].forEach((f) => {
 		if (frm.fields_dict[f]) frm.toggle_display(f, true);
 	});
+
+	// Prefill fields stay fully editable on every quote (Testing + Consulting)
+	[
+		"ic_deliverables",
+		"ic_estimated_timeline",
+		"ic_sample_handling_policy",
+		"ic_payment_terms",
+		"ic_cancellation_policy",
+		"ic_confidentiality",
+		"ic_force_majeure",
+		"ic_terms_and_conditions",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.toggle_display(f, true);
+			frm.set_df_property(f, "read_only", 0);
+		}
+	});
+	if (isTesting) {
+		if (frm.fields_dict.ic_estimated_timeline) {
+			frm.set_df_property("ic_estimated_timeline", "label", __("Estimated Testing Timeline"));
+			frm.set_df_property(
+				"ic_estimated_timeline",
+				"description",
+				__("Prefilled — edit for this quote (e.g. 5–7 working days).")
+			);
+		}
+		if (frm.fields_dict.ic_deliverables) {
+			frm.set_df_property(
+				"ic_deliverables",
+				"description",
+				__("Prefilled from settings/template — edit freely for this quote before Print / Share.")
+			);
+		}
+		if (frm.fields_dict.ic_sample_handling_policy) {
+			frm.set_df_property(
+				"ic_sample_handling_policy",
+				"description",
+				__("Prefilled sample handling & disposal — edit on this quote if needed.")
+			);
+		}
+	}
+
 	if (frm.fields_dict.ic_section_costing) {
 		frm.set_df_property(
 			"ic_section_costing",
@@ -2850,6 +2902,13 @@ instacertify.toggle_quotation_sections = function (frm) {
 				  )
 		);
 	}
+	if (frm.fields_dict.ic_section_policies) {
+		frm.set_df_property(
+			"ic_section_policies",
+			"label",
+			__("Payment, Cancellation & Confidentiality (editable)")
+		);
+	}
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {
@@ -2864,11 +2923,8 @@ frappe.ui.form.on("IC Quotation Test Item", {
 	form_render(frm, cdt, cdn) {
 		instacertify.load_quote_test_library_options(frm, cdt, cdn);
 		instacertify.load_lab_scope_options(frm, cdt, cdn);
-		instacertify.load_quote_test_lab_offers(frm, cdt, cdn);
 	},
-	product_name(frm, cdt, cdn) {
-		// Free-text customer product — no Item master required
-	},
+	product_name(frm, cdt, cdn) {},
 	laboratory(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
 		frappe.model.set_value(cdt, cdn, "lab_test_scope", "");
@@ -2884,8 +2940,8 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		frappe.model.set_value(cdt, cdn, "laboratory_accreditation", "");
 		if (!row.laboratory) {
 			frappe.model.set_value(cdt, cdn, "lab_initials", "");
-			instacertify.set_lab_scope_autocomplete(frm, []);
-			instacertify.load_quote_test_library_options(frm, cdt, cdn);
+			instacertify.set_grid_autocomplete(frm, cdt, cdn, "test_name", []);
+			instacertify.set_grid_autocomplete(frm, cdt, cdn, "applicable_standard", []);
 			return;
 		}
 		frappe.call({
@@ -2904,16 +2960,21 @@ frappe.ui.form.on("IC Quotation Test Item", {
 			}
 		});
 		instacertify.load_lab_scope_options(frm, cdt, cdn);
-		instacertify.load_quote_test_library_options(frm, cdt, cdn);
+		instacertify.load_quote_test_library_options(frm, cdt, cdn, { open_test_picker: true });
 	},
 	test_name(frm, cdt, cdn) {
+		const row = locals[cdt][cdn];
 		frappe.model.set_value(cdt, cdn, "lab_offer", "");
 		frappe.model.set_value(cdt, cdn, "applicable_standard", "");
 		frappe.model.set_value(cdt, cdn, "purchase_price", 0);
 		frappe.model.set_value(cdt, cdn, "suggested_selling_price", 0);
 		frappe.model.set_value(cdt, cdn, "per_unit_charges", 0);
+		if (!row.test_name) {
+			instacertify.load_quote_test_library_options(frm, cdt, cdn);
+			return;
+		}
 		instacertify.load_quote_test_library_options(frm, cdt, cdn);
-		instacertify.maybe_autofill_single_standard(frm, cdt, cdn);
+		instacertify.open_standard_picker_or_autofill(frm, cdt, cdn);
 	},
 	applicable_standard(frm, cdt, cdn) {
 		frappe.model.set_value(cdt, cdn, "lab_offer", "");
@@ -2937,58 +2998,162 @@ frappe.ui.form.on("IC Quotation Test Item", {
 	per_unit_charges(frm, cdt, cdn) {
 		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
-	purchase_price(frm, cdt, cdn) {
-		/* editable internal cost — no total impact */
-	},
+	purchase_price(frm, cdt, cdn) {},
 });
 
-instacertify.load_quote_test_library_options = function (frm, cdt, cdn) {
-	const row = locals[cdt][cdn] || {};
+instacertify.set_grid_autocomplete = function (frm, cdt, cdn, fieldname, values) {
+	const list = (values || []).filter(Boolean);
 	const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
 	if (!grid) return;
+	grid.update_docfield_property(fieldname, "options", list.join("\n"));
+	const grid_row = grid.grid_rows_by_docname && grid.grid_rows_by_docname[cdn];
+	if (!grid_row) return;
+	const apply = (ctrl) => {
+		if (!ctrl) return;
+		if (ctrl.df) ctrl.df.options = list.join("\n");
+		if (ctrl.set_data) ctrl.set_data(list);
+		else if (ctrl.awesomplete) ctrl.awesomplete.list = list;
+	};
+	if (grid_row.on_grid_fields_dict) apply(grid_row.on_grid_fields_dict[fieldname]);
+	if (grid_row.grid_form && grid_row.grid_form.fields_dict) {
+		apply(grid_row.grid_form.fields_dict[fieldname]);
+	}
+};
+
+instacertify.load_quote_test_library_options = function (frm, cdt, cdn, opts) {
+	opts = opts || {};
+	const row = locals[cdt][cdn] || {};
 	const lab = row.laboratory || "";
 	frappe.call({
 		method: "instacertify.laboratory.api.get_test_name_options",
-		args: {
-			applicable_standard: "",
-			laboratory: lab,
-		},
+		args: { applicable_standard: "", laboratory: lab },
 		callback(r) {
-			const opts = (r.message || []).map((o) => o.value || o).filter(Boolean);
-			grid.update_docfield_property("test_name", "options", opts.join("\n"));
+			const optsList = (r.message || []).map((o) => o.value || o).filter(Boolean);
+			instacertify.set_grid_autocomplete(frm, cdt, cdn, "test_name", optsList);
+			if (opts.open_test_picker && lab) {
+				instacertify.open_quote_test_name_picker(frm, cdt, cdn, optsList);
+			}
 		},
 	});
 	frappe.call({
 		method: "instacertify.laboratory.api.get_standard_options",
-		args: {
-			test_name: row.test_name || "",
-			laboratory: lab,
-		},
+		args: { test_name: row.test_name || "", laboratory: lab },
 		callback(r) {
-			const opts = (r.message || []).map((o) => o.value || o).filter(Boolean);
-			grid.update_docfield_property("applicable_standard", "options", opts.join("\n"));
+			const optsList = (r.message || []).map((o) => o.value || o).filter(Boolean);
+			instacertify.set_grid_autocomplete(frm, cdt, cdn, "applicable_standard", optsList);
+		},
+	});
+};
+
+instacertify.open_quote_test_name_picker = function (frm, cdt, cdn, tests) {
+	const row = locals[cdt][cdn];
+	if (!row || !row.laboratory) return;
+	const list = (tests || []).filter(Boolean);
+	if (!list.length) {
+		frappe.show_alert({
+			message: __("This lab has no active tests in scope. Add tests on the Laboratory."),
+			indicator: "orange",
+		});
+		return;
+	}
+	// Always show picker (even for one test) so nothing silent-autofills without a choice
+	const rows_html = list
+		.map(
+			(name, idx) =>
+				`<tr data-idx="${idx}" class="ic-lab-test-pick-row" style="cursor:pointer">
+					<td><b>${frappe.utils.escape_html(name)}</b></td>
+				</tr>`
+		)
+		.join("");
+	const d = new frappe.ui.Dialog({
+		title: __("Select Test Name (lab scope)"),
+		fields: [
+			{
+				fieldtype: "HTML",
+				options: `<p class="text-muted">${__(
+					"Only tests in this lab's accreditation scope are listed. Click a row, or type in Test Name for suggestions."
+				)}</p>
+				<div style="max-height:360px;overflow:auto">
+				<table class="table table-bordered table-hover" style="margin:0">
+					<thead><tr><th>${__("Test Name")}</th></tr></thead>
+					<tbody>${rows_html}</tbody>
+				</table></div>`,
+			},
+		],
+	});
+	d.show();
+	d.$wrapper.find(".ic-lab-test-pick-row").on("click", function () {
+		const idx = cint($(this).data("idx"));
+		const name = list[idx];
+		d.hide();
+		if (name) frappe.model.set_value(cdt, cdn, "test_name", name);
+	});
+};
+
+instacertify.open_standard_picker_or_autofill = function (frm, cdt, cdn) {
+	const row = locals[cdt][cdn];
+	if (!row || !row.laboratory || !row.test_name) return;
+	frappe.call({
+		method: "instacertify.laboratory.api.get_standards_for_test",
+		args: { test_name: row.test_name, laboratory: row.laboratory },
+		callback(r) {
+			const opts = (r.message || []).filter((o) => o && o.value && !o.is_other);
+			const values = opts.map((o) => o.value);
+			instacertify.set_grid_autocomplete(frm, cdt, cdn, "applicable_standard", values);
+			if (!values.length) {
+				frappe.show_alert({
+					message: __("No standard in this lab's scope for that test."),
+					indicator: "orange",
+				});
+				return;
+			}
+			if (values.length === 1) {
+				frappe.model.set_value(cdt, cdn, "applicable_standard", values[0]).then(() => {
+					instacertify.apply_lab_scoped_pricing(frm, cdt, cdn);
+				});
+				return;
+			}
+			const rows_html = values
+				.map(
+					(name, idx) =>
+						`<tr data-idx="${idx}" class="ic-lab-std-pick-row" style="cursor:pointer">
+							<td><b>${frappe.utils.escape_html(name)}</b></td>
+						</tr>`
+				)
+				.join("");
+			const d = new frappe.ui.Dialog({
+				title: __("Select Standard (lab scope)"),
+				fields: [
+					{
+						fieldtype: "HTML",
+						options: `<p class="text-muted">${__(
+							"Standards this lab offers for the selected test. Click to select."
+						)}</p>
+						<div style="max-height:360px;overflow:auto">
+						<table class="table table-bordered table-hover" style="margin:0">
+							<thead><tr><th>${__("Standard")}</th></tr></thead>
+							<tbody>${rows_html}</tbody>
+						</table></div>`,
+					},
+				],
+			});
+			d.show();
+			d.$wrapper.find(".ic-lab-std-pick-row").on("click", function () {
+				const idx = cint($(this).data("idx"));
+				const name = values[idx];
+				d.hide();
+				if (name) {
+					frappe.model.set_value(cdt, cdn, "applicable_standard", name).then(() => {
+						instacertify.apply_lab_scoped_pricing(frm, cdt, cdn);
+					});
+				}
+			});
 		},
 	});
 };
 
 instacertify.maybe_autofill_single_standard = function (frm, cdt, cdn) {
-	const row = locals[cdt][cdn];
-	if (!row || !row.laboratory || !row.test_name) return;
-	frappe.call({
-		method: "instacertify.laboratory.api.get_standards_for_test",
-		args: {
-			test_name: row.test_name,
-			laboratory: row.laboratory,
-		},
-		callback(r) {
-			const opts = (r.message || []).filter((o) => o && o.value && !o.is_other);
-			if (opts.length === 1) {
-				frappe.model.set_value(cdt, cdn, "applicable_standard", opts[0].value).then(() => {
-					instacertify.apply_lab_scoped_pricing(frm, cdt, cdn);
-				});
-			}
-		},
-	});
+	instacertify.open_standard_picker_or_autofill(frm, cdt, cdn);
 };
 
 instacertify.apply_lab_scoped_pricing = function (frm, cdt, cdn) {

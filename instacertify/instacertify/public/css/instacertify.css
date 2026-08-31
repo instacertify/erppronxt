@@ -6894,3 +6894,84 @@ body,
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* ==========================================================================
+   Stable page toolbar — no fidget / jump when selecting or clicking
+   ========================================================================== */
+.page-head .btn,
+.page-head .btn:hover,
+.page-head .btn:active,
+.page-head .btn:focus,
+.page-head .btn:focus-visible,
+.page-actions .btn,
+.page-actions .btn:hover,
+.page-actions .btn:active,
+.page-actions .btn:focus,
+.standard-actions .btn,
+.standard-actions .btn:hover,
+.standard-actions .btn:active,
+.standard-actions .btn:focus,
+.filter-section .btn,
+.filter-section .btn:hover,
+.filter-section .btn:active,
+.list-row-head .btn,
+.custom-actions .btn,
+.actions-btn-group .btn,
+.inner-group-button > .btn,
+.page-icon-group .icon-btn,
+.page-icon-group button {
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease !important;
+}
+.page-head .btn-default,
+.page-actions .btn-default,
+.standard-actions .btn-default,
+.filter-section .btn-default {
+  border-width: 1px !important;
+  box-sizing: border-box !important;
+}
+.page-head .btn-default:hover,
+.page-head .btn-default:active,
+.page-head .btn-default:focus,
+.page-actions .btn-default:hover,
+.page-actions .btn-default:active,
+.standard-actions .btn-default:hover,
+.standard-actions .btn-default:active {
+  border-width: 1px !important;
+  transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  margin: inherit !important;
+  padding-top: inherit !important;
+  padding-bottom: inherit !important;
+}
+/* Selection / filter toggles must not shift neighboring action buttons */
+.page-head .page-actions,
+.page-head .standard-actions,
+.list-row-head,
+.filter-section .filter-button,
+.filter-section .btn {
+  flex-shrink: 0;
+}
+.page-head .page-actions .btn,
+.page-head .standard-actions .btn {
+  min-height: 28px;
+  line-height: 1.2 !important;
+}
+/* Policy / Text Editor blocks — clean readable text (no tab ghosts) */
+.ql-editor,
+.tq-value,
+.tq-value p,
+.tq-value li,
+.cq-body,
+.ic-box {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere;
+}
+.tq-value,
+.cq-body {
+  tab-size: 4;
+}

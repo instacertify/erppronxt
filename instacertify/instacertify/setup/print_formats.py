@@ -902,7 +902,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-value">
         <div class="tq-h">Deliverables</div>
         {% if doc.ic_deliverables %}
-          {{ doc.ic_deliverables }}
+          <div class="tq-policy">{{ doc.ic_deliverables | replace('\t', ' ') }}</div>
         {% else %}
           <ul>
             <li><b>Test Report</b> covering the applicable standards and tests performed.</li>
@@ -928,7 +928,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-value">
         <div class="tq-h">Payment Terms</div>
         {% if doc.ic_payment_terms %}
-          {{ doc.ic_payment_terms }}
+          {{ doc.ic_payment_terms | replace('\t', ' ') }}
         {% else %}
           <ul>
             <li><b>100% Advance Payment</b> is required to initiate the testing process.</li>
@@ -942,7 +942,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-label">{{ doc.ic_label_sample_handling or 'Sample handling & disposal policy' }}</td>
       <td class="tq-value">
         {% if doc.ic_sample_handling_policy %}
-          {{ doc.ic_sample_handling_policy }}
+          {{ doc.ic_sample_handling_policy | replace('\t', ' ') }}
         {% else %}
           <ol>
             <li>Samples may be subjected to destructive and/or non-destructive testing as required by the applicable standard or test protocol.</li>
@@ -968,7 +968,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-label">{{ doc.ic_label_cancellation or 'CANCELLATION AND REFUND POLICY' }}</td>
       <td class="tq-value">
         {% if doc.ic_cancellation_policy %}
-          {{ doc.ic_cancellation_policy }}
+          {{ doc.ic_cancellation_policy | replace('\t', ' ') }}
         {% else %}
           Testing fees are payable in advance and are non-refundable once samples have been submitted or testing has commenced. Government fees may be refunded only if they have not been deposited with the relevant authority. Consultancy fees are charged based on the work completed and are non-refundable once services have been rendered. Any eligible refund request must be submitted to Instacertify in writing within 7 working days of payment.
         {% endif %}
@@ -978,7 +978,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-label">{{ doc.ic_label_force_majeure or 'FORCE MAJEURE' }}</td>
       <td class="tq-value">
         {% if doc.ic_force_majeure %}
-          {{ doc.ic_force_majeure }}
+          {{ doc.ic_force_majeure | replace('\t', ' ') }}
         {% else %}
           Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events
         {% endif %}
@@ -988,7 +988,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-label">{{ doc.ic_label_confidentiality or 'CONFIDENTIALITY & DATA PROTECTION' }}</td>
       <td class="tq-value">
         {% if doc.ic_confidentiality %}
-          {{ doc.ic_confidentiality }}
+          {{ doc.ic_confidentiality | replace('\t', ' ') }}
         {% else %}
           Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection
         {% endif %}
@@ -1150,7 +1150,7 @@ CONSULTING_QUOTATION_HTML = """
       <div class="cq-bar">{{ doc.ic_label_payment_terms or ('PAYMENT TERMS FOR ' ~ short) }}</div>
       <div class="cq-body">
         <div class="cq-h">Payment Terms &amp; Conditions</div>
-        {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms }}
+        {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
         {% else %}
           <ul>
             <li>Professional Consultancy Charges shall be payable upon confirmation of the project and commencement of consultancy services.</li>
@@ -1203,7 +1203,7 @@ CONSULTING_QUOTATION_HTML = """
       <div class="cq-bar">{{ doc.ic_label_cancellation or ('CANCELLATION & REFUND POLICY FOR ' ~ short) }}</div>
       <div class="cq-body">
         <div class="cq-h">Cancellation &amp; Refund Policy</div>
-        {% if doc.ic_cancellation_policy %}{{ doc.ic_cancellation_policy }}
+        {% if doc.ic_cancellation_policy %}{{ doc.ic_cancellation_policy | replace('\t', ' ') }}
         {% else %}
           Testing fees are payable in advance and are non-refundable once samples have been submitted or testing has commenced. Government fees may be refunded only if they have not been deposited with the relevant authority. Consultancy fees are charged based on the work completed and are non-refundable once services have been rendered. Any eligible refund request must be submitted to Instacertify in writing within 7 working days of payment.
         {% endif %}
@@ -1213,7 +1213,7 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_force_majeure or ('FORCE MAJEURE FOR ' ~ short) }}</div>
       <div class="cq-body">
-        {% if doc.ic_force_majeure %}{{ doc.ic_force_majeure }}
+        {% if doc.ic_force_majeure %}{{ doc.ic_force_majeure | replace('\t', ' ') }}
         {% else %}
           Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events
         {% endif %}
@@ -1223,7 +1223,7 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_confidentiality or ('CONFIDENTIALITY & DATA PROTECTION FOR ' ~ short) }}</div>
       <div class="cq-body">
-        {% if doc.ic_confidentiality %}{{ doc.ic_confidentiality }}
+        {% if doc.ic_confidentiality %}{{ doc.ic_confidentiality | replace('\t', ' ') }}
         {% else %}
           Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection
         {% endif %}

@@ -132,17 +132,41 @@ def _apply_quotation_defaults(doc):
 		settings = frappe.get_cached_doc("IC Settings")
 	except Exception:
 		return
+
+	def _clean(html):
+		"""Strip tab characters from PDF/Word paste without mangling Text Editor HTML."""
+		if not html:
+			return html
+		return str(html).replace("\t", " ")
+
 	if not doc.ic_payment_terms and settings.get("default_payment_terms"):
-		doc.ic_payment_terms = settings.default_payment_terms
+		doc.ic_payment_terms = _clean(settings.default_payment_terms)
 	if doc.ic_quotation_type == "Testing":
 		if not doc.ic_sample_handling_policy and settings.get("default_sample_handling"):
-			doc.ic_sample_handling_policy = settings.default_sample_handling
+			doc.ic_sample_handling_policy = _clean(settings.default_sample_handling)
+		# Timeline / deliverables often come from templates; keep editable blanks filled cleanly
+		if not doc.get("ic_estimated_timeline"):
+			doc.ic_estimated_timeline = "5–7 working days"
 	if not doc.ic_cancellation_policy and settings.get("default_cancellation_policy"):
-		doc.ic_cancellation_policy = settings.default_cancellation_policy
+		doc.ic_cancellation_policy = _clean(settings.default_cancellation_policy)
 	if not doc.ic_confidentiality and settings.get("default_confidentiality"):
-		doc.ic_confidentiality = settings.default_confidentiality
+		doc.ic_confidentiality = _clean(settings.default_confidentiality)
 	if not doc.ic_force_majeure and settings.get("default_force_majeure"):
-		doc.ic_force_majeure = settings.default_force_majeure
+		doc.ic_force_majeure = _clean(settings.default_force_majeure)
+	# Scrub tabs on existing values so Print/PDF stay clean (tabs only — keep HTML spacing)
+	for field in (
+		"ic_deliverables",
+		"ic_payment_terms",
+		"ic_sample_handling_policy",
+		"ic_cancellation_policy",
+		"ic_confidentiality",
+		"ic_force_majeure",
+		"ic_estimated_timeline",
+		"ic_terms_and_conditions",
+	):
+		val = doc.get(field)
+		if val and "\t" in str(val):
+			doc.set(field, _clean(val))
 
 
 # Keep old name for any external callers
