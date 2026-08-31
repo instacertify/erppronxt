@@ -1466,6 +1466,7 @@ def _ensure_home_workspace():
 		{"label": "User", "link_type": "DocType", "link_to": "User", "type": "Link"},
 		{"label": "Role", "link_type": "DocType", "link_to": "Role", "type": "Link"},
 		{"label": "Settings", "link_type": "DocType", "link_to": "IC Settings", "type": "Link"},
+		{"label": "Bank Accounts", "link_type": "DocType", "link_to": "IC Bank Account", "type": "Link"},
 		# Expenses & HRMS — always last on Instacertify Home
 		{"label": "Expenses & HRMS (Hiring → FnF)", "type": "Card Break"},
 		{"label": "File an Expense", "link_type": "DocType", "link_to": "IC Expense Claim", "type": "Link"},

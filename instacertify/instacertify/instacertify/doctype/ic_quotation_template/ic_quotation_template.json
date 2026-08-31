@@ -487,7 +487,15 @@
    "fieldname": "section_policies",
    "fieldtype": "Section Break",
    "label": "8. Policies & Terms (Editable)",
-   "description": "Payment terms, cancellation, confidentiality, T&Cs — all editable."
+   "description": "Payment terms, cancellation, confidentiality, T&Cs — all editable. Choose which bank account prints on quotes from this template."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "bank_account",
+   "fieldtype": "Link",
+   "options": "IC Bank Account",
+   "label": "Default Bank Account",
+   "description": "YES BANK or Indian Overseas Bank — applied when creating quotes from this format. Override per quote if needed."
   },
   {
    "doctype": "DocField",

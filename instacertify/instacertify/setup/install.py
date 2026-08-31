@@ -68,6 +68,9 @@ def after_install():
 	setup_service_quote_rules()
 	setup_contact_billing_fields()
 	setup_settings()
+	from instacertify.accounting.banking import ensure_bank_accounts
+
+	ensure_bank_accounts()
 	setup_branding()
 	setup_workflows()
 	setup_print_formats()
@@ -162,6 +165,9 @@ def after_migrate():
 	setup_lead_capture_properties()
 	setup_print_formats()
 	setup_settings()
+	from instacertify.accounting.banking import ensure_bank_accounts
+
+	ensure_bank_accounts()
 	setup_branding()
 	setup_quotation_templates()
 	setup_dashboard_charts()

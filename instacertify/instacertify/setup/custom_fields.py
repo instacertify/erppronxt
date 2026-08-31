@@ -1062,10 +1062,19 @@ QUOTATION_FIELDS = [
 		"collapsible": 0,
 	},
 	{
+		"fieldname": "ic_bank_account",
+		"fieldtype": "Link",
+		"options": "IC Bank Account",
+		"label": "Bank Details for this Quote",
+		"insert_after": "ic_section_policies",
+		"in_standard_filter": 1,
+		"description": "Select YES BANK or Indian Overseas Bank (or other accounts in IC Bank Account). Print/PDF uses this account.",
+	},
+	{
 		"fieldname": "ic_payment_terms",
 		"fieldtype": "Text Editor",
 		"label": "Payment Terms",
-		"insert_after": "ic_section_policies",
+		"insert_after": "ic_bank_account",
 	},
 	{
 		"fieldname": "ic_cancellation_policy",
@@ -1341,6 +1350,14 @@ SALES_INVOICE_FIELDS = [
 		"options": "Quotation",
 		"insert_after": "ic_qr_code",
 		"read_only": 1,
+	},
+	{
+		"fieldname": "ic_bank_account",
+		"fieldtype": "Link",
+		"options": "IC Bank Account",
+		"label": "Bank Details for Payment",
+		"insert_after": "ic_quotation",
+		"description": "YES BANK or Indian Overseas Bank — shown on invoice print",
 	},
 	{
 		"fieldname": "ic_currency_manual",

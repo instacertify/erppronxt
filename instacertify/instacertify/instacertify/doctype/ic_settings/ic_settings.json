@@ -117,13 +117,22 @@
    "doctype": "DocField",
    "fieldname": "section_bank",
    "fieldtype": "Section Break",
-   "label": "Bank Details for Payment"
+   "label": "Bank Details for Payment (legacy defaults)",
+   "description": "Prefer managing accounts under IC Bank Account (YES BANK + Indian Overseas Bank). These fields seed / sync the default YES BANK account."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "default_bank_account",
+   "fieldtype": "Link",
+   "options": "IC Bank Account",
+   "label": "Default Bank Account for Quotes",
+   "description": "New quotations use this account when none is selected on the quote or template"
   },
   {
    "doctype": "DocField",
    "fieldname": "beneficiary_name",
    "fieldtype": "Data",
-   "label": "Beneficiary Name",
+   "label": "Beneficiary Name (YES BANK legacy)",
    "default": "Instacertify Labs Private Limited"
   },
   {
