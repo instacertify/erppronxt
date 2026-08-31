@@ -182,25 +182,27 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   }
 """
 
-# Letterhead markup for Chrome/wkhtmltopdf `#header-html` (repeats on every PDF page).
+# Visible letterhead block for quotation / invoice print bodies.
+# Prefer body placement over `#header-html` alone — Chrome/wkhtmltopdf often
+# strip or fail to inject `#header-html`, which made the header look "missing".
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
-QUOTE_LETTERHEAD_HTML = """
-<div id="header-html">
-  <div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-    <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
-      <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>Phone: {{ phone }}</div>
-      <div>Email: {{ email }}</div>
-      {% if website %}<div>{{ website }}</div>{% endif %}
-      {% if cin %}<div><b>CIN:</b> {{ cin }}</div>{% endif %}
-      {% if gstin %}<div><b>GSTIN:</b> {{ gstin }}</div>{% endif %}
-    </div>
+LETTERHEAD_BLOCK_HTML = """
+<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
+  <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
+  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
+    <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{{ legal }}</div>
+    <div>{{ address }}</div>
+    <div>Phone: {{ phone }}</div>
+    <div>Email: {{ email }}</div>
+    {% if website %}<div>{{ website }}</div>{% endif %}
+    {% if cin %}<div><b>CIN:</b> {{ cin }}</div>{% endif %}
+    {% if gstin %}<div><b>GSTIN:</b> {{ gstin }}</div>{% endif %}
   </div>
 </div>
 """
-QUOTATION_HTML = """
+
+# Shared Jinja to load IC Settings + absolute logo URL (PDF engines need full URLs).
+LETTERHEAD_CONTEXT_JINJA = """
 {%- set s = frappe.get_cached_doc('IC Settings') -%}
 {%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
 {%- set phone = s.phone or '+91 9999118039' -%}
@@ -209,10 +211,22 @@ QUOTATION_HTML = """
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+{%- set logo_raw = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+{%- if logo_raw and (logo_raw.startswith('http://') or logo_raw.startswith('https://') or logo_raw.startswith('data:')) -%}
+{%- set logo = logo_raw -%}
+{%- else -%}
+{%- set logo = frappe.utils.get_url(logo_raw) -%}
+{%- endif -%}
+"""
+
+# Kept for callers that still compose with the old name — body letterhead (not header-only).
+QUOTE_LETTERHEAD_HTML = LETTERHEAD_BLOCK_HTML
+
+QUOTATION_HTML = """
+""" + LETTERHEAD_CONTEXT_JINJA + """
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 28mm 12mm 14mm 12mm; }
+  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-quote { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color: var(--ic-ink); font-size: 10px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -241,7 +255,7 @@ QUOTATION_HTML = """
   }
   .ic-grand-total { font-family:'Aptos Display',sans-serif; font-weight:700; font-size:18pt; color:var(--ic-navy); }
 </style>
-""" + QUOTE_LETTERHEAD_HTML + """
+""" + LETTERHEAD_BLOCK_HTML + """
 <div class="ic-quote">
   <div class="ic-doc-title">Quotation</div>
   <div class="ic-meta">
@@ -377,24 +391,16 @@ QUOTATION_HTML = """
 """
 
 INVOICE_HTML = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set phone = s.phone or '+91 9999118039' -%}
-{%- set email = s.email or 'contact@instacertify.com' -%}
-{%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 12mm; }
+  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
   .ic-inv { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; font-size: 10px; color: var(--ic-ink); }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .ic-lh-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; text-transform:uppercase; margin-bottom:2px; }
+  .ic-lh-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; text-transform:none; margin-bottom:2px; }
   table { width:100%; border-collapse: collapse; margin-top:12px; }
   th { background:var(--ic-navy); color:#fff; padding:6px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
   td { border-bottom:1px solid #e5eef3; padding:6px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
@@ -407,20 +413,9 @@ INVOICE_HTML = """
     border:none; line-height:1.2;
   }
 </style>
+""" + LETTERHEAD_BLOCK_HTML + """
 <div class="ic-inv">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div class="ic-lh-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>☎ {{ phone }}</div>
-      <div>✉ {{ email }}</div>
-      <div>{{ website }}</div>
-      <div><b>CIN :</b> {{ cin }}</div>
-      <div><b>GSTIN :</b> {{ gstin }}</div>
-    </div>
-  </div>
-  <div class="ic-doc-title">TAX INVOICE</div>
+  <div class="ic-doc-title">Tax Invoice</div>
   <p class="ic-quote-no"><b>Invoice:</b> {{ doc.name }} &nbsp;|&nbsp; <b>Date:</b> {{ frappe.utils.formatdate(doc.posting_date) }}</p>
   <p><b>Customer:</b> {{ doc.customer_name }}</p>
   <table>
@@ -712,21 +707,16 @@ TESTING_QUOTATION_HTML = """
 {%- else -%}{{ frappe.utils.fmt_money(amount or 0, currency=doc.currency) }}/-
 {%- endif -%}
 {%- endmacro -%}
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set phone = s.phone or '+91 9999118039' -%}
-{%- set email = s.email or 'contact@instacertify.com' -%}
-{%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
+{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:')) -%}
+{%- set stamp = frappe.utils.get_url(stamp) -%}
+{%- endif -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 28mm 12mm 14mm 12mm; }
+  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
   .tq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
   .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -985,22 +975,17 @@ CONSULTING_QUOTATION_HTML = """
 {%- else -%}{{ frappe.utils.fmt_money(amount or 0, currency=doc.currency) }}/-
 {%- endif -%}
 {%- endmacro -%}
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set phone = s.phone or '+91 9999118039' -%}
-{%- set email = s.email or 'contact@instacertify.com' -%}
-{%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
+{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:')) -%}
+{%- set stamp = frappe.utils.get_url(stamp) -%}
+{%- endif -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set title = doc.ic_service_name or 'Consultancy' -%}
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 28mm 12mm 14mm 12mm; }
+  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
   .cq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
   .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -1504,9 +1489,9 @@ def _ensure_aptos_fonts():
 def _ensure_instacertify_letter_head():
 	"""Create/update Letter Head so Print / PDF Options shows Instacertify branding.
 
-	Quote Jinja formats embed `#header-html` (repeats on every PDF page). Prefer
-	\"No Letterhead\" with those formats to avoid a double header; use this Letter
-	Head when printing other DocTypes from the print dialog.
+	Instacertify Quotation / Invoice Jinja formats embed the letterhead in the
+	print body (logo + company details from IC Settings). The Letter Head record
+	is still kept as default for other DocTypes / print dialog selection.
 	"""
 	name = "Instacertify"
 	try:
@@ -1518,6 +1503,8 @@ def _ensure_instacertify_letter_head():
 		or (getattr(s, "logo", None) if s else None)
 		or "/assets/instacertify/images/instacertify_letterhead.png"
 	)
+	if logo and not str(logo).startswith(("http://", "https://", "data:")):
+		logo = frappe.utils.get_url(logo)
 	legal = (getattr(s, "legal_name", None) if s else None) or "Instacertify Labs Private Limited"
 	address = (getattr(s, "address_line", None) if s else None) or (
 		"PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA"

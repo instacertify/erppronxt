@@ -56,6 +56,9 @@ def validate_quotation(doc, method=None):
 
 	apply_quotation_series(doc)
 	_apply_quotation_defaults(doc)
+	if doc.meta.has_field("letter_head") and not doc.get("letter_head"):
+		if frappe.db.exists("Letter Head", "Instacertify"):
+			doc.letter_head = "Instacertify"
 	from instacertify.team.assignees import sync_assignees
 
 	sync_assignees(

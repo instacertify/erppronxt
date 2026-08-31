@@ -88,21 +88,14 @@ def quotation_print_format(doc) -> str | None:
 def even_print_margins(for_quote: bool = False) -> dict:
 	"""Even A4 margins so printed PDFs align cleanly on all sides.
 
-	Quotes reserve extra top space for the repeating `#header-html` letterhead.
+	Letterhead is embedded in the print body (not `#header-html`), so top margin
+	matches the other sides.
 	"""
-	if for_quote:
-		return {
-			"page-size": "A4",
-			"margin-top": "28mm",
-			"margin-right": "12mm",
-			"margin-bottom": "14mm",
-			"margin-left": "12mm",
-		}
 	return {
 		"page-size": "A4",
-		"margin-top": "12mm",
+		"margin-top": "14mm",
 		"margin-right": "12mm",
-		"margin-bottom": "12mm",
+		"margin-bottom": "14mm",
 		"margin-left": "12mm",
 	}
 
@@ -118,10 +111,8 @@ def make_pdf(html: str, options: dict | None = None, for_quote: bool = False) ->
 	safe_html = inline_local_assets(html)
 	# Ensure CSS page box matches engine margins.
 	if "@page" not in safe_html:
-		top = "28mm" if for_quote else "12mm"
-		bottom = "14mm" if for_quote else "12mm"
 		safe_html = (
-			f"<style>@page{{size:A4;margin:{top} 12mm {bottom} 12mm}}.print-format{{padding:0!important;margin:0!important}}</style>"
+			"<style>@page{size:A4;margin:14mm 12mm 14mm 12mm}.print-format{padding:0!important;margin:0!important}</style>"
 			+ safe_html
 		)
 
