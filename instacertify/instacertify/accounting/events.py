@@ -18,35 +18,56 @@ def validate_customer(doc, method=None):
 
 
 def _sync_customer_portal_credentials(doc):
-	"""Number portal rows and migrate legacy single user/password into the table once."""
+	"""Keep Website Link / Login ID / Password in sync with the first portal row."""
 	if not doc.meta.has_field("ic_portal_credentials"):
 		return
 
-	rows = doc.get("ic_portal_credentials") or []
-	if not rows:
-		legacy_user = (doc.get("ic_customer_user_id") or "").strip()
-		legacy_pass = doc.get("ic_customer_password")
-		legacy_notes = (doc.get("ic_login_notes") or "").strip()
-		if legacy_user or legacy_pass or legacy_notes:
-			portal_link = ""
-			if legacy_notes and (
-				legacy_notes.startswith("http://")
-				or legacy_notes.startswith("https://")
-				or "." in legacy_notes.split()[0]
-			):
-				portal_link = legacy_notes.split()[0]
-			doc.append(
-				"ic_portal_credentials",
-				{
-					"portal_name": "Primary Portal",
-					"portal_link": portal_link,
-					"user_id": legacy_user,
-					"password": legacy_pass,
-				},
-			)
-			rows = doc.get("ic_portal_credentials") or []
+	website = (doc.get("ic_website_link") or "").strip() if doc.meta.has_field("ic_website_link") else ""
+	login_id = (doc.get("ic_customer_user_id") or "").strip() if doc.meta.has_field("ic_customer_user_id") else ""
+	password = doc.get("ic_customer_password") if doc.meta.has_field("ic_customer_password") else None
+	notes = (doc.get("ic_login_notes") or "").strip() if doc.meta.has_field("ic_login_notes") else ""
 
-	for i, row in enumerate(rows, start=1):
+	rows = doc.get("ic_portal_credentials") or []
+
+	# Seed first portal row from the simple fields when table is empty
+	if not rows and (website or login_id or password or notes):
+		portal_link = website
+		if not portal_link and notes and (
+			notes.startswith("http://") or notes.startswith("https://") or "." in notes.split()[0]
+		):
+			portal_link = notes.split()[0]
+		doc.append(
+			"ic_portal_credentials",
+			{
+				"portal_name": "Primary Portal",
+				"portal_link": portal_link,
+				"user_id": login_id,
+				"password": password,
+			},
+		)
+		rows = doc.get("ic_portal_credentials") or []
+
+	# Push simple-field edits into the first row when present
+	elif rows and (website or login_id or password):
+		row = rows[0]
+		if website:
+			row.portal_link = website
+		if login_id:
+			row.user_id = login_id
+		if password:
+			row.password = password
+		if not (row.get("portal_name") or "").strip():
+			row.portal_name = "Primary Portal"
+
+	# Pull first row into empty simple fields (so old table-only data shows up)
+	if rows:
+		row0 = rows[0]
+		if doc.meta.has_field("ic_website_link") and not website and row0.get("portal_link"):
+			doc.ic_website_link = row0.get("portal_link")
+		if doc.meta.has_field("ic_customer_user_id") and not login_id and row0.get("user_id"):
+			doc.ic_customer_user_id = row0.get("user_id")
+
+	for i, row in enumerate(doc.get("ic_portal_credentials") or [], start=1):
 		row.sno = i
 		if not (row.get("portal_name") or "").strip():
 			row.portal_name = f"Portal {i}"

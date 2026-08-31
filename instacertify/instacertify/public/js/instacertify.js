@@ -1487,19 +1487,121 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		const $group = page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group"));
 		if (!$group || !$group.length) return;
 		if ($group.find(".ic-print-action").length) return;
-		// Only on form / print contexts where printing is allowed
+
+		// List pages first (Quotation / Lead / Labs / etc. from home sidebar).
+		// Prefer list over cur_frm — form context can linger after navigation.
+		const listview = window.cur_list;
+		if (listview && listview.doctype && listview.page === page) {
+			const $btn = page.add_action_icon(
+				"printer",
+				() => {
+					if (typeof listview.print_documents === "function") {
+						listview.print_documents();
+						return;
+					}
+					const names = (
+						(listview.get_checked_items && listview.get_checked_items(true)) ||
+						[]
+					).filter(Boolean);
+					if (!names.length) {
+						frappe.show_alert({
+							message: __("Select one or more rows to print"),
+							indicator: "orange",
+						});
+						return;
+					}
+					try {
+						if (frappe.BulkOperations) {
+							new frappe.BulkOperations({ doctype: listview.doctype }).print(names);
+							return;
+						}
+					} catch (e) {
+						/* fall through */
+					}
+					frappe.set_route("print", listview.doctype, names[0]);
+				},
+				"ic-print-action",
+				__("Print")
+			);
+			if ($btn && $btn.addClass) $btn.addClass("ic-print-action");
+			return;
+		}
+
+		// Form print
 		const frm = cur_frm;
-		if (!frm || !frappe.model.can_print_doc || !frappe.model.can_print_doc(frm)) return;
-		if (frm.is_new && frm.is_new()) return;
-		const $btn = page.add_action_icon(
-			"printer",
-			() => {
-				if (cur_frm) cur_frm.print_doc();
-			},
-			"ic-print-action",
-			__("Print")
-		);
-		if ($btn && $btn.addClass) $btn.addClass("ic-print-action");
+		if (
+			frm &&
+			frm.page === page &&
+			frappe.model.can_print_doc &&
+			frappe.model.can_print_doc(frm) &&
+			!(frm.is_new && frm.is_new())
+		) {
+			const $btn = page.add_action_icon(
+				"printer",
+				() => {
+					if (cur_frm) cur_frm.print_doc();
+				},
+				"ic-print-action",
+				__("Print")
+			);
+			if ($btn && $btn.addClass) $btn.addClass("ic-print-action");
+		}
+	}
+
+	function stylePageIconGroup(page) {
+		const $group =
+			(page && (page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group")))) ||
+			$(".page-head .page-icon-group").first();
+		if (!$group || !$group.length) return;
+		$group.removeClass("hide").css({
+			display: "inline-flex",
+			visibility: "visible",
+			opacity: 1,
+		});
+		$group.find(".icon-btn, button").each(function () {
+			const $b = $(this);
+			$b.removeClass("text-muted hide")
+				.addClass("ic-line-icon-btn")
+				.css({
+					display: "inline-flex",
+					visibility: "visible",
+					opacity: 1,
+					color: "#0B1820",
+					border: "none",
+					boxShadow: "none",
+					outline: "none",
+					background: "transparent",
+				});
+			$b.find("svg.es-icon, .es-icon, use").each(function () {
+				const $el = $(this);
+				if ($el.closest("svg").hasClass("es-icon") || $el.is("svg.es-icon") || $el.hasClass("es-icon")) {
+					$el.css({
+						fill: "#0B1820",
+						stroke: "none",
+						color: "#0B1820",
+						opacity: 1,
+						visibility: "visible",
+					});
+				}
+			});
+			$b.find("svg.es-icon, .es-icon").css({
+				fill: "#0B1820",
+				stroke: "none",
+				color: "#0B1820",
+				opacity: 1,
+				visibility: "visible",
+				width: "18px",
+				height: "18px",
+			});
+			$b.find("svg.icon:not(.es-icon)").css({
+				stroke: "#0B1820",
+				color: "#0B1820",
+				opacity: 1,
+				visibility: "visible",
+				width: "18px",
+				height: "18px",
+			});
+		});
 	}
 
 	function decoratePage(page) {
@@ -1516,40 +1618,9 @@ instacertify.apply_favicon_brand_icons = function (root) {
 			(page.actions || $()).find("a.dropdown-item, a.grey-link").each(function () {
 				ensureIconOnMenuItem($(this));
 			});
-			// Style + force-show existing prev/next/print/reload icon buttons
-			const $group = page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group"));
-			if ($group && $group.length) {
-				$group.css({ display: "inline-flex", visibility: "visible", opacity: 1 });
-				$group.find(".icon-btn, button").each(function () {
-					const $b = $(this);
-					$b.removeClass("text-muted")
-						.addClass("ic-line-icon-btn")
-						.css({
-							display: "inline-flex",
-							visibility: "visible",
-							opacity: 1,
-							color: "#0B1820",
-							border: "none",
-							boxShadow: "none",
-							outline: "none",
-							background: "transparent",
-						});
-					$b.find("svg.es-icon, .es-icon").css({
-						fill: "#0B1820",
-						stroke: "none",
-						color: "#0B1820",
-						opacity: 1,
-						visibility: "visible",
-					});
-					$b.find("svg.icon:not(.es-icon), .icon:not(.es-icon)").css({
-						stroke: "#0B1820",
-						color: "#0B1820",
-						opacity: 1,
-						visibility: "visible",
-					});
-				});
-			}
+			stylePageIconGroup(page);
 			ensurePrintActionIcon(page);
+			stylePageIconGroup(page);
 			// Form custom groups (Library / Actions / Test on Quotation Template, etc.)
 			(page.page_actions || $()).find(".inner-group-button > .btn, .custom-actions .btn, .actions-btn-group .btn").each(
 				function () {
@@ -1557,8 +1628,9 @@ instacertify.apply_favicon_brand_icons = function (root) {
 					if ($b.hasClass("btn-primary") || $b.hasClass("btn-warning") || $b.hasClass("btn-danger")) return;
 					$b.css({
 						color: "#033447",
-						borderColor: "rgba(3, 52, 71, 0.4)",
-						background: "#ffffff",
+						border: "none",
+						boxShadow: "none",
+						background: "transparent",
 						opacity: 1,
 						visibility: "visible",
 					});
@@ -1574,6 +1646,8 @@ instacertify.apply_favicon_brand_icons = function (root) {
 						visibility: "visible",
 						opacity: 1,
 						color: "#0B1820",
+						border: "none",
+						background: "transparent",
 					});
 					$b.find("svg, .icon").css({ stroke: "#0B1820", color: "#0B1820", opacity: 1 });
 					ensureIconOnButton($b);
@@ -1592,6 +1666,9 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		}
 		if (cur_page && cur_page.page) decoratePage(cur_page.page);
 		if (cur_frm && cur_frm.page) decoratePage(cur_frm.page);
+		if (window.cur_list && cur_list.page) decoratePage(cur_list.page);
+		// Global pass for list toolbars opened from home sidebar
+		stylePageIconGroup(null);
 		// Dialogs
 		$(".modal.show .btn, .modal.in .btn").each(function () {
 			ensureIconOnButton($(this));
@@ -1607,17 +1684,47 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		);
 	}
 
-	const schedule = () => setTimeout(decorateAll, 80);
+	let _icDecorateTimer = null;
+	const schedule = () => {
+		if (_icDecorateTimer) clearTimeout(_icDecorateTimer);
+		_icDecorateTimer = setTimeout(decorateAll, 80);
+	};
 
 	$(document).on("page-change", schedule);
 	$(document).on("form-refresh", schedule);
 	$(document).on("shown.bs.modal", schedule);
+	$(document).on("list_view_rendered", schedule);
 	$(document).ready(schedule);
 	setTimeout(schedule, 500);
 	setTimeout(schedule, 1500);
 
 	// Keep icons after Frappe rebuilds the toolbar
 	frappe.after_ajax && frappe.after_ajax(schedule);
+
+	// Watch page-head for list Reload / Print icon injection
+	try {
+		if (window.MutationObserver) {
+			const mo = new MutationObserver((mutations) => {
+				for (let i = 0; i < mutations.length; i++) {
+					const t = mutations[i].target;
+					if (
+						t &&
+						(t.classList?.contains("page-icon-group") ||
+							t.classList?.contains("page-actions") ||
+							t.classList?.contains("page-head") ||
+							(typeof t.closest === "function" &&
+								t.closest(".page-head, .page-icon-group, .standard-actions")))
+					) {
+						schedule();
+						return;
+					}
+				}
+			});
+			mo.observe(document.body, { childList: true, subtree: true });
+		}
+	} catch (e) {
+		/* ignore */
+	}
 })();
 
 instacertify.greeting = function (fullName) {
@@ -3307,22 +3414,39 @@ frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] ||
 // Customer Related Data tab — full per-customer history + completed project files
 frappe.ui.form.on("Customer", {
 	refresh(frm) {
+		// Website Link + Login ID + Password must stay visible on Customer
+		[
+			"ic_section_login",
+			"ic_website_link",
+			"ic_customer_user_id",
+			"ic_column_login",
+			"ic_customer_password",
+			"ic_login_notes",
+			"ic_section_more_portals",
+			"ic_portal_credentials",
+		].forEach((fn) => {
+			if (frm.fields_dict[fn]) frm.set_df_property(fn, "hidden", 0);
+		});
 		if (frm.fields_dict.ic_section_login) {
-			frm.set_df_property("ic_section_login", "hidden", 0);
-			frm.set_df_property(
-				"ic_section_login",
-				"label",
-				__("Customer Login Credentials")
-			);
+			frm.set_df_property("ic_section_login", "label", __("Customer Login Credentials"));
 		}
-		if (frm.fields_dict.ic_portal_credentials) {
-			frm.set_df_property("ic_portal_credentials", "hidden", 0);
+		if (frm.fields_dict.ic_website_link) {
+			frm.set_df_property("ic_website_link", "label", __("Website Link"));
 		}
-		["ic_customer_user_id", "ic_customer_password", "ic_login_notes", "ic_column_login"].forEach(
-			(fn) => {
-				if (frm.fields_dict[fn]) frm.set_df_property(fn, "hidden", 1);
-			}
-		);
+		if (frm.fields_dict.ic_customer_user_id) {
+			frm.set_df_property("ic_customer_user_id", "label", __("Login ID"));
+		}
+		if (frm.fields_dict.ic_customer_password) {
+			frm.set_df_property("ic_customer_password", "label", __("Password"));
+		}
+		if (!frm.__ic_login_btn) {
+			frm.__ic_login_btn = 1;
+			frm.add_custom_button(__("Login Credentials"), () => {
+				frm.scroll_to_field(
+					frm.fields_dict.ic_website_link ? "ic_website_link" : "ic_section_login"
+				);
+			});
+		}
 		if (!frm.doc.name || frm.is_new()) return;
 		if (frm.fields_dict.ic_section_files) {
 			frm.set_df_property("ic_section_files", "label", __("Customer Data Drive"));

@@ -559,23 +559,23 @@ body {
 
 .ic-explore-card {
   text-align: left;
-  border: 1px solid rgba(6, 81, 117, 0.12);
+  border: none;
   padding: 12px;
   background: linear-gradient(165deg, #ffffff 0%, #f5fafc 100%);
   cursor: pointer;
   transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease);
-  box-shadow: var(--ic-shadow);
+  box-shadow: none;
   font-family: "Poppins", var(--ic-font);
 }
 
 .ic-explore-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(6, 81, 117, 0.1);
+  box-shadow: none;
 }
 
-.ic-explore-card.accent-coral { border-top: 4px solid #c0392b; border-left: 1px solid rgba(6, 81, 117, 0.12); }
-.ic-explore-card.accent-citrus { border-top: 4px solid var(--ic-accent); border-left: 1px solid rgba(6, 81, 117, 0.12); }
-.ic-explore-card.accent-teal { border-top: 4px solid var(--ic-primary); border-left: 1px solid rgba(6, 81, 117, 0.12); }
+.ic-explore-card.accent-coral { border-top: 3px solid #c0392b; border-left: none; }
+.ic-explore-card.accent-citrus { border-top: 3px solid var(--ic-accent); border-left: none; }
+.ic-explore-card.accent-teal { border-top: 3px solid var(--ic-primary); border-left: none; }
 
 .ic-explore-card-top {
   display: flex;
@@ -632,11 +632,10 @@ body {
 .ic-summary-card {
   background: linear-gradient(180deg, #ffffff 0%, #f7fbfd 100%);
   padding: 14px 12px;
-  border: 1px solid rgba(6, 81, 117, 0.1);
-  border-top: 4px solid var(--ic-primary);
-  border-left: 1px solid rgba(6, 81, 117, 0.1);
-  box-shadow: var(--ic-shadow);
-  transition: transform 0.22s var(--ic-ease), box-shadow 0.22s var(--ic-ease), border-color 0.22s ease;
+  border: none;
+  border-top: 3px solid var(--ic-primary);
+  box-shadow: none;
+  transition: transform 0.22s var(--ic-ease), border-color 0.22s ease;
   animation: ic-rise-in 0.55s var(--ic-rise) both;
   justify-content: space-between;
   align-items: flex-start;
@@ -1058,17 +1057,18 @@ body {
   min-height: 120px;
 }
 
-/* Project tiles — square & compact */
+/* Project tiles — square & compact, no boxed outline */
 .ic-project-tile {
   position: relative;
   gap: 6px;
   padding: 12px;
-  border: 1px solid #d3e3ee;
+  border: none;
+  box-shadow: none;
   background:
     linear-gradient(165deg, rgba(255,255,255,0.95) 0%, rgba(243,249,252,0.98) 100%);
   cursor: pointer;
   font-family: var(--ic-font);
-  transition: transform 0.2s var(--ic-ease), box-shadow 0.2s var(--ic-ease), border-color 0.2s ease;
+  transition: transform 0.2s var(--ic-ease), border-color 0.2s ease;
 }
 
 .ic-project-tile-glow {
@@ -6353,4 +6353,321 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   height: 18px !important;
   opacity: 1 !important;
   visibility: visible !important;
+}
+
+/* ==========================================================================
+   Unboxed surfaces — no square frames; keep text clipped + even spread
+   ========================================================================== */
+.ic-explore-grid,
+.ic-summary-grid,
+.ic-project-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.ic-explore-card,
+.ic-summary-card,
+.ic-project-tile,
+.ic-lead-prompt-panel,
+.ic-workdesk-panel,
+.ic-doclib-card,
+.ic-quote-lib-row {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  background: transparent !important;
+}
+
+/* Soft wash instead of a hard box */
+.ic-explore-card,
+.ic-summary-card,
+.ic-project-tile {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 250, 252, 0.95) 100%) !important;
+  border-radius: 12px !important;
+}
+
+/* Top accent only — not a full square outline */
+.ic-explore-card.accent-coral,
+.ic-explore-card.accent-citrus,
+.ic-explore-card.accent-teal,
+.ic-summary-card.accent,
+.ic-summary-card:nth-child(even),
+.ic-summary-card:nth-child(3n),
+.ic-explore-card,
+.ic-summary-card,
+.ic-project-tile {
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+}
+
+.ic-explore-card-title,
+.ic-explore-card-sub,
+.ic-summary-card .label,
+.ic-summary-card .value,
+.ic-project-tile-title,
+.ic-project-tile-customer,
+.ic-project-pending,
+.ic-workdesk-title,
+.ic-lead-prompt-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+.ic-summary-card .value {
+  white-space: nowrap !important;
+}
+
+.ic-explore-card-title,
+.ic-project-tile-title {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  white-space: normal !important;
+}
+
+/* Form fields: light underline-style, not heavy boxed frames */
+body .form-control:not([disabled]):not([readonly]),
+body .input-with-feedback:not([disabled]):not([readonly]),
+body textarea.form-control:not([disabled]):not([readonly]),
+body select.form-control:not([disabled]):not([readonly]),
+[data-page-route="Form/Customer"] .form-control,
+[data-page-route="Form/Customer"] .input-with-feedback {
+  border: none !important;
+  border-bottom: 1.5px solid #9eb8c8 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
+}
+body .form-control:not([disabled]):not([readonly]):focus,
+body .input-with-feedback:not([disabled]):not([readonly]):focus,
+[data-page-route="Form/Customer"] .form-control:focus {
+  border-bottom-color: #065175 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+[data-page-route="Form/Customer"] .frappe-control[data-fieldname="ic_portal_credentials"] .form-grid,
+[data-page-route="Form/Customer"] .frappe-control[data-fieldname="ic_team_members"] .form-grid,
+.form-grid {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+.form-grid .grid-heading-row {
+  border-bottom: 1.5px solid #9eb8c8 !important;
+  background: transparent !important;
+}
+
+/* Icon buttons everywhere: no box / outline frames */
+.page-icon-group .icon-btn,
+.page-icon-group .ic-print-action,
+.page-icon-group .ic-line-icon-btn,
+.page-head .page-icon-group button,
+.list-row-head .btn,
+.filter-section .btn-default.icon-btn,
+.standard-actions .icon-btn {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}
+
+/* ==========================================================================
+   List pages from home sidebar (Quotation / Lead / Labs / …):
+   Reload + Print dark, no outline; fluid layout, no bleed / empty gaps
+   ========================================================================== */
+[data-page-route^="List/"] .page-head,
+[data-page-route^="List/"] .page-head .container,
+[data-page-route^="query-report"] .page-head,
+.list-view-container .page-head {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+[data-page-route^="List/"] .page-head .container,
+[data-page-route^="List/"] .page-head .page-head-content {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px 12px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+[data-page-route^="List/"] .page-title,
+[data-page-route^="List/"] .title-area,
+[data-page-route^="List/"] .page-head .sidebar-toggle-btn + .title-text,
+[data-page-route^="List/"] .page-head h3,
+[data-page-route^="List/"] .page-head .ellipsis {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+[data-page-route^="List/"] .page-head .page-actions,
+[data-page-route^="List/"] .standard-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 4px 6px !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  flex: 1 1 auto !important;
+  margin-left: auto !important;
+}
+[data-page-route^="List/"] .page-icon-group,
+[data-page-route^="List/"] .page-head .page-icon-group {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 2px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  margin-left: 2px !important;
+  flex-shrink: 0 !important;
+}
+[data-page-route^="List/"] .page-icon-group .icon-btn,
+[data-page-route^="List/"] .page-icon-group .ic-print-action,
+[data-page-route^="List/"] .page-icon-group .ic-line-icon-btn,
+[data-page-route^="List/"] .page-icon-group button {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #0B1820 !important;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+[data-page-route^="List/"] .page-icon-group svg.es-icon,
+[data-page-route^="List/"] .page-icon-group svg.es-icon use {
+  fill: #0B1820 !important;
+  stroke: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+[data-page-route^="List/"] .page-icon-group svg.icon:not(.es-icon) {
+  stroke: #0B1820 !important;
+  fill: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Fluid main area — fill screen, no horizontal bleed */
+html,
+body,
+.main-section,
+#body,
+#page-container,
+.desk-page {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+}
+.desk-page .layout-main,
+.desk-page .layout-main-section-wrapper,
+.desk-page .layout-main-section,
+[data-page-route^="List/"] .layout-main,
+[data-page-route^="List/"] .layout-main-section,
+[data-page-route="instacertify-home"] .layout-main-section,
+[data-page-route="Workspaces"] .layout-main-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+.frappe-list,
+.list-paging-area,
+.page-form,
+.filter-section,
+.list-filters,
+.filter-list {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+.list-row-container,
+.list-row,
+.result,
+.frappe-list .list-row-head {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.list-row .level-left,
+.list-row .level-right,
+.list-row-col,
+.list-subject,
+.list-row-col .ellipsis,
+.list-row .ellipsis {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Home / workspace grids fill width evenly — no sparse empty columns */
+.ic-explore-grid,
+.ic-summary-grid,
+.ic-project-grid,
+.ic-workdesk-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 148px), 1fr)) !important;
+  justify-content: stretch !important;
+}
+@media (max-width: 960px) {
+  [data-page-route^="List/"] .page-head .page-actions,
+  [data-page-route^="List/"] .standard-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+}
+@media (max-width: 720px) {
+  .ic-explore-grid,
+  .ic-summary-grid,
+  .ic-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .page-head .page-actions {
+    width: 100% !important;
+  }
+}
+@media (max-width: 420px) {
+  .ic-explore-grid,
+  .ic-summary-grid,
+  .ic-project-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

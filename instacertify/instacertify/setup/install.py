@@ -680,7 +680,7 @@ def _ensure_sales_invoice_quotation_link():
 
 
 def _ensure_customer_login_credentials():
-	"""Customer section: multi-portal login table (S.No, name, link, user id, password)."""
+	"""Customer section: Website Link, Login ID, Password + multi-portal table."""
 	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 	from instacertify.setup.custom_fields import CUSTOMER_FIELDS
 
@@ -690,11 +690,13 @@ def _ensure_customer_login_credentials():
 		if f.get("fieldname")
 		in (
 			"ic_section_login",
-			"ic_portal_credentials",
+			"ic_website_link",
 			"ic_customer_user_id",
 			"ic_column_login",
 			"ic_customer_password",
 			"ic_login_notes",
+			"ic_section_more_portals",
+			"ic_portal_credentials",
 		)
 	]
 	if not login_fields:
@@ -707,17 +709,52 @@ def _ensure_customer_login_credentials():
 	finally:
 		frappe.flags.ignore_version = False
 
-	# Hide legacy single-credential fields when the table is present
+	# Keep labels visible and fields un-hidden (older deploys hid the legacy trio)
 	for fname, props in (
-		("Customer-ic_customer_user_id", {"hidden": 1, "label": "Customer User ID (legacy)"}),
-		("Customer-ic_column_login", {"hidden": 1}),
-		("Customer-ic_customer_password", {"hidden": 1, "label": "Customer Password (legacy)"}),
-		("Customer-ic_login_notes", {"hidden": 1, "label": "Login Notes (legacy)"}),
 		(
 			"Customer-ic_section_login",
 			{
+				"hidden": 0,
 				"collapsible": 0,
-				"description": "Store login credentials for multiple customer portals. Passwords are encrypted.",
+				"label": "Customer Login Credentials",
+				"description": "Save website link, login ID, and password for this customer. Add more portals in the table below.",
+			},
+		),
+		(
+			"Customer-ic_website_link",
+			{"hidden": 0, "label": "Website Link", "options": "URL", "insert_after": "ic_section_login"},
+		),
+		(
+			"Customer-ic_customer_user_id",
+			{"hidden": 0, "label": "Login ID", "insert_after": "ic_website_link"},
+		),
+		("Customer-ic_column_login", {"hidden": 0, "insert_after": "ic_customer_user_id"}),
+		(
+			"Customer-ic_customer_password",
+			{"hidden": 0, "label": "Password", "insert_after": "ic_column_login"},
+		),
+		(
+			"Customer-ic_login_notes",
+			{"hidden": 0, "label": "Login Notes", "insert_after": "ic_customer_password"},
+		),
+		(
+			"Customer-ic_section_more_portals",
+			{
+				"hidden": 0,
+				"collapsible": 1,
+				"label": "Additional Portal Logins",
+				"insert_after": "ic_login_notes",
+				"description": "Optional — add more portals (name, website link, user ID, password).",
+			},
+		),
+		(
+			"Customer-ic_portal_credentials",
+			{
+				"hidden": 0,
+				"fieldtype": "Table",
+				"options": "IC Customer Portal Credential",
+				"label": "Portal Logins",
+				"insert_after": "ic_section_more_portals",
 			},
 		),
 	):
@@ -726,36 +763,23 @@ def _ensure_customer_login_credentials():
 				frappe.db.set_value("Custom Field", fname, props, update_modified=False)
 			except Exception:
 				pass
+		elif fname == "Customer-ic_website_link" or fname == "Customer-ic_section_more_portals":
+			# create_custom_fields above should have added these; ignore if still missing
+			pass
 
-	# Keep Customer Team section after login notes when present
+	# Keep Customer Team section after portal table
 	if frappe.db.exists("Custom Field", "Customer-ic_section_team"):
 		try:
 			frappe.db.set_value(
 				"Custom Field",
 				"Customer-ic_section_team",
 				"insert_after",
-				"ic_login_notes",
+				"ic_portal_credentials",
 				update_modified=False,
 			)
 		except Exception:
 			pass
 
-	# Ensure table field points at child DocType
-	if frappe.db.exists("Custom Field", "Customer-ic_portal_credentials"):
-		try:
-			frappe.db.set_value(
-				"Custom Field",
-				"Customer-ic_portal_credentials",
-				{
-					"fieldtype": "Table",
-					"options": "IC Customer Portal Credential",
-					"label": "Portal Logins",
-					"insert_after": "ic_section_login",
-				},
-				update_modified=False,
-			)
-		except Exception:
-			pass
 	frappe.clear_cache(doctype="Customer")
 
 def _ensure_customer_related_tab():
