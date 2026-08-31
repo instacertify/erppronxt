@@ -150,7 +150,9 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 					<div class="ic-doclib-card-actions">
 						<button type="button" class="btn btn-default btn-sm" data-act="edit">${__("Edit")}</button>
 						<button type="button" class="btn btn-default btn-sm" data-act="rename">${__("Rename")}</button>
+						<button type="button" class="btn btn-default btn-sm" data-act="copy" title="${__("Copy template")}">${__("Copy")}</button>
 						<button type="button" class="btn btn-primary btn-sm" data-act="use">${__("Use for Customer")}</button>
+						<button type="button" class="btn btn-default btn-sm ic-cut-action" data-act="cut" data-label="Cut" title="${__("Cut — delete template")}" aria-label="${__("Cut")}">${__("Cut")}</button>
 					</div>
 				</article>
 			`);
@@ -158,6 +160,8 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 				frappe.set_route("Form", "IC Document Checklist Template", r.name);
 			});
 			card.find('[data-act="rename"]').on("click", () => rename_template(r));
+			card.find('[data-act="copy"]').on("click", () => copy_template(r));
+			card.find('[data-act="cut"]').on("click", () => cut_template(r));
 			card.find('[data-act="use"]').on("click", () => use_template(r));
 			grid.append(card);
 		});
@@ -191,6 +195,69 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 			},
 			__("Rename Template"),
 			__("Save")
+		);
+	}
+
+	function copy_template(row) {
+		if (!row || !row.name) return;
+		const base = row.display_name || row.template_name || row.name;
+		frappe.prompt(
+			[
+				{
+					fieldname: "template_name",
+					fieldtype: "Data",
+					label: __("New Display Name"),
+					reqd: 1,
+					default: __("{0} Copy", [base]),
+				},
+			],
+			(values) => {
+				frappe.call({
+					method: "instacertify.documents.api.duplicate_checklist_template",
+					args: { template: row.name, new_name: values.template_name },
+					freeze: true,
+					freeze_message: __("Copying template…"),
+					callback(r) {
+						const name = (r.message || {}).template;
+						frappe.show_alert({
+							message: __("Template copied — edit and Save as needed"),
+							indicator: "green",
+						});
+						if (name) {
+							frappe.set_route("Form", "IC Document Checklist Template", name);
+						} else {
+							load();
+						}
+					},
+				});
+			},
+			__("Copy Document Template"),
+			__("Copy")
+		);
+	}
+
+	function cut_template(row) {
+		if (!row || !row.name) return;
+		const label = row.display_name || row.template_name || row.name;
+		frappe.confirm(
+			__("Cut (delete) template <b>{0}</b>? This cannot be undone.", [
+				frappe.utils.escape_html(label),
+			]),
+			() => {
+				frappe.call({
+					method: "instacertify.documents.api.delete_checklist_template",
+					args: { template: row.name },
+					freeze: true,
+					freeze_message: __("Deleting…"),
+					callback() {
+						frappe.show_alert({
+							message: __("Template deleted"),
+							indicator: "orange",
+						});
+						load();
+					},
+				});
+			}
 		);
 	}
 

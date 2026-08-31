@@ -1548,6 +1548,25 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		}
 	}
 
+	function isReloadIconBtn($b) {
+		const title = (
+			($b.attr("title") || "") +
+			" " +
+			($b.attr("aria-label") || "") +
+			" " +
+			($b.attr("data-original-title") || "") +
+			" " +
+			($b.attr("data-bs-original-title") || "")
+		).toLowerCase();
+		if (title.includes("reload")) return true;
+		if ($b.hasClass("ic-reload-boxed")) return true;
+		if ($b.find("svg.es-icon use[href*='reload'], svg.es-icon use[xlink\\:href*='reload']").length) {
+			return true;
+		}
+		if ($b.find("svg.es-line-reload, .es-line-reload, svg[class*='reload']").length) return true;
+		return false;
+	}
+
 	function stylePageIconGroup(page) {
 		const $group =
 			(page && (page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group")))) ||
@@ -1560,6 +1579,7 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		});
 		$group.find(".icon-btn, button").each(function () {
 			const $b = $(this);
+			const reload = isReloadIconBtn($b);
 			$b.removeClass("text-muted hide")
 				.addClass("ic-line-icon-btn")
 				.css({
@@ -1567,11 +1587,31 @@ instacertify.apply_favicon_brand_icons = function (root) {
 					visibility: "visible",
 					opacity: 1,
 					color: "#0B1820",
-					border: "none",
 					boxShadow: "none",
 					outline: "none",
+					transform: "none",
+					overflow: "hidden",
+					boxSizing: "border-box",
+					flexShrink: "0",
+					padding: "0",
+					margin: "0",
+				});
+			if (reload) {
+				$b.addClass("ic-reload-boxed").css({
+					border: "1.5px solid rgba(3, 52, 71, 0.45)",
+					background: "#ffffff",
+					borderRadius: "8px",
+					width: "32px",
+					height: "32px",
+					minWidth: "32px",
+					maxWidth: "32px",
+				});
+			} else {
+				$b.css({
+					border: "none",
 					background: "transparent",
 				});
+			}
 			$b.find("svg.es-icon, .es-icon, use").each(function () {
 				const $el = $(this);
 				if ($el.closest("svg").hasClass("es-icon") || $el.is("svg.es-icon") || $el.hasClass("es-icon")) {
@@ -1592,6 +1632,8 @@ instacertify.apply_favicon_brand_icons = function (root) {
 				visibility: "visible",
 				width: "18px",
 				height: "18px",
+				maxWidth: "100%",
+				maxHeight: "100%",
 			});
 			$b.find("svg.icon:not(.es-icon)").css({
 				stroke: "#0B1820",
@@ -1600,6 +1642,8 @@ instacertify.apply_favicon_brand_icons = function (root) {
 				visibility: "visible",
 				width: "18px",
 				height: "18px",
+				maxWidth: "100%",
+				maxHeight: "100%",
 			});
 		});
 	}

@@ -224,6 +224,67 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 		);
 	}
 
+	function copy_template(row) {
+		if (!row || !row.name) return;
+		const base = shown_name(row);
+		frappe.prompt(
+			[
+				{
+					fieldname: "template_name",
+					fieldtype: "Data",
+					label: __("New Display Name"),
+					reqd: 1,
+					default: __("{0} Copy", [base]),
+				},
+			],
+			(values) => {
+				frappe.call({
+					method: "instacertify.quotation.events.duplicate_quotation_template",
+					args: { template: row.name, new_name: values.template_name },
+					freeze: true,
+					freeze_message: __("Copying template…"),
+					callback(r) {
+						const name = (r.message || {}).template;
+						frappe.show_alert({
+							message: __("Template copied"),
+							indicator: "green",
+						});
+						if (name) {
+							frappe.set_route("Form", "IC Quotation Template", name);
+						} else {
+							load();
+						}
+					},
+				});
+			},
+			__("Copy Quotation Template"),
+			__("Copy")
+		);
+	}
+
+	function cut_template(row) {
+		if (!row || !row.name) return;
+		const label = shown_name(row);
+		frappe.confirm(
+			__("Cut (delete) template <b>{0}</b>? This cannot be undone.", [frappe.utils.escape_html(label)]),
+			() => {
+				frappe.call({
+					method: "instacertify.quotation.events.delete_quotation_template",
+					args: { template: row.name },
+					freeze: true,
+					freeze_message: __("Deleting…"),
+					callback() {
+						frappe.show_alert({
+							message: __("Template deleted"),
+							indicator: "orange",
+						});
+						load();
+					},
+				});
+			}
+		);
+	}
+
 	function open_template(name) {
 		if (!name) return;
 		frappe.set_route("Form", "IC Quotation Template", name);
@@ -514,9 +575,11 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			<div class="ic-quote-lib-row-actions">
 				<button type="button" class="btn btn-primary btn-xs ic-qlib-open">${__("Edit")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-rename" title="${__("Rename display name")}">${__("Rename")}</button>
+				<button type="button" class="btn btn-default btn-xs ic-qlib-copy" title="${__("Copy template")}">${__("Copy")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-use">${__("Use")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-print" title="${__("Print")}">${__("Print")}</button>
 				<button type="button" class="btn btn-default btn-xs ic-qlib-pdf" title="${__("PDF")}">${__("PDF")}</button>
+				<button type="button" class="btn btn-default btn-xs ic-qlib-cut ic-cut-action" data-label="Cut" title="${__("Cut — delete template")}" aria-label="${__("Cut")}">${__("Cut")}</button>
 			</div>
 		</article>`;
 	}
@@ -530,6 +593,16 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			e.stopPropagation();
 			const name = $(this).closest(".ic-quote-lib-row").data("name");
 			rename_template(rows.find((r) => r.name === name));
+		});
+		$scope.find(".ic-qlib-copy").on("click", function (e) {
+			e.stopPropagation();
+			const name = $(this).closest(".ic-quote-lib-row").data("name");
+			copy_template(rows.find((r) => r.name === name));
+		});
+		$scope.find(".ic-qlib-cut").on("click", function (e) {
+			e.stopPropagation();
+			const name = $(this).closest(".ic-quote-lib-row").data("name");
+			cut_template(rows.find((r) => r.name === name));
 		});
 		$scope.find(".ic-qlib-use").on("click", function (e) {
 			e.stopPropagation();

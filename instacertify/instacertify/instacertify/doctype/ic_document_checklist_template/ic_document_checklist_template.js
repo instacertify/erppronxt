@@ -47,6 +47,63 @@ frappe.ui.form.on("IC Document Checklist Template", {
 				);
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Copy Template"), () => {
+				const base = frm.doc.display_name || frm.doc.template_name || "";
+				frappe.prompt(
+					[
+						{
+							fieldname: "template_name",
+							fieldtype: "Data",
+							label: __("New Display Name"),
+							reqd: 1,
+							default: __("{0} Copy", [base]),
+						},
+					],
+					(values) => {
+						frappe.call({
+							method: "instacertify.documents.api.duplicate_checklist_template",
+							args: {
+								template: frm.doc.name,
+								new_name: values.template_name,
+							},
+							freeze: true,
+							callback(r) {
+								frappe.set_route(
+									"Form",
+									"IC Document Checklist Template",
+									(r.message || {}).template
+								);
+							},
+						});
+					},
+					__("Copy Document Template"),
+					__("Copy")
+				);
+			}, __("Actions"));
+
+			frm.add_custom_button(__("Cut"), () => {
+				const label = frm.doc.display_name || frm.doc.template_name || frm.doc.name;
+				frappe.confirm(
+					__("Cut (delete) template <b>{0}</b>? This cannot be undone.", [
+						frappe.utils.escape_html(label),
+					]),
+					() => {
+						frappe.call({
+							method: "instacertify.documents.api.delete_checklist_template",
+							args: { template: frm.doc.name },
+							freeze: true,
+							callback() {
+								frappe.show_alert({
+									message: __("Template deleted"),
+									indicator: "orange",
+								});
+								frappe.set_route("document-collection-library");
+							},
+						});
+					}
+				);
+			}, __("Actions"));
+
 			frm.add_custom_button(__("Use for Customer"), () => {
 				const shown = frm.doc.display_name || frm.doc.template_name || frm.doc.name;
 				const d = new frappe.ui.Dialog({

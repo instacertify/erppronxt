@@ -2175,7 +2175,7 @@ a.ic-lead-prompt-phone:hover {
 }
 .btn-primary:active,
 .btn:active {
-  transform: scale(0.98);
+  transform: none !important;
 }
 
 .form-control,
@@ -5654,6 +5654,9 @@ button[title="Minimize"],
   margin-left: 2px;
   visibility: visible !important;
   opacity: 1 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  transform: none !important;
 }
 
 .page-icon-group .icon-btn:hover,
@@ -5663,6 +5666,29 @@ button[title="Minimize"],
   background: rgba(6, 81, 117, 0.1) !important;
   color: #033447 !important;
   --icon-stroke: #033447 !important;
+  transform: none !important;
+}
+
+/* Early boxed Reload — reinforced later; keep border width stable on hover */
+.page-icon-group .icon-btn[title="Reload List"],
+.page-icon-group .icon-btn[aria-label="Reload List"],
+.page-icon-group .icon-btn[data-original-title="Reload List"],
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"],
+.page-icon-group .ic-reload-boxed,
+.page-head .page-icon-group button[title="Reload List"],
+.page-head .page-icon-group button[data-original-title="Reload List"] {
+  border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
+  background: #ffffff !important;
+}
+.page-icon-group .icon-btn[title="Reload List"]:hover,
+.page-icon-group .icon-btn[aria-label="Reload List"]:hover,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:hover,
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"]:hover,
+.page-icon-group .ic-reload-boxed:hover,
+.page-head .page-icon-group button[title="Reload List"]:hover,
+.page-head .page-icon-group button[data-original-title="Reload List"]:hover {
+  border: 1.5px solid #065175 !important;
+  background: #e7f1f8 !important;
 }
 
 .page-icon-group .icon-btn svg.icon:not(.es-icon),
@@ -6112,11 +6138,35 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   --icon-stroke: #0B1820 !important;
 }
 
-/* Quote Format Library / Document library row actions — brand teal */
+/* Quote Format Library / Document library row actions — brand teal, stable size */
+.ic-quote-lib-row-actions,
+.ic-doclib-card-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  align-items: center !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.ic-quote-lib-row-actions .btn,
+.ic-doclib-card-actions .btn {
+  flex: 0 0 auto !important;
+  min-height: 28px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+.ic-quote-lib-row-actions .btn:active,
+.ic-doclib-card-actions .btn:active,
+.ic-quote-lib-row-actions .btn:focus,
+.ic-doclib-card-actions .btn:focus {
+  transform: none !important;
+  outline: none !important;
+}
 .ic-quote-lib-row-actions .btn-primary,
 .ic-doclib-card-actions .btn-primary {
   background: #065175 !important;
-  border-color: #065175 !important;
+  border: 1.5px solid #065175 !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   font-weight: 650 !important;
@@ -6132,8 +6182,22 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .ic-quote-lib-row-actions .btn-default:hover,
 .ic-doclib-card-actions .btn-default:hover {
   background: #e7f1f8 !important;
-  border-color: #065175 !important;
+  border: 1.5px solid #065175 !important; /* same width — no layout shift */
   color: #033447 !important;
+}
+.ic-quote-lib-row-actions .ic-cut-action,
+.ic-doclib-card-actions .ic-cut-action,
+.ic-quote-lib-row-actions .ic-qlib-cut {
+  border-color: rgba(176, 58, 58, 0.45) !important;
+  color: #8a2a2a !important;
+  -webkit-text-fill-color: #8a2a2a !important;
+}
+.ic-quote-lib-row-actions .ic-cut-action:hover,
+.ic-doclib-card-actions .ic-cut-action:hover,
+.ic-quote-lib-row-actions .ic-qlib-cut:hover {
+  background: #fceeee !important;
+  border: 1.5px solid #b03a3a !important;
+  color: #8a2a2a !important;
 }
 
 /* Prev / Next / Print / Reload List icon cluster — always on, darker line art */
@@ -6277,7 +6341,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   line-height: 0 !important;
 }
 /* ==========================================================================
-   Reload List + Print icons — dark glyphs, no square button frames
+   Reload List + Print icons — Reload sits in a fixed box; no bleed / fidget
    Espresso icons (es-line-reload) are FILL glyphs; Lucide print is STROKE.
    ========================================================================== */
 .page-icon-group,
@@ -6286,7 +6350,9 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   display: inline-flex !important;
   visibility: visible !important;
   opacity: 1 !important;
-  gap: 4px !important;
+  gap: 6px !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
 }
 .page-icon-group .icon-btn,
 .page-icon-group .icon-btn.text-muted,
@@ -6308,16 +6374,77 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   width: 32px !important;
   height: 32px !important;
   min-width: 32px !important;
+  max-width: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+  transform: none !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
 }
 .page-icon-group .icon-btn:hover,
 .page-icon-group .ic-print-action:hover,
-.page-icon-group .ic-line-icon-btn:hover {
+.page-icon-group .ic-line-icon-btn:hover,
+.page-icon-group .icon-btn:active,
+.page-icon-group .ic-print-action:active,
+.page-icon-group .ic-line-icon-btn:active,
+.page-icon-group .icon-btn:focus {
   background: rgba(6, 81, 117, 0.1) !important;
   border: none !important;
   box-shadow: none !important;
   color: #033447 !important;
+  transform: none !important;
+  outline: none !important;
 }
-/* Reload List = es-line-reload (fill) */
+
+/* Reload List — bounded box; icon clipped inside; size clamps on narrow screens */
+.page-icon-group .icon-btn[title="Reload List"],
+.page-icon-group .icon-btn[aria-label="Reload List"],
+.page-icon-group .icon-btn[data-original-title="Reload List"],
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"],
+.page-icon-group button[title="Reload List"],
+.page-icon-group button[aria-label="Reload List"],
+.page-icon-group button[data-original-title="Reload List"],
+.page-icon-group .ic-reload-boxed,
+.standard-actions .icon-btn[title="Reload List"],
+.standard-actions .icon-btn[data-original-title="Reload List"],
+.page-actions .icon-btn[title="Reload List"],
+.page-actions .icon-btn[data-original-title="Reload List"] {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
+  border-radius: 8px !important;
+  width: clamp(26px, 3.2vw, 32px) !important;
+  height: clamp(26px, 3.2vw, 32px) !important;
+  min-width: clamp(26px, 3.2vw, 32px) !important;
+  max-width: clamp(26px, 3.2vw, 32px) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  flex-shrink: 0 !important;
+  transform: none !important;
+}
+.page-icon-group .icon-btn[title="Reload List"]:hover,
+.page-icon-group .icon-btn[aria-label="Reload List"]:hover,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:hover,
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"]:hover,
+.page-icon-group button[title="Reload List"]:hover,
+.page-icon-group button[data-original-title="Reload List"]:hover,
+.page-icon-group .ic-reload-boxed:hover,
+.page-icon-group .icon-btn[title="Reload List"]:active,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:active,
+.page-icon-group .ic-reload-boxed:active,
+.page-icon-group .icon-btn[title="Reload List"]:focus,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:focus,
+.page-icon-group .ic-reload-boxed:focus {
+  background: #e7f1f8 !important;
+  border: 1.5px solid #065175 !important; /* same width — no jump */
+  box-shadow: none !important;
+  transform: none !important;
+  outline: none !important;
+}
+
+/* Reload List = es-line-reload (fill) — keep inside the box */
 .page-icon-group svg.es-icon,
 .page-icon-group .es-icon,
 .page-icon-group svg.es-icon use,
@@ -6335,10 +6462,13 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   stroke-width: 0 !important;
   color: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: clamp(14px, 1.8vw, 18px) !important;
+  height: clamp(14px, 1.8vw, 18px) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   opacity: 1 !important;
   visibility: visible !important;
+  overflow: visible !important;
 }
 /* Print / prev / next = Lucide stroke icons */
 .page-icon-group svg.icon:not(.es-icon),
@@ -6349,8 +6479,10 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   fill: none !important;
   color: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: clamp(14px, 1.8vw, 18px) !important;
+  height: clamp(14px, 1.8vw, 18px) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -6472,14 +6604,11 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   background: transparent !important;
 }
 
-/* Icon buttons everywhere: no box / outline frames */
-.page-icon-group .icon-btn,
+/* Icon buttons: Print / prev-next stay unboxed; Reload keeps its own border rule */
 .page-icon-group .ic-print-action,
-.page-icon-group .ic-line-icon-btn,
-.page-head .page-icon-group button,
+.page-icon-group .ic-line-icon-btn:not(.ic-reload-boxed):not([title="Reload List"]):not([aria-label="Reload List"]),
 .list-row-head .btn,
-.filter-section .btn-default.icon-btn,
-.standard-actions .icon-btn {
+.filter-section .btn-default.icon-btn {
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
@@ -6488,7 +6617,7 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
 
 /* ==========================================================================
    List pages from home sidebar (Quotation / Lead / Labs / …):
-   Reload + Print dark, no outline; fluid layout, no bleed / empty gaps
+   Fluid layout; Reload stays boxed; no bleed / empty gaps
    ========================================================================== */
 [data-page-route^="List/"] .page-head,
 [data-page-route^="List/"] .page-head .container,
@@ -6538,28 +6667,47 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   flex-wrap: nowrap !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  gap: 2px !important;
+  gap: 6px !important;
   visibility: visible !important;
   opacity: 1 !important;
   margin-left: 2px !important;
   flex-shrink: 0 !important;
 }
-[data-page-route^="List/"] .page-icon-group .icon-btn,
 [data-page-route^="List/"] .page-icon-group .ic-print-action,
-[data-page-route^="List/"] .page-icon-group .ic-line-icon-btn,
-[data-page-route^="List/"] .page-icon-group button {
+[data-page-route^="List/"] .page-icon-group .ic-line-icon-btn:not(.ic-reload-boxed):not([title="Reload List"]):not([aria-label="Reload List"]) {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
   background: transparent !important;
   color: #0B1820 !important;
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
+  width: clamp(26px, 3.2vw, 32px) !important;
+  height: clamp(26px, 3.2vw, 32px) !important;
+  min-width: clamp(26px, 3.2vw, 32px) !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  overflow: hidden !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+}
+[data-page-route^="List/"] .page-icon-group .icon-btn[title="Reload List"],
+[data-page-route^="List/"] .page-icon-group .icon-btn[aria-label="Reload List"],
+[data-page-route^="List/"] .page-icon-group .icon-btn[data-original-title="Reload List"],
+[data-page-route^="List/"] .page-icon-group .icon-btn[data-bs-original-title="Reload List"],
+[data-page-route^="List/"] .page-icon-group .ic-reload-boxed,
+[data-page-route^="List/"] .page-icon-group button[title="Reload List"],
+[data-page-route^="List/"] .page-icon-group button[data-original-title="Reload List"] {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
+  border-radius: 8px !important;
+  width: clamp(26px, 3.2vw, 32px) !important;
+  height: clamp(26px, 3.2vw, 32px) !important;
+  min-width: clamp(26px, 3.2vw, 32px) !important;
+  max-width: clamp(26px, 3.2vw, 32px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  transform: none !important;
 }
 [data-page-route^="List/"] .page-icon-group svg.es-icon,
 [data-page-route^="List/"] .page-icon-group svg.es-icon use {
@@ -6567,16 +6715,20 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   stroke: none !important;
   opacity: 1 !important;
   visibility: visible !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: clamp(14px, 1.8vw, 18px) !important;
+  height: clamp(14px, 1.8vw, 18px) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 [data-page-route^="List/"] .page-icon-group svg.icon:not(.es-icon) {
   stroke: #0B1820 !important;
   fill: none !important;
   opacity: 1 !important;
   visibility: visible !important;
-  width: 18px !important;
-  height: 18px !important;
+  width: clamp(14px, 1.8vw, 18px) !important;
+  height: clamp(14px, 1.8vw, 18px) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 /* Fluid main area — fill screen, no horizontal bleed */
@@ -6670,4 +6822,75 @@ body,
   .ic-project-grid {
     grid-template-columns: 1fr !important;
   }
+}
+
+/* Library grids — fill width accurately; no overflow bleed */
+.ic-doclib,
+.ic-doclib-grid,
+.ic-quote-lib,
+.ic-quote-lib-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+.ic-doclib-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
+  gap: 12px !important;
+}
+.ic-doclib-card,
+.ic-quote-lib-row {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.ic-doclib-card-title,
+.ic-quote-lib-row-name {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+}
+@media (max-width: 720px) {
+  .ic-doclib-head,
+  .ic-doclib-tools {
+    flex-wrap: wrap !important;
+    width: 100% !important;
+  }
+  .ic-doclib-tools .form-control,
+  .ic-doclib-tools .btn {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+}
+
+
+/* Force boxed Reload even when Bootstrap moved title → data-original-title */
+.page-icon-group .ic-reload-boxed,
+.page-icon-group button.ic-reload-boxed,
+.page-actions .ic-reload-boxed,
+.standard-actions .ic-reload-boxed {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(3, 52, 71, 0.55) !important;
+  border-radius: 8px !important;
+  width: clamp(26px, 3.2vw, 32px) !important;
+  height: clamp(26px, 3.2vw, 32px) !important;
+  min-width: clamp(26px, 3.2vw, 32px) !important;
+  max-width: clamp(26px, 3.2vw, 32px) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  flex-shrink: 0 !important;
+}
+.page-icon-group .ic-reload-boxed:hover,
+.page-icon-group .ic-reload-boxed:active,
+.page-icon-group .ic-reload-boxed:focus {
+  background: #e7f1f8 !important;
+  border: 1.5px solid #065175 !important;
+  transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
