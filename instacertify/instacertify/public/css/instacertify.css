@@ -1372,6 +1372,73 @@ body.for-login,
   letter-spacing: -0.02em;
 }
 
+/* Login form body — readable dark ink on light card; primary CTA with white label */
+.for-login .page-card-body,
+.for-login .login-content .page-card-body,
+.for-login .form-group label,
+.for-login label,
+.for-login .page-card-body p,
+.for-login .page-card-body .form-control,
+.for-login input.form-control,
+.for-login .forgot-password-message,
+.login-content .page-card-body,
+.login-content label {
+  color: #152833 !important;
+  -webkit-text-fill-color: #152833 !important;
+}
+
+.for-login .btn-primary,
+.for-login .btn.btn-primary,
+.for-login button.btn-primary,
+.for-login .btn-login,
+.for-login button[type="submit"],
+.for-login .page-card-body .btn-primary,
+.login-content .btn-primary,
+.login-content .btn-login,
+.login-content button[type="submit"],
+.page-card .btn-primary {
+  background: #065175 !important;
+  border-color: #065175 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+}
+
+.for-login .btn-primary:hover,
+.for-login .btn-login:hover,
+.for-login button[type="submit"]:hover,
+.login-content .btn-primary:hover {
+  background: #033447 !important;
+  border-color: #033447 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.for-login .btn-primary *,
+.for-login .btn-login *,
+.for-login button[type="submit"] *,
+.login-content .btn-primary * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+.for-login a:not(.btn),
+.for-login .btn-link,
+.login-content a:not(.btn) {
+  color: #065175 !important;
+  -webkit-text-fill-color: #065175 !important;
+}
+
+.for-login .form-control,
+.login-content .form-control {
+  color: #152833 !important;
+  background: #ffffff !important;
+  border-color: rgba(6, 81, 117, 0.28) !important;
+}
+
 .ic-brand-icon {
   width: 36px;
   height: 36px;
@@ -5200,6 +5267,226 @@ button[title="Minimize"],
   stroke: #ffffff !important;
   color: #ffffff !important;
   --icon-stroke: #ffffff !important;
+}
+
+/* ——— Action buttons: Prev / Next / Print / Save line icons (restored) ——— */
+.page-head .btn.ic-has-action-icon,
+.page-actions .btn.ic-has-action-icon,
+.standard-actions .btn.ic-has-action-icon,
+.modal .btn.ic-has-action-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+
+.ic-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 0;
+  --icon-stroke: currentColor;
+  color: #152833;
+}
+
+.ic-action-icon .icon,
+.ic-action-icon svg {
+  width: 15px;
+  height: 15px;
+  stroke: #152833 !important;
+  --icon-stroke: #152833 !important;
+  opacity: 1 !important;
+}
+
+.btn-primary .ic-action-icon,
+.btn-primary .ic-action-icon .icon,
+.btn-primary .ic-action-icon svg {
+  --icon-stroke: #ffffff !important;
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.page-icon-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.page-icon-group .icon-btn,
+.page-icon-group .ic-line-icon-btn,
+.page-icon-group .ic-print-action,
+.page-head .page-icon-group button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  border: 1.5px solid rgba(21, 40, 51, 0.45) !important;
+  background: #ffffff !important;
+  color: #152833 !important;
+  -webkit-text-fill-color: #152833 !important;
+  --icon-stroke: #152833 !important;
+  margin-left: 2px;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.page-icon-group .icon-btn:hover,
+.page-icon-group .ic-line-icon-btn:hover,
+.page-icon-group .ic-print-action:hover {
+  border-color: #065175 !important;
+  background: #e7f1f8 !important;
+  color: #065175 !important;
+  --icon-stroke: #065175 !important;
+}
+
+.page-icon-group .icon-btn .icon,
+.page-icon-group .icon-btn svg,
+.page-icon-group .ic-line-icon-btn svg,
+.page-icon-group .ic-print-action .icon,
+.page-icon-group .ic-print-action svg {
+  width: 17px !important;
+  height: 17px !important;
+  stroke: #152833 !important;
+  color: #152833 !important;
+  --icon-stroke: #152833 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.dropdown-menu .menu-item-icon.ic-action-icon,
+.dropdown-menu .menu-item-icon {
+  width: 18px;
+  margin-right: 8px;
+  color: #152833;
+  --icon-stroke: #152833;
+}
+
+.dropdown-menu a.dropdown-item,
+.dropdown-menu a.grey-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px;
+}
+
+/* Modal / form Cut + Minimize always visible on light chrome */
+.btn-modal-close,
+.btn-modal-minimize,
+.modal-header .btn[data-dismiss],
+.modal-header button[aria-label="Close"],
+.modal-header button[aria-label="Cut"],
+.modal-header button[title="Cut"],
+.modal-header button[aria-label="Minimize"],
+.btn[data-label="Cut"],
+.btn[aria-label="Cut"],
+.btn[title="Cut"],
+button[aria-label="Cut"],
+button[title="Cut"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #152833 !important;
+  -webkit-text-fill-color: #152833 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.btn-modal-close svg,
+.btn-modal-minimize svg,
+.btn[data-label="Cut"] svg,
+.btn[aria-label="Cut"] svg,
+.btn[title="Cut"] svg,
+button[aria-label="Cut"] svg,
+button[title="Cut"] svg {
+  stroke: #152833 !important;
+  color: #152833 !important;
+  --icon-stroke: #152833 !important;
+  opacity: 1 !important;
+}
+
+/* Desk / form sidebar toggle — keep visible */
+.sidebar-toggle-btn,
+.btn.sidebar-toggle,
+.navbar .sidebar-toggle,
+.form-sidebar-stats .dropdown-btn,
+.layout-side-section .overlay-sidebar .sidebar-toggle,
+button[aria-label="Toggle Sidebar"],
+button[title="Toggle Sidebar"],
+.btn[data-label="Toggle Sidebar"] {
+  display: inline-flex !important;
+  color: #152833 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+.sidebar-toggle-btn svg,
+button[aria-label="Toggle Sidebar"] svg,
+button[title="Toggle Sidebar"] svg {
+  stroke: #152833 !important;
+  --icon-stroke: #152833 !important;
+  opacity: 1 !important;
+}
+
+/* Compact form layout — less dead space / scroll */
+[data-page-route^="Form/"] .form-layout .form-section {
+  margin-bottom: 8px !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+[data-page-route^="Form/"] .form-layout .form-column {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+[data-page-route^="Form/"] .form-page {
+  padding-bottom: 12px !important;
+}
+[data-page-route^="Form/"] .form-dashboard {
+  margin-bottom: 8px !important;
+}
+[data-page-route^="Form/"] .frappe-control {
+  margin-bottom: 8px !important;
+}
+[data-page-route^="Form/"] .section-head {
+  padding: 6px 0 !important;
+  font-size: 13px !important;
+}
+[data-page-route^="Form/"] .grid-heading-row,
+[data-page-route^="Form/"] .grid-row .data-row {
+  min-height: 36px !important;
+}
+[data-page-route^="Form/"] .layout-main-section-wrapper {
+  max-width: none !important;
+}
+[data-page-route^="Form/"] .page-body {
+  max-width: none !important;
+}
+body.full-width [data-page-route^="Form/"] .layout-main-section {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+/* Portal credentials grid uses full width */
+.frappe-control[data-fieldname="ic_portal_credentials"] .form-grid,
+.frappe-control[data-fieldname="ic_portal_credentials"] .grid-body {
+  width: 100% !important;
+}
+
+/* Sticky / always-visible Save when form is dirty */
+.page-actions .btn-primary.primary-action,
+.standard-actions .btn-primary.primary-action,
+.page-head .btn-primary[data-label="Save"],
+.page-actions .btn-primary[data-label="Save"] {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: #065175 !important;
+  border-color: #065175 !important;
 }
 
 /* ==========================================================================

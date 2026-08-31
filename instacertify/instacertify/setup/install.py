@@ -661,7 +661,7 @@ def _ensure_sales_invoice_quotation_link():
 
 
 def _ensure_customer_login_credentials():
-	"""Section on Customer to store portal User ID + encrypted Password."""
+	"""Customer section: multi-portal login table (S.No, name, link, user id, password)."""
 	from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 	from instacertify.setup.custom_fields import CUSTOMER_FIELDS
 
@@ -671,6 +671,7 @@ def _ensure_customer_login_credentials():
 		if f.get("fieldname")
 		in (
 			"ic_section_login",
+			"ic_portal_credentials",
 			"ic_customer_user_id",
 			"ic_column_login",
 			"ic_customer_password",
@@ -687,6 +688,26 @@ def _ensure_customer_login_credentials():
 	finally:
 		frappe.flags.ignore_version = False
 
+	# Hide legacy single-credential fields when the table is present
+	for fname, props in (
+		("Customer-ic_customer_user_id", {"hidden": 1, "label": "Customer User ID (legacy)"}),
+		("Customer-ic_column_login", {"hidden": 1}),
+		("Customer-ic_customer_password", {"hidden": 1, "label": "Customer Password (legacy)"}),
+		("Customer-ic_login_notes", {"hidden": 1, "label": "Login Notes (legacy)"}),
+		(
+			"Customer-ic_section_login",
+			{
+				"collapsible": 0,
+				"description": "Store login credentials for multiple customer portals. Passwords are encrypted.",
+			},
+		),
+	):
+		if frappe.db.exists("Custom Field", fname):
+			try:
+				frappe.db.set_value("Custom Field", fname, props, update_modified=False)
+			except Exception:
+				pass
+
 	# Keep Customer Team section after login notes when present
 	if frappe.db.exists("Custom Field", "Customer-ic_section_team"):
 		try:
@@ -700,6 +721,23 @@ def _ensure_customer_login_credentials():
 		except Exception:
 			pass
 
+	# Ensure table field points at child DocType
+	if frappe.db.exists("Custom Field", "Customer-ic_portal_credentials"):
+		try:
+			frappe.db.set_value(
+				"Custom Field",
+				"Customer-ic_portal_credentials",
+				{
+					"fieldtype": "Table",
+					"options": "IC Customer Portal Credential",
+					"label": "Portal Logins",
+					"insert_after": "ic_section_login",
+				},
+				update_modified=False,
+			)
+		except Exception:
+			pass
+	frappe.clear_cache(doctype="Customer")
 
 def _ensure_customer_related_tab():
 	"""Dedicated Customer tab listing projects, invoices, quotations, etc."""
