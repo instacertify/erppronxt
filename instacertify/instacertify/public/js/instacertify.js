@@ -1549,13 +1549,20 @@ instacertify.apply_favicon_brand_icons = function (root) {
 	}
 
 	function isReloadIconBtn($b) {
-		const title = (($b.attr("title") || "") + " " + ($b.attr("aria-label") || "")).toLowerCase();
+		const title = (
+			($b.attr("title") || "") +
+			" " +
+			($b.attr("aria-label") || "") +
+			" " +
+			($b.attr("data-original-title") || "") +
+			" " +
+			($b.attr("data-bs-original-title") || "")
+		).toLowerCase();
 		if (title.includes("reload")) return true;
 		if ($b.hasClass("ic-reload-boxed")) return true;
 		if ($b.find("svg.es-icon use[href*='reload'], svg.es-icon use[xlink\\:href*='reload']").length) {
 			return true;
 		}
-		// Espresso reload glyph often has class es-line-reload on the svg
 		if ($b.find("svg.es-line-reload, .es-line-reload, svg[class*='reload']").length) return true;
 		return false;
 	}

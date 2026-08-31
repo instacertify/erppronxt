@@ -5672,15 +5672,21 @@ button[title="Minimize"],
 /* Early boxed Reload — reinforced later; keep border width stable on hover */
 .page-icon-group .icon-btn[title="Reload List"],
 .page-icon-group .icon-btn[aria-label="Reload List"],
+.page-icon-group .icon-btn[data-original-title="Reload List"],
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"],
 .page-icon-group .ic-reload-boxed,
-.page-head .page-icon-group button[title="Reload List"] {
+.page-head .page-icon-group button[title="Reload List"],
+.page-head .page-icon-group button[data-original-title="Reload List"] {
   border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
   background: #ffffff !important;
 }
 .page-icon-group .icon-btn[title="Reload List"]:hover,
 .page-icon-group .icon-btn[aria-label="Reload List"]:hover,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:hover,
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"]:hover,
 .page-icon-group .ic-reload-boxed:hover,
-.page-head .page-icon-group button[title="Reload List"]:hover {
+.page-head .page-icon-group button[title="Reload List"]:hover,
+.page-head .page-icon-group button[data-original-title="Reload List"]:hover {
   border: 1.5px solid #065175 !important;
   background: #e7f1f8 !important;
 }
@@ -6395,11 +6401,16 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 /* Reload List — bounded box; icon clipped inside; size clamps on narrow screens */
 .page-icon-group .icon-btn[title="Reload List"],
 .page-icon-group .icon-btn[aria-label="Reload List"],
+.page-icon-group .icon-btn[data-original-title="Reload List"],
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"],
 .page-icon-group button[title="Reload List"],
 .page-icon-group button[aria-label="Reload List"],
+.page-icon-group button[data-original-title="Reload List"],
 .page-icon-group .ic-reload-boxed,
 .standard-actions .icon-btn[title="Reload List"],
-.page-actions .icon-btn[title="Reload List"] {
+.standard-actions .icon-btn[data-original-title="Reload List"],
+.page-actions .icon-btn[title="Reload List"],
+.page-actions .icon-btn[data-original-title="Reload List"] {
   background: #ffffff !important;
   border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
   border-radius: 8px !important;
@@ -6415,11 +6426,16 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 }
 .page-icon-group .icon-btn[title="Reload List"]:hover,
 .page-icon-group .icon-btn[aria-label="Reload List"]:hover,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:hover,
+.page-icon-group .icon-btn[data-bs-original-title="Reload List"]:hover,
 .page-icon-group button[title="Reload List"]:hover,
+.page-icon-group button[data-original-title="Reload List"]:hover,
 .page-icon-group .ic-reload-boxed:hover,
 .page-icon-group .icon-btn[title="Reload List"]:active,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:active,
 .page-icon-group .ic-reload-boxed:active,
 .page-icon-group .icon-btn[title="Reload List"]:focus,
+.page-icon-group .icon-btn[data-original-title="Reload List"]:focus,
 .page-icon-group .ic-reload-boxed:focus {
   background: #e7f1f8 !important;
   border: 1.5px solid #065175 !important; /* same width — no jump */
@@ -6677,8 +6693,11 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
 }
 [data-page-route^="List/"] .page-icon-group .icon-btn[title="Reload List"],
 [data-page-route^="List/"] .page-icon-group .icon-btn[aria-label="Reload List"],
+[data-page-route^="List/"] .page-icon-group .icon-btn[data-original-title="Reload List"],
+[data-page-route^="List/"] .page-icon-group .icon-btn[data-bs-original-title="Reload List"],
 [data-page-route^="List/"] .page-icon-group .ic-reload-boxed,
-[data-page-route^="List/"] .page-icon-group button[title="Reload List"] {
+[data-page-route^="List/"] .page-icon-group button[title="Reload List"],
+[data-page-route^="List/"] .page-icon-group button[data-original-title="Reload List"] {
   background: #ffffff !important;
   border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
   border-radius: 8px !important;
@@ -6845,4 +6864,33 @@ body,
     flex: 1 1 auto !important;
     min-width: 0 !important;
   }
+}
+
+
+/* Force boxed Reload even when Bootstrap moved title → data-original-title */
+.page-icon-group .ic-reload-boxed,
+.page-icon-group button.ic-reload-boxed,
+.page-actions .ic-reload-boxed,
+.standard-actions .ic-reload-boxed {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(3, 52, 71, 0.55) !important;
+  border-radius: 8px !important;
+  width: clamp(26px, 3.2vw, 32px) !important;
+  height: clamp(26px, 3.2vw, 32px) !important;
+  min-width: clamp(26px, 3.2vw, 32px) !important;
+  max-width: clamp(26px, 3.2vw, 32px) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  flex-shrink: 0 !important;
+}
+.page-icon-group .ic-reload-boxed:hover,
+.page-icon-group .ic-reload-boxed:active,
+.page-icon-group .ic-reload-boxed:focus {
+  background: #e7f1f8 !important;
+  border: 1.5px solid #065175 !important;
+  transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
