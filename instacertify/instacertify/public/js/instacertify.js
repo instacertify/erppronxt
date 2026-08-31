@@ -40,17 +40,30 @@ instacertify.ensure_contrast_guard = function () {
 .btn-warning, .btn-orange, .btn-accent, .btn.btn-accent, .btn-danger, .btn-success, .btn-info,
 .ic-btn-primary, .ic-btn-accent, .ic-ts-btn-qr,
 .ic-ts-tab-gen.is-active, .ic-ts-tab-manage.is-active, .ic-ts-step.is-current,
-.ic-quote-lib-tag.active, .ic-doclib-cat.is-active, .primary-action {
+.ic-quote-lib-tag.active, .ic-doclib-cat.is-active, .primary-action,
+.for-login .btn-primary, .for-login .btn-login, .for-login button[type="submit"],
+.login-content .btn-primary, .login-content .btn-login, .page-card .btn-primary {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 .btn-primary *, a.btn-primary *, .btn-warning *, .btn-accent *, .btn-danger *,
 .btn-success *, .ic-btn-primary *, .ic-ts-tab-gen.is-active *, .ic-ts-tab-manage.is-active *,
-.ic-quote-lib-tag.active *, .ic-doclib-cat.is-active *, .primary-action * {
+.ic-quote-lib-tag.active *, .ic-doclib-cat.is-active *, .primary-action *,
+.for-login .btn-primary *, .for-login .btn-login *, .for-login button[type="submit"] *,
+.login-content .btn-primary * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   fill: #ffffff !important;
   stroke: #ffffff !important;
+}
+.for-login .btn-primary, .for-login .btn-login, .for-login button[type="submit"],
+.login-content .btn-primary, .page-card .btn-primary {
+  background: #065175 !important;
+  border-color: #065175 !important;
+}
+.for-login label, .for-login .form-control, .login-content label, .login-content .form-control {
+  color: #152833 !important;
+  -webkit-text-fill-color: #152833 !important;
 }
 .btn-default, .btn-secondary, .btn-light, .ic-btn-ghost, .ic-list-cat-btn, .filter-button,
 .btn-modal-close, .btn-modal-minimize, .btn[data-label="Cut"], .btn[aria-label="Cut"],
@@ -1419,9 +1432,25 @@ instacertify.apply_favicon_brand_icons = function (root) {
 			(page.actions || $()).find("a.dropdown-item, a.grey-link").each(function () {
 				ensureIconOnMenuItem($(this));
 			});
-			// Style existing prev/next icon buttons
-			(page.icon_group || $()).find(".icon-btn").addClass("ic-line-icon-btn");
+			// Style + force-show existing prev/next/print icon buttons
+			const $group = page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group"));
+			if ($group && $group.length) {
+				$group.css({ display: "inline-flex", visibility: "visible", opacity: 1 });
+				$group.find(".icon-btn, button").addClass("ic-line-icon-btn").css({
+					display: "inline-flex",
+					visibility: "visible",
+					opacity: 1,
+				});
+			}
 			ensurePrintActionIcon(page);
+			// Cut / Minimize on any open modal
+			$(".modal.show .btn-modal-close, .modal.show .btn-modal-minimize, .modal.show .btn[data-label='Cut'], .modal.show button[title='Cut'], .modal.show button[aria-label='Cut']").each(
+				function () {
+					const $b = $(this);
+					$b.css({ display: "inline-flex", visibility: "visible", opacity: 1 });
+					ensureIconOnButton($b);
+				}
+			);
 		} catch (e) {
 			/* ignore */
 		}
@@ -3150,6 +3179,22 @@ frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] ||
 // Customer Related Data tab — full per-customer history + completed project files
 frappe.ui.form.on("Customer", {
 	refresh(frm) {
+		if (frm.fields_dict.ic_section_login) {
+			frm.set_df_property("ic_section_login", "hidden", 0);
+			frm.set_df_property(
+				"ic_section_login",
+				"label",
+				__("Customer Login Credentials")
+			);
+		}
+		if (frm.fields_dict.ic_portal_credentials) {
+			frm.set_df_property("ic_portal_credentials", "hidden", 0);
+		}
+		["ic_customer_user_id", "ic_customer_password", "ic_login_notes", "ic_column_login"].forEach(
+			(fn) => {
+				if (frm.fields_dict[fn]) frm.set_df_property(fn, "hidden", 1);
+			}
+		);
 		if (!frm.doc.name || frm.is_new()) return;
 		if (frm.fields_dict.ic_section_files) {
 			frm.set_df_property("ic_section_files", "label", __("Customer Data Drive"));
@@ -4211,11 +4256,45 @@ frappe.ui.form.on("Task", {
 	},
 });
 
+/**
+ * Keep the form Save button visible and usable after field edits
+ * (status / priority / project assignment, etc.).
+ */
+instacertify.ensure_form_save_button = function (frm) {
+	if (!frm || !frm.page) return;
+	try {
+		if (typeof frm.enable_save === "function") {
+			frm.enable_save();
+		}
+		const page = frm.page;
+		if (page && typeof page.set_primary_action === "function") {
+			const label =
+				(page.btn_primary && page.btn_primary.attr("data-label")) ||
+				(page.btn_primary && page.btn_primary.text && page.btn_primary.text()) ||
+				"";
+			const visible =
+				page.btn_primary && page.btn_primary.length && page.btn_primary.is(":visible");
+			const isSaveLike = /save|update|submit/i.test(String(label || "").trim());
+			if ((!visible || !isSaveLike) && frm.doc && !frm.is_new()) {
+				page.set_primary_action(__("Save"), () => frm.save());
+			}
+		}
+		if (page && page.btn_primary && page.btn_primary.length) {
+			page.btn_primary
+				.removeClass("hide hidden d-none")
+				.css({ display: "inline-flex", visibility: "visible", opacity: 1 });
+		}
+	} catch (e) {
+		/* ignore */
+	}
+};
+
 frappe.ui.form.on("IC Testing Request", {
 	onload(frm) {
 		instacertify.load_testing_request_library_options(frm);
 	},
 	refresh(frm) {
+		instacertify.ensure_form_save_button(frm);
 		frm.set_query("laboratory", () => ({ filters: { status: "Active" } }));
 		instacertify.load_testing_request_library_options(frm);
 		instacertify.bind_testing_request_library_pickers(frm);
@@ -4456,6 +4535,34 @@ frappe.ui.form.on("IC Testing Request", {
 	number_of_samples(frm) {
 		if (frm.is_new() || frm._ic_skip_lab_picker) return;
 		instacertify.ensure_testing_request_samples(frm);
+	},
+	status(frm) {
+		frm.dirty();
+		instacertify.ensure_form_save_button(frm);
+	},
+	priority(frm) {
+		frm.dirty();
+		instacertify.ensure_form_save_button(frm);
+	},
+	project(frm) {
+		frm.dirty();
+		instacertify.ensure_form_save_button(frm);
+	},
+	assigned_person(frm) {
+		frm.dirty();
+		instacertify.ensure_form_save_button(frm);
+	},
+	ic_assignees_add(frm) {
+		frm.dirty();
+		instacertify.ensure_form_save_button(frm);
+	},
+	ic_assignees_remove(frm) {
+		frm.dirty();
+		instacertify.ensure_form_save_button(frm);
+	},
+	test_report(frm) {
+		frm.dirty();
+		instacertify.ensure_form_save_button(frm);
 	},
 	test_name(frm) {
 		if (frm._ic_skip_lab_picker) return;
