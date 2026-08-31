@@ -5120,11 +5120,13 @@ instacertify.render_testing_request_samples = function (frm, samples) {
 		rows = rows || [];
 		if (!rows.length) {
 			wrap.$wrapper.html(`
-				<div class="ic-tr-samples" style="padding:10px 12px;border:1px dashed #cfd8dc;border-radius:8px;background:#fafbfc;">
-					<div style="font-weight:600;color:#0D47A1;margin-bottom:4px;">${__("Sample Tracking")}</div>
-					<p class="text-muted" style="margin:0 0 8px;">
-						${__("No samples linked yet. Samples are created from Number of Samples using Product / Test / Laboratory from this request.")}
-					</p>
+				<div class="ic-tr-samples ic-tr-samples--empty">
+					<div class="ic-tr-samples-head">
+						<div class="ic-tr-samples-title">${__("Sample Tracking")}</div>
+						<p class="ic-tr-samples-sub">
+							${__("No samples linked yet. Samples are created from Number of Samples using Product / Test / Laboratory from this request.")}
+						</p>
+					</div>
 					<button type="button" class="btn btn-sm btn-primary ic-tr-ensure-samples">${__("Create Samples")}</button>
 				</div>
 			`);
@@ -5138,48 +5140,66 @@ instacertify.render_testing_request_samples = function (frm, samples) {
 				const loc = s.sample_location || s.status || "—";
 				const color = instacertify._sample_custody_color(loc);
 				const lab = s.laboratory_name || s.laboratory || "—";
-				return `<tr>
-					<td><a href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}">
-						${frappe.utils.escape_html(s.tracking_number || s.name)}</a></td>
-					<td>${frappe.utils.escape_html(s.sample_description || "—")}</td>
-					<td><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${color}22;color:${color};font-weight:600;font-size:12px;">
-						${frappe.utils.escape_html(loc)}</span></td>
-					<td>${frappe.utils.escape_html(lab)}
-						${s.laboratory_city ? `<div class="text-muted" style="font-size:11px">${frappe.utils.escape_html(s.laboratory_city)}</div>` : ""}</td>
-					<td class="text-muted" style="font-size:12px">${frappe.utils.escape_html(s.status || "")}</td>
-					<td><button type="button" class="btn btn-xs btn-default ic-open-sample" data-name="${frappe.utils.escape_html(s.name)}">${__("Open")}</button></td>
+				const city = s.laboratory_city
+					? `<div class="ic-tr-samples-muted">${frappe.utils.escape_html(s.laboratory_city)}</div>`
+					: "";
+				return `<tr class="ic-tr-samples-row" data-name="${frappe.utils.escape_html(s.name)}">
+					<td class="ic-tr-col-track">
+						<a class="ic-tr-track-link" href="/app/ic-sample-tracking/${encodeURIComponent(s.name)}">
+							${frappe.utils.escape_html(s.tracking_number || s.name)}
+						</a>
+					</td>
+					<td class="ic-tr-col-desc">${frappe.utils.escape_html(s.sample_description || "—")}</td>
+					<td class="ic-tr-col-loc">
+						<span class="ic-tr-loc-badge" style="--ic-loc:${color};">${frappe.utils.escape_html(loc)}</span>
+					</td>
+					<td class="ic-tr-col-lab">${frappe.utils.escape_html(lab)}${city}</td>
+					<td class="ic-tr-col-status">${frappe.utils.escape_html(s.status || "")}</td>
+					<td class="ic-tr-col-act">
+						<button type="button" class="btn btn-xs btn-default ic-open-sample" data-name="${frappe.utils.escape_html(s.name)}">${__("Open")}</button>
+					</td>
 				</tr>`;
 			})
 			.join("");
 		wrap.$wrapper.html(`
-			<div class="ic-tr-samples" style="padding:10px 12px;border:1px solid #d7e6ef;border-radius:10px;background:#F5F9FD;">
-				<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+			<div class="ic-tr-samples">
+				<div class="ic-tr-samples-head">
 					<div>
-						<div style="font-weight:650;color:#0D47A1;">${__("Sample Tracking")}</div>
-						<div class="text-muted" style="font-size:12px;max-width:40rem;">
-							${__("Where each sample is now — at lab, Instacertify warehouse, or returned to the client. Update location on the sample form after testing.")}
+						<div class="ic-tr-samples-title">${__("Sample Tracking")}
+							<span class="ic-tr-samples-count">${rows.length}</span>
 						</div>
+						<p class="ic-tr-samples-sub">
+							${__("Where each sample is now — at lab, Instacertify warehouse, or returned to the client. Update location on the sample form after testing.")}
+						</p>
 					</div>
 					<button type="button" class="btn btn-xs btn-default ic-tr-ensure-samples">${__("Sync from Lab / Count")}</button>
 				</div>
-				<table class="table table-bordered" style="margin:0;background:#fff;">
-					<thead><tr>
-						<th>${__("Tracking #")}</th>
-						<th>${__("Description")}</th>
-						<th>${__("Location")}</th>
-						<th>${__("Laboratory")}</th>
-						<th>${__("Status")}</th>
-						<th></th>
-					</tr></thead>
-					<tbody>${rows_html}</tbody>
-				</table>
+				<div class="ic-tr-samples-table-wrap">
+					<table class="ic-tr-samples-table">
+						<thead>
+							<tr>
+								<th class="ic-tr-col-track">${__("Tracking #")}</th>
+								<th class="ic-tr-col-desc">${__("Description")}</th>
+								<th class="ic-tr-col-loc">${__("Location")}</th>
+								<th class="ic-tr-col-lab">${__("Laboratory")}</th>
+								<th class="ic-tr-col-status">${__("Status")}</th>
+								<th class="ic-tr-col-act"></th>
+							</tr>
+						</thead>
+						<tbody>${rows_html}</tbody>
+					</table>
+				</div>
 			</div>
 		`);
 		wrap.$wrapper.find(".ic-tr-ensure-samples").on("click", () => {
 			instacertify.ensure_testing_request_samples(frm, { force_sync: 1 });
 		});
-		wrap.$wrapper.find(".ic-open-sample").on("click", function () {
-			frappe.set_route("Form", "IC Sample Tracking", $(this).data("name"));
+		wrap.$wrapper.find(".ic-open-sample, .ic-tr-samples-row").on("click", function (e) {
+			if ($(e.target).closest("a, button").length && !$(e.target).closest(".ic-open-sample").length) {
+				return;
+			}
+			const name = $(this).data("name") || $(this).closest("tr").data("name");
+			if (name) frappe.set_route("Form", "IC Sample Tracking", name);
 		});
 	};
 
