@@ -90,6 +90,29 @@ frappe.ui.form.on("IC Quotation Template", {
 				);
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Cut"), () => {
+				const label = frm.doc.display_name || frm.doc.template_name || frm.doc.name;
+				frappe.confirm(
+					__("Cut (delete) template <b>{0}</b>? This cannot be undone.", [
+						frappe.utils.escape_html(label),
+					]),
+					() => {
+						frappe.call({
+							method: "instacertify.quotation.events.delete_quotation_template",
+							args: { template: frm.doc.name },
+							freeze: true,
+							callback() {
+								frappe.show_alert({
+									message: __("Template deleted"),
+									indicator: "orange",
+								});
+								frappe.set_route("quote-format-library");
+							},
+						});
+					}
+				);
+			}, __("Actions"));
+
 			frm.add_custom_button(__("New Quotation from Template"), () => {
 				const qtype =
 					frm.doc.quotation_type === "Service" ? "Consulting" : frm.doc.quotation_type;

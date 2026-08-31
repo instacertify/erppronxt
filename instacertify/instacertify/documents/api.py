@@ -569,6 +569,42 @@ def rename_checklist_template_display_name(template: str, display_name: str):
 	}
 
 
+@frappe.whitelist()
+def duplicate_checklist_template(template: str, new_name: str):
+	"""Clone a Document Collection Sheet template under a new display name."""
+	if not template or not frappe.db.exists("IC Document Checklist Template", template):
+		frappe.throw(_("Checklist template not found"))
+	frappe.has_permission("IC Document Checklist Template", "create", throw=True)
+	src = frappe.get_doc("IC Document Checklist Template", template)
+	label = (new_name or "").strip()
+	if not label:
+		frappe.throw(_("Template name is required"))
+	doc = frappe.copy_doc(src)
+	if doc.meta.has_field("display_name"):
+		doc.display_name = label
+	# Unique Template ID is derived in before_insert when name collides.
+	if frappe.db.exists("IC Document Checklist Template", label):
+		doc.template_name = ""
+	else:
+		doc.template_name = label
+	doc.insert(ignore_permissions=True)
+	return {
+		"template": doc.name,
+		"template_name": doc.template_name,
+		"display_name": doc.get("display_name") or doc.template_name,
+	}
+
+
+@frappe.whitelist()
+def delete_checklist_template(template: str):
+	"""Permanently remove a checklist template from the library (Cut)."""
+	if not template or not frappe.db.exists("IC Document Checklist Template", template):
+		frappe.throw(_("Checklist template not found"))
+	frappe.has_permission("IC Document Checklist Template", "delete", throw=True)
+	frappe.delete_doc("IC Document Checklist Template", template, ignore_permissions=True)
+	return {"ok": 1, "template": template}
+
+
 @frappe.whitelist(allow_guest=True)
 def get_document_request_by_token(token: str):
 	name = frappe.db.get_value("IC Document Request", {"share_token": token}, "name")

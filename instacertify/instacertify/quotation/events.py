@@ -425,6 +425,16 @@ def duplicate_quotation_template(template: str, new_name: str):
 
 
 @frappe.whitelist()
+def delete_quotation_template(template: str):
+	"""Permanently remove a quote format from the library (Cut)."""
+	if not template or not frappe.db.exists("IC Quotation Template", template):
+		frappe.throw(_("Quote format not found"))
+	frappe.has_permission("IC Quotation Template", "delete", throw=True)
+	frappe.delete_doc("IC Quotation Template", template, ignore_permissions=True)
+	return {"ok": 1, "template": template}
+
+
+@frappe.whitelist()
 def rename_quotation_template_display_name(template: str, display_name: str):
 	"""Change only the user-facing label — does not rename the document or break Links."""
 	label = (display_name or "").strip()
