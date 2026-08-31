@@ -17,7 +17,7 @@ html {
   --ic-surface: #e8f1f6;
   --ic-surface-2: #dde9f1;
   --ic-mist: #c9dce8;
-  --ic-ink: #152833;
+  --ic-ink: #0B1820;
   --ic-muted: #5a7382;
   --ic-radius: 14px;
   --ic-radius-sm: 10px;
@@ -45,7 +45,7 @@ html {
   --surface-white: #ffffff;
   --border-color: #c8dae6;
   --navbar-bg: rgba(244, 249, 252, 0.88);
-  --text-color: #152833;
+  --text-color: #0B1820;
   --heading-color: #065175;
   --font-stack: "Poppins", "Segoe UI", sans-serif;
 
@@ -60,8 +60,8 @@ html {
   --text-on-danger: #ffffff;
   --text-primary: #065175;
   --text-on-blue: #ffffff;
-  --icon-stroke: #152833;
-  --icon-stroke-muted: #334955;
+  --icon-stroke: #0B1820;
+  --icon-stroke-muted: #5a7382;
   /* Uniform soft highlight brightness (same luminance family) */
   --ic-hl-bg: rgba(6, 81, 117, 0.08);
   --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
@@ -4916,8 +4916,6 @@ a.btn-primary *,
 .primary-action * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  fill: #ffffff !important;
-  stroke: #ffffff !important;
 }
 
 .btn-primary .es-icon use,
@@ -4930,6 +4928,8 @@ a.btn-primary *,
 .btn-success svg {
   stroke: #ffffff !important;
   color: #ffffff !important;
+  --icon-stroke: #ffffff !important;
+  fill: none !important;
 }
 
 /* Soft / outline buttons: dark ink on light surface */
@@ -5720,10 +5720,9 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .page-head .inner-group-button > .btn-default,
 .page-head .custom-actions .btn-default,
 .page-head .actions-btn-group .btn-default,
-.page-actions .inner-group-button > .btn,
-.standard-actions .inner-group-button > .btn,
-.page-actions .custom-btn-group .btn-default,
-[data-page-route^="Form/"] .page-head .btn-default:not(.btn-primary):not(.btn-danger):not(.btn-warning) {
+.page-actions .inner-group-button > .btn-default,
+.standard-actions .inner-group-button > .btn-default,
+.page-actions .custom-btn-group .btn-default {
   color: #033447 !important;
   -webkit-text-fill-color: #033447 !important;
   background: #ffffff !important;
@@ -5734,8 +5733,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 }
 .page-head .inner-group-button > .btn-default:hover,
 .page-head .custom-actions .btn-default:hover,
-.page-actions .inner-group-button > .btn:hover,
-[data-page-route^="Form/"] .page-head .btn-default:not(.btn-primary):hover {
+.page-actions .inner-group-button > .btn-default:hover {
   color: #033447 !important;
   background: #e7f1f8 !important;
   border-color: #065175 !important;
@@ -5818,4 +5816,66 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .btn-primary .ic-action-icon,
 .primary-action .ic-action-icon {
   color: #ffffff !important;
+}
+
+/* Protect Testing & Samples + Testing Request surfaces (gradients stay intact) */
+.ic-ts,
+.ic-ts-page,
+.ic-ts-head,
+.ic-ts-card,
+.ic-ts-summary,
+.ic-ts-tabs,
+[data-page-route="testing-samples"] .layout-main-section,
+[data-page-route="Form/IC Testing Request"] .form-layout,
+[data-page-route="Form/IC Quotation Template"] .form-layout {
+  /* Do not force opaque white over branded section backgrounds */
+  background-clip: padding-box;
+}
+.ic-ts-head {
+  background:
+    linear-gradient(135deg, rgba(6, 81, 117, 0.08), rgba(236, 105, 31, 0.06)),
+    linear-gradient(180deg, #ffffff, #f4f9fc) !important;
+}
+.ic-ts-card {
+  background: #ffffff !important;
+}
+.ic-ts-summary {
+  background: linear-gradient(180deg, #fff 0%, #f7fbfe 100%) !important;
+}
+.ic-ts-tabs {
+  background: #eef4f8 !important;
+}
+.ic-ts-tab-gen.is-active {
+  background: #065175 !important;
+  color: #ffffff !important;
+}
+.ic-ts-tab-manage.is-active {
+  background: #EC691F !important;
+  color: #ffffff !important;
+}
+.ic-ts-tab-gen.is-active .ic-ts-tab-label,
+.ic-ts-tab-gen.is-active .ic-ts-tab-hint,
+.ic-ts-tab-manage.is-active .ic-ts-tab-label,
+.ic-ts-tab-manage.is-active .ic-ts-tab-hint {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Align action icons with labels (no vertical drift) */
+.page-head .btn.ic-has-action-icon,
+.page-actions .btn.ic-has-action-icon,
+.standard-actions .btn.ic-has-action-icon,
+.modal .btn.ic-has-action-icon,
+.ic-quote-lib-row-actions .btn,
+.ic-doclib-card-actions .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle;
+}
+.ic-action-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 0 !important;
 }

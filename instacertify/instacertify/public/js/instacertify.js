@@ -30,7 +30,7 @@ instacertify.ensure_contrast_guard = function () {
   --btn-primary-color: #ffffff !important;
   --text-on-primary: #ffffff;
   --icon-stroke: #0B1820 !important;
-  --text-muted: #2A3F4A !important;
+  --text-muted: #3A5563 !important;
   --ic-line-ink: #0B1820;
   --ic-hl-bg: rgba(6, 81, 117, 0.08);
   --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
@@ -64,9 +64,8 @@ instacertify.ensure_contrast_guard = function () {
   color: #033447 !important;
   -webkit-text-fill-color: #033447 !important;
 }
-/* Dark line icons on light chrome — exclude filled primary/accent buttons */
-svg.icon:not(.btn-primary svg):not(.btn-warning svg):not(.btn-accent svg):not(.btn-danger svg):not(.btn-success svg),
-svg.es-icon,
+/* Dark line icons on light chrome (do not use complex :not() — can drop the whole rule) */
+svg.icon, svg.es-icon,
 .icon use, .es-icon use,
 .page-icon-group .icon-btn svg,
 .page-icon-group button svg,
@@ -74,10 +73,10 @@ svg.es-icon,
 .standard-actions .btn-default svg,
 .menu-btn-group .dropdown-item svg,
 .menu-item-icon svg, .ic-action-icon svg,
-.form-sidebar svg.icon, .form-sidebar .sidebar-image-section ~ * svg,
+.form-sidebar svg.icon,
 .btn-modal-close svg, .btn-modal-minimize svg,
 .modal-header .btn:not(.btn-primary) svg, .section-head .icon,
-.grid-row-check, .row-actions svg, .btn-open-row svg,
+.row-actions svg, .btn-open-row svg,
 .ql-toolbar button svg, .ql-toolbar .ql-stroke,
 .link-btn svg, .btn-search svg, .control-input .link-btn svg {
   stroke: #0B1820 !important;
@@ -93,6 +92,7 @@ svg.es-icon,
 .btn[data-label="Cut"] svg,
 .btn[title="Cut"] svg {
   stroke-width: 1.85 !important;
+  fill: none !important;
 }
 .ql-toolbar .ql-stroke { stroke: #0B1820 !important; stroke-width: 1.7 !important; }
 .ql-toolbar .ql-fill { fill: #0B1820 !important; }
@@ -101,18 +101,30 @@ svg.es-icon,
   opacity: 1 !important;
 }
 /* Filled buttons: white glyphs last so they win over dark line-icon rules */
-.btn-primary *, a.btn-primary *, .btn-warning *, .btn-accent *, .btn-danger *,
-.btn-success *, .ic-btn-primary *, .ic-ts-tab-gen.is-active *, .ic-ts-tab-manage.is-active *,
-.ic-quote-lib-tag.active *, .ic-doclib-cat.is-active *, .primary-action *,
-.for-login .btn-primary *, .for-login .btn-login *, .for-login button[type="submit"] *,
-.login-content .btn-primary *,
-.btn-primary svg, .btn-primary .icon, .btn-primary .es-icon use,
-.btn-warning svg, .btn-accent svg, .btn-danger svg, .btn-success svg {
+.btn-primary, a.btn-primary, .btn-warning, .btn-accent, .btn-danger,
+.btn-success, .ic-btn-primary, .primary-action,
+.for-login .btn-primary, .for-login .btn-login, .for-login button[type="submit"],
+.login-content .btn-primary {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  fill: #ffffff !important;
+}
+.btn-primary .ic-action-label, .btn-primary .hidden-xs, .btn-primary span:not(.ic-action-icon),
+.primary-action span:not(.ic-action-icon),
+.ic-ts-tab-gen.is-active .ic-ts-tab-label, .ic-ts-tab-manage.is-active .ic-ts-tab-label,
+.ic-ts-tab-gen.is-active .ic-ts-tab-hint, .ic-ts-tab-manage.is-active .ic-ts-tab-hint,
+.ic-quote-lib-tag.active, .ic-doclib-cat.is-active {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+.btn-primary svg, .btn-primary .icon, .btn-primary .es-icon use, .btn-primary .ic-action-icon,
+.btn-primary .ic-action-icon svg, .btn-primary .ic-action-icon svg use,
+.btn-warning svg, .btn-accent svg, .btn-danger svg, .btn-success svg,
+.ic-btn-primary svg, .primary-action svg {
+  color: #ffffff !important;
   stroke: #ffffff !important;
   --icon-stroke: #ffffff !important;
+  fill: none !important;
+  opacity: 1 !important;
 }
 .ic-list-cat-btn.btn-primary {
   background: #e4f1f8 !important;
@@ -120,6 +132,14 @@ svg.es-icon,
   color: #033447 !important;
   -webkit-text-fill-color: #033447 !important;
   box-shadow: none !important;
+}
+.ic-list-cat-btn.btn-primary *,
+.ic-list-cat-btn.btn-primary svg {
+  color: #033447 !important;
+  -webkit-text-fill-color: #033447 !important;
+  stroke: #033447 !important;
+  --icon-stroke: #033447 !important;
+  fill: none !important;
 }
 .ic-ts-tab.is-active .ic-ts-tab-label, .ic-ts-tab.is-active .ic-ts-tab-hint {
   color: #ffffff !important;
@@ -130,11 +150,11 @@ svg.es-icon,
 }
 ::selection, ::-moz-selection {
   background: rgba(6, 81, 117, 0.12) !important;
-  color: #152833 !important;
+  color: #0B1820 !important;
 }
 mark, .highlight, .search-highlight, .frappe-list .highlight, .ql-editor mark, span.highlight, .awesomplete mark {
   background: rgba(6, 81, 117, 0.08) !important;
-  color: #152833 !important;
+  color: #0B1820 !important;
   box-shadow: none !important;
   border-radius: 2px;
 }
@@ -144,7 +164,7 @@ mark, .highlight, .search-highlight, .frappe-list .highlight, .ql-editor mark, s
 .dropdown-item.active, .dropdown-item:hover,
 .ic-ts-table tbody tr:hover, .ic-ts-tr-row.is-open, .ic-ts-table tbody tr.is-selected {
   background: rgba(6, 81, 117, 0.08) !important;
-  color: #152833 !important;
+  color: #0B1820 !important;
   box-shadow: inset 3px 0 0 rgba(236, 105, 31, 0.55);
 }
 .desk-sidebar .standard-sidebar-item.selected,
