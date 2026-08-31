@@ -31,7 +31,7 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 					<div class="ic-doclib-kicker">${__("Templates")}</div>
 					<div class="ic-doclib-title">${__("Document Collection Sheet Library")}</div>
 					<div class="ic-doclib-sub">${__(
-						"Customise format fields (check/uncheck optional built-ins) and rows: Name, Remark, Mandatory, Collect As. Use a template to create a customer request with a sharable upload link."
+						"Reusable templates for Documents Collection + Customer Data Sheet. Edit once, then Use for Customer as many times as you need — each use creates a fresh request with a share link. Collected fills and uploads map onto the Customer Data Drive."
 					)}</div>
 				</div>
 				<div class="ic-doclib-tools">
@@ -197,11 +197,11 @@ frappe.pages["document-collection-library"].on_page_load = function (wrapper) {
 	function use_template(row) {
 		const shown = row.display_name || row.template_name || row.name;
 		const d = new frappe.ui.Dialog({
-			title: __("Create Document Collection Request"),
+			title: __("Create new request from template"),
 			fields: [
 				{
 					fieldtype: "HTML",
-					options: `<p class="text-muted">${__("Template")}: <b>${frappe.utils.escape_html(shown)}</b>. ${__("Customer is mandatory. After create you get a sharable upload link.")}</p>`,
+					options: `<p class="text-muted">${__("Template")}: <b>${frappe.utils.escape_html(shown)}</b>. ${__("Creates a brand-new Documents Collection Sheet for this customer. The template stays reusable for other customers.")}</p>`,
 				},
 				{
 					fieldname: "customer",

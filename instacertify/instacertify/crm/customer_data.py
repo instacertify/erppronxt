@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import frappe
@@ -130,7 +131,10 @@ def save_collected_data_snapshot(
 	payload: dict[str, Any],
 	category: str = "Collected Data",
 ) -> str | None:
-	"""Persist structured customer-submitted fields as a text file on Customer Data Drive."""
+	"""Persist structured customer-submitted fields as a text file on Customer Data Drive.
+
+	Replaces the previous snapshot for the same source so Customer Data Sheet stays one file per request.
+	"""
 	if not customer or not frappe.db.exists("Customer", customer):
 		return None
 	from instacertify.crm.events import _ensure_customer_drive_folder
@@ -159,10 +163,36 @@ def save_collected_data_snapshot(
 		else:
 			lines.append(f"{k}: {v}")
 	content = "\n".join(lines) + "\n"
-	fname = f"{category}-{source_name}-{frappe.generate_hash()[:6]}.txt"[:140]
+	# Stable name so re-saves replace the prior Customer Data Sheet for this request
+	safe_src = re.sub(r"[^A-Za-z0-9._-]+", "-", str(source_name or "sheet"))[:80]
+	fname = f"Customer-Data-Sheet-{safe_src}.txt"[:140]
 
 	try:
-		# Avoid flooding identical snapshots: skip if latest same source has identical content hash
+		# Remove prior snapshots for this source (legacy hashed names + stable name)
+		prior = frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Customer",
+				"attached_to_name": customer,
+				"folder": folder,
+			},
+			fields=["name", "file_name"],
+			limit_page_length=200,
+		)
+		for f in prior or []:
+			fn = f.file_name or ""
+			if fn == fname or (
+				source_name
+				and (
+					fn.startswith(f"{category}-{source_name}-")
+					or fn.startswith(f"Customer-Data-Sheet-{safe_src}")
+				)
+			):
+				try:
+					frappe.delete_doc("File", f.name, ignore_permissions=True, force=1)
+				except Exception:
+					pass
+
 		file_doc = frappe.get_doc(
 			{
 				"doctype": "File",
@@ -240,19 +270,18 @@ def ingest_data_collection(doc):
 		"product_brand": doc.get("product_brand"),
 		"data_collection_remarks": doc.get("data_collection_remarks"),
 	}
-	extra = []
+	# Flatten fill-field rows into top-level labels so Customer Data Sheet is readable.
 	for row in doc.get("data_fields") or []:
-		extra.append(
-			{
-				"label": row.get("field_label") or row.get("field_name") or row.name,
-				"value": row.get("field_value"),
-			}
-		)
-	if extra:
-		payload["custom_fields"] = extra
+		label = (row.get("field_label") or row.get("field_name") or "").strip()
+		value = row.get("field_value")
+		if not label or value in (None, ""):
+			continue
+		# Avoid colliding with built-in keys
+		key = label if label not in payload else f"field::{label}"
+		payload[key] = value
 	save_collected_data_snapshot(
 		customer,
-		title="Documents Data Collection",
+		title="Customer Data Sheet — Documents Collection",
 		source_doctype="IC Document Request",
 		source_name=doc.name,
 		payload=payload,

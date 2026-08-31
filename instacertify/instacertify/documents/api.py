@@ -375,16 +375,20 @@ def _apply_template_rows(doc, tmpl):
 	"""Map template rows onto request items (Upload File) and data_fields (Fill Field)."""
 	copy_format_field_flags(tmpl, doc)
 	doc.set("items", [])
-	include_data = is_format_field_included(doc, "include_data_fields")
-	if frappe.get_meta("IC Document Request").has_field("data_fields"):
+	has_data_fields_meta = frappe.get_meta("IC Document Request").has_field("data_fields")
+	if has_data_fields_meta:
 		doc.set("data_fields", [])
+
+	# If the template defines Fill Field rows, always keep Additional Data Fields on.
+	tmpl_has_fill = any(_entry_type(r) == "Fill Field" for r in (tmpl.items or []))
+	if tmpl_has_fill and doc.meta.has_field("include_data_fields"):
+		doc.include_data_fields = 1
+
 	for row in tmpl.items or []:
 		remark = _row_remark(row)
 		entry = _entry_type(row)
 		if entry == "Fill Field":
-			if not include_data:
-				continue
-			if not frappe.get_meta("IC Document Request").has_field("data_fields"):
+			if not has_data_fields_meta:
 				continue
 			doc.append(
 				"data_fields",
@@ -415,7 +419,10 @@ def apply_checklist_template(document_request: str, template: str):
 	tmpl = frappe.get_doc("IC Document Checklist Template", template)
 	_apply_template_rows(doc, tmpl)
 	doc.save(ignore_permissions=True)
-	return doc.as_dict()
+	# Seed defaults only when template had no Fill Field rows.
+	if not (doc.get("data_fields") or []):
+		_ensure_default_data_fields(doc)
+	return frappe.get_doc("IC Document Request", doc.name).as_dict()
 
 
 @frappe.whitelist()
@@ -450,17 +457,18 @@ def create_document_request_for_customer(
 			frappe.throw(_("Template {0} not found").format(template))
 		apply_checklist_template(doc.name, template)
 		doc.reload()
-	elif not doc.items:
-		for name, cat in (
-			("Company Registration / GST", "Customer Documents"),
-			("Product Datasheet / Specs", "Technical Documents"),
-			("Authorization Letter", "Applications"),
-		):
-			doc.append(
-				"items",
-				{"document_name": name, "category": cat, "is_mandatory": 1, "status": "Pending"},
-			)
-		doc.save(ignore_permissions=True)
+	else:
+		if not doc.items:
+			for name, cat in (
+				("Company Registration / GST", "Customer Documents"),
+				("Product Datasheet / Specs", "Technical Documents"),
+				("Authorization Letter", "Applications"),
+			):
+				doc.append(
+					"items",
+					{"document_name": name, "category": cat, "is_mandatory": 1, "status": "Pending"},
+				)
+			doc.save(ignore_permissions=True)
 		_ensure_default_data_fields(doc)
 		doc.reload()
 
@@ -706,24 +714,27 @@ def save_data_collection(
 	_assert_doc_request_open(doc)
 
 	if frappe.get_meta("IC Document Request").has_field("company_legal_name"):
-		doc.company_legal_name = company_legal_name or doc.company_legal_name
-		doc.gstin = gstin or doc.gstin
-		doc.data_contact_person = data_contact_person or doc.data_contact_person
-		doc.data_contact_phone = data_contact_phone or doc.data_contact_phone
-		doc.data_contact_email = data_contact_email or doc.data_contact_email
+		# Explicit None = leave unchanged; empty string clears the field.
+		def _set_if_provided(field: str, value):
+			if value is None:
+				return
+			doc.set(field, value)
+
+		_set_if_provided("company_legal_name", company_legal_name)
+		_set_if_provided("gstin", gstin)
+		_set_if_provided("data_contact_person", data_contact_person)
+		_set_if_provided("data_contact_phone", data_contact_phone)
+		_set_if_provided("data_contact_email", data_contact_email)
 		if is_format_field_included(doc, "include_company_address"):
-			doc.company_address = company_address or doc.company_address
+			_set_if_provided("company_address", company_address)
 		if is_format_field_included(doc, "include_product_name"):
-			doc.product_name = product_name or doc.product_name
+			_set_if_provided("product_name", product_name)
 		if is_format_field_included(doc, "include_product_model"):
-			doc.product_model = product_model or doc.product_model
+			_set_if_provided("product_model", product_model)
 		if is_format_field_included(doc, "include_product_brand"):
-			doc.product_brand = product_brand or doc.product_brand
-		if (
-			data_collection_remarks is not None
-			and is_format_field_included(doc, "include_data_collection_remarks")
-		):
-			doc.data_collection_remarks = data_collection_remarks
+			_set_if_provided("product_brand", product_brand)
+		if is_format_field_included(doc, "include_data_collection_remarks"):
+			_set_if_provided("data_collection_remarks", data_collection_remarks)
 
 	if (
 		data_fields is not None
@@ -739,7 +750,10 @@ def save_data_collection(
 		for row in doc.get("data_fields") or []:
 			payload = by_name.get(row.name)
 			if payload is not None:
-				row.field_value = payload.get("field_value") or ""
+				# Allow clearing: always take provided value (may be "")
+				row.field_value = payload.get("field_value") if "field_value" in payload else (row.field_value or "")
+				if row.field_value is None:
+					row.field_value = ""
 
 	if doc.status == "Sent to Customer":
 		doc.status = "Partially Uploaded"
@@ -752,6 +766,75 @@ def save_data_collection(
 		frappe.log_error(frappe.get_traceback(), "customer data ingest collection")
 	_notify_upload(doc, subject_prefix="Data collection updated")
 	return {"ok": 1, "status": doc.status}
+
+
+@frappe.whitelist(allow_guest=True)
+def upload_portal_file(token: str, filename: str | None = None, filedata: str | None = None):
+	"""Guest-safe file upload for Documents Collection Sheet (avoids core upload_file Guest limits).
+
+	Accepts multipart via frappe.request OR base64 `filedata` (data URL / raw b64).
+	Returns {file_url, file_name}.
+	"""
+	import base64
+	from pathlib import Path
+
+	parent = frappe.db.get_value("IC Document Request", {"share_token": token}, "name")
+	if not parent:
+		frappe.throw(_("Invalid document link"), frappe.PermissionError)
+	doc = frappe.get_doc("IC Document Request", parent)
+	_assert_doc_request_open(doc)
+
+	content = None
+	fname = (filename or "").strip() or "upload.bin"
+
+	files = getattr(frappe.request, "files", None) if getattr(frappe, "request", None) else None
+	if files:
+		fobj = files.get("file") or next(iter(files.values()), None)
+		if fobj:
+			content = fobj.stream.read()
+			fname = fobj.filename or fname
+
+	if content is None and filedata:
+		raw = str(filedata)
+		if "," in raw and raw.strip().lower().startswith("data:"):
+			raw = raw.split(",", 1)[1]
+		try:
+			content = base64.b64decode(raw)
+		except Exception:
+			frappe.throw(_("Invalid file data"))
+
+	if not content:
+		frappe.throw(_("No file uploaded"))
+
+	if len(content) > 20 * 1024 * 1024:
+		frappe.throw(_("File too large (max 20 MB)"))
+
+	ext = Path(fname).suffix.lower()
+	if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+		frappe.throw(_("File type not allowed. Use PDF, image, Excel/CSV, or Word."))
+
+	from frappe.utils.file_manager import save_file
+
+	file_doc = save_file(fname, content, "IC Document Request", doc.name, is_private=1)
+	return {"file_url": file_doc.file_url, "file_name": file_doc.file_name, "name": file_doc.name}
+
+
+@frappe.whitelist()
+def push_document_request_to_customer(document_request: str):
+	"""Staff: write current sheet uploads + filled data onto Customer Data Drive."""
+	doc = frappe.get_doc("IC Document Request", document_request)
+	if not doc.customer:
+		frappe.throw(_("Customer is mandatory to map collected data"))
+	from instacertify.crm.customer_data import ingest_data_collection, ingest_document_upload
+
+	ingest_data_collection(doc)
+	for row in doc.items or []:
+		if row.get("uploaded_file"):
+			try:
+				ingest_document_upload(doc, row)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), "push upload to customer")
+	return {"ok": 1, "customer": doc.customer}
 
 
 @frappe.whitelist(allow_guest=True)

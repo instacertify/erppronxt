@@ -127,7 +127,7 @@
    "doctype": "DocField",
    "fieldname": "section_data_collection",
    "fieldtype": "Section Break",
-   "label": "Data Collection Sheet"
+   "label": "Customer Data Sheet"
   },
   {
    "doctype": "DocField",
@@ -217,11 +217,11 @@
    "label": "Data Collection Remarks",
    "default": "1"
   },
-  {
+	{
    "doctype": "DocField",
    "fieldname": "include_data_fields",
    "fieldtype": "Check",
-   "label": "Additional Data Fields",
+   "label": "Customer Data Fields",
    "default": "1"
   },
   {
@@ -283,14 +283,15 @@
    "doctype": "DocField",
    "fieldname": "section_data_fields",
    "fieldtype": "Section Break",
-   "label": "Additional Data Fields"
+   "label": "Customer Data Fields"
   },
   {
    "doctype": "DocField",
    "fieldname": "data_fields",
    "fieldtype": "Table",
-   "label": "Data Collection Fields",
-   "options": "IC Data Collection Item"
+   "label": "Customer Data Fields",
+   "options": "IC Data Collection Item",
+   "description": "Fill values here (or via customer portal). Saved data is mapped to the Customer Data Drive as a Customer Data Sheet."
   },
   {
    "doctype": "DocField",
