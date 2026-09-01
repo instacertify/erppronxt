@@ -19,8 +19,8 @@
    "fieldname": "cost_component",
    "fieldtype": "Data",
    "label": "Cost Component",
-   "in_list_view": 1,
-   "columns": 2,
+   "in_list_view": 0,
+   "columns": 1,
    "reqd": 0,
    "description": "Optional label — Consulting Charges, Government Fees, or your own name."
   },
@@ -36,22 +36,47 @@
    "doctype": "DocField",
    "fieldname": "amount",
    "fieldtype": "Currency",
-   "label": "Default Amount",
+   "label": "Unit Price (Default Charges)",
    "in_list_view": 1,
    "columns": 1,
    "reqd": 0,
    "default": "0",
    "options": "currency",
-   "description": "Default amount copied onto new quotations — sales can edit per quote."
+   "bold": 1,
+   "description": "Default unit charge from the quote format — editable on every quote. Currency symbol follows the quotation currency (customer)."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "label": "No. of Units",
+   "in_list_view": 1,
+   "columns": 1,
+   "default": 1,
+   "non_negative": 1,
+   "bold": 1,
+   "description": "Quantity of units. Total Charges = Unit Price × No. of Units."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Charges",
+   "in_list_view": 1,
+   "columns": 1,
+   "options": "currency",
+   "read_only": 1,
+   "bold": 1,
+   "description": "Unit Price × No. of Units — shown to the customer."
   },
   {
    "doctype": "DocField",
    "fieldname": "charges_display",
    "fieldtype": "Data",
-   "label": "Charges Display (Print)",
-   "in_list_view": 1,
-   "columns": 1,
-   "description": "Optional print text e.g. ₹ 25,000/- per Test Report (overrides Amount on print)"
+   "label": "Charges Display (legacy)",
+   "in_list_view": 0,
+   "hidden": 1,
+   "description": "Deprecated — print uses Unit Price with quotation currency symbol."
   },
   {
    "doctype": "DocField",
@@ -70,7 +95,7 @@
    "fieldname": "revenue_treatment",
    "fieldtype": "Select",
    "label": "Revenue",
-   "in_list_view": 1,
+   "in_list_view": 0,
    "columns": 1,
    "reqd": 0,
    "default": "Counted Revenue",

@@ -46,11 +46,18 @@ def get_quotation(token: str):
 
 	cost_items = []
 	for row in doc.get("ic_cost_items") or []:
+		qty = int(row.get("qty") or 1) or 1
+		unit = flt(row.amount)
+		total = row.get("total_amount")
+		if total in (None, ""):
+			total = unit * qty
 		cost_items.append(
 			{
 				"particulars": _plain(row.particulars or row.cost_component or row.description),
-				"description": _plain(row.description or row.charges_display or ""),
-				"amount": row.amount,
+				"description": _plain(row.description or ""),
+				"unit_price": unit,
+				"quantity": qty,
+				"amount": flt(total),
 				"payment_destination": _plain(row.payment_destination),
 			}
 		)
@@ -125,6 +132,10 @@ def get_quotation(token: str):
 		"ic_deliverables": _plain(doc.ic_deliverables),
 		"ic_payment_terms": _plain(doc.ic_payment_terms),
 		"ic_customer_remarks": _plain(doc.ic_customer_remarks),
+		"ic_show_about": 0 if doc.get("ic_show_about") in (0, "0", False) else 1,
+		"ic_show_deliverables": 0 if doc.get("ic_show_deliverables") in (0, "0", False) else 1,
+		"ic_show_commercials": 0 if doc.get("ic_show_commercials") in (0, "0", False) else 1,
+		"ic_show_payment_terms": 0 if doc.get("ic_show_payment_terms") in (0, "0", False) else 1,
 		"currency": doc.currency,
 		"transaction_date": str(doc.transaction_date or ""),
 		"valid_till": str(doc.valid_till or ""),

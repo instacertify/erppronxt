@@ -2233,6 +2233,13 @@ frappe.ui.form.on("Quotation", {
 				window.open(url, "_blank");
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Show All Print Sections"), () => {
+				instacertify.set_all_quote_print_sections(frm, 1);
+			}, __("Print Sections"));
+			frm.add_custom_button(__("Hide All Print Sections"), () => {
+				instacertify.set_all_quote_print_sections(frm, 0);
+			}, __("Print Sections"));
+
 			frm.add_custom_button(__("Save as Template"), () => {
 				frappe.prompt(
 					[
@@ -2813,6 +2820,39 @@ instacertify.setup_quotation_template_filter = function (frm) {
 	});
 };
 
+instacertify.QUOTE_PRINT_SECTION_FIELDS = [
+	"ic_show_about",
+	"ic_show_applicable_standards",
+	"ic_show_process",
+	"ic_show_validity",
+	"ic_show_sample_required",
+	"ic_show_documents_required",
+	"ic_show_timelines",
+	"ic_show_deliverables",
+	"ic_show_commercials",
+	"ic_show_payment_terms",
+	"ic_show_banking",
+	"ic_show_cancellation",
+	"ic_show_force_majeure",
+	"ic_show_confidentiality",
+	"ic_show_terms",
+	"ic_show_sample_handling",
+];
+
+instacertify.set_all_quote_print_sections = function (frm, value) {
+	(instacertify.QUOTE_PRINT_SECTION_FIELDS || []).forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.set_value(f, value);
+		}
+	});
+	frappe.show_alert({
+		message: value
+			? __("All print sections set to Show")
+			: __("All print sections set to Hide"),
+		indicator: value ? "green" : "orange",
+	});
+};
+
 instacertify.hide_sales_order_button = function (frm) {
 	const hide = () => {
 		frm.remove_custom_button(__("Sales Order"), __("Create"));
@@ -2823,6 +2863,158 @@ instacertify.hide_sales_order_button = function (frm) {
 	hide();
 	setTimeout(hide, 300);
 	setTimeout(hide, 800);
+};
+
+/**
+ * Unlock every quotation content field for editing.
+ * Banking details (account number / IFSC / UPI) stay on IC Bank Account —
+ * only the bank account Link is choosable on the quote.
+ * Does not force-show fields — section visibility stays with toggle_quotation_sections.
+ */
+instacertify.unlock_quotation_content_fields = function (frm) {
+	if (!frm || !frm.fields_dict) return;
+
+	const keep_read_only = new Set([
+		"ic_quote_number",
+		"ic_primary_assignee",
+		"ic_share_token",
+		"ic_shared_on",
+		"ic_customer_remarks",
+		"ic_qr_code",
+		"ic_commercial_value",
+		"ic_passthrough_value",
+		"ic_total_quoted_value",
+		"naming_series",
+		"amended_from",
+	]);
+
+	Object.keys(frm.fields_dict).forEach((fieldname) => {
+		const df = frm.fields_dict[fieldname].df;
+		if (!df) return;
+		const ft = df.fieldtype;
+		if (
+			[
+				"Section Break",
+				"Column Break",
+				"Tab Break",
+				"HTML",
+				"Heading",
+				"Button",
+				"Fold",
+			].includes(ft)
+		) {
+			return;
+		}
+		if (keep_read_only.has(fieldname)) return;
+		// Bank account Link stays choosable; do not treat as free-text banking details
+		frm.set_df_property(fieldname, "read_only", 0);
+	});
+
+	[
+		"ic_label_about",
+		"ic_label_standard",
+		"ic_label_process",
+		"ic_label_validity",
+		"ic_label_commercials",
+		"ic_label_particulars_col",
+		"ic_label_charges_col",
+		"ic_label_payment_terms",
+		"ic_label_timelines",
+		"ic_label_sample_required",
+		"ic_label_documents_required",
+		"ic_label_banking",
+		"ic_label_cancellation",
+		"ic_label_force_majeure",
+		"ic_label_confidentiality",
+		"ic_label_subject",
+		"ic_label_about_testing",
+		"ic_label_applicable_standards",
+		"ic_label_samples_requirements",
+		"ic_label_deliverable",
+		"ic_label_timeline",
+		"ic_label_payment_term",
+		"ic_label_sample_handling",
+		"ic_about_service",
+		"ic_standard_narrative",
+		"ic_process_steps",
+		"ic_validity_text",
+		"ic_timeline_details",
+		"ic_sample_required",
+		"ic_documents_required",
+		"ic_commercials_notes",
+		"ic_scope_of_work",
+		"ic_deliverables",
+		"ic_estimated_timeline",
+		"ic_subject",
+		"ic_about_testing",
+		"ic_applicable_standards_text",
+		"ic_samples_note",
+		"ic_gst_note",
+		"ic_sample_handling_policy",
+		"ic_payment_terms",
+		"ic_cancellation_policy",
+		"ic_confidentiality",
+		"ic_terms_and_conditions",
+		"ic_force_majeure",
+		"ic_service_name",
+		"ic_service_family",
+		"ic_certification_type",
+		"ic_applicable_standard",
+		"ic_validity_days",
+		"ic_cost_items",
+		"ic_test_items",
+	].forEach((f) => {
+		if (!frm.fields_dict[f]) return;
+		frm.set_df_property(f, "read_only", 0);
+	});
+
+	(instacertify.QUOTE_PRINT_SECTION_FIELDS || []).forEach((f) => {
+		if (!frm.fields_dict[f]) return;
+		frm.set_df_property(f, "read_only", 0);
+		if (frm.doc[f] == null) frm.doc[f] = 1;
+	});
+
+	// Test lines — unlock sample + overrideable lab info (keep Total Price calculated)
+	const test_grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+	if (test_grid) {
+		[
+			"number_of_samples",
+			"sample_requirement",
+			"sample_type",
+			"testing_timeline",
+			"description",
+			"product_name",
+			"test_name",
+			"applicable_standard",
+			"purchase_price",
+			"suggested_selling_price",
+			"laboratory",
+			"laboratory_location",
+			"laboratory_accreditation",
+		].forEach((f) => {
+			test_grid.update_docfield_property(f, "read_only", 0);
+		});
+		test_grid.update_docfield_property("sample_requirement", "hidden", 0);
+		test_grid.update_docfield_property("testing_charges", "read_only", 1);
+	}
+
+	const cost_grid = frm.fields_dict.ic_cost_items && frm.fields_dict.ic_cost_items.grid;
+	if (cost_grid) {
+		[
+			"cost_component",
+			"particulars",
+			"description",
+			"amount",
+			"charges_display",
+			"payment_destination",
+			"revenue_treatment",
+			"is_passthrough",
+		].forEach((f) => {
+			try {
+				cost_grid.update_docfield_property(f, "read_only", 0);
+			} catch (e) {}
+		});
+	}
 };
 
 instacertify.toggle_quotation_sections = function (frm) {
@@ -2854,23 +3046,9 @@ instacertify.toggle_quotation_sections = function (frm) {
 		if (frm.fields_dict[f]) frm.toggle_display(f, true);
 	});
 
-	// Prefill fields stay fully editable on every quote (Testing + Consulting)
-	[
-		"ic_bank_account",
-		"ic_deliverables",
-		"ic_estimated_timeline",
-		"ic_sample_handling_policy",
-		"ic_payment_terms",
-		"ic_cancellation_policy",
-		"ic_confidentiality",
-		"ic_force_majeure",
-		"ic_terms_and_conditions",
-	].forEach((f) => {
-		if (frm.fields_dict[f]) {
-			frm.toggle_display(f, true);
-			frm.set_df_property(f, "read_only", 0);
-		}
-	});
+	// Prefill / narrative fields — fully editable on every quote (except banking details)
+	instacertify.unlock_quotation_content_fields(frm);
+
 	if (frm.fields_dict.ic_bank_account) {
 		frm.set_query("ic_bank_account", () => ({
 			filters: { is_active: 1 },
@@ -2883,15 +3061,19 @@ instacertify.toggle_quotation_sections = function (frm) {
 		frm.set_df_property(
 			"ic_bank_account",
 			"description",
-			__("Required for Print/PDF — choose YES BANK or Indian Overseas Bank (or other active accounts).")
+			__(
+				"Select which bank account prints on the PDF. Account number, IFSC, and UPI come from IC Bank Account and are not edited on the quote."
+			)
 		);
+		// Banking details themselves stay locked — only the account Link is choosable
+		frm.set_df_property("ic_bank_account", "read_only", 0);
 	}
 	if (frm.fields_dict.ic_section_costing) {
 		frm.set_df_property(
 			"ic_section_costing",
 			"label",
 			isTesting
-				? __("Consulting & Other Commercials (added to Testing Total on print)")
+				? __("Other Charges (added with Testing for Final Costing)")
 				: __("7. Cost Breakdown / Commercials")
 		);
 	}
@@ -2901,18 +3083,19 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"description",
 			isTesting
 				? __(
-						"Optional consulting / govt / other charges. On Print these are shown with Testing prices and summed into one Grand Total."
+						"Default charges from the format (editable). Unit Price × No. of Units = Total. Currency symbol follows the quotation currency. Testing + these lines = Final Costing on Print."
 				  )
 				: __(
-						"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
+						"Default charges from the format (editable). Unit Price × No. of Units = Total Charges. Currency symbol follows the quotation currency (customer)."
 				  )
 		);
 	}
+	instacertify.sync_quote_cost_currency(frm);
 	if (frm.fields_dict.ic_section_policies) {
 		frm.set_df_property(
 			"ic_section_policies",
 			"label",
-			__("Payment, Bank, Cancellation & Confidentiality (editable)")
+			__("Payment, Cancellation & Confidentiality (all editable — bank details from selected account)")
 		);
 	}
 	if (isTesting) {
@@ -2931,7 +3114,52 @@ instacertify.toggle_quotation_sections = function (frm) {
 				)
 			);
 		}
+		const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+		if (grid) {
+			grid.update_docfield_property("number_of_samples", "read_only", 0);
+			grid.update_docfield_property("sample_requirement", "read_only", 0);
+			grid.update_docfield_property("sample_requirement", "hidden", 0);
+		}
 	}
+	// Consulting Sample Required narrative — always editable
+	if (frm.fields_dict.ic_sample_required) {
+		frm.set_df_property("ic_sample_required", "read_only", 0);
+	}
+	// Print section toggles — always editable; uncheck to hide that row on PDF
+	if (frm.fields_dict.ic_section_print_sections) {
+		frm.toggle_display("ic_section_print_sections", true);
+		frm.set_df_property(
+			"ic_section_print_sections",
+			"description",
+			__("Uncheck any section to hide it on Print/PDF. Prefills from the Quote Format.")
+		);
+	}
+	[
+		"ic_show_about",
+		"ic_show_applicable_standards",
+		"ic_show_process",
+		"ic_show_validity",
+		"ic_show_sample_required",
+		"ic_show_documents_required",
+		"ic_show_timelines",
+		"ic_show_deliverables",
+		"ic_show_commercials",
+		"ic_show_payment_terms",
+		"ic_show_banking",
+		"ic_show_cancellation",
+		"ic_show_force_majeure",
+		"ic_show_confidentiality",
+		"ic_show_terms",
+		"ic_show_sample_handling",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.toggle_display(f, true);
+			frm.set_df_property(f, "read_only", 0);
+			if (frm.doc[f] == null) {
+				frm.doc[f] = 1;
+			}
+		}
+	});
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {
@@ -3257,6 +3485,10 @@ instacertify.apply_lab_scoped_pricing = function (frm, cdt, cdn) {
 			});
 			if (s.currency) frappe.model.set_value(cdt, cdn, "currency", s.currency);
 			if (s.label) frappe.model.set_value(cdt, cdn, "lab_test_scope", s.label);
+			if (!cint(row.number_of_samples)) {
+				frappe.model.set_value(cdt, cdn, "number_of_samples", 1);
+			}
+			instacertify.sync_quote_sample_requirement(cdt, cdn);
 			frappe.show_alert({
 				message: __("Prices from {0}: buy {1} · sell {2}", [
 					s.lab_initials || s.laboratory_name || row.laboratory,
@@ -6517,6 +6749,7 @@ frappe.ui.form.on("Quotation", {
 		if (!frm.doc.ic_currency_manual) {
 			frm.set_value("ic_currency_manual", 1);
 		}
+		instacertify.sync_quote_cost_currency(frm);
 	},
 	taxes_and_charges(frm) {
 		if (instacertify._auto_setting_currency) return;
@@ -6526,6 +6759,46 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
+/** Keep cost-line currency in sync; Unit Price uses quotation currency symbol. */
+instacertify.sync_quote_cost_currency = function (frm) {
+	if (!frm || !frm.doc) return;
+	const cur = frm.doc.currency || "INR";
+	(frm.doc.ic_cost_items || []).forEach((row) => {
+		if (row.currency !== cur) {
+			frappe.model.set_value(row.doctype, row.name, "currency", cur);
+		}
+		const qty = cint(row.qty) || 1;
+		if (!cint(row.qty)) {
+			frappe.model.set_value(row.doctype, row.name, "qty", 1);
+		}
+		const total = flt(row.amount) * qty;
+		if (flt(row.total_amount) !== total) {
+			frappe.model.set_value(row.doctype, row.name, "total_amount", total);
+		}
+	});
+	const grid = frm.fields_dict.ic_cost_items && frm.fields_dict.ic_cost_items.grid;
+	if (grid) {
+		grid.update_docfield_property("amount", "read_only", 0);
+		grid.update_docfield_property("qty", "read_only", 0);
+		grid.update_docfield_property("charges_display", "hidden", 1);
+		grid.update_docfield_property(
+			"amount",
+			"description",
+			__("Unit price — symbol follows quotation currency ({0})", [cur])
+		);
+	}
+	if (frm.fields_dict.ic_cost_items) {
+		frm.set_df_property(
+			"ic_cost_items",
+			"description",
+			__(
+				"Default charges from the quote format (editable). Unit Price × No. of Units = Total. Currency: {0}. On Testing quotes, Testing + Other = Final Costing.",
+				[cur]
+			)
+		);
+	}
+	frm.refresh_field("ic_cost_items");
+};
 frappe.ui.form.on("Sales Invoice", {
 	setup(frm) {
 		instacertify.hide_pos_on_sales_invoice(frm);

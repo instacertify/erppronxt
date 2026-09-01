@@ -11,8 +11,16 @@ frappe.ui.form.on("IC Quotation Template", {
 		_render_edit_guide(frm);
 		_toggle_sections(frm);
 		_lock_template_id(frm);
+		_unlock_template_content_fields(frm);
 		if (frm.fields_dict.bank_account) {
 			frm.set_query("bank_account", () => ({ filters: { is_active: 1 } }));
+			frm.set_df_property(
+				"bank_account",
+				"description",
+				__(
+					"Select which bank account prints on quotes from this format. Account number, IFSC, and UPI come from IC Bank Account and are not edited here."
+				)
+			);
 		}
 
 		frm.add_custom_button(__("Upload Quote Format"), () => {
@@ -156,6 +164,14 @@ frappe.ui.form.on("IC Quotation Template", {
 			frm.add_custom_button(__("Jump to Headings"), () => {
 				frm.scroll_to_field("label_about");
 			});
+
+			frm.add_custom_button(__("Show All Print Sections"), () => {
+				_set_all_print_sections(frm, 1);
+			}, __("Print Sections"));
+
+			frm.add_custom_button(__("Hide All Print Sections"), () => {
+				_set_all_print_sections(frm, 0);
+			}, __("Print Sections"));
 		}
 	},
 
@@ -165,6 +181,38 @@ frappe.ui.form.on("IC Quotation Template", {
 	},
 });
 
+const IC_TEMPLATE_SHOW_FIELDS = [
+	"show_about",
+	"show_applicable_standards",
+	"show_process",
+	"show_validity",
+	"show_sample_required",
+	"show_documents_required",
+	"show_timelines",
+	"show_deliverables",
+	"show_commercials",
+	"show_payment_terms",
+	"show_banking",
+	"show_cancellation",
+	"show_force_majeure",
+	"show_confidentiality",
+	"show_terms",
+	"show_sample_handling",
+];
+
+function _set_all_print_sections(frm, value) {
+	IC_TEMPLATE_SHOW_FIELDS.forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.set_value(f, value);
+		}
+	});
+	frappe.show_alert({
+		message: value
+			? __("All print sections set to Show")
+			: __("All print sections set to Hide"),
+		indicator: value ? "green" : "orange",
+	});
+}
 function _lock_template_id(frm) {
 	if (!frm.fields_dict.template_name) return;
 	// Template ID is the document name — editable only on create.
@@ -172,6 +220,60 @@ function _lock_template_id(frm) {
 	if (frm.fields_dict.display_name) {
 		frm.set_df_property("display_name", "reqd", 0);
 	}
+}
+
+/** Unlock all template content except system Template ID; banking stays Link-only. */
+function _unlock_template_content_fields(frm) {
+	if (!frm || !frm.fields_dict) return;
+	Object.keys(frm.fields_dict).forEach((fieldname) => {
+		const df = frm.fields_dict[fieldname].df;
+		if (!df) return;
+		if (
+			[
+				"Section Break",
+				"Column Break",
+				"Tab Break",
+				"HTML",
+				"Heading",
+				"Button",
+				"Fold",
+			].includes(df.fieldtype)
+		) {
+			return;
+		}
+		if (fieldname === "template_name" && !frm.is_new()) return;
+		// bank_account Link stays choosable; details live on IC Bank Account
+		frm.set_df_property(fieldname, "read_only", 0);
+	});
+	[
+		"section_print_sections",
+		"section_print_labels",
+		"section_consulting_narrative",
+		"section_testing_narrative",
+		"section_scope",
+		"section_cost",
+		"section_testing",
+		"section_policies",
+		"section_service",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) frm.toggle_display(f, true);
+	});
+	IC_TEMPLATE_SHOW_FIELDS.forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.set_df_property(f, "read_only", 0);
+			if (frm.doc[f] == null) frm.doc[f] = 1;
+		}
+	});
+	// Child tables — keep editable
+	["cost_items", "test_items", "format_library"].forEach((table) => {
+		const grid = frm.fields_dict[table] && frm.fields_dict[table].grid;
+		if (!grid || !grid.docfields) return;
+		(grid.docfields || []).forEach((df) => {
+			if (!df || !df.fieldname) return;
+			if (["Section Break", "Column Break"].includes(df.fieldtype)) return;
+			grid.update_docfield_property(df.fieldname, "read_only", 0);
+		});
+	});
 }
 
 function _preview_template(frm, mode) {
@@ -244,7 +346,9 @@ function _render_edit_guide(frm) {
 			font-size:13px;line-height:1.45;">
 			<div style="font-weight:600;margin-bottom:6px;">${__("What you can edit on this template")}</div>
 			<ul style="margin:0 0 0 18px;padding:0;">
+				<li><b>${__("Fully editable")}</b>: ${__("Every heading, narrative, Sample Required, Force Majeure, Terms, commercials, and print-section toggle — edit freely. Banking account number / IFSC / UPI stay on IC Bank Account (select account only).")}</li>
 				<li><b>${__("Display Name")}</b>: ${__("Rename anytime — does not change Template ID or linked quotes.")}</li>
+				<li><b>${__("Print Sections")}</b>: ${__("Uncheck Sample Required, Force Majeure, Terms, Banking, etc. to hide that row on Print/PDF. Use Print Sections → Show/Hide All.")}</li>
 				<li><b>${__("Section 2 — Rename headings")}</b>: ${__("Change printed names (ABOUT, Commercials, Payment Terms, column titles).")}</li>
 				<li><b>${__("Narrative sections")}</b>: ${__("Edit all body text for {0} quotes.", [__(qtype)])}</li>
 				<li><b>${__("Section 6 — Pricing")}</b>: ${__("Add default amounts the sales team can change on each quote. Set Revenue = Do Not Count as Revenue for govt/lab/third-party lines (shown on the quote, not counted as Instacertify revenue).")}</li>

@@ -1,5 +1,5 @@
 // Copyright (c) Instacertify
-/** Cost lines: free-text names + Counted Revenue vs Do Not Count as Revenue. */
+/** Cost lines: unit price × qty = total; Counted Revenue vs Do Not Count. */
 
 function sync_revenue_from_treatment(cdt, cdn) {
 	const row = locals[cdt][cdn];
@@ -33,8 +33,32 @@ function sync_from_destination(cdt, cdn) {
 	}
 }
 
+function recalc_cost_line_total(cdt, cdn) {
+	const row = locals[cdt][cdn];
+	if (!row) return;
+	let qty = cint(row.qty);
+	if (!qty || qty < 1) {
+		qty = 1;
+		frappe.model.set_value(cdt, cdn, "qty", 1);
+	}
+	const unit = flt(row.amount);
+	frappe.model.set_value(cdt, cdn, "total_amount", unit * qty);
+}
+
 frappe.ui.form.on("IC Quotation Cost Item", {
 	form_render(frm, cdt, cdn) {
+		const grid = frm.fields_dict.ic_cost_items && frm.fields_dict.ic_cost_items.grid;
+		if (grid) {
+			grid.update_docfield_property("amount", "read_only", 0);
+			grid.update_docfield_property("qty", "read_only", 0);
+			grid.update_docfield_property("charges_display", "hidden", 1);
+			grid.update_docfield_property("charges_display", "in_list_view", 0);
+		}
+		const row = locals[cdt][cdn];
+		if (row && !cint(row.qty)) {
+			frappe.model.set_value(cdt, cdn, "qty", 1);
+		}
+		recalc_cost_line_total(cdt, cdn);
 		const grid_row = frm.open_grid_row && frm.open_grid_row();
 		if (!grid_row) return;
 		const field = grid_row.get_field("cost_component");
@@ -51,6 +75,18 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 				__("Printed line name — change freely")
 			);
 		}
+	},
+	amount(frm, cdt, cdn) {
+		recalc_cost_line_total(cdt, cdn);
+		if (frm && typeof frm.trigger === "function") {
+			// Parent totals refresh on validate; soft-refresh commercial totals if present
+			if (frm.doc && frm.fields_dict.ic_total_quoted_value) {
+				frm.refresh_field("ic_cost_items");
+			}
+		}
+	},
+	qty(frm, cdt, cdn) {
+		recalc_cost_line_total(cdt, cdn);
 	},
 	revenue_treatment(frm, cdt, cdn) {
 		sync_revenue_from_treatment(cdt, cdn);

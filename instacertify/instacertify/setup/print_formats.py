@@ -296,7 +296,7 @@ QUOTATION_HTML = """
     <div>{{ doc.address_display or '' }}</div>
   </div>
 
-  {% if doc.ic_service_name or doc.ic_scope_of_work %}
+  {% if quote_section_on(doc, 'ic_show_about') and (doc.ic_service_name or doc.ic_scope_of_work) %}
   <div class="ic-box">
     <h3>Service Scope</h3>
     <div><b>Service:</b> {{ doc.ic_service_name or '' }}</div>
@@ -308,7 +308,7 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
 
-  {% if doc.ic_test_items or doc.ic_cost_items %}
+  {% if quote_section_on(doc, 'ic_show_commercials') and (doc.ic_test_items or doc.ic_cost_items) %}
   <div class="ic-box">
     <h3>Commercials</h3>
     {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
@@ -344,27 +344,31 @@ QUOTATION_HTML = """
     <div style="font-weight:600;margin:12px 0 6px;">Consulting &amp; Other Charges</div>
     <table class="ic-table">
       <thead><tr>
-        <th>Particulars</th><th>Description</th><th>Amount</th>
+        <th>Particulars</th><th>Description</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th>
       </tr></thead>
       <tbody>
       {% for row in doc.ic_cost_items %}
-        {%- set amt = row.amount or 0 -%}
-        {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
+        {%- set units = row.qty or 1 -%}
+        {%- set per = row.amount or 0 -%}
+        {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
+        {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
         <tr>
           <td>{{ row.particulars or row.cost_component }}</td>
           <td>{{ row.description or '' }}</td>
-          <td>{{ frappe.utils.fmt_money(amt, currency=doc.currency) }}</td>
+          <td>{{ frappe.utils.fmt_money(per, currency=doc.currency) }}</td>
+          <td>{{ units }}</td>
+          <td><b>{{ frappe.utils.fmt_money(total, currency=doc.currency) }}</b></td>
         </tr>
       {% endfor %}
         <tr>
-          <td colspan="2" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
+          <td colspan="4" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
           <td><b>{{ frappe.utils.fmt_money(ns.cost_grand, currency=doc.currency) }}</b></td>
         </tr>
       </tbody>
     </table>
     {% endif %}
     <div class="ic-grand-total" style="margin-top:10px;">
-      Grand Total: {{ frappe.utils.fmt_money(ns.testing_grand + ns.cost_grand, currency=doc.currency) }}
+      Final Costing (Testing + Other): {{ frappe.utils.fmt_money(ns.testing_grand + ns.cost_grand, currency=doc.currency) }}
     </div>
   </div>
   {% endif %}
@@ -388,10 +392,13 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
 
+  {% if quote_section_on(doc, 'ic_show_terms') %}
   <div class="ic-box ic-terms">
     <h3>Terms and Conditions</h3>
     {{ doc.ic_terms_and_conditions or doc.terms or '' }}
   </div>
+  {% endif %}
+  {% if quote_section_on(doc, 'ic_show_banking') %}
   <div class="ic-box">
     <h3>Payment Terms</h3>
     {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
@@ -402,10 +409,13 @@ QUOTATION_HTML = """
     <h3>Bank Details &amp; UPI Payment</h3>
 """ + BANK_UPI_PAYMENT_HTML + """
   </div>
+  {% endif %}
+  {% if quote_section_on(doc, 'ic_show_force_majeure') %}
   <div class="ic-box">
     <h3>Force Majeure</h3>
     {{ doc.ic_force_majeure or '' }}
   </div>
+  {% endif %}
 
   <div class="ic-sign">
     <div>Authorized Signatory</div>
@@ -809,6 +819,7 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-label">{{ doc.ic_label_subject or 'Subject' }}</td>
       <td class="tq-value"><b>{{ doc.ic_subject or 'Testing' }}</b></td>
     </tr>
+    {% if quote_section_on(doc, 'ic_show_about') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_about_testing or 'ABOUT' }}</td>
       <td class="tq-value">
@@ -819,6 +830,8 @@ TESTING_QUOTATION_HTML = """
         {% endif %}
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_applicable_standards') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_applicable_standards or 'Applicable Standards' }}</td>
       <td class="tq-value">
@@ -834,6 +847,8 @@ TESTING_QUOTATION_HTML = """
         {% endif %}
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_sample_required') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_samples_requirements or 'Samples Requirements' }}</td>
       <td class="tq-value">
@@ -849,9 +864,11 @@ TESTING_QUOTATION_HTML = """
         <div class="tq-note"><b>Note:</b> {{ (doc.ic_samples_note or 'Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.')|replace('Note: ','') }}</div>
       </td>
     </tr>
+    {% endif %}
   </table>
 
   <table class="tq-grid" style="margin-top:-1px;">
+    {% if quote_section_on(doc, 'ic_show_commercials') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_commercials or 'Commercials' }}</td>
       <td class="tq-value">
@@ -896,25 +913,31 @@ TESTING_QUOTATION_HTML = """
         <table class="tq-comm">
           <thead>
             <tr>
-              <th class="num" style="width:8%">S. No.</th>
-              <th style="width:32%">Particulars</th>
-              <th style="width:36%">Description</th>
-              <th style="width:24%">Amount ({{ curr }})</th>
+              <th class="num" style="width:6%">S. No.</th>
+              <th style="width:28%">Particulars</th>
+              <th style="width:22%">Description</th>
+              <th style="width:14%">Unit Price ({{ curr }})</th>
+              <th class="num" style="width:10%">No. of Units</th>
+              <th style="width:14%">Total ({{ curr }})</th>
             </tr>
           </thead>
           <tbody>
           {% for row in doc.ic_cost_items or [] %}
-            {%- set amt = row.amount or 0 -%}
-            {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
+            {%- set units = row.qty or 1 -%}
+            {%- set per = row.amount or 0 -%}
+            {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
+            {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
             <tr>
               <td class="num">{{ loop.index }}</td>
               <td>{{ row.particulars or row.cost_component or '' }}</td>
-              <td>{{ row.description or row.charges_display or '' }}</td>
-              <td class="amt">{% if row.charges_display %}{{ row.charges_display }}{% else %}{{ inr(amt) }}{% endif %}</td>
+              <td>{{ row.description or '' }}</td>
+              <td class="amt">{{ inr(per) }}</td>
+              <td class="num">{{ units }}</td>
+              <td class="amt"><b>{{ inr(total) }}</b></td>
             </tr>
           {% endfor %}
             <tr>
-              <td colspan="3" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
+              <td colspan="5" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
               <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
             </tr>
           </tbody>
@@ -923,13 +946,15 @@ TESTING_QUOTATION_HTML = """
         <table class="tq-comm" style="margin-top:8px;">
           <tbody>
             <tr>
-              <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Grand Total (Testing{% if doc.ic_cost_items %} + Consulting / Other{% endif %})</td>
+              <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing — Grand Total (Testing{% if doc.ic_cost_items %} + Other Charges{% endif %})</td>
               <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
             </tr>
           </tbody>
         </table>
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_deliverables') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_deliverable or 'Deliverable' }}</td>
       <td class="tq-value">
@@ -945,6 +970,8 @@ TESTING_QUOTATION_HTML = """
         {% endif %}
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_timelines') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
       <td class="tq-value">
@@ -956,6 +983,8 @@ TESTING_QUOTATION_HTML = """
         </ul>
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_payment_terms') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_payment_term or 'Payment Term' }}</td>
       <td class="tq-value">
@@ -972,6 +1001,8 @@ TESTING_QUOTATION_HTML = """
 """ + GST_PAYMENT_TERMS_NOTE_HTML + """
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_sample_handling') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_sample_handling or 'Sample handling & disposal policy' }}</td>
       <td class="tq-value">
@@ -991,6 +1022,8 @@ TESTING_QUOTATION_HTML = """
         {% endif %}
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_banking') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_banking or 'Our Banking Details' }}</td>
       <td class="tq-value">
@@ -998,6 +1031,8 @@ TESTING_QUOTATION_HTML = """
 """ + BANK_UPI_PAYMENT_HTML + """
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_cancellation') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_cancellation or 'CANCELLATION AND REFUND POLICY' }}</td>
       <td class="tq-value">
@@ -1008,6 +1043,8 @@ TESTING_QUOTATION_HTML = """
         {% endif %}
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_force_majeure') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_force_majeure or 'FORCE MAJEURE' }}</td>
       <td class="tq-value">
@@ -1018,6 +1055,8 @@ TESTING_QUOTATION_HTML = """
         {% endif %}
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_confidentiality') %}
     <tr>
       <td class="tq-label">{{ doc.ic_label_confidentiality or 'CONFIDENTIALITY & DATA PROTECTION' }}</td>
       <td class="tq-value">
@@ -1028,6 +1067,20 @@ TESTING_QUOTATION_HTML = """
         {% endif %}
       </td>
     </tr>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_terms') %}
+    <tr>
+      <td class="tq-label">Terms and Conditions</td>
+      <td class="tq-value">
+        <div class="tq-h">Terms and Conditions</div>
+        {% if doc.ic_terms_and_conditions %}
+          {{ doc.ic_terms_and_conditions | replace('\t', ' ') }}
+        {% elif doc.terms %}
+          {{ doc.terms | replace('\t', ' ') }}
+        {% endif %}
+      </td>
+    </tr>
+    {% endif %}
   </table>
 
   <div class="tq-close">
@@ -1118,6 +1171,7 @@ CONSULTING_QUOTATION_HTML = """
   <div class="cq-service">{{ title }}</div>
 
   <div class="cq-box">
+    {% if quote_section_on(doc, 'ic_show_about') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_about or ('ABOUT ' ~ short) }}</div>
       <div class="cq-body">
@@ -1125,7 +1179,9 @@ CONSULTING_QUOTATION_HTML = """
         {% else %}{{ doc.ic_scope_of_work or '' }}{% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_applicable_standards') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_standard or ('STANDARD APPLICABLE FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1136,7 +1192,9 @@ CONSULTING_QUOTATION_HTML = """
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_process') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_process or ('Process for ' ~ short) }}</div>
       <div class="cq-body">
@@ -1144,7 +1202,9 @@ CONSULTING_QUOTATION_HTML = """
         {% else %}<p></p>{% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_validity') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_validity or ('Validity of ' ~ short) }}</div>
       <div class="cq-body">
@@ -1152,7 +1212,9 @@ CONSULTING_QUOTATION_HTML = """
         {% else %}<p></p>{% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_commercials') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_commercials or ('Commercials for ' ~ short) }}</div>
       <div class="cq-body">
@@ -1161,22 +1223,28 @@ CONSULTING_QUOTATION_HTML = """
           <div style="margin-bottom:8px;"><b>Applicable Standard:</b> {{ doc.ic_applicable_standard }}</div>
         {% endif %}
         <table class="cq-comm">
-          <thead><tr><th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th><th style="text-align:right;">{{ doc.ic_label_charges_col or 'Charges' }} ({{ doc.currency or 'INR' }})</th></tr></thead>
+          <thead><tr>
+            <th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th>
+            <th style="text-align:right;">Unit Price ({{ doc.currency or 'INR' }})</th>
+            <th style="text-align:center;">No. of Units</th>
+            <th style="text-align:right;">{{ doc.ic_label_charges_col or 'Total Charges' }} ({{ doc.currency or 'INR' }})</th>
+          </tr></thead>
           <tbody>
           {%- set ns = namespace(cost_grand=0) -%}
           {% for row in doc.ic_cost_items or [] %}
-            {%- set amt = row.amount or 0 -%}
-            {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
+            {%- set units = row.qty or 1 -%}
+            {%- set per = row.amount or 0 -%}
+            {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
+            {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
             <tr>
               <td>{{ row.particulars or row.description or row.cost_component }}</td>
-              <td class="amt">
-                {% if row.charges_display %}{{ row.charges_display }}
-                {% else %}{{ inr(row.amount) }}{% endif %}
-              </td>
+              <td class="amt">{{ inr(per) }}</td>
+              <td style="text-align:center;">{{ units }}</td>
+              <td class="amt"><b>{{ inr(total) }}</b></td>
             </tr>
           {% endfor %}
             <tr>
-              <td style="text-align:right;font-weight:700;">Grand Total</td>
+              <td colspan="3" style="text-align:right;font-weight:700;">Grand Total</td>
               <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
             </tr>
           </tbody>
@@ -1186,7 +1254,9 @@ CONSULTING_QUOTATION_HTML = """
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_payment_terms') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_payment_terms or ('PAYMENT TERMS FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1202,7 +1272,9 @@ CONSULTING_QUOTATION_HTML = """
 """ + GST_PAYMENT_TERMS_NOTE_HTML + """
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_timelines') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_timelines or ('Timelines for ' ~ short) }}</div>
       <div class="cq-body">
@@ -1212,7 +1284,9 @@ CONSULTING_QUOTATION_HTML = """
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_sample_required') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_sample_required or ('SAMPLE REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1223,7 +1297,9 @@ CONSULTING_QUOTATION_HTML = """
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_documents_required') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_documents_required or ('DOCUMENTS REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1231,7 +1307,9 @@ CONSULTING_QUOTATION_HTML = """
         {% else %}<p></p>{% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_banking') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_banking or ('OUR BANKING DETAILS FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1239,7 +1317,9 @@ CONSULTING_QUOTATION_HTML = """
 """ + BANK_UPI_PAYMENT_HTML + """
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_cancellation') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_cancellation or ('CANCELLATION & REFUND POLICY FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1250,7 +1330,9 @@ CONSULTING_QUOTATION_HTML = """
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_force_majeure') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_force_majeure or ('FORCE MAJEURE FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1260,7 +1342,9 @@ CONSULTING_QUOTATION_HTML = """
         {% endif %}
       </div>
     </div>
+    {% endif %}
 
+    {% if quote_section_on(doc, 'ic_show_confidentiality') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_confidentiality or ('CONFIDENTIALITY & DATA PROTECTION FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1270,6 +1354,18 @@ CONSULTING_QUOTATION_HTML = """
         {% endif %}
       </div>
     </div>
+    {% endif %}
+    {% if quote_section_on(doc, 'ic_show_terms') %}
+    <div class="cq-sec">
+      <div class="cq-bar">Terms and Conditions</div>
+      <div class="cq-body">
+        <div class="cq-h">Terms and Conditions</div>
+        {% if doc.ic_terms_and_conditions %}{{ doc.ic_terms_and_conditions | replace('	', ' ') }}
+        {% elif doc.terms %}{{ doc.terms | replace('	', ' ') }}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="cq-close">

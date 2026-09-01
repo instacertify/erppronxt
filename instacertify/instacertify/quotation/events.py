@@ -48,6 +48,7 @@ def validate_quotation(doc, method=None):
 	apply_quote_customer_only_rules(doc)
 
 	_calculate_test_line_totals(doc)
+	_calculate_cost_line_totals(doc)
 	_calculate_revenue_split(doc)
 	if not doc.ic_revision_number and doc.ic_revision_number != 0:
 		doc.ic_revision_number = 0
@@ -138,6 +139,45 @@ def _calculate_test_line_totals(doc):
 				row.suggested_selling_price = row.per_unit_charges
 
 
+def _calculate_cost_line_totals(doc):
+	"""Unit Price (amount) × No. of Units (qty) → Total Charges (total_amount)."""
+	parent_currency = doc.get("currency") or "INR"
+	has_total = True
+	has_currency = True
+	has_display = True
+	try:
+		meta = frappe.get_meta("IC Quotation Cost Item")
+		has_total = meta.has_field("total_amount")
+		has_currency = meta.has_field("currency")
+		has_display = meta.has_field("charges_display")
+	except Exception:
+		pass
+	for row in doc.get("ic_cost_items") or []:
+		qty = cint(row.get("qty") or 0) or 1
+		row.qty = qty
+		unit = float(row.amount or 0)
+		row.amount = unit
+		if has_total:
+			row.total_amount = unit * qty
+		if has_currency and parent_currency:
+			row.currency = parent_currency
+		# Drop legacy hardcoded ₹ display so print uses quotation currency
+		if has_display and row.get("charges_display"):
+			disp = str(row.charges_display).strip()
+			if disp.startswith("₹") or disp.startswith("Rs") or "/-" in disp:
+				if not (row.get("description") or "").strip() and "actual" in disp.lower():
+					row.description = "At actuals"
+				row.charges_display = ""
+
+
+def _line_total(row) -> float:
+	"""Prefer total_amount; fall back to amount × qty or amount."""
+	if row.get("total_amount") not in (None, ""):
+		return float(row.total_amount or 0)
+	qty = cint(row.get("qty") or 0) or 1
+	return float(row.amount or 0) * qty
+
+
 def _apply_quotation_defaults(doc):
 	try:
 		settings = frappe.get_cached_doc("IC Settings")
@@ -172,6 +212,13 @@ def _apply_quotation_defaults(doc):
 		if settings.meta.has_field("default_bank_account"):
 			default_bank = settings.get("default_bank_account")
 		doc.ic_bank_account = default_bank or get_default_bank_account_name()
+	# Default print-section toggles to ON when unset (None ≠ unchecked)
+	from instacertify.quotation.print_sections import QUOTE_PRINT_SECTIONS
+
+	for _tmpl_key, quote_key, _label in QUOTE_PRINT_SECTIONS:
+		if doc.meta.has_field(quote_key) and doc.get(quote_key) is None:
+			doc.set(quote_key, 1)
+
 	# Scrub tabs on existing values so Print/PDF stay clean (tabs only — keep HTML spacing)
 	for field in (
 		"ic_deliverables",
@@ -204,7 +251,7 @@ def _calculate_revenue_split(doc):
 	commercial = 0.0
 	passthrough = 0.0
 	for row in doc.get("ic_cost_items") or []:
-		amount = float(row.amount or 0)
+		amount = _line_total(row)
 		# Prefer explicit Revenue select; fall back to checkbox / payment destination
 		treatment = (row.get("revenue_treatment") or "").strip()
 		if treatment == "Do Not Count as Revenue":
@@ -235,6 +282,7 @@ def _calculate_revenue_split(doc):
 	if hasattr(doc, "flags"):
 		doc.flags.ic_testing_commercial_total = testing_total
 		doc.flags.ic_cost_commercial_total = commercial
+		doc.flags.ic_final_costing = commercial + testing_total + passthrough
 
 
 def _ensure_qr(doc):
@@ -374,6 +422,10 @@ def _template_field_map(tmpl) -> dict:
 	for key in _LABEL_FIELDS:
 		fields[f"ic_{key}"] = tmpl.get(key)
 
+	from instacertify.quotation.print_sections import template_show_defaults
+
+	fields.update(template_show_defaults(tmpl))
+
 	meta = frappe.get_meta("Quotation")
 	return {k: v for k, v in fields.items() if meta.has_field(k)}
 
@@ -399,7 +451,9 @@ def _template_cost_rows(tmpl) -> list[dict]:
 				"particulars": row.get("particulars"),
 				"description": row.description,
 				"amount": row.amount,
-				"charges_display": row.get("charges_display"),
+				"qty": cint(row.get("qty") or 0) or 1,
+				"total_amount": float(row.amount or 0) * (cint(row.get("qty") or 0) or 1),
+				"charges_display": "",
 				"payment_destination": row.payment_destination,
 				"revenue_treatment": treatment,
 				"is_passthrough": 1 if is_pass else 0,
@@ -714,6 +768,12 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 		tmpl.bank_account = qt.get("ic_bank_account")
 	for key in _LABEL_FIELDS:
 		tmpl.set(key, qt.get(f"ic_{key}"))
+	from instacertify.quotation.print_sections import QUOTE_PRINT_SECTIONS
+
+	for tmpl_key, quote_key, _label in QUOTE_PRINT_SECTIONS:
+		if tmpl.meta.has_field(tmpl_key):
+			raw = qt.get(quote_key)
+			tmpl.set(tmpl_key, 0 if raw in (0, "0", False) else 1)
 
 	tmpl.set("cost_items", [])
 	for row in qt.get("ic_cost_items") or []:
@@ -725,7 +785,8 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 				"particulars": row.get("particulars"),
 				"description": row.description,
 				"amount": row.amount,
-				"charges_display": row.get("charges_display"),
+				"qty": cint(row.get("qty") or 0) or 1,
+				"charges_display": "",
 				"payment_destination": row.payment_destination,
 				"revenue_treatment": row.get("revenue_treatment")
 				or ("Do Not Count as Revenue" if is_pass else "Counted Revenue"),
@@ -1390,8 +1451,10 @@ def _build_invoice_from_cost_items(qt):
 	si.due_date = frappe.utils.today()
 
 	for row in qt.get("ic_cost_items") or []:
-		amount = float(row.amount or 0)
-		if amount <= 0:
+		qty = cint(row.get("qty") or 0) or 1
+		unit = float(row.amount or 0)
+		total = float(row.get("total_amount") or (unit * qty))
+		if total <= 0 and unit <= 0:
 			continue
 		label = row.particulars or row.description or row.cost_component or "Service Charges"
 		si.append(
@@ -1400,8 +1463,8 @@ def _build_invoice_from_cost_items(qt):
 				"item_code": item_code,
 				"item_name": label[:140],
 				"description": label,
-				"qty": 1,
-				"rate": amount,
+				"qty": qty,
+				"rate": unit,
 				"uom": frappe.db.get_value("Item", item_code, "stock_uom") or "Nos",
 			},
 		)
@@ -1551,8 +1614,10 @@ def _ensure_quotation_items(qt):
 
 	changed = False
 	for row in qt.get("ic_cost_items") or []:
-		amount = float(row.amount or 0)
-		if amount <= 0:
+		qty = cint(row.get("qty") or 0) or 1
+		unit = float(row.amount or 0)
+		total = float(row.get("total_amount") or (unit * qty))
+		if total <= 0 and unit <= 0:
 			continue
 		label = (
 			row.particulars or row.description or row.cost_component or "Service Charges"
@@ -1564,8 +1629,8 @@ def _ensure_quotation_items(qt):
 				"item_code": item_code,
 				"item_name": label[:140],
 				"description": label,
-				"qty": 1,
-				"rate": amount,
+				"qty": qty,
+				"rate": unit,
 				"uom": frappe.db.get_value("Item", item_code, "stock_uom") or "Nos",
 			},
 		)

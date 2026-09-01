@@ -408,6 +408,7 @@ def setup_custom_fields():
 	_ensure_lead_party_name_field()
 	_ensure_pipeline_and_quote_accept_fields()
 	_ensure_quotation_bank_account_field()
+	_ensure_quotation_print_section_fields()
 
 
 def _sync_custom_field_columns(doctypes: list[str] | None = None):
@@ -624,6 +625,76 @@ def _ensure_quotation_bank_account_field():
 		frappe.clear_cache(doctype="Quotation")
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "ensure quotation bank account field")
+
+
+def _ensure_quotation_print_section_fields():
+	"""Ensure Quotation ic_show_* Check fields exist (print section toggles)."""
+	from instacertify.quotation.print_sections import QUOTE_PRINT_SECTIONS
+
+	prev = "ic_label_sample_handling"
+	section_cf = "Quotation-ic_section_print_sections"
+	try:
+		if not frappe.db.exists("Custom Field", section_cf):
+			frappe.get_doc(
+				{
+					"doctype": "Custom Field",
+					"dt": "Quotation",
+					"module": "Instacertify",
+					"fieldname": "ic_section_print_sections",
+					"label": "Print Sections — Uncheck to Hide on PDF",
+					"fieldtype": "Section Break",
+					"insert_after": prev,
+					"collapsible": 1,
+					"description": "Uncheck any section to hide that row on Print/PDF.",
+				}
+			).insert(ignore_permissions=True)
+		prev = "ic_section_print_sections"
+		mid = (len(QUOTE_PRINT_SECTIONS) + 1) // 2
+		for i, (_tmpl_key, quote_key, label) in enumerate(QUOTE_PRINT_SECTIONS):
+			if i == mid:
+				col = "Quotation-ic_column_print_sections"
+				if not frappe.db.exists("Custom Field", col):
+					frappe.get_doc(
+						{
+							"doctype": "Custom Field",
+							"dt": "Quotation",
+							"module": "Instacertify",
+							"fieldname": "ic_column_print_sections",
+							"fieldtype": "Column Break",
+							"insert_after": prev,
+						}
+					).insert(ignore_permissions=True)
+				prev = "ic_column_print_sections"
+			cf_name = f"Quotation-{quote_key}"
+			if not frappe.db.exists("Custom Field", cf_name):
+				frappe.get_doc(
+					{
+						"doctype": "Custom Field",
+						"dt": "Quotation",
+						"module": "Instacertify",
+						"fieldname": quote_key,
+						"label": f"Show {label}",
+						"fieldtype": "Check",
+						"default": "1",
+						"insert_after": prev,
+					}
+				).insert(ignore_permissions=True)
+			if not frappe.db.has_column("Quotation", quote_key):
+				from frappe.database.schema import add_column
+
+				add_column("Quotation", quote_key, "Check")
+			prev = quote_key
+		if frappe.db.exists("Custom Field", "Quotation-ic_section_identity"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_section_identity",
+				"insert_after",
+				prev,
+				update_modified=False,
+			)
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure quotation print section fields")
 
 
 def _ensure_lead_source_link_field():

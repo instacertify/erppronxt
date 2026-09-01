@@ -245,6 +245,12 @@ def apply_quote_customer_only_rules(doc):
 			row.revenue_treatment = "Counted Revenue"
 		if not (row.get("cost_component") or "").strip() and (row.get("particulars") or "").strip():
 			row.cost_component = row.particulars
+		qty = cint(row.get("qty") or 0) or 1
+		row.qty = qty
+		try:
+			row.total_amount = float(row.get("amount") or 0) * qty
+		except Exception:
+			pass
 
 	# Free-text service lines on Items table: create non-stock Item from name/description
 	for row in doc.get("items") or []:
@@ -265,7 +271,9 @@ def apply_quote_customer_only_rules(doc):
 	if not has_items:
 		mapped = False
 		for row in doc.get("ic_cost_items") or []:
-			amount = float(row.get("amount") or 0)
+			qty = cint(row.get("qty") or 0) or 1
+			unit = float(row.get("amount") or 0)
+			amount = float(row.get("total_amount") or (unit * qty))
 			label = (
 				row.get("particulars")
 				or row.get("description")
@@ -282,8 +290,8 @@ def apply_quote_customer_only_rules(doc):
 					"item_code": code,
 					"item_name": label[:140],
 					"description": label,
-					"qty": 1,
-					"rate": amount,
+					"qty": qty,
+					"rate": unit,
 					"uom": "Nos",
 				},
 			)
