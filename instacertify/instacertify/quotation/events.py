@@ -427,7 +427,15 @@ def _template_field_map(tmpl) -> dict:
 	fields.update(template_show_defaults(tmpl))
 
 	meta = frappe.get_meta("Quotation")
-	return {k: v for k, v in fields.items() if meta.has_field(k)}
+	# Prefer has_field; also skip when DB column is missing (stale Custom Field)
+	out = {}
+	for k, v in fields.items():
+		if not meta.has_field(k):
+			continue
+		if k.startswith("ic_show_") and not frappe.db.has_column("Quotation", k):
+			continue
+		out[k] = v
+	return out
 
 
 def _template_cost_rows(tmpl) -> list[dict]:
@@ -463,23 +471,39 @@ def _template_cost_rows(tmpl) -> list[dict]:
 
 
 def _template_test_rows(tmpl) -> list[dict]:
-	return [
-		{
-			"product_name": row.product_name,
-			"test_name": row.test_name,
-			"applicable_standard": row.applicable_standard,
-			"number_of_samples": row.number_of_samples,
-			"per_unit_charges": row.get("per_unit_charges"),
-			"sample_requirement": row.get("sample_requirement"),
-			"sample_type": row.sample_type,
-			"laboratory": row.laboratory,
-			"laboratory_location": row.laboratory_location,
-			"laboratory_accreditation": row.laboratory_accreditation,
-			"testing_timeline": row.testing_timeline,
-			"testing_charges": row.testing_charges,
-		}
-		for row in (tmpl.test_items or [])
-	]
+	rows = []
+	for row in tmpl.test_items or []:
+		units = cint(row.get("number_of_samples") or 0) or 1
+		unit_price = row.get("suggested_selling_price")
+		if unit_price in (None, ""):
+			unit_price = row.get("per_unit_charges")
+		unit_price = float(unit_price or 0)
+		purchase = float(row.get("purchase_price") or 0)
+		total = row.get("testing_charges")
+		if total in (None, ""):
+			total = unit_price * units
+		else:
+			total = float(total or 0)
+		rows.append(
+			{
+				"product_name": row.product_name,
+				"test_name": row.test_name,
+				"applicable_standard": row.applicable_standard,
+				"number_of_samples": units,
+				"purchase_price": purchase,
+				"suggested_selling_price": unit_price,
+				"per_unit_charges": unit_price,
+				"sample_requirement": row.get("sample_requirement"),
+				"sample_type": row.sample_type,
+				"laboratory": row.laboratory,
+				"laboratory_location": row.laboratory_location,
+				"laboratory_accreditation": row.laboratory_accreditation,
+				"testing_timeline": row.testing_timeline,
+				"testing_charges": total,
+				"description": row.get("description"),
+			}
+		)
+	return rows
 
 
 @frappe.whitelist()
@@ -507,8 +531,11 @@ def apply_quotation_template(quotation: str, template: str):
 	"""Populate quotation fields from IC Quotation Template."""
 	qt = frappe.get_doc("Quotation", quotation)
 	payload = get_quotation_template_payload(template)
+	meta = qt.meta
 	for key, val in (payload.get("fields") or {}).items():
 		if key == "ic_subject" and not val:
+			continue
+		if not meta.has_field(key):
 			continue
 		qt.set(key, val)
 	qt.set("ic_cost_items", [])
