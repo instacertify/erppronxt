@@ -153,14 +153,15 @@
    "fieldtype": "Data",
    "label": "Laboratory Location",
    "fetch_from": "laboratory.location",
-   "read_only": 1
+   "fetch_if_empty": 1,
+   "description": "Fetched from Lab; editable override for this quote line"
   },
   {
    "doctype": "DocField",
    "fieldname": "laboratory_accreditation",
    "fieldtype": "Small Text",
    "label": "Laboratory Accreditation",
-   "read_only": 1
+   "description": "Editable — shown when needed on internal notes"
   },
   {
    "doctype": "DocField",
