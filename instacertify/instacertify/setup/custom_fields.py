@@ -793,12 +793,20 @@ QUOTATION_FIELDS = [
 		"default": 1,
 		"insert_after": "ic_show_terms",
 	},
+	{
+		"fieldname": "ic_section_order",
+		"fieldtype": "Small Text",
+		"label": "Section Order (internal)",
+		"insert_after": "ic_show_sample_handling",
+		"hidden": 1,
+		"description": "Comma-separated section keys controlling Print/PDF order. Managed via Arrange Sections.",
+	},
 	# --- 2. Identity ---
 	{
 		"fieldname": "ic_section_identity",
 		"fieldtype": "Section Break",
 		"label": "2. Quote Identity & Status",
-		"insert_after": "ic_show_sample_handling",
+		"insert_after": "ic_section_order",
 		"collapsible": 0,
 	},
 	{

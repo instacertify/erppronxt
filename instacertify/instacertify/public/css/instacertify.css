@@ -6414,10 +6414,10 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   background: #ffffff !important;
   border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
   border-radius: 8px !important;
-  width: clamp(26px, 3.2vw, 32px) !important;
-  height: clamp(26px, 3.2vw, 32px) !important;
-  min-width: clamp(26px, 3.2vw, 32px) !important;
-  max-width: clamp(26px, 3.2vw, 32px) !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
   padding: 0 !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
@@ -6680,9 +6680,9 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   box-shadow: none !important;
   background: transparent !important;
   color: #0B1820 !important;
-  width: clamp(26px, 3.2vw, 32px) !important;
-  height: clamp(26px, 3.2vw, 32px) !important;
-  min-width: clamp(26px, 3.2vw, 32px) !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -6701,10 +6701,10 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   background: #ffffff !important;
   border: 1.5px solid rgba(3, 52, 71, 0.45) !important;
   border-radius: 8px !important;
-  width: clamp(26px, 3.2vw, 32px) !important;
-  height: clamp(26px, 3.2vw, 32px) !important;
-  min-width: clamp(26px, 3.2vw, 32px) !important;
-  max-width: clamp(26px, 3.2vw, 32px) !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
   transform: none !important;
@@ -6875,10 +6875,10 @@ body,
   background: #ffffff !important;
   border: 1.5px solid rgba(3, 52, 71, 0.55) !important;
   border-radius: 8px !important;
-  width: clamp(26px, 3.2vw, 32px) !important;
-  height: clamp(26px, 3.2vw, 32px) !important;
-  min-width: clamp(26px, 3.2vw, 32px) !important;
-  max-width: clamp(26px, 3.2vw, 32px) !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
   padding: 0 !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
@@ -6974,4 +6974,66 @@ body,
 .tq-value,
 .cq-body {
   tab-size: 4;
+}
+
+
+/* IC stable nav icon boxes — Print / Previous / Next / Reload stay fixed */
+/* IC stable nav icon boxes */
+.page-head .page-actions,
+.page-head .standard-actions {
+  align-items: center !important;
+}
+.page-icon-group .icon-btn,
+.page-icon-group button,
+.page-icon-group .ic-print-action,
+.page-icon-group .ic-line-icon-btn,
+.page-icon-group .ic-reload-boxed {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transform: none !important;
+  transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease !important;
+}
+.page-actions .btn.ic-nav-icon-btn,
+.page-head .btn.ic-nav-icon-btn,
+.standard-actions .btn.ic-nav-icon-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transform: none !important;
+}
+.page-actions .btn.ic-nav-icon-btn .ic-action-label,
+.page-head .btn.ic-nav-icon-btn .ic-action-label {
+  display: none !important;
+}
+.page-actions .btn.ic-has-action-icon[data-label="Save"],
+.page-head .btn.ic-has-action-icon[data-label="Save"],
+.page-actions .btn-primary.ic-has-action-icon {
+  min-width: 5.75rem !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transform: none !important;
+}
+.page-head .btn:active,
+.page-actions .btn:active,
+.page-icon-group .icon-btn:active {
+  transform: none !important;
 }

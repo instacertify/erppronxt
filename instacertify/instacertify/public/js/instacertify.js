@@ -1435,7 +1435,11 @@ instacertify.apply_favicon_brand_icons = function (root) {
 
 	function ensureIconOnButton($btn) {
 		if (!$btn || !$btn.length) return;
-		if ($btn.find(".ic-action-icon, .icon, svg.icon, svg.es-icon").length) return;
+		if ($btn.data("ic-icon-ready") || $btn.hasClass("ic-has-action-icon")) return;
+		if ($btn.find(".ic-action-icon, .icon, svg.icon, svg.es-icon").length) {
+			$btn.data("ic-icon-ready", 1).addClass("ic-has-action-icon");
+			return;
+		}
 		const label =
 			$btn.attr("data-label") ||
 			$btn.attr("aria-label") ||
@@ -1461,7 +1465,11 @@ instacertify.apply_favicon_brand_icons = function (root) {
 			$btn.empty().append($icon);
 			if (text) $btn.append(` <span class="ic-action-label">${frappe.utils.escape_html(text)}</span>`);
 		}
-		$btn.addClass("ic-has-action-icon");
+		$btn.addClass("ic-has-action-icon").data("ic-icon-ready", 1);
+		const n = normalizeLabel(label);
+		if (/previous|prev\b|^next\b|print/i.test(n)) {
+			$btn.addClass("ic-nav-icon-btn");
+		}
 	}
 
 	function ensureIconOnMenuItem($a) {
@@ -1572,13 +1580,19 @@ instacertify.apply_favicon_brand_icons = function (root) {
 			(page && (page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group")))) ||
 			$(".page-head .page-icon-group").first();
 		if (!$group || !$group.length) return;
+		if ($group.data("ic-styled") === 1 && $group.find(".icon-btn:not([data-ic-box])").length === 0) {
+			return;
+		}
 		$group.removeClass("hide").css({
 			display: "inline-flex",
 			visibility: "visible",
 			opacity: 1,
+			alignItems: "center",
+			gap: "6px",
 		});
 		$group.find(".icon-btn, button").each(function () {
 			const $b = $(this);
+			if ($b.data("ic-box") === 1) return;
 			const reload = isReloadIconBtn($b);
 			$b.removeClass("text-muted hide")
 				.addClass("ic-line-icon-btn")
@@ -1595,16 +1609,18 @@ instacertify.apply_favicon_brand_icons = function (root) {
 					flexShrink: "0",
 					padding: "0",
 					margin: "0",
+					width: "32px",
+					height: "32px",
+					minWidth: "32px",
+					maxWidth: "32px",
+					alignItems: "center",
+					justifyContent: "center",
 				});
 			if (reload) {
 				$b.addClass("ic-reload-boxed").css({
 					border: "1.5px solid rgba(3, 52, 71, 0.45)",
 					background: "#ffffff",
 					borderRadius: "8px",
-					width: "32px",
-					height: "32px",
-					minWidth: "32px",
-					maxWidth: "32px",
 				});
 			} else {
 				$b.css({
@@ -1612,18 +1628,6 @@ instacertify.apply_favicon_brand_icons = function (root) {
 					background: "transparent",
 				});
 			}
-			$b.find("svg.es-icon, .es-icon, use").each(function () {
-				const $el = $(this);
-				if ($el.closest("svg").hasClass("es-icon") || $el.is("svg.es-icon") || $el.hasClass("es-icon")) {
-					$el.css({
-						fill: "#0B1820",
-						stroke: "none",
-						color: "#0B1820",
-						opacity: 1,
-						visibility: "visible",
-					});
-				}
-			});
 			$b.find("svg.es-icon, .es-icon").css({
 				fill: "#0B1820",
 				stroke: "none",
@@ -1645,7 +1649,9 @@ instacertify.apply_favicon_brand_icons = function (root) {
 				maxWidth: "100%",
 				maxHeight: "100%",
 			});
+			$b.data("ic-box", 1);
 		});
+		$group.data("ic-styled", 1);
 	}
 
 	function decoratePage(page) {
@@ -1664,7 +1670,12 @@ instacertify.apply_favicon_brand_icons = function (root) {
 			});
 			stylePageIconGroup(page);
 			ensurePrintActionIcon(page);
-			stylePageIconGroup(page);
+			const $g =
+				page.icon_group || (page.page_actions && page.page_actions.find(".page-icon-group"));
+			if ($g && $g.length && $g.find(".icon-btn:not([data-ic-box]), button:not([data-ic-box])").length) {
+				$g.removeData("ic-styled");
+				stylePageIconGroup(page);
+			}
 			// Form custom groups (Library / Actions / Test on Quotation Template, etc.)
 			(page.page_actions || $()).find(".inner-group-button > .btn, .custom-actions .btn, .actions-btn-group .btn").each(
 				function () {
@@ -1734,7 +1745,12 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		_icDecorateTimer = setTimeout(decorateAll, 80);
 	};
 
-	$(document).on("page-change", schedule);
+	$(document).on("page-change", () => {
+		$(".page-icon-group").removeData("ic-styled");
+		$(".page-icon-group .icon-btn, .page-icon-group button").removeData("ic-box");
+		$(".btn").removeData("ic-icon-ready");
+		schedule();
+	});
 	$(document).on("form-refresh", schedule);
 	$(document).on("shown.bs.modal", schedule);
 	$(document).on("list_view_rendered", schedule);
@@ -1745,22 +1761,24 @@ instacertify.apply_favicon_brand_icons = function (root) {
 	// Keep icons after Frappe rebuilds the toolbar
 	frappe.after_ajax && frappe.after_ajax(schedule);
 
-	// Watch page-head for list Reload / Print icon injection
+	// Watch page-head — only when new undecorated buttons appear (avoids bounce)
 	try {
 		if (window.MutationObserver) {
 			const mo = new MutationObserver((mutations) => {
 				for (let i = 0; i < mutations.length; i++) {
-					const t = mutations[i].target;
-					if (
-						t &&
-						(t.classList?.contains("page-icon-group") ||
-							t.classList?.contains("page-actions") ||
-							t.classList?.contains("page-head") ||
-							(typeof t.closest === "function" &&
-								t.closest(".page-head, .page-icon-group, .standard-actions")))
-					) {
-						schedule();
-						return;
+					const nodes = mutations[i].addedNodes;
+					if (!nodes || !nodes.length) continue;
+					for (let j = 0; j < nodes.length; j++) {
+						const n = nodes[j];
+						if (n.nodeType !== 1) continue;
+						const $n = $(n);
+						if (
+							$n.is(".btn, .icon-btn, .page-icon-group, .page-actions") ||
+							$n.find(".btn:not(.ic-has-action-icon), .icon-btn:not([data-ic-box])").length
+						) {
+							schedule();
+							return;
+						}
 					}
 				}
 			});
@@ -2286,8 +2304,11 @@ frappe.ui.form.on("Quotation", {
 				window.open(url, "_blank");
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Arrange Sections…"), () => {
+				instacertify.open_arrange_quotation_sections_dialog(frm);
+			}, __("Print Sections"));
 			frm.add_custom_button(__("Choose Sections on Print…"), () => {
-				instacertify.open_quote_print_sections_dialog(frm);
+				instacertify.open_arrange_quotation_sections_dialog(frm);
 			}, __("Print Sections"));
 			frm.add_custom_button(__("Show All Print Sections"), () => {
 				instacertify.set_all_quote_print_sections(frm, 1);
@@ -2924,6 +2945,7 @@ instacertify.set_all_quote_print_sections = function (frm, value) {
 			frm.set_value(f, value);
 		}
 	});
+	instacertify.apply_quotation_section_visibility(frm);
 	frappe.show_alert({
 		message: value
 			? __("All print sections set to Show")
@@ -2932,71 +2954,237 @@ instacertify.set_all_quote_print_sections = function (frm, value) {
 	});
 };
 
-/** Dialog: pick which narrative / policy blocks appear on Print, PDF, and customer portal. */
+/** Dialog: include/exclude sections + change Print/PDF sequence (1st, 2nd, 3rd…). */
 instacertify.open_quote_print_sections_dialog = function (frm) {
+	instacertify.open_arrange_quotation_sections_dialog(frm);
+};
+
+instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 	if (!frm) return;
-	const fields = [
-		{
-			fieldtype: "HTML",
-			options: `<p class="text-muted">${__(
-				"Uncheck any row to exclude that block from Print / PDF / Share with Customer. Data stays on the form for internal use."
-			)}</p>`,
-		},
+	const catalog = [
+		{ key: "about", show_field: "ic_show_about", label: __("About / Narrative") },
+		{ key: "applicable_standards", show_field: "ic_show_applicable_standards", label: __("Applicable Standards") },
+		{ key: "process", show_field: "ic_show_process", label: __("Process Steps") },
+		{ key: "validity", show_field: "ic_show_validity", label: __("Validity") },
+		{ key: "sample_required", show_field: "ic_show_sample_required", label: __("Sample Required") },
+		{ key: "documents_required", show_field: "ic_show_documents_required", label: __("Documents Required") },
+		{ key: "timelines", show_field: "ic_show_timelines", label: __("Timelines") },
+		{ key: "deliverables", show_field: "ic_show_deliverables", label: __("Deliverables") },
+		{ key: "commercials", show_field: "ic_show_commercials", label: __("Commercials / Test Lines") },
+		{ key: "payment_terms", show_field: "ic_show_payment_terms", label: __("Payment Terms") },
+		{ key: "banking", show_field: "ic_show_banking", label: __("Banking Details") },
+		{ key: "cancellation", show_field: "ic_show_cancellation", label: __("Cancellation & Refund") },
+		{ key: "force_majeure", show_field: "ic_show_force_majeure", label: __("Force Majeure") },
+		{ key: "confidentiality", show_field: "ic_show_confidentiality", label: __("Confidentiality") },
+		{ key: "terms", show_field: "ic_show_terms", label: __("Terms and Conditions") },
+		{ key: "sample_handling", show_field: "ic_show_sample_handling", label: __("Sample Handling Policy") },
 	];
-	const pairs = [
-		["ic_show_about", __("About / Narrative")],
-		["ic_show_applicable_standards", __("Applicable Standards")],
-		["ic_show_process", __("Process Steps")],
-		["ic_show_validity", __("Validity")],
-		["ic_show_sample_required", __("Sample Required")],
-		["ic_show_documents_required", __("Documents Required")],
-		["ic_show_timelines", __("Timelines")],
-		["ic_show_deliverables", __("Deliverables")],
-		["ic_show_commercials", __("Commercials / Test Lines")],
-		["ic_show_payment_terms", __("Payment Terms")],
-		["ic_show_banking", __("Banking Details")],
-		["ic_show_cancellation", __("Cancellation & Refund")],
-		["ic_show_force_majeure", __("Force Majeure")],
-		["ic_show_confidentiality", __("Confidentiality")],
-		["ic_show_terms", __("Terms and Conditions")],
-		["ic_show_sample_handling", __("Sample Handling Policy")],
-	];
-	pairs.forEach(([fname, label]) => {
-		if (!frm.fields_dict[fname] && !(frappe.meta && frappe.meta.has_field(frm.doctype, fname))) {
-			return;
-		}
-		fields.push({
-			fieldname: fname,
-			fieldtype: "Check",
-			label: label,
-			default: frm.doc[fname] == null ? 1 : cint(frm.doc[fname]),
-		});
+	const defaultsByType =
+		["Testing", "Multiple Products / Multiple Services"].includes(frm.doc.ic_quotation_type)
+			? [
+					"about",
+					"applicable_standards",
+					"sample_required",
+					"commercials",
+					"deliverables",
+					"timelines",
+					"payment_terms",
+					"sample_handling",
+					"banking",
+					"cancellation",
+					"force_majeure",
+					"confidentiality",
+					"terms",
+					"process",
+					"validity",
+					"documents_required",
+			  ]
+			: [
+					"about",
+					"applicable_standards",
+					"process",
+					"validity",
+					"commercials",
+					"payment_terms",
+					"timelines",
+					"sample_required",
+					"documents_required",
+					"banking",
+					"cancellation",
+					"force_majeure",
+					"confidentiality",
+					"terms",
+					"sample_handling",
+					"deliverables",
+			  ];
+	let order = (frm.doc.ic_section_order || "")
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
+	if (!order.length) order = defaultsByType.slice();
+	defaultsByType.forEach((k) => {
+		if (!order.includes(k)) order.push(k);
 	});
+	order = order.filter((k) => catalog.some((c) => c.key === k));
+
+	const byKey = {};
+	catalog.forEach((c) => {
+		byKey[c.key] = c;
+	});
+
+	const state = order.map((key) => {
+		const c = byKey[key];
+		const show = frm.doc[c.show_field];
+		return {
+			key,
+			label: c.label,
+			show_field: c.show_field,
+			include: show == null ? 1 : cint(show),
+		};
+	});
+
 	const d = new frappe.ui.Dialog({
-		title: __("Include on Quotation Print"),
-		fields,
+		title: __("Arrange Quotation Sections"),
 		size: "large",
+		fields: [
+			{
+				fieldtype: "HTML",
+				fieldname: "help",
+				options: `<p class="text-muted">${__(
+					"Uncheck Include to remove a section from this quote (form + Print/PDF). Use ↑ ↓ to set order (1st, 2nd, 3rd…) on Print/PDF."
+				)}</p><div class="ic-section-arrange-list" style="max-height:420px;overflow:auto;"></div>`,
+			},
+		],
 		primary_action_label: __("Apply"),
-		primary_action(values) {
+		primary_action() {
+			const keys = state.map((r) => r.key);
 			const chain = Promise.resolve();
 			let p = chain;
-			pairs.forEach(([fname]) => {
-				if (values[fname] === undefined) return;
-				if (!frm.fields_dict[fname]) return;
+			if (frm.fields_dict.ic_section_order) {
 				p = p.then(() =>
-					Promise.resolve(frm.set_value(fname, cint(values[fname]))).catch(() => {})
+					Promise.resolve(frm.set_value("ic_section_order", keys.join(","))).catch(() => {
+						frm.doc.ic_section_order = keys.join(",");
+					})
+				);
+			} else {
+				frm.doc.ic_section_order = keys.join(",");
+			}
+			state.forEach((row) => {
+				if (!frm.fields_dict[row.show_field]) return;
+				p = p.then(() =>
+					Promise.resolve(frm.set_value(row.show_field, cint(row.include))).catch(() => {})
 				);
 			});
 			p.then(() => {
+				instacertify.apply_quotation_section_visibility(frm);
 				d.hide();
 				frappe.show_alert({
-					message: __("Print sections updated — Save, then Print / Share"),
+					message: __("Sections updated — Save, then Print / Share"),
 					indicator: "green",
 				});
 			});
 		},
 	});
+
+	function render() {
+		const $list = d.$wrapper.find(".ic-section-arrange-list");
+		if (!$list.length) return;
+		const rows = state
+			.map((row, idx) => {
+				return `<div class="ic-section-arrange-row" data-idx="${idx}" style="
+					display:flex;align-items:center;gap:10px;padding:8px 10px;margin:4px 0;
+					border:1px solid var(--border-color,#d0d7de);border-radius:6px;background:#fff;">
+					<span style="width:28px;text-align:center;color:#667;font-weight:600;">${idx + 1}</span>
+					<label style="flex:1;margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;">
+						<input type="checkbox" class="ic-sec-include" ${row.include ? "checked" : ""}/>
+						<span>${frappe.utils.escape_html(row.label)}</span>
+					</label>
+					<button type="button" class="btn btn-xs btn-default ic-sec-up" title="${__("Move up")}">↑</button>
+					<button type="button" class="btn btn-xs btn-default ic-sec-down" title="${__("Move down")}">↓</button>
+				</div>`;
+			})
+			.join("");
+		$list.html(rows);
+		$list.find(".ic-sec-include").on("change", function () {
+			const idx = cint($(this).closest(".ic-section-arrange-row").data("idx"));
+			state[idx].include = $(this).is(":checked") ? 1 : 0;
+		});
+		$list.find(".ic-sec-up").on("click", function () {
+			const idx = cint($(this).closest(".ic-section-arrange-row").data("idx"));
+			if (idx <= 0) return;
+			const tmp = state[idx - 1];
+			state[idx - 1] = state[idx];
+			state[idx] = tmp;
+			render();
+		});
+		$list.find(".ic-sec-down").on("click", function () {
+			const idx = cint($(this).closest(".ic-section-arrange-row").data("idx"));
+			if (idx >= state.length - 1) return;
+			const tmp = state[idx + 1];
+			state[idx + 1] = state[idx];
+			state[idx] = tmp;
+			render();
+		});
+	}
+
 	d.show();
+	setTimeout(render, 50);
+};
+
+/** Hide form fields for sections unchecked in Arrange / Print Sections. */
+instacertify.apply_quotation_section_visibility = function (frm) {
+	if (!frm || !frm.fields_dict) return;
+	const map = {
+		ic_show_about: ["ic_section_about", "ic_about_service", "ic_about_testing", "ic_scope_of_work"],
+		ic_show_applicable_standards: [
+			"ic_applicable_standard",
+			"ic_standard_narrative",
+			"ic_applicable_standards_text",
+		],
+		ic_show_process: ["ic_process_steps"],
+		ic_show_validity: ["ic_validity_text", "ic_validity_days"],
+		ic_show_sample_required: ["ic_sample_required", "ic_samples_note"],
+		ic_show_documents_required: ["ic_documents_required"],
+		ic_show_timelines: ["ic_estimated_timeline", "ic_timeline_details", "ic_section_docs_timeline"],
+		ic_show_deliverables: ["ic_deliverables"],
+		ic_show_commercials: [
+			"ic_section_test_lines",
+			"ic_test_items",
+			"ic_section_costing",
+			"ic_cost_items",
+			"ic_section_cost_totals",
+			"ic_commercial_value",
+			"ic_passthrough_value",
+			"ic_total_quoted_value",
+			"ic_commercials_notes",
+		],
+		ic_show_payment_terms: ["ic_payment_terms"],
+		ic_show_banking: ["ic_bank_account"],
+		ic_show_cancellation: ["ic_cancellation_policy"],
+		ic_show_force_majeure: ["ic_force_majeure"],
+		ic_show_confidentiality: ["ic_confidentiality"],
+		ic_show_terms: ["ic_terms_and_conditions", "ic_section_terms"],
+		ic_show_sample_handling: ["ic_sample_handling_policy"],
+	};
+	Object.keys(map).forEach((showField) => {
+		if (!frm.fields_dict[showField] && frm.doc[showField] == null) return;
+		const on = frm.doc[showField] == null ? true : cint(frm.doc[showField]) === 1;
+		(map[showField] || []).forEach((f) => {
+			if (frm.fields_dict[f]) {
+				frm.toggle_display(f, on);
+			}
+		});
+	});
+	// Policies section: show if any of payment/cancel/confidentiality/banking on
+	if (frm.fields_dict.ic_section_policies) {
+		const isOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
+		const any =
+			isOn("ic_show_payment_terms") ||
+			isOn("ic_show_cancellation") ||
+			isOn("ic_show_confidentiality") ||
+			isOn("ic_show_banking");
+		frm.toggle_display("ic_section_policies", any);
+	}
 };
 
 instacertify.hide_sales_order_button = function (frm) {
@@ -3301,7 +3489,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_section_print_sections",
 			"description",
 			__(
-				"Uncheck to hide on Print/PDF/Share (e.g. Sample Required, Timelines). Or use Print Sections → Choose Sections on Print…"
+				"Uncheck to hide on form + Print/PDF (Sample Required, Timelines, …). Or Print Sections → Arrange Sections… to delete and reorder."
 			)
 		);
 	}
@@ -3331,6 +3519,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 			}
 		}
 	});
+	instacertify.apply_quotation_section_visibility(frm);
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {

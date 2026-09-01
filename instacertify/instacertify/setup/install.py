@@ -409,11 +409,47 @@ def setup_custom_fields():
 	_ensure_pipeline_and_quote_accept_fields()
 	_ensure_quotation_bank_account_field()
 	_ensure_quotation_print_section_fields()
+	_ensure_quotation_section_order_field()
 	_ensure_quotation_commercials_layout()
 	_ensure_quotation_share_token_column()
 	_ensure_test_item_samples_editable()
 	_ensure_test_lines_on_consulting()
 	_ensure_test_item_price_columns()
+
+
+def _ensure_quotation_section_order_field():
+	"""Hidden JSON/CSV field storing Print section sequence for each quotation."""
+	cf_name = "Quotation-ic_section_order"
+	try:
+		if not frappe.db.exists("Custom Field", cf_name):
+			frappe.get_doc(
+				{
+					"doctype": "Custom Field",
+					"dt": "Quotation",
+					"module": "Instacertify",
+					"fieldname": "ic_section_order",
+					"label": "Section Order (internal)",
+					"fieldtype": "Small Text",
+					"insert_after": "ic_show_sample_handling",
+					"hidden": 1,
+					"description": "Comma-separated section keys for Print/PDF order.",
+				}
+			).insert(ignore_permissions=True)
+		if frappe.db.exists("Custom Field", "Quotation-ic_section_identity"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_section_identity",
+				"insert_after",
+				"ic_section_order",
+				update_modified=False,
+			)
+		if not frappe.db.has_column("Quotation", "ic_section_order"):
+			from frappe.database.schema import add_column
+
+			add_column("Quotation", "ic_section_order", "Small Text")
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure quotation section order field")
 
 
 def _ensure_test_lines_on_consulting():
