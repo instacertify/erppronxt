@@ -147,13 +147,13 @@
           '</tbody></table>'
       };
     }
-    function gstNote(currency) {
+    function paymentGstNote(currency) {
       const cur = currency || 'INR';
-      let msg = 'Note: GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).';
+      let msg = 'GST @ 18% shall be charged additionally on the quoted charges, as applicable under Indian GST (CGST+SGST / IGST).';
       if (cur !== 'INR') {
-        msg = 'Note: Amounts are in ' + cur + '. GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).';
+        msg = 'Amounts are in ' + cur + '. GST @ 18% shall be charged additionally on the quoted charges, as applicable under Indian GST (CGST+SGST / IGST).';
       }
-      return '<p class="ic-portal-muted" style="margin-top:8px;"><b>' + esc(msg) + '</b></p>';
+      return '<p style="margin-top:8px;"><b>' + esc(msg) + '</b></p>';
     }
     function load() {
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
@@ -166,7 +166,7 @@
           let commercials = tests.html + costs.html;
           if (combined > 0) {
             commercials += '<p style="margin-top:12px;font-weight:700;color:#0D47A1;">Grand Total: ' +
-              esc(money(combined, d.currency)) + '</p>' + gstNote(d.currency);
+              esc(money(combined, d.currency)) + '</p>';
           }
           document.getElementById('content').innerHTML =
             (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
@@ -181,9 +181,14 @@
             (d.ic_show_deliverables != 0 && d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
             (d.ic_show_commercials != 0 ? ('<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
             (commercials || '<p class="ic-portal-muted">No commercial lines yet.</p>')) : '') +
-            (d.ic_show_payment_terms != 0 && d.ic_payment_terms ? ('<h4 style="color:#0D47A1;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
+            (d.ic_show_payment_terms != 0
+              ? ('<h4 style="color:#0D47A1;">Payment Terms</h4>' +
+                (d.ic_payment_terms
+                  ? ('<div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>')
+                  : '<p class="ic-portal-muted">As agreed with Instacertify.</p>') +
+                paymentGstNote(d.currency))
+              : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
-
           document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));
           const show = !!d.can_decide;
           document.getElementById('actions').style.display = 'flex';

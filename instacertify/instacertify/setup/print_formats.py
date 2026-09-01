@@ -30,14 +30,14 @@ BANK_UPI_PAYMENT_HTML = """
 <div style="margin-top:8px;"><b>Kindly share the payment transaction details/remittance advice after making the payment for our records and further processing.</b></div>
 """
 
-# Shared GST note under commercial grand totals (currency-aware).
-GST_APPLICABLE_NOTE_HTML = """
+# GST note shown under Payment Terms (not under commercials).
+GST_PAYMENT_TERMS_NOTE_HTML = """
 {%- set _curr = doc.currency or 'INR' -%}
-{%- set _gst_default = 'Note: GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).' -%}
-{%- if _curr != 'INR' -%}
-{%- set _gst_default = 'Note: Amounts are in ' ~ _curr ~ '. GST @ 18% shall be charged additionally on the above total, as applicable under Indian GST (CGST+SGST / IGST).' -%}
+{%- set _gst_pay = doc.ic_gst_note or 'GST @ 18% shall be charged additionally on the quoted charges, as applicable under Indian GST (CGST+SGST / IGST).' -%}
+{%- if _curr != 'INR' and not doc.ic_gst_note -%}
+{%- set _gst_pay = 'Amounts are in ' ~ _curr ~ '. GST @ 18% shall be charged additionally on the quoted charges, as applicable under Indian GST (CGST+SGST / IGST).' -%}
 {%- endif -%}
-<div style="margin-top:10px;font-size:9.5pt;"><b>{{ doc.ic_gst_note or _gst_default }}</b></div>
+<div style="margin-top:8px;"><b>{{ _gst_pay }}</b></div>
 """
 
 # Instacertify Aptos Display / Aptos print typography (quotations + printable docs)
@@ -366,7 +366,6 @@ QUOTATION_HTML = """
     <div class="ic-grand-total" style="margin-top:10px;">
       Grand Total: {{ frappe.utils.fmt_money(ns.testing_grand + ns.cost_grand, currency=doc.currency) }}
     </div>
-""" + GST_APPLICABLE_NOTE_HTML + """
   </div>
   {% endif %}
 
@@ -396,6 +395,12 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
   {% if quote_section_on(doc, 'ic_show_banking') %}
+  <div class="ic-box">
+    <h3>Payment Terms</h3>
+    {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
+    {% else %}<p>As agreed with Instacertify.</p>{% endif %}
+""" + GST_PAYMENT_TERMS_NOTE_HTML + """
+  </div>
   <div class="ic-box">
     <h3>Bank Details &amp; UPI Payment</h3>
 """ + BANK_UPI_PAYMENT_HTML + """
@@ -936,7 +941,6 @@ TESTING_QUOTATION_HTML = """
             </tr>
           </tbody>
         </table>
-""" + GST_APPLICABLE_NOTE_HTML + """
       </td>
     </tr>
     {% endif %}
@@ -984,6 +988,7 @@ TESTING_QUOTATION_HTML = """
             <li>Any additional testing or charges, if applicable, shall be communicated separately.</li>
           </ul>
         {% endif %}
+""" + GST_PAYMENT_TERMS_NOTE_HTML + """
       </td>
     </tr>
     {% endif %}
@@ -1228,7 +1233,6 @@ CONSULTING_QUOTATION_HTML = """
             </tr>
           </tbody>
         </table>
-""" + GST_APPLICABLE_NOTE_HTML + """
         {% if doc.ic_commercials_notes %}
           <div style="margin-top:10px;">{{ doc.ic_commercials_notes }}</div>
         {% endif %}
@@ -1246,10 +1250,10 @@ CONSULTING_QUOTATION_HTML = """
           <ul>
             <li>Professional Consultancy Charges shall be payable upon confirmation of the project and commencement of consultancy services.</li>
             <li>Government Fees and Product Testing Charges shall be payable in advance.</li>
-            <li>GST @ 18% shall be applicable on Professional Consultancy Charges as per prevailing Government taxation regulations.</li>
             <li>This quotation is valid for {{ doc.ic_validity_days or 90 }} days from the date of issuance unless otherwise specified.</li>
           </ul>
         {% endif %}
+""" + GST_PAYMENT_TERMS_NOTE_HTML + """
       </div>
     </div>
     {% endif %}
