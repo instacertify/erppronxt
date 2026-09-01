@@ -160,8 +160,22 @@
       return '<p style="margin-top:8px;"><b>' + esc(msg) + '</b></p>';
     }
     function load() {
+      if (!token) {
+        document.getElementById('content').innerHTML =
+          'Invalid or missing quotation link. Ask Instacertify to Share with Customer again and use the new link.';
+        return;
+      }
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
+          if (r.exc || r._server_messages) {
+            let msg = 'Unable to load quotation. The link may be invalid or expired — ask Instacertify to share again.';
+            try {
+              const sm = JSON.parse(r._server_messages || '[]');
+              if (sm[0]) msg = JSON.parse(sm[0]).message || msg;
+            } catch (e) {}
+            document.getElementById('content').innerHTML = esc(msg);
+            return;
+          }
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
           const tests = testTable(d.test_items, d.currency);

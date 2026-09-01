@@ -2188,29 +2188,78 @@ frappe.ui.form.on("Quotation", {
 				}, __("Links"));
 			}
 			frm.add_custom_button(__("Share with Customer"), () => {
-				frappe.call({
-					method: "instacertify.quotation.events.share_with_customer",
-					args: { quotation: frm.doc.name },
-					freeze: true,
-					callback(r) {
-						frm.reload_doc();
-						const url = r.message && r.message.url;
-						frappe.msgprint({
-							title: __("Customer Share Link"),
-							message: `
-								<p>${__("Customer can open this link to read, download PDF, approve, or ask for revision:")}</p>
-								<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-								<p class="text-muted">${__("Copy and send this open link to the customer (email / WhatsApp).")}</p>
-							`,
-							indicator: "green",
-						});
-						if (url && navigator.clipboard) {
-							navigator.clipboard.writeText(url).then(() => {
-								frappe.show_alert({ message: __("Link copied"), indicator: "green" });
-							}).catch(() => {});
-						}
-					},
-				});
+				const runShare = () => {
+					frappe.call({
+						method: "instacertify.quotation.events.share_with_customer",
+						args: { quotation: frm.doc.name },
+						freeze: true,
+						freeze_message: __("Generating customer link…"),
+						callback(r) {
+							const m = (r && r.message) || {};
+							let url = (m.url || "").trim();
+							const token = (m.token || "").trim();
+							// Prefer site origin + token so desk/app portal_base_url mistakes never break the link
+							if (token) {
+								const origin =
+									(window.location && window.location.origin) ||
+									(frappe.urllib && frappe.urllib.get_base_url && frappe.urllib.get_base_url()) ||
+									"";
+								const safe = origin + "/ic-quotation/" + encodeURIComponent(token);
+								if (
+									!url ||
+									url === "undefined" ||
+									url.indexOf("/app/") >= 0 ||
+									url.indexOf("/desk/") >= 0 ||
+									url.indexOf("ic-quotation") < 0
+								) {
+									url = safe;
+								}
+							}
+							if (!url) {
+								frappe.msgprint({
+									title: __("Share link failed"),
+									indicator: "red",
+									message: __(
+										"No customer link was returned. Save the quotation, run site Migrate/Update, then try Share again."
+									),
+								});
+								return;
+							}
+							frappe.msgprint({
+								title: __("Customer Share Link"),
+								message: `
+									<p>${__("Customer can open this link to read, download PDF, approve, or ask for revision:")}</p>
+									<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+									<p class="text-muted">${__("Copy and send this open link to the customer (email / WhatsApp).")}</p>
+								`,
+								indicator: "green",
+							});
+							if (navigator.clipboard && navigator.clipboard.writeText) {
+								navigator.clipboard.writeText(url).then(() => {
+									frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+								}).catch(() => {});
+							}
+							frm.reload_doc();
+						},
+						error() {
+							frappe.msgprint({
+								title: __("Share failed"),
+								indicator: "red",
+								message: __(
+									"Could not generate the customer link. Save the quotation and try again. If it still fails, run Migrate/Update on the server."
+								),
+							});
+						},
+					});
+				};
+				// Persist line items first — portal reads saved DB rows only
+				if (frm.is_dirty()) {
+					frm.save().then(runShare).catch(() => {
+						frappe.msgprint(__("Save the quotation before sharing with the customer."));
+					});
+				} else {
+					runShare();
+				}
 			}, __("Actions"));
 
 			frm.add_custom_button(__("Print / PDF Options"), () => {
@@ -2226,6 +2275,10 @@ frappe.ui.form.on("Quotation", {
 						: frm.doc.ic_quotation_type
 							? "Instacertify Consulting Quotation"
 							: "Instacertify Quotation");
+				if (!frm.doc.name || String(frm.doc.name).indexOf("new-") === 0) {
+					frappe.msgprint(__("Save the quotation before downloading the PDF."));
+					return;
+				}
 				const url = frappe.urllib.get_full_url(
 					"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
 						$.param({ name: frm.doc.name, print_format: fmt })

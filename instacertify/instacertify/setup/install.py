@@ -410,6 +410,7 @@ def setup_custom_fields():
 	_ensure_quotation_bank_account_field()
 	_ensure_quotation_print_section_fields()
 	_ensure_quotation_commercials_layout()
+	_ensure_quotation_share_token_column()
 
 
 def _sync_custom_field_columns(doctypes: list[str] | None = None):
@@ -754,6 +755,23 @@ def _ensure_quotation_commercials_layout():
 		frappe.clear_cache(doctype="Quotation")
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "ensure quotation commercials layout")
+
+
+def _ensure_quotation_share_token_column():
+	"""Share with Customer needs ic_share_token / ic_shared_on columns on Quotation."""
+	from frappe.database.schema import add_column
+
+	for fieldname, fieldtype in (
+		("ic_share_token", "Data"),
+		("ic_shared_on", "Datetime"),
+		("ic_workflow_status", "Data"),
+	):
+		try:
+			if not frappe.db.has_column("Quotation", fieldname):
+				add_column("Quotation", fieldname, fieldtype)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"ensure Quotation.{fieldname} column")
+	frappe.clear_cache(doctype="Quotation")
 
 
 def _ensure_lead_source_link_field():

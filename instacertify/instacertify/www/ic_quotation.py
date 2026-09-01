@@ -20,7 +20,12 @@ DECIDABLE = (
 
 def get_context(context):
 	token = frappe.form_dict.get("name") or frappe.form_dict.get("token")
-	context.token = token
+	# Also accept token from trailing path when form_dict is empty
+	if not token and getattr(frappe, "request", None) and frappe.request.path:
+		path = frappe.request.path.rstrip("/")
+		if "/ic-quotation/" in path:
+			token = path.split("/ic-quotation/", 1)[-1].strip("/") or None
+	context.token = token or ""
 	context.csrf_token = frappe.sessions.get_csrf_token()
 	frappe.db.commit()
 	context.no_cache = 1
@@ -39,10 +44,9 @@ def _plain(value) -> str:
 @frappe.whitelist(allow_guest=True)
 def get_quotation(token: str):
 	"""Guest-safe quotation payload — no Desk IDs, no raw HTML injection surface."""
-	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
-	if not name:
-		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
-	doc = frappe.get_doc("Quotation", name)
+	from instacertify.quotation.events import _quotation_from_token
+
+	doc = _quotation_from_token(token)
 
 	cost_items = []
 	for row in doc.get("ic_cost_items") or []:
@@ -120,6 +124,7 @@ def get_quotation(token: str):
 
 	# Prefer customer-facing title over internal Quotation name
 	display_ref = doc.get("customer_name") or doc.get("party_name") or "Quotation"
+	token_safe = (token or "").strip()
 	return {
 		"reference": display_ref,
 		"customer_name": _plain(doc.customer_name or doc.party_name),
@@ -143,7 +148,7 @@ def get_quotation(token: str):
 		"test_items": test_items,
 		"can_decide": 1 if can_decide else 0,
 		"is_final": 1 if status in ("Accepted", "Rejected / Lost") else 0,
-		"pdf_url": f"/api/method/instacertify.quotation.events.download_quotation_pdf?token={token}",
+		"pdf_url": f"/api/method/instacertify.quotation.events.download_quotation_pdf?token={token_safe}",
 		"payment": pay,
 		"portal_notice": _(
 			"This secure link is for reviewing the quotation only. You can download the PDF and send feedback — it does not provide access to Instacertify ERP."

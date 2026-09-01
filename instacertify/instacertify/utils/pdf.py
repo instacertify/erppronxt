@@ -149,6 +149,9 @@ def get_quotation_pdf_bytes(name: str, print_format: str | None = None, no_lette
 	When called from the guest token portal, temporarily elevate for print
 	rendering only (token already validated by the caller).
 	"""
+	from instacertify.quotation.events import _resolve_quotation_name
+
+	name = _resolve_quotation_name(name)
 	doc = frappe.get_doc("Quotation", name)
 	fmt = print_format or quotation_print_format(doc)
 	original_user = frappe.session.user
@@ -191,6 +194,17 @@ def download_quotation_pdf(name: str, print_format: str | None = None):
 	"""Desk-safe Quotation PDF download that avoids raw server errors."""
 	if not name:
 		frappe.throw(_("Quotation name is required"))
+	from instacertify.quotation.events import _resolve_quotation_name
+
+	try:
+		name = _resolve_quotation_name(name)
+	except frappe.DoesNotExistError:
+		frappe.throw(
+			_(
+				"Quotation {0} was not found. Open the quote from the Quotation list and try Download PDF again."
+			).format(name),
+			frappe.DoesNotExistError,
+		)
 	doc = frappe.get_doc("Quotation", name)
 	doc.check_permission("read")
 
@@ -244,6 +258,12 @@ def download_pdf(
 
 	from frappe.translate import print_language
 	from frappe.www.printview import validate_print_permission
+	from instacertify.quotation.events import _resolve_quotation_name
+
+	try:
+		name = _resolve_quotation_name(name)
+	except frappe.DoesNotExistError:
+		frappe.throw(_("Quotation {0} not found").format(name), frappe.DoesNotExistError)
 
 	doc = doc or frappe.get_doc(doctype, name)
 	validate_print_permission(doc)
