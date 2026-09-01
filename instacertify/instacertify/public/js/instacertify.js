@@ -2286,6 +2286,9 @@ frappe.ui.form.on("Quotation", {
 				window.open(url, "_blank");
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Choose Sections on Print…"), () => {
+				instacertify.open_quote_print_sections_dialog(frm);
+			}, __("Print Sections"));
 			frm.add_custom_button(__("Show All Print Sections"), () => {
 				instacertify.set_all_quote_print_sections(frm, 1);
 			}, __("Print Sections"));
@@ -2929,6 +2932,73 @@ instacertify.set_all_quote_print_sections = function (frm, value) {
 	});
 };
 
+/** Dialog: pick which narrative / policy blocks appear on Print, PDF, and customer portal. */
+instacertify.open_quote_print_sections_dialog = function (frm) {
+	if (!frm) return;
+	const fields = [
+		{
+			fieldtype: "HTML",
+			options: `<p class="text-muted">${__(
+				"Uncheck any row to exclude that block from Print / PDF / Share with Customer. Data stays on the form for internal use."
+			)}</p>`,
+		},
+	];
+	const pairs = [
+		["ic_show_about", __("About / Narrative")],
+		["ic_show_applicable_standards", __("Applicable Standards")],
+		["ic_show_process", __("Process Steps")],
+		["ic_show_validity", __("Validity")],
+		["ic_show_sample_required", __("Sample Required")],
+		["ic_show_documents_required", __("Documents Required")],
+		["ic_show_timelines", __("Timelines")],
+		["ic_show_deliverables", __("Deliverables")],
+		["ic_show_commercials", __("Commercials / Test Lines")],
+		["ic_show_payment_terms", __("Payment Terms")],
+		["ic_show_banking", __("Banking Details")],
+		["ic_show_cancellation", __("Cancellation & Refund")],
+		["ic_show_force_majeure", __("Force Majeure")],
+		["ic_show_confidentiality", __("Confidentiality")],
+		["ic_show_terms", __("Terms and Conditions")],
+		["ic_show_sample_handling", __("Sample Handling Policy")],
+	];
+	pairs.forEach(([fname, label]) => {
+		if (!frm.fields_dict[fname] && !(frappe.meta && frappe.meta.has_field(frm.doctype, fname))) {
+			return;
+		}
+		fields.push({
+			fieldname: fname,
+			fieldtype: "Check",
+			label: label,
+			default: frm.doc[fname] == null ? 1 : cint(frm.doc[fname]),
+		});
+	});
+	const d = new frappe.ui.Dialog({
+		title: __("Include on Quotation Print"),
+		fields,
+		size: "large",
+		primary_action_label: __("Apply"),
+		primary_action(values) {
+			const chain = Promise.resolve();
+			let p = chain;
+			pairs.forEach(([fname]) => {
+				if (values[fname] === undefined) return;
+				if (!frm.fields_dict[fname]) return;
+				p = p.then(() =>
+					Promise.resolve(frm.set_value(fname, cint(values[fname]))).catch(() => {})
+				);
+			});
+			p.then(() => {
+				d.hide();
+				frappe.show_alert({
+					message: __("Print sections updated — Save, then Print / Share"),
+					indicator: "green",
+				});
+			});
+		},
+	});
+	d.show();
+};
+
 instacertify.hide_sales_order_button = function (frm) {
 	const hide = () => {
 		frm.remove_custom_button(__("Sales Order"), __("Create"));
@@ -3150,24 +3220,18 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_section_costing",
 			"label",
 			isTesting
-				? __("5. Commercials / Other Charges (with Test Lines → Final Costing)")
-				: showTestLines
-					? __("8. Cost Breakdown / Commercials")
-					: __("7. Cost Breakdown / Commercials")
+				? __("Commercials / Other Charges (with Test Lines → Final Costing)")
+				: __("Cost Breakdown / Commercials")
 		);
 	}
 	if (frm.fields_dict.ic_section_testing) {
-		frm.set_df_property("ic_section_testing", "label", __("3. Testing Details"));
+		frm.set_df_property("ic_section_testing", "label", __("Testing Details"));
 	}
 	if (frm.fields_dict.ic_section_test_lines) {
 		frm.set_df_property(
 			"ic_section_test_lines",
 			"label",
-			showTestLines
-				? isTesting
-					? __("4. Test Lines — Laboratory, Scope & Charges")
-					: __("Test Lines — Laboratory, Scope & Charges")
-				: __("Test Lines — Laboratory, Scope & Charges")
+			__("Test Lines — Laboratory, Scope & Charges")
 		);
 	}
 	if (frm.fields_dict.ic_test_items) {
@@ -3185,11 +3249,9 @@ instacertify.toggle_quotation_sections = function (frm) {
 		frm.set_df_property(
 			"ic_section_cost_totals",
 			"label",
-			isTesting
-				? __("6. Final Costing (Test Lines + Commercials)")
-				: showTestLines
-					? __("9. Final Costing (Test Lines + Commercials)")
-					: __("8. Final Costing")
+			isTesting || showTestLines
+				? __("Final Costing (Test Lines + Commercials)")
+				: __("Final Costing")
 		);
 	}
 	if (frm.fields_dict.ic_cost_items) {
@@ -3214,23 +3276,11 @@ instacertify.toggle_quotation_sections = function (frm) {
 		frm.set_df_property(
 			"ic_section_policies",
 			"label",
-			isTesting
-				? __("7. Payment, Cancellation & Confidentiality")
-				: showTestLines
-					? __("10. Payment, Cancellation & Confidentiality")
-					: __("9. Payment, Cancellation & Confidentiality")
+			__("Payment, Cancellation & Confidentiality")
 		);
 	}
 	if (frm.fields_dict.ic_section_terms) {
-		frm.set_df_property(
-			"ic_section_terms",
-			"label",
-			isTesting
-				? __("8. Terms & Force Majeure")
-				: showTestLines
-					? __("11. Terms & Force Majeure")
-					: __("10. Terms & Force Majeure")
-		);
+		frm.set_df_property("ic_section_terms", "label", __("Terms & Force Majeure"));
 	}
 	if (isTesting) {
 		["ic_samples_note", "ic_gst_note", "ic_sample_handling_policy"].forEach((f) => {
@@ -3250,7 +3300,9 @@ instacertify.toggle_quotation_sections = function (frm) {
 		frm.set_df_property(
 			"ic_section_print_sections",
 			"description",
-			__("Uncheck any section to hide it on Print/PDF. Prefills from the Quote Format.")
+			__(
+				"Uncheck to hide on Print/PDF/Share (e.g. Sample Required, Timelines). Or use Print Sections → Choose Sections on Print…"
+			)
 		);
 	}
 	[
@@ -7048,43 +7100,43 @@ instacertify.render_customer_currency_banner = function (frm) {
 	}
 };
 
-/** Keep section headers numbered in display order. */
+/** Section headers without serial numbers (print PDF also unnumbered). */
 instacertify.renumber_quotation_section_headers = function (frm) {
 	const t = frm.doc.ic_quotation_type;
 	const isTesting = ["Testing", "Multiple Products / Multiple Services"].includes(t);
 	const isConsulting = ["Consulting", "Renewal", "Service", "Other", "Multiple Products / Multiple Services"].includes(t);
 	const map = isTesting
 		? [
-				["ic_section_type", "1. Quotation Setup — Type & Template"],
-				["ic_section_identity", "2. Quote Identity & Status"],
-				["ic_section_testing", "3. Testing Details"],
-				["ic_section_test_lines", "4. Test Lines — Laboratory, Scope & Charges"],
-				["ic_section_costing", "5. Commercials / Other Charges"],
-				["ic_section_cost_totals", "6. Final Costing (Testing + Commercials)"],
-				["ic_section_policies", "7. Payment, Cancellation & Confidentiality"],
-				["ic_section_terms", "8. Terms & Force Majeure"],
+				["ic_section_type", "Quotation Setup — Type & Template"],
+				["ic_section_identity", "Quote Identity & Status"],
+				["ic_section_testing", "Testing Details"],
+				["ic_section_test_lines", "Test Lines — Laboratory, Scope & Charges"],
+				["ic_section_costing", "Commercials / Other Charges"],
+				["ic_section_cost_totals", "Final Costing (Testing + Commercials)"],
+				["ic_section_policies", "Payment, Cancellation & Confidentiality"],
+				["ic_section_terms", "Terms & Force Majeure"],
 		  ]
 		: isConsulting
 			? [
-					["ic_section_type", "1. Quotation Setup — Type & Template"],
-					["ic_section_identity", "2. Quote Identity & Status"],
-					["ic_section_service", "3. Consulting / Service Basics"],
-					["ic_section_about", "4. About / Narrative"],
-					["ic_section_docs_timeline", "5. Documents & Timeline"],
-					["ic_section_scope", "6. Scope & Deliverables"],
-					["ic_section_test_lines", "7. Test Lines — Laboratory, Scope & Charges"],
-					["ic_section_costing", "8. Cost Breakdown / Commercials"],
-					["ic_section_cost_totals", "9. Final Costing (Test Lines + Commercials)"],
-					["ic_section_policies", "10. Payment, Cancellation & Confidentiality"],
-					["ic_section_terms", "11. Terms & Force Majeure"],
+					["ic_section_type", "Quotation Setup — Type & Template"],
+					["ic_section_identity", "Quote Identity & Status"],
+					["ic_section_service", "Consulting / Service Basics"],
+					["ic_section_about", "About / Narrative"],
+					["ic_section_docs_timeline", "Documents & Timeline"],
+					["ic_section_scope", "Scope & Deliverables"],
+					["ic_section_test_lines", "Test Lines — Laboratory, Scope & Charges"],
+					["ic_section_costing", "Cost Breakdown / Commercials"],
+					["ic_section_cost_totals", "Final Costing (Test Lines + Commercials)"],
+					["ic_section_policies", "Payment, Cancellation & Confidentiality"],
+					["ic_section_terms", "Terms & Force Majeure"],
 			  ]
 			: [
-					["ic_section_type", "1. Quotation Setup — Type & Template"],
-					["ic_section_identity", "2. Quote Identity & Status"],
-					["ic_section_costing", "3. Cost Breakdown / Commercials"],
-					["ic_section_cost_totals", "4. Final Costing"],
-					["ic_section_policies", "5. Payment, Cancellation & Confidentiality"],
-					["ic_section_terms", "6. Terms & Force Majeure"],
+					["ic_section_type", "Quotation Setup — Type & Template"],
+					["ic_section_identity", "Quote Identity & Status"],
+					["ic_section_costing", "Cost Breakdown / Commercials"],
+					["ic_section_cost_totals", "Final Costing"],
+					["ic_section_policies", "Payment, Cancellation & Confidentiality"],
+					["ic_section_terms", "Terms & Force Majeure"],
 			  ];
 	map.forEach(([field, label]) => {
 		if (frm.fields_dict[field]) frm.set_df_property(field, "label", __(label));
