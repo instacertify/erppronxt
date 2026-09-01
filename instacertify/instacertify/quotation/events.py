@@ -116,6 +116,16 @@ def _sync_quote_number_from_name(doc):
 def _calculate_test_line_totals(doc):
 	for row in doc.get("ic_test_items") or []:
 		units = float(row.number_of_samples or 0) or 1
+		row.number_of_samples = int(units)
+		# Keep Sample Required print text in sync when blank / auto-generated
+		cur = (row.get("sample_requirement") or "").strip()
+		auto = (
+			f"{int(units)} complete functional product "
+			f"{'sample' if int(units) == 1 else 'samples'}, "
+			"including all necessary accessories, cables, and power supply components."
+		)
+		if not cur or "complete functional product sample" in cur.lower():
+			row.sample_requirement = auto
 		rate = row.get("suggested_selling_price")
 		if rate in (None, ""):
 			rate = row.get("per_unit_charges")
