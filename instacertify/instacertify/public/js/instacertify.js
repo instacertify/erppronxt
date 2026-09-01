@@ -3175,13 +3175,14 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			}
 		});
 	});
-	// Policies section: show if any of payment/cancel/confidentiality on
+	// Policies section: show if any of payment/cancel/confidentiality/banking on
 	if (frm.fields_dict.ic_section_policies) {
+		const isOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
 		const any =
-			cint(frm.doc.ic_show_payment_terms) !== 0 ||
-			cint(frm.doc.ic_show_cancellation) !== 0 ||
-			cint(frm.doc.ic_show_confidentiality) !== 0 ||
-			cint(frm.doc.ic_show_banking) !== 0;
+			isOn("ic_show_payment_terms") ||
+			isOn("ic_show_cancellation") ||
+			isOn("ic_show_confidentiality") ||
+			isOn("ic_show_banking");
 		frm.toggle_display("ic_section_policies", any);
 	}
 };
