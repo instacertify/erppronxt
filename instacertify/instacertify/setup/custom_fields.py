@@ -1019,10 +1019,11 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_samples_note",
 		"fieldtype": "Small Text",
-		"label": "Samples Note",
+		"label": "Samples Note (editable)",
 		"default": "Note: Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.",
 		"insert_after": "ic_column_testing_notes",
 		"depends_on": "eval:doc.ic_quotation_type=='Testing'",
+		"description": "Printed under Sample Required. Edit per quote. Per-line sample counts are set on each Test Entry (No. of Samples).",
 	},
 	{
 		"fieldname": "ic_gst_note",
@@ -1046,7 +1047,7 @@ QUOTATION_FIELDS = [
 		"label": "Commercials / Test Entries",
 		"options": "IC Quotation Test Item",
 		"insert_after": "ic_section_test_lines",
-		"description": "Add one row per test. Select Laboratory → then Lab Test Scope (prices fill from the lab library).",
+		"description": "One row per test. Lab → Test → Standard fills prices. Edit No. of Samples on each row (drives Total Price and Sample Required on print).",
 	},
 	{
 		"fieldname": "ic_sample_handling_policy",

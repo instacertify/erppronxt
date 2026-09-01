@@ -843,9 +843,11 @@ TESTING_QUOTATION_HTML = """
       <td class="tq-value">
         <div class="tq-h">Sample Required</div>
         {% for row in doc.ic_test_items or [] %}
+          {%- set _n = row.number_of_samples or 1 -%}
           <div style="margin-bottom:8px;">
-            <b>{{ row.applicable_standard }}:</b>
-            {{ row.sample_requirement or ((row.number_of_samples or 1)|string + ' complete functional product sample, including all necessary accessories, cables, and power supply components.') }}
+            <b>{{ row.applicable_standard or row.test_name or 'Test' }}:</b>
+            {{ row.sample_requirement or ((_n|string) + ' complete functional product sample' + ('s' if _n != 1 else '') + ', including all necessary accessories, cables, and power supply components.') }}
+            <div class="tq-note" style="margin-top:2px;">No. of Samples: <b>{{ _n }}</b></div>
           </div>
         {% endfor %}
         <div class="tq-note"><b>Note:</b> {{ (doc.ic_samples_note or 'Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.')|replace('Note: ','') }}</div>

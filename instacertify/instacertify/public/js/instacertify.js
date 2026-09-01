@@ -2916,6 +2916,23 @@ instacertify.toggle_quotation_sections = function (frm) {
 			__("Payment, Bank, Cancellation & Confidentiality (editable)")
 		);
 	}
+	if (isTesting) {
+		["ic_samples_note", "ic_gst_note", "ic_sample_handling_policy"].forEach((f) => {
+			if (frm.fields_dict[f]) {
+				frm.toggle_display(f, true);
+				frm.set_df_property(f, "read_only", 0);
+			}
+		});
+		if (frm.fields_dict.ic_test_items) {
+			frm.set_df_property(
+				"ic_test_items",
+				"description",
+				__(
+					"Edit No. of Samples on each row — it updates Total Price and the Sample Required text on Print. Expand a row to edit Sample Required (print text)."
+				)
+			);
+		}
+	}
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {
@@ -2930,6 +2947,18 @@ frappe.ui.form.on("IC Quotation Test Item", {
 	form_render(frm, cdt, cdn) {
 		instacertify.load_quote_test_library_options(frm, cdt, cdn);
 		instacertify.load_lab_scope_options(frm, cdt, cdn);
+		const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+		if (grid) {
+			grid.update_docfield_property("number_of_samples", "read_only", 0);
+			grid.update_docfield_property("sample_requirement", "read_only", 0);
+		}
+		const row = locals[cdt][cdn];
+		if (row && !cint(row.number_of_samples)) {
+			frappe.model.set_value(cdt, cdn, "number_of_samples", 1);
+		}
+		if (row && !(row.sample_requirement || "").trim()) {
+			instacertify.sync_quote_sample_requirement(cdt, cdn, true);
+		}
 	},
 	product_name(frm, cdt, cdn) {},
 	laboratory(frm, cdt, cdn) {
@@ -2994,8 +3023,10 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		instacertify.apply_lab_test_scope(frm, cdt, cdn);
 	},
 	number_of_samples(frm, cdt, cdn) {
+		instacertify.sync_quote_sample_requirement(cdt, cdn);
 		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
+	sample_requirement(frm, cdt, cdn) {},
 	suggested_selling_price(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
 		frappe.model.set_value(cdt, cdn, "per_unit_charges", row.suggested_selling_price || 0).then(() => {
@@ -3007,6 +3038,34 @@ frappe.ui.form.on("IC Quotation Test Item", {
 	},
 	purchase_price(frm, cdt, cdn) {},
 });
+
+/** Auto Sample Required text from No. of Samples (editable afterwards). */
+instacertify.quote_sample_requirement_text = function (n) {
+	const count = Math.max(cint(n) || 1, 1);
+	const unit = count === 1 ? "sample" : "samples";
+	return (
+		count +
+		" complete functional product " +
+		unit +
+		", including all necessary accessories, cables, and power supply components."
+	);
+};
+
+instacertify.sync_quote_sample_requirement = function (cdt, cdn, force) {
+	const row = locals[cdt][cdn];
+	if (!row) return;
+	let n = cint(row.number_of_samples);
+	if (!n || n < 1) {
+		n = 1;
+		frappe.model.set_value(cdt, cdn, "number_of_samples", 1);
+	}
+	const auto = instacertify.quote_sample_requirement_text(n);
+	const cur = (row.sample_requirement || "").trim();
+	// Fill when blank, or refresh when still the auto-generated pattern
+	if (force || !cur || /complete functional product sample/i.test(cur)) {
+		frappe.model.set_value(cdt, cdn, "sample_requirement", auto);
+	}
+};
 
 instacertify.set_grid_autocomplete = function (frm, cdt, cdn, fieldname, values) {
 	const list = (values || []).filter(Boolean);
