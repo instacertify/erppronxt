@@ -114,10 +114,10 @@
       }).join('');
       return {
         total: grand,
-        html: '<h4 style="color:#0D47A1;margin:18px 0 6px;">Consulting &amp; Other Charges</h4>' +
+        html: '<h4 style="color:#0D47A1;margin:18px 0 6px;">Commercials / Cost Breakdown</h4>' +
           '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th></tr></thead><tbody>' +
           body +
-          '<tr><td colspan="3" style="text-align:right;font-weight:700;">Consulting / Other Total</td>' +
+          '<tr><td colspan="3" style="text-align:right;font-weight:700;">Commercials Total</td>' +
           '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
           '</tbody></table>'
       };
@@ -141,7 +141,7 @@
       }).join('');
       return {
         total: grand,
-        html: '<h4 style="color:#0D47A1;margin:12px 0 6px;">Testing Prices</h4>' +
+        html: '<h4 style="color:#0D47A1;margin:12px 0 6px;">Test Lines — Laboratory, Scope &amp; Charges</h4>' +
           '<table class="ic-portal-table"><thead><tr>' +
           '<th>Test Name</th><th>Standard</th><th>Description</th>' +
           '<th>No. of Samples</th><th>Price</th><th>Total Price</th>' +
@@ -160,8 +160,22 @@
       return '<p style="margin-top:8px;"><b>' + esc(msg) + '</b></p>';
     }
     function load() {
+      if (!token) {
+        document.getElementById('content').innerHTML =
+          'Invalid or missing quotation link. Ask Instacertify to Share with Customer again and use the new link.';
+        return;
+      }
       fetch('/api/method/instacertify.www.ic_quotation.get_quotation?token=' + encodeURIComponent(token))
         .then(r => r.json()).then(r => {
+          if (r.exc || r._server_messages) {
+            let msg = 'Unable to load quotation. The link may be invalid or expired — ask Instacertify to share again.';
+            try {
+              const sm = JSON.parse(r._server_messages || '[]');
+              if (sm[0]) msg = JSON.parse(sm[0]).message || msg;
+            } catch (e) {}
+            document.getElementById('content').innerHTML = esc(msg);
+            return;
+          }
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
           const tests = testTable(d.test_items, d.currency);
@@ -176,14 +190,16 @@
             (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
             '<p><b>' + esc(d.reference || d.customer_name || 'Quotation') + '</b> · Revision ' + esc(d.ic_revision_number || 0) +
             ' · <span class="ic-status-pill ' + statusClass(d.ic_workflow_status) + '">' + esc(d.ic_workflow_status || '') + '</span></p>' +
-            '<p>Customer: <b>' + esc(d.customer_name || '') + '</b></p>' +
+            '<p>Customer: <b>' + esc(d.customer_name || '') + '</b>' +
+              ' · Currency: <b>' + esc(d.currency || 'INR') + '</b>' +
+              ' <span class="ic-portal-muted">(all charges use this currency)</span></p>' +
             '<p>Service: <b>' + esc(d.ic_service_name || d.ic_quotation_type || '') + '</b></p>' +
             '<p class="ic-portal-muted">Date: ' + esc(d.transaction_date || '') +
               (d.valid_till ? (' · Valid till ' + esc(d.valid_till)) : '') +
               (d.ic_estimated_timeline ? (' · Timeline: ' + esc(d.ic_estimated_timeline)) : '') + '</p>' +
             (d.ic_show_about != 0 && d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
             (d.ic_show_deliverables != 0 && d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
-            (d.ic_show_commercials != 0 ? ('<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
+            (d.ic_show_commercials != 0 ? ('<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials (' + esc(d.currency || 'INR') + ')</h4>' +
             (commercials || '<p class="ic-portal-muted">No commercial lines yet.</p>')) : '') +
             (d.ic_show_payment_terms != 0
               ? ('<h4 style="color:#0D47A1;">Payment Terms</h4>' +

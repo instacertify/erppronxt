@@ -579,39 +579,40 @@
   },
   {
    "doctype": "DocField",
-   "fieldname": "section_cost",
-   "fieldtype": "Section Break",
-   "label": "6. Pricing / Commercials (Fully Editable)",
-   "description": "Set default amounts for sales. For each line choose Revenue: Counted Revenue (Instacertify) or Do Not Count as Revenue (shown on quote, paid to govt/lab/third party)."
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "cost_items",
-   "fieldtype": "Table",
-   "label": "Cost / Price Lines",
-   "options": "IC Quotation Cost Item",
-   "description": "Particulars (Print) = customer-facing line name. Default Amount copies to new quotes (editable by sales). Revenue column: Do Not Count as Revenue = shared on quote but excluded from Instacertify revenue."
-  },
-  {
-   "doctype": "DocField",
    "fieldname": "section_testing",
    "fieldtype": "Section Break",
-   "label": "7. Testing Structure / Lab Lines",
+   "label": "4. Test Lines — Laboratory, Scope & Charges",
    "depends_on": "eval:doc.quotation_type=='Testing'",
-   "description": "Default test rows applied when creating a Testing quotation from this template."
+   "description": "Default test rows applied when creating a Testing quotation from this template. Stacked above Commercials; both add into Final Costing on the quote."
   },
   {
    "doctype": "DocField",
    "fieldname": "test_items",
    "fieldtype": "Table",
-   "label": "Test Items",
-   "options": "IC Quotation Test Item"
+   "label": "Test Lines — Laboratory, Scope & Charges",
+   "options": "IC Quotation Test Item",
+   "description": "Default test rows for Testing quotes. No. of Samples is editable here and stays editable on every quotation created from this format."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_cost",
+   "fieldtype": "Section Break",
+   "label": "5. Commercials / Cost Breakdown (Fully Editable)",
+   "description": "Placed under Test Lines. Set default amounts for sales. Unit Price × No. of Units. Currency follows the Customer on each quote. Testing + these lines = Final Costing."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "cost_items",
+   "fieldtype": "Table",
+   "label": "Cost / Price Lines (Commercials)",
+   "options": "IC Quotation Cost Item",
+   "description": "Particulars (Print) = customer-facing line name. Default Amount copies to new quotes (editable by sales). Revenue column: Do Not Count as Revenue = shared on quote but excluded from Instacertify revenue."
   },
   {
    "doctype": "DocField",
    "fieldname": "section_policies",
    "fieldtype": "Section Break",
-   "label": "8. Policies & Terms (Editable)",
+   "label": "6. Policies & Terms (Editable)",
    "description": "Payment terms, cancellation, confidentiality, T&Cs \u2014 all editable. Choose which bank account prints on quotes from this template."
   },
   {
@@ -656,7 +657,7 @@
    "doctype": "DocField",
    "fieldname": "section_upload_library",
    "fieldtype": "Section Break",
-   "label": "9. Optional Format File Attachments",
+   "label": "7. Optional Format File Attachments",
    "collapsible": 1,
    "description": "Optional PDF/DOCX/HTML attachments for reference. Structured quote content is edited in the sections above \u2014 not in the uploaded file."
   },

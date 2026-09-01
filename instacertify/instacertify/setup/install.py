@@ -409,6 +409,9 @@ def setup_custom_fields():
 	_ensure_pipeline_and_quote_accept_fields()
 	_ensure_quotation_bank_account_field()
 	_ensure_quotation_print_section_fields()
+	_ensure_quotation_commercials_layout()
+	_ensure_quotation_share_token_column()
+	_ensure_test_item_samples_editable()
 
 
 def _sync_custom_field_columns(doctypes: list[str] | None = None):
@@ -695,6 +698,123 @@ def _ensure_quotation_print_section_fields():
 		frappe.clear_cache(doctype="Quotation")
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "ensure quotation print section fields")
+
+
+def _ensure_quotation_commercials_layout():
+	"""Stack Test Lines → Commercials → Final Costing; Customer+Currency banner after entry guide."""
+	chain = [
+		("Quotation-ic_customer_currency_banner", {
+			"fieldname": "ic_customer_currency_banner",
+			"label": "Customer & Currency",
+			"fieldtype": "HTML",
+			"insert_after": "ic_entry_guide",
+		}),
+		("Quotation-ic_quotation_type", {"insert_after": "ic_customer_currency_banner"}),
+		("Quotation-ic_section_testing", {"insert_after": "ic_deliverables"}),
+		("Quotation-ic_section_test_lines", {
+			"label": "Test Lines — Laboratory, Scope & Charges",
+			"insert_after": "ic_gst_note",
+		}),
+		("Quotation-ic_sample_handling_policy", {"insert_after": "ic_test_items"}),
+		("Quotation-ic_section_costing", {
+			"label": "Commercials / Cost Breakdown",
+			"insert_after": "ic_sample_handling_policy",
+		}),
+		("Quotation-ic_cost_items", {"insert_after": "ic_section_costing"}),
+		("Quotation-ic_section_cost_totals", {
+			"label": "Final Costing (Testing + Commercials)",
+			"insert_after": "ic_cost_items",
+		}),
+		("Quotation-ic_section_policies", {"insert_after": "ic_total_quoted_value"}),
+	]
+	try:
+		for cf_name, updates in chain:
+			if cf_name == "Quotation-ic_customer_currency_banner" and not frappe.db.exists(
+				"Custom Field", cf_name
+			):
+				doc = frappe.get_doc(
+					{
+						"doctype": "Custom Field",
+						"dt": "Quotation",
+						"module": "Instacertify",
+						**updates,
+					}
+				)
+				doc.flags.ignore_permissions = True
+				doc.insert()
+				continue
+			if not frappe.db.exists("Custom Field", cf_name):
+				continue
+			for key, val in updates.items():
+				if key == "fieldname":
+					continue
+				cur = frappe.db.get_value("Custom Field", cf_name, key)
+				if cur != val:
+					frappe.db.set_value(
+						"Custom Field", cf_name, key, val, update_modified=False
+					)
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure quotation commercials layout")
+
+
+def _ensure_quotation_share_token_column():
+	"""Share with Customer needs ic_share_token / ic_shared_on columns on Quotation."""
+	from frappe.database.schema import add_column
+
+	for fieldname, fieldtype in (
+		("ic_share_token", "Data"),
+		("ic_shared_on", "Datetime"),
+		("ic_workflow_status", "Data"),
+	):
+		try:
+			if not frappe.db.has_column("Quotation", fieldname):
+				add_column("Quotation", fieldname, fieldtype)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"ensure Quotation.{fieldname} column")
+	frappe.clear_cache(doctype="Quotation")
+
+
+def _ensure_test_item_samples_editable():
+	"""No. of Samples + Sample Required must stay editable on Template and Quotation grids."""
+	try:
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set read_only=0, hidden=0, in_list_view=1, bold=1,
+			    description=%s
+			where parent='IC Quotation Test Item' and fieldname='number_of_samples'
+			""",
+			(
+				"Editable on Template and every Quotation line. "
+				"Total Price = Suggested Selling × No. of Samples.",
+			),
+		)
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set read_only=0, hidden=0
+			where parent='IC Quotation Test Item' and fieldname='sample_requirement'
+			"""
+		)
+		# Drop property setters that locked these fields on older installs
+		for fieldname in ("number_of_samples", "sample_requirement"):
+			for ps in frappe.get_all(
+				"Property Setter",
+				filters={
+					"doc_type": "IC Quotation Test Item",
+					"field_name": fieldname,
+					"property": ["in", ["read_only", "hidden"]],
+				},
+				pluck="name",
+			):
+				try:
+					frappe.delete_doc("Property Setter", ps, force=1, ignore_permissions=True)
+				except Exception:
+					pass
+		frappe.clear_cache(doctype="IC Quotation Test Item")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure test item samples editable")
 
 
 def _ensure_lead_source_link_field():

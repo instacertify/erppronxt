@@ -823,33 +823,92 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 
 @frappe.whitelist()
 def share_with_customer(quotation: str):
-	doc = frappe.get_doc("Quotation", quotation)
-	token = doc.ic_share_token or secrets.token_urlsafe(24)
+	"""Create / refresh customer portal link for a quotation."""
+	name = _resolve_quotation_name(quotation)
+	_ensure_quotation_share_columns()
+	doc = frappe.get_doc("Quotation", name)
+	doc.check_permission("write")
+
+	token = (doc.get("ic_share_token") or "").strip() or secrets.token_urlsafe(24)
 	now = now_datetime()
-	frappe.db.set_value(
-		"Quotation",
-		doc.name,
-		{
-			"ic_share_token": token,
-			"ic_workflow_status": "Shared with Customer",
-			"ic_shared_on": now,
-		},
-		update_modified=True,
-	)
+	values = {
+		"ic_share_token": token,
+		"ic_workflow_status": "Shared with Customer",
+		"ic_shared_on": now,
+	}
+	# Persist share fields even if the quote is submitted
+	frappe.db.set_value("Quotation", doc.name, values, update_modified=True)
 	doc.ic_share_token = token
 	doc.ic_workflow_status = "Shared with Customer"
 	doc.ic_shared_on = now
+
+	# Confirm token landed (catches missing DB column / silent write failures)
+	saved = frappe.db.get_value("Quotation", doc.name, "ic_share_token")
+	if (saved or "").strip() != token:
+		frappe.throw(
+			_(
+				"Could not save the customer share token. Run Migrate / Update on the site, then try Share again."
+			)
+		)
+
 	try:
 		_ensure_qr(doc)
 		if doc.get("ic_qr_code"):
 			frappe.db.set_value("Quotation", doc.name, "ic_qr_code", doc.ic_qr_code, update_modified=False)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Quotation QR on share")
-	_set_workflow_state(doc.name, "IC Shared with Customer")
-	_advance_linked_lead(doc, "Negotiation")
-	_notify_share(doc)
+	try:
+		_set_workflow_state(doc.name, "IC Shared with Customer")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation workflow on share")
+	try:
+		_advance_linked_lead(doc, "Negotiation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation lead advance on share")
+	try:
+		_notify_share(doc)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation notify on share")
+
+	frappe.db.commit()
 	url = _portal_url(token)
-	return {"url": url, "token": token}
+	return {
+		"url": url,
+		"token": token,
+		"quotation": doc.name,
+		"path": f"/ic-quotation/{token}",
+	}
+
+
+def _resolve_quotation_name(name_or_number: str) -> str:
+	"""Resolve Quotation by document name or Quote No (ic_quote_number)."""
+	key = (name_or_number or "").strip()
+	if not key:
+		frappe.throw(_("Quotation name is required"))
+	if frappe.db.exists("Quotation", key):
+		return key
+	if frappe.db.has_column("Quotation", "ic_quote_number"):
+		alt = frappe.db.get_value("Quotation", {"ic_quote_number": key}, "name")
+		if alt:
+			return alt
+	frappe.throw(_("Quotation {0} not found").format(key), frappe.DoesNotExistError)
+
+
+def _ensure_quotation_share_columns():
+	"""Make sure share token / status columns exist before writing."""
+	from frappe.database.schema import add_column
+
+	needed = (
+		("ic_share_token", "Data"),
+		("ic_shared_on", "Datetime"),
+		("ic_workflow_status", "Data"),
+	)
+	for fieldname, fieldtype in needed:
+		try:
+			if not frappe.db.has_column("Quotation", fieldname):
+				add_column("Quotation", fieldname, fieldtype)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"ensure Quotation.{fieldname}")
 
 
 def _portal_url(token: str) -> str:
@@ -859,6 +918,9 @@ def _portal_url(token: str) -> str:
 	except Exception:
 		base = None
 	base = (base or "").rstrip("/")
+	# Reject desk/app bases — customer portal is a website route, not Desk
+	if base and ("/app" in base.rstrip("/").split("://")[-1] or "/desk" in base.rstrip("/").split("://")[-1]):
+		base = ""
 	if base:
 		return f"{base}/ic-quotation/{token}"
 	return frappe.utils.get_url(f"/ic-quotation/{token}")
@@ -884,9 +946,27 @@ def _quotation_from_token(token: str):
 	"""Resolve shared quotation; Guest must present a live share token."""
 	if not (token or "").strip():
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
-	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
+	token = token.strip()
+	name = None
+	if frappe.db.has_column("Quotation", "ic_share_token"):
+		name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
+	# Fallback: allow Quote No / name only when that quote was already shared
+	if not name and frappe.db.exists("Quotation", token):
+		shared = frappe.db.get_value("Quotation", token, "ic_share_token") if frappe.db.has_column("Quotation", "ic_share_token") else None
+		if shared:
+			name = token
+	if not name and frappe.db.has_column("Quotation", "ic_quote_number"):
+		row = frappe.db.get_value(
+			"Quotation",
+			{"ic_quote_number": token},
+			["name", "ic_share_token"],
+			as_dict=True,
+		)
+		if row and row.get("ic_share_token"):
+			name = row.name
 	if not name:
 		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
+	# Token already authorized — load without Guest permission barriers
 	return frappe.get_doc("Quotation", name)
 
 
@@ -1110,9 +1190,8 @@ def customer_request_changes(token: str, remarks: str):
 @frappe.whitelist(allow_guest=True)
 def download_quotation_pdf(token: str):
 	"""Guest-safe PDF download for a shared quotation link."""
-	name = frappe.db.get_value("Quotation", {"ic_share_token": token}, "name")
-	if not name:
-		frappe.throw(_("Invalid quotation link"), frappe.PermissionError)
+	doc = _quotation_from_token(token)
+	name = doc.name
 
 	try:
 		from instacertify.utils.pdf import get_quotation_pdf_bytes

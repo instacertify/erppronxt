@@ -72,7 +72,7 @@
    "columns": 1,
    "description": "Editable selling price — shown to the customer as Price"
   },
-  {
+	{
    "doctype": "DocField",
    "fieldname": "number_of_samples",
    "fieldtype": "Int",
@@ -80,10 +80,11 @@
    "default": 1,
    "reqd": 1,
    "bold": 1,
+   "read_only": 0,
    "in_list_view": 1,
-   "columns": 1,
+   "columns": 2,
    "non_negative": 1,
-   "description": "Editable on every quote line. Total Price = Suggested Selling × No. of Samples. Also drives Sample Required text on print."
+   "description": "Editable on Template and every Quotation line. Total Price = Suggested Selling × No. of Samples. Also drives Sample Required text on print."
   },
   {
    "doctype": "DocField",
@@ -133,13 +134,14 @@
    "read_only": 1,
    "hidden": 1
   },
-  {
+	{
    "doctype": "DocField",
    "fieldname": "sample_requirement",
    "fieldtype": "Small Text",
    "label": "Sample Required (print text)",
+   "read_only": 0,
    "in_list_view": 0,
-   "description": "Shown under Samples Requirements on the Testing quote. Auto-fills from No. of Samples; edit freely for this quote."
+   "description": "Shown under Samples Requirements on the Testing quote. Auto-fills from No. of Samples; edit freely on Template and Quotation."
   },
   {
    "doctype": "DocField",

@@ -264,16 +264,41 @@ function _unlock_template_content_fields(frm) {
 			if (frm.doc[f] == null) frm.doc[f] = 1;
 		}
 	});
-	// Child tables — keep editable
+	// Child tables — keep editable (esp. No. of Samples on test lines)
 	["cost_items", "test_items", "format_library"].forEach((table) => {
 		const grid = frm.fields_dict[table] && frm.fields_dict[table].grid;
 		if (!grid || !grid.docfields) return;
 		(grid.docfields || []).forEach((df) => {
 			if (!df || !df.fieldname) return;
 			if (["Section Break", "Column Break"].includes(df.fieldtype)) return;
+			// Total Price stays calculated
+			if (df.fieldname === "testing_charges") {
+				grid.update_docfield_property(df.fieldname, "read_only", 1);
+				return;
+			}
 			grid.update_docfield_property(df.fieldname, "read_only", 0);
 		});
+		if (table === "test_items") {
+			grid.update_docfield_property("number_of_samples", "read_only", 0);
+			grid.update_docfield_property("number_of_samples", "hidden", 0);
+			grid.update_docfield_property("number_of_samples", "in_list_view", 1);
+			grid.update_docfield_property("number_of_samples", "bold", 1);
+			grid.update_docfield_property("sample_requirement", "read_only", 0);
+			grid.update_docfield_property("sample_requirement", "hidden", 0);
+			if (frm.fields_dict.test_items) {
+				frm.set_df_property(
+					"test_items",
+					"description",
+					__(
+						"Set default No. of Samples per test line (editable). Copies onto new Testing quotes — sales can change per quote."
+					)
+				);
+			}
+		}
 	});
+	if (typeof instacertify !== "undefined" && instacertify.unlock_test_item_sample_fields) {
+		instacertify.unlock_test_item_sample_fields(frm);
+	}
 }
 
 function _preview_template(frm, mode) {
@@ -351,7 +376,8 @@ function _render_edit_guide(frm) {
 				<li><b>${__("Print Sections")}</b>: ${__("Uncheck Sample Required, Force Majeure, Terms, Banking, etc. to hide that row on Print/PDF. Use Print Sections → Show/Hide All.")}</li>
 				<li><b>${__("Section 2 — Rename headings")}</b>: ${__("Change printed names (ABOUT, Commercials, Payment Terms, column titles).")}</li>
 				<li><b>${__("Narrative sections")}</b>: ${__("Edit all body text for {0} quotes.", [__(qtype)])}</li>
-				<li><b>${__("Section 6 — Pricing")}</b>: ${__("Add default amounts the sales team can change on each quote. Set Revenue = Do Not Count as Revenue for govt/lab/third-party lines (shown on the quote, not counted as Instacertify revenue).")}</li>
+				<li><b>${__("Test Lines")}</b>: ${__("Edit Lab, Test, Standard, prices, and No. of Samples — defaults copy to new Testing quotes and stay editable there.")}</li>
+				<li><b>${__("Section 5 — Commercials")}</b>: ${__("Add default amounts the sales team can change on each quote. Set Revenue = Do Not Count as Revenue for govt/lab/third-party lines (shown on the quote, not counted as Instacertify revenue).")}</li>
 				<li><b>${__("Policies")}</b>: ${__("Payment terms, cancellation, confidentiality, T&Cs.")}</li>
 				<li><b>${__("Test")}</b>: ${__("After Save, use Test → Print or Test → Download PDF to preview the customer layout.")}</li>
 			</ul>

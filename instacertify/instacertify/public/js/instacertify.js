@@ -2188,29 +2188,78 @@ frappe.ui.form.on("Quotation", {
 				}, __("Links"));
 			}
 			frm.add_custom_button(__("Share with Customer"), () => {
-				frappe.call({
-					method: "instacertify.quotation.events.share_with_customer",
-					args: { quotation: frm.doc.name },
-					freeze: true,
-					callback(r) {
-						frm.reload_doc();
-						const url = r.message && r.message.url;
-						frappe.msgprint({
-							title: __("Customer Share Link"),
-							message: `
-								<p>${__("Customer can open this link to read, download PDF, approve, or ask for revision:")}</p>
-								<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
-								<p class="text-muted">${__("Copy and send this open link to the customer (email / WhatsApp).")}</p>
-							`,
-							indicator: "green",
-						});
-						if (url && navigator.clipboard) {
-							navigator.clipboard.writeText(url).then(() => {
-								frappe.show_alert({ message: __("Link copied"), indicator: "green" });
-							}).catch(() => {});
-						}
-					},
-				});
+				const runShare = () => {
+					frappe.call({
+						method: "instacertify.quotation.events.share_with_customer",
+						args: { quotation: frm.doc.name },
+						freeze: true,
+						freeze_message: __("Generating customer link…"),
+						callback(r) {
+							const m = (r && r.message) || {};
+							let url = (m.url || "").trim();
+							const token = (m.token || "").trim();
+							// Prefer site origin + token so desk/app portal_base_url mistakes never break the link
+							if (token) {
+								const origin =
+									(window.location && window.location.origin) ||
+									(frappe.urllib && frappe.urllib.get_base_url && frappe.urllib.get_base_url()) ||
+									"";
+								const safe = origin + "/ic-quotation/" + encodeURIComponent(token);
+								if (
+									!url ||
+									url === "undefined" ||
+									url.indexOf("/app/") >= 0 ||
+									url.indexOf("/desk/") >= 0 ||
+									url.indexOf("ic-quotation") < 0
+								) {
+									url = safe;
+								}
+							}
+							if (!url) {
+								frappe.msgprint({
+									title: __("Share link failed"),
+									indicator: "red",
+									message: __(
+										"No customer link was returned. Save the quotation, run site Migrate/Update, then try Share again."
+									),
+								});
+								return;
+							}
+							frappe.msgprint({
+								title: __("Customer Share Link"),
+								message: `
+									<p>${__("Customer can open this link to read, download PDF, approve, or ask for revision:")}</p>
+									<p><a href="${frappe.utils.escape_html(url)}" target="_blank" rel="noopener">${frappe.utils.escape_html(url)}</a></p>
+									<p class="text-muted">${__("Copy and send this open link to the customer (email / WhatsApp).")}</p>
+								`,
+								indicator: "green",
+							});
+							if (navigator.clipboard && navigator.clipboard.writeText) {
+								navigator.clipboard.writeText(url).then(() => {
+									frappe.show_alert({ message: __("Link copied"), indicator: "green" });
+								}).catch(() => {});
+							}
+							frm.reload_doc();
+						},
+						error() {
+							frappe.msgprint({
+								title: __("Share failed"),
+								indicator: "red",
+								message: __(
+									"Could not generate the customer link. Save the quotation and try again. If it still fails, run Migrate/Update on the server."
+								),
+							});
+						},
+					});
+				};
+				// Persist line items first — portal reads saved DB rows only
+				if (frm.is_dirty()) {
+					frm.save().then(runShare).catch(() => {
+						frappe.msgprint(__("Save the quotation before sharing with the customer."));
+					});
+				} else {
+					runShare();
+				}
 			}, __("Actions"));
 
 			frm.add_custom_button(__("Print / PDF Options"), () => {
@@ -2226,6 +2275,10 @@ frappe.ui.form.on("Quotation", {
 						: frm.doc.ic_quotation_type
 							? "Instacertify Consulting Quotation"
 							: "Instacertify Quotation");
+				if (!frm.doc.name || String(frm.doc.name).indexOf("new-") === 0) {
+					frappe.msgprint(__("Save the quotation before downloading the PDF."));
+					return;
+				}
 				const url = frappe.urllib.get_full_url(
 					"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
 						$.param({ name: frm.doc.name, print_format: fmt })
@@ -2422,6 +2475,7 @@ frappe.ui.form.on("Quotation", {
 
 		instacertify.setup_quotation_lab_queries(frm);
 		instacertify.render_quotation_entry_guide(frm);
+		instacertify.render_customer_currency_banner(frm);
 		if (frm.doc.ic_quotation_type) {
 			instacertify.toggle_quotation_sections(frm);
 		}
@@ -2975,11 +3029,10 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 	});
 
 	// Test lines — unlock sample + overrideable lab info (keep Total Price calculated)
+	instacertify.unlock_test_item_sample_fields(frm);
 	const test_grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
 	if (test_grid) {
 		[
-			"number_of_samples",
-			"sample_requirement",
 			"sample_type",
 			"testing_timeline",
 			"description",
@@ -2994,7 +3047,6 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 		].forEach((f) => {
 			test_grid.update_docfield_property(f, "read_only", 0);
 		});
-		test_grid.update_docfield_property("sample_requirement", "hidden", 0);
 		test_grid.update_docfield_property("testing_charges", "read_only", 1);
 	}
 
@@ -3073,8 +3125,27 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_section_costing",
 			"label",
 			isTesting
-				? __("Other Charges (added with Testing for Final Costing)")
+				? __("5. Commercials / Other Charges (with Test Lines → Final Costing)")
 				: __("7. Cost Breakdown / Commercials")
+		);
+	}
+	if (frm.fields_dict.ic_section_testing) {
+		frm.set_df_property("ic_section_testing", "label", __("3. Testing Details"));
+	}
+	if (frm.fields_dict.ic_section_test_lines) {
+		frm.set_df_property(
+			"ic_section_test_lines",
+			"label",
+			__("4. Test Lines — Laboratory, Scope & Charges")
+		);
+	}
+	if (frm.fields_dict.ic_section_cost_totals) {
+		frm.set_df_property(
+			"ic_section_cost_totals",
+			"label",
+			isTesting
+				? __("6. Final Costing (Testing + Commercials)")
+				: __("8. Final Costing")
 		);
 	}
 	if (frm.fields_dict.ic_cost_items) {
@@ -3083,19 +3154,32 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"description",
 			isTesting
 				? __(
-						"Default charges from the format (editable). Unit Price × No. of Units = Total. Currency symbol follows the quotation currency. Testing + these lines = Final Costing on Print."
+						"Placed under Test Lines. Unit Price × No. of Units = Total. Currency matches Customer ({0}). Testing + these lines = Final Costing.",
+						[frm.doc.currency || "INR"]
 				  )
 				: __(
-						"Default charges from the format (editable). Unit Price × No. of Units = Total Charges. Currency symbol follows the quotation currency (customer)."
+						"Unit Price × No. of Units = Total Charges. Currency matches Customer ({0}).",
+						[frm.doc.currency || "INR"]
 				  )
 		);
 	}
 	instacertify.sync_quote_cost_currency(frm);
+	instacertify.render_customer_currency_banner(frm);
+	instacertify.renumber_quotation_section_headers(frm);
 	if (frm.fields_dict.ic_section_policies) {
 		frm.set_df_property(
 			"ic_section_policies",
 			"label",
-			__("Payment, Cancellation & Confidentiality (all editable — bank details from selected account)")
+			isTesting
+				? __("7. Payment, Cancellation & Confidentiality")
+				: __("9. Payment, Cancellation & Confidentiality")
+		);
+	}
+	if (frm.fields_dict.ic_section_terms) {
+		frm.set_df_property(
+			"ic_section_terms",
+			"label",
+			isTesting ? __("8. Terms & Force Majeure") : __("10. Terms & Force Majeure")
 		);
 	}
 	if (isTesting) {
@@ -3114,12 +3198,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 				)
 			);
 		}
-		const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
-		if (grid) {
-			grid.update_docfield_property("number_of_samples", "read_only", 0);
-			grid.update_docfield_property("sample_requirement", "read_only", 0);
-			grid.update_docfield_property("sample_requirement", "hidden", 0);
-		}
+		instacertify.unlock_test_item_sample_fields(frm);
 	}
 	// Consulting Sample Required narrative — always editable
 	if (frm.fields_dict.ic_sample_required) {
@@ -3174,11 +3253,7 @@ frappe.ui.form.on("IC Quotation Test Item", {
 	form_render(frm, cdt, cdn) {
 		instacertify.load_quote_test_library_options(frm, cdt, cdn);
 		instacertify.load_lab_scope_options(frm, cdt, cdn);
-		const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
-		if (grid) {
-			grid.update_docfield_property("number_of_samples", "read_only", 0);
-			grid.update_docfield_property("sample_requirement", "read_only", 0);
-		}
+		instacertify.unlock_test_item_sample_fields(frm);
 		const row = locals[cdt][cdn];
 		if (row && !cint(row.number_of_samples)) {
 			frappe.model.set_value(cdt, cdn, "number_of_samples", 1);
@@ -3265,6 +3340,37 @@ frappe.ui.form.on("IC Quotation Test Item", {
 	},
 	purchase_price(frm, cdt, cdn) {},
 });
+
+/** Unlock No. of Samples + Sample Required on Quotation (ic_test_items) and Template (test_items). */
+instacertify.unlock_test_item_sample_fields = function (frm) {
+	if (!frm || !frm.fields_dict) return;
+	const grids = [];
+	if (frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid) {
+		grids.push(frm.fields_dict.ic_test_items.grid);
+	}
+	if (frm.fields_dict.test_items && frm.fields_dict.test_items.grid) {
+		grids.push(frm.fields_dict.test_items.grid);
+	}
+	grids.forEach((grid) => {
+		try {
+			grid.update_docfield_property("number_of_samples", "read_only", 0);
+			grid.update_docfield_property("number_of_samples", "hidden", 0);
+			grid.update_docfield_property("number_of_samples", "in_list_view", 1);
+			grid.update_docfield_property("number_of_samples", "bold", 1);
+			grid.update_docfield_property(
+				"number_of_samples",
+				"description",
+				__(
+					"Editable — Total Price = Suggested Selling × No. of Samples. Also updates Sample Required print text."
+				)
+			);
+			grid.update_docfield_property("sample_requirement", "read_only", 0);
+			grid.update_docfield_property("sample_requirement", "hidden", 0);
+		} catch (e) {
+			/* ignore */
+		}
+	});
+};
 
 /** Auto Sample Required text from No. of Samples (editable afterwards). */
 instacertify.quote_sample_requirement_text = function (n) {
@@ -6741,15 +6847,23 @@ frappe.ui.form.on("Customer", {
 
 frappe.ui.form.on("Quotation", {
 	party_name(frm) {
-		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) return;
+		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) {
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
 		instacertify.apply_billing_currency(frm, frm.doc.party_name);
+		instacertify.render_customer_currency_banner(frm);
 	},
 	currency(frm) {
-		if (!frm.doc.currency || instacertify._auto_setting_currency) return;
+		if (!frm.doc.currency || instacertify._auto_setting_currency) {
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
 		if (!frm.doc.ic_currency_manual) {
 			frm.set_value("ic_currency_manual", 1);
 		}
 		instacertify.sync_quote_cost_currency(frm);
+		instacertify.render_customer_currency_banner(frm);
 	},
 	taxes_and_charges(frm) {
 		if (instacertify._auto_setting_currency) return;
@@ -6760,6 +6874,81 @@ frappe.ui.form.on("Quotation", {
 });
 
 /** Keep cost-line currency in sync; Unit Price uses quotation currency symbol. */
+/** Customer name + currency declared together — all quote amounts use this currency. */
+instacertify.render_customer_currency_banner = function (frm) {
+	const wrap =
+		frm.fields_dict.ic_customer_currency_banner &&
+		frm.fields_dict.ic_customer_currency_banner.$wrapper;
+	if (!wrap || !wrap.length) return;
+	const party = frm.doc.customer_name || frm.doc.party_name || __("Select customer");
+	const cur = frm.doc.currency || "INR";
+	const symbol =
+		cur === "INR" ? "₹" : cur === "USD" ? "$" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur;
+	wrap.html(`
+		<div class="ic-customer-currency-banner" style="
+			display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;
+			padding:12px 14px;margin:6px 0 12px;
+			border:1px solid var(--border-color,#c8d0d8);
+			background:linear-gradient(180deg,#f7fafc 0%,#eef3f7 100%);
+			border-radius:6px;font-size:13px;line-height:1.4;">
+			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Customer")}</span><br/>
+				<b style="font-size:15px;color:#065175;">${frappe.utils.escape_html(party)}</b></div>
+			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Currency for this quote")}</span><br/>
+				<b style="font-size:15px;color:#EC691F;">${frappe.utils.escape_html(symbol)} ${frappe.utils.escape_html(cur)}</b>
+				<span class="text-muted" style="margin-left:8px;font-size:12px;">${__("All prices & symbols on Print use this currency")}</span></div>
+		</div>
+	`);
+	if (frm.fields_dict.currency) {
+		frm.set_df_property(
+			"currency",
+			"description",
+			__("Declared for this customer — Unit Price, totals, and Print symbols all use {0}", [cur])
+		);
+	}
+};
+
+/** Keep section headers numbered in display order. */
+instacertify.renumber_quotation_section_headers = function (frm) {
+	const t = frm.doc.ic_quotation_type;
+	const isTesting = ["Testing", "Multiple Products / Multiple Services"].includes(t);
+	const isConsulting = ["Consulting", "Renewal", "Service", "Other", "Multiple Products / Multiple Services"].includes(t);
+	const map = isTesting
+		? [
+				["ic_section_type", "1. Quotation Setup — Type & Template"],
+				["ic_section_identity", "2. Quote Identity & Status"],
+				["ic_section_testing", "3. Testing Details"],
+				["ic_section_test_lines", "4. Test Lines — Laboratory, Scope & Charges"],
+				["ic_section_costing", "5. Commercials / Other Charges"],
+				["ic_section_cost_totals", "6. Final Costing (Testing + Commercials)"],
+				["ic_section_policies", "7. Payment, Cancellation & Confidentiality"],
+				["ic_section_terms", "8. Terms & Force Majeure"],
+		  ]
+		: isConsulting
+			? [
+					["ic_section_type", "1. Quotation Setup — Type & Template"],
+					["ic_section_identity", "2. Quote Identity & Status"],
+					["ic_section_service", "3. Consulting / Service Basics"],
+					["ic_section_about", "4. About / Narrative"],
+					["ic_section_docs_timeline", "5. Documents & Timeline"],
+					["ic_section_scope", "6. Scope & Deliverables"],
+					["ic_section_costing", "7. Cost Breakdown / Commercials"],
+					["ic_section_cost_totals", "8. Final Costing"],
+					["ic_section_policies", "9. Payment, Cancellation & Confidentiality"],
+					["ic_section_terms", "10. Terms & Force Majeure"],
+			  ]
+			: [
+					["ic_section_type", "1. Quotation Setup — Type & Template"],
+					["ic_section_identity", "2. Quote Identity & Status"],
+					["ic_section_costing", "3. Cost Breakdown / Commercials"],
+					["ic_section_cost_totals", "4. Final Costing"],
+					["ic_section_policies", "5. Payment, Cancellation & Confidentiality"],
+					["ic_section_terms", "6. Terms & Force Majeure"],
+			  ];
+	map.forEach(([field, label]) => {
+		if (frm.fields_dict[field]) frm.set_df_property(field, "label", __(label));
+	});
+};
+
 instacertify.sync_quote_cost_currency = function (frm) {
 	if (!frm || !frm.doc) return;
 	const cur = frm.doc.currency || "INR";
