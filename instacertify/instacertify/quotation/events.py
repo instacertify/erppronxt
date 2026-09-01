@@ -172,6 +172,13 @@ def _apply_quotation_defaults(doc):
 		if settings.meta.has_field("default_bank_account"):
 			default_bank = settings.get("default_bank_account")
 		doc.ic_bank_account = default_bank or get_default_bank_account_name()
+	# Default print-section toggles to ON when unset (None ≠ unchecked)
+	from instacertify.quotation.print_sections import QUOTE_PRINT_SECTIONS
+
+	for _tmpl_key, quote_key, _label in QUOTE_PRINT_SECTIONS:
+		if doc.meta.has_field(quote_key) and doc.get(quote_key) is None:
+			doc.set(quote_key, 1)
+
 	# Scrub tabs on existing values so Print/PDF stay clean (tabs only — keep HTML spacing)
 	for field in (
 		"ic_deliverables",
@@ -373,6 +380,10 @@ def _template_field_map(tmpl) -> dict:
 	}
 	for key in _LABEL_FIELDS:
 		fields[f"ic_{key}"] = tmpl.get(key)
+
+	from instacertify.quotation.print_sections import template_show_defaults
+
+	fields.update(template_show_defaults(tmpl))
 
 	meta = frappe.get_meta("Quotation")
 	return {k: v for k, v in fields.items() if meta.has_field(k)}
@@ -714,6 +725,12 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 		tmpl.bank_account = qt.get("ic_bank_account")
 	for key in _LABEL_FIELDS:
 		tmpl.set(key, qt.get(f"ic_{key}"))
+	from instacertify.quotation.print_sections import QUOTE_PRINT_SECTIONS
+
+	for tmpl_key, quote_key, _label in QUOTE_PRINT_SECTIONS:
+		if tmpl.meta.has_field(tmpl_key):
+			raw = qt.get(quote_key)
+			tmpl.set(tmpl_key, 0 if raw in (0, "0", False) else 1)
 
 	tmpl.set("cost_items", [])
 	for row in qt.get("ic_cost_items") or []:

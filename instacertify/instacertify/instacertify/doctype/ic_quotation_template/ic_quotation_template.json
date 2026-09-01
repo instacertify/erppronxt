@@ -14,7 +14,7 @@
    "fieldname": "section_identity",
    "fieldtype": "Section Break",
    "label": "1. Template Identity",
-   "description": "Change Display Name anytime — it does not affect quotes already linked to this template. Template ID stays fixed for the system hierarchy."
+   "description": "Change Display Name anytime \u2014 it does not affect quotes already linked to this template. Template ID stays fixed for the system hierarchy."
   },
   {
    "doctype": "DocField",
@@ -24,7 +24,7 @@
    "reqd": 0,
    "in_list_view": 1,
    "bold": 1,
-   "description": "Shown in Quote Format Library and when creating a quotation. Change freely — does not break existing quotes."
+   "description": "Shown in Quote Format Library and when creating a quotation. Change freely \u2014 does not break existing quotes."
   },
   {
    "doctype": "DocField",
@@ -46,7 +46,7 @@
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "description": "Consulting, Testing, Renewal, or Other — used when creating a quote."
+   "description": "Consulting, Testing, Renewal, or Other \u2014 used when creating a quote."
   },
   {
    "doctype": "DocField",
@@ -83,6 +83,131 @@
    "fieldname": "edit_guide_html",
    "fieldtype": "HTML",
    "label": "What You Can Edit"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_print_sections",
+   "fieldtype": "Section Break",
+   "label": "2a. Print Sections \u2014 Uncheck to Hide",
+   "collapsible": 1,
+   "description": "Uncheck any row to hide it on Print/PDF for quotes using this format. Defaults are all shown. Quotes can override these after applying the format."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_about",
+   "fieldtype": "Check",
+   "label": "Show About / Narrative",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_applicable_standards",
+   "fieldtype": "Check",
+   "label": "Show Applicable Standards",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_process",
+   "fieldtype": "Check",
+   "label": "Show Process Steps",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_validity",
+   "fieldtype": "Check",
+   "label": "Show Validity",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_sample_required",
+   "fieldtype": "Check",
+   "label": "Show Sample Required",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_documents_required",
+   "fieldtype": "Check",
+   "label": "Show Documents Required",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_timelines",
+   "fieldtype": "Check",
+   "label": "Show Timelines",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_deliverables",
+   "fieldtype": "Check",
+   "label": "Show Deliverables",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "column_show_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_commercials",
+   "fieldtype": "Check",
+   "label": "Show Commercials",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_payment_terms",
+   "fieldtype": "Check",
+   "label": "Show Payment Terms",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_banking",
+   "fieldtype": "Check",
+   "label": "Show Banking Details",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_cancellation",
+   "fieldtype": "Check",
+   "label": "Show Cancellation & Refund",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_force_majeure",
+   "fieldtype": "Check",
+   "label": "Show Force Majeure",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_confidentiality",
+   "fieldtype": "Check",
+   "label": "Show Confidentiality",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_terms",
+   "fieldtype": "Check",
+   "label": "Show Terms and Conditions",
+   "default": 1
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "show_sample_handling",
+   "fieldtype": "Check",
+   "label": "Show Sample Handling Policy",
+   "default": 1
   },
   {
    "doctype": "DocField",
@@ -487,7 +612,7 @@
    "fieldname": "section_policies",
    "fieldtype": "Section Break",
    "label": "8. Policies & Terms (Editable)",
-   "description": "Payment terms, cancellation, confidentiality, T&Cs — all editable. Choose which bank account prints on quotes from this template."
+   "description": "Payment terms, cancellation, confidentiality, T&Cs \u2014 all editable. Choose which bank account prints on quotes from this template."
   },
   {
    "doctype": "DocField",
@@ -495,7 +620,7 @@
    "fieldtype": "Link",
    "options": "IC Bank Account",
    "label": "Default Bank Account",
-   "description": "YES BANK or Indian Overseas Bank — applied when creating quotes from this format. Override per quote if needed."
+   "description": "YES BANK or Indian Overseas Bank \u2014 applied when creating quotes from this format. Override per quote if needed."
   },
   {
    "doctype": "DocField",
@@ -533,7 +658,7 @@
    "fieldtype": "Section Break",
    "label": "9. Optional Format File Attachments",
    "collapsible": 1,
-   "description": "Optional PDF/DOCX/HTML attachments for reference. Structured quote content is edited in the sections above — not in the uploaded file."
+   "description": "Optional PDF/DOCX/HTML attachments for reference. Structured quote content is edited in the sections above \u2014 not in the uploaded file."
   },
   {
    "doctype": "DocField",

@@ -177,11 +177,11 @@
             '<p class="ic-portal-muted">Date: ' + esc(d.transaction_date || '') +
               (d.valid_till ? (' · Valid till ' + esc(d.valid_till)) : '') +
               (d.ic_estimated_timeline ? (' · Timeline: ' + esc(d.ic_estimated_timeline)) : '') + '</p>' +
-            (d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
-            (d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
-            '<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
-            (commercials || '<p class="ic-portal-muted">No commercial lines yet.</p>') +
-            (d.ic_payment_terms ? ('<h4 style="color:#0D47A1;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
+            (d.ic_show_about != 0 && d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
+            (d.ic_show_deliverables != 0 && d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
+            (d.ic_show_commercials != 0 ? ('<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials</h4>' +
+            (commercials || '<p class="ic-portal-muted">No commercial lines yet.</p>')) : '') +
+            (d.ic_show_payment_terms != 0 && d.ic_payment_terms ? ('<h4 style="color:#0D47A1;">Payment Terms</h4><div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>') : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
 
           document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));

@@ -2233,6 +2233,13 @@ frappe.ui.form.on("Quotation", {
 				window.open(url, "_blank");
 			}, __("Actions"));
 
+			frm.add_custom_button(__("Show All Print Sections"), () => {
+				instacertify.set_all_quote_print_sections(frm, 1);
+			}, __("Print Sections"));
+			frm.add_custom_button(__("Hide All Print Sections"), () => {
+				instacertify.set_all_quote_print_sections(frm, 0);
+			}, __("Print Sections"));
+
 			frm.add_custom_button(__("Save as Template"), () => {
 				frappe.prompt(
 					[
@@ -2813,6 +2820,39 @@ instacertify.setup_quotation_template_filter = function (frm) {
 	});
 };
 
+instacertify.QUOTE_PRINT_SECTION_FIELDS = [
+	"ic_show_about",
+	"ic_show_applicable_standards",
+	"ic_show_process",
+	"ic_show_validity",
+	"ic_show_sample_required",
+	"ic_show_documents_required",
+	"ic_show_timelines",
+	"ic_show_deliverables",
+	"ic_show_commercials",
+	"ic_show_payment_terms",
+	"ic_show_banking",
+	"ic_show_cancellation",
+	"ic_show_force_majeure",
+	"ic_show_confidentiality",
+	"ic_show_terms",
+	"ic_show_sample_handling",
+];
+
+instacertify.set_all_quote_print_sections = function (frm, value) {
+	(instacertify.QUOTE_PRINT_SECTION_FIELDS || []).forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.set_value(f, value);
+		}
+	});
+	frappe.show_alert({
+		message: value
+			? __("All print sections set to Show")
+			: __("All print sections set to Hide"),
+		indicator: value ? "green" : "orange",
+	});
+};
+
 instacertify.hide_sales_order_button = function (frm) {
 	const hide = () => {
 		frm.remove_custom_button(__("Sales Order"), __("Create"));
@@ -2931,7 +2971,52 @@ instacertify.toggle_quotation_sections = function (frm) {
 				)
 			);
 		}
+		const grid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+		if (grid) {
+			grid.update_docfield_property("number_of_samples", "read_only", 0);
+			grid.update_docfield_property("sample_requirement", "read_only", 0);
+			grid.update_docfield_property("sample_requirement", "hidden", 0);
+		}
 	}
+	// Consulting Sample Required narrative — always editable
+	if (frm.fields_dict.ic_sample_required) {
+		frm.set_df_property("ic_sample_required", "read_only", 0);
+	}
+	// Print section toggles — always editable; uncheck to hide that row on PDF
+	if (frm.fields_dict.ic_section_print_sections) {
+		frm.toggle_display("ic_section_print_sections", true);
+		frm.set_df_property(
+			"ic_section_print_sections",
+			"description",
+			__("Uncheck any section to hide it on Print/PDF. Prefills from the Quote Format.")
+		);
+	}
+	[
+		"ic_show_about",
+		"ic_show_applicable_standards",
+		"ic_show_process",
+		"ic_show_validity",
+		"ic_show_sample_required",
+		"ic_show_documents_required",
+		"ic_show_timelines",
+		"ic_show_deliverables",
+		"ic_show_commercials",
+		"ic_show_payment_terms",
+		"ic_show_banking",
+		"ic_show_cancellation",
+		"ic_show_force_majeure",
+		"ic_show_confidentiality",
+		"ic_show_terms",
+		"ic_show_sample_handling",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.toggle_display(f, true);
+			frm.set_df_property(f, "read_only", 0);
+			if (frm.doc[f] == null) {
+				frm.doc[f] = 1;
+			}
+		}
+	});
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {
@@ -3257,6 +3342,10 @@ instacertify.apply_lab_scoped_pricing = function (frm, cdt, cdn) {
 			});
 			if (s.currency) frappe.model.set_value(cdt, cdn, "currency", s.currency);
 			if (s.label) frappe.model.set_value(cdt, cdn, "lab_test_scope", s.label);
+			if (!cint(row.number_of_samples)) {
+				frappe.model.set_value(cdt, cdn, "number_of_samples", 1);
+			}
+			instacertify.sync_quote_sample_requirement(cdt, cdn);
 			frappe.show_alert({
 				message: __("Prices from {0}: buy {1} · sell {2}", [
 					s.lab_initials || s.laboratory_name || row.laboratory,

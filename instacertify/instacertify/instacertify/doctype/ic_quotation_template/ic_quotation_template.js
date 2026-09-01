@@ -156,6 +156,14 @@ frappe.ui.form.on("IC Quotation Template", {
 			frm.add_custom_button(__("Jump to Headings"), () => {
 				frm.scroll_to_field("label_about");
 			});
+
+			frm.add_custom_button(__("Show All Print Sections"), () => {
+				_set_all_print_sections(frm, 1);
+			}, __("Print Sections"));
+
+			frm.add_custom_button(__("Hide All Print Sections"), () => {
+				_set_all_print_sections(frm, 0);
+			}, __("Print Sections"));
 		}
 	},
 
@@ -165,6 +173,38 @@ frappe.ui.form.on("IC Quotation Template", {
 	},
 });
 
+const IC_TEMPLATE_SHOW_FIELDS = [
+	"show_about",
+	"show_applicable_standards",
+	"show_process",
+	"show_validity",
+	"show_sample_required",
+	"show_documents_required",
+	"show_timelines",
+	"show_deliverables",
+	"show_commercials",
+	"show_payment_terms",
+	"show_banking",
+	"show_cancellation",
+	"show_force_majeure",
+	"show_confidentiality",
+	"show_terms",
+	"show_sample_handling",
+];
+
+function _set_all_print_sections(frm, value) {
+	IC_TEMPLATE_SHOW_FIELDS.forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.set_value(f, value);
+		}
+	});
+	frappe.show_alert({
+		message: value
+			? __("All print sections set to Show")
+			: __("All print sections set to Hide"),
+		indicator: value ? "green" : "orange",
+	});
+}
 function _lock_template_id(frm) {
 	if (!frm.fields_dict.template_name) return;
 	// Template ID is the document name — editable only on create.
@@ -245,6 +285,7 @@ function _render_edit_guide(frm) {
 			<div style="font-weight:600;margin-bottom:6px;">${__("What you can edit on this template")}</div>
 			<ul style="margin:0 0 0 18px;padding:0;">
 				<li><b>${__("Display Name")}</b>: ${__("Rename anytime — does not change Template ID or linked quotes.")}</li>
+				<li><b>${__("Print Sections")}</b>: ${__("Uncheck Sample Required, Force Majeure, Terms, Banking, etc. to hide that row on Print/PDF. Use Print Sections → Show/Hide All.")}</li>
 				<li><b>${__("Section 2 — Rename headings")}</b>: ${__("Change printed names (ABOUT, Commercials, Payment Terms, column titles).")}</li>
 				<li><b>${__("Narrative sections")}</b>: ${__("Edit all body text for {0} quotes.", [__(qtype)])}</li>
 				<li><b>${__("Section 6 — Pricing")}</b>: ${__("Add default amounts the sales team can change on each quote. Set Revenue = Do Not Count as Revenue for govt/lab/third-party lines (shown on the quote, not counted as Instacertify revenue).")}</li>
