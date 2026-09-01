@@ -298,7 +298,8 @@ QUOTATION_HTML = """
     <div>{{ doc.address_display or '' }}</div>
   </div>
 
-  {% if quote_section_on(doc, 'ic_show_about') and (doc.ic_service_name or doc.ic_scope_of_work) %}
+  {% for _sk in quote_section_order(doc) %}
+  {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') and (doc.ic_service_name or doc.ic_scope_of_work) %}
   <div class="ic-box">
     <h3>Service Scope</h3>
     <div><b>Service:</b> {{ doc.ic_service_name or '' }}</div>
@@ -312,7 +313,7 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
 
-  {% if quote_section_on(doc, 'ic_show_commercials') and (doc.ic_test_items or doc.ic_cost_items) %}
+  {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') and (doc.ic_test_items or doc.ic_cost_items) %}
   <div class="ic-box">
     <h3>Commercials ({{ doc.currency or 'INR' }})</h3>
     {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
@@ -377,6 +378,32 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
 
+  {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
+  <div class="ic-box ic-terms">
+    <h3>Terms and Conditions</h3>
+    {{ doc.ic_terms_and_conditions or doc.terms or '' }}
+  </div>
+  {% endif %}
+  {% if _sk == 'banking' and quote_section_on(doc, 'ic_show_banking') %}
+  <div class="ic-box">
+    <h3>Payment Terms</h3>
+    {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
+    {% else %}<p>As agreed with Instacertify.</p>{% endif %}
+""" + GST_PAYMENT_TERMS_NOTE_HTML + """
+  </div>
+  <div class="ic-box">
+    <h3>Bank Details &amp; UPI Payment</h3>
+""" + BANK_UPI_PAYMENT_HTML + """
+  </div>
+  {% endif %}
+  {% if _sk == 'force_majeure' and quote_section_on(doc, 'ic_show_force_majeure') %}
+  <div class="ic-box">
+    <h3>Force Majeure</h3>
+    {{ doc.ic_force_majeure or '' }}
+  </div>
+  {% endif %}
+  {% endfor %}
+
   {% if doc.items %}
   <div class="ic-box">
     <h3>Line Items</h3>
@@ -393,31 +420,6 @@ QUOTATION_HTML = """
       {% endfor %}
       </tbody>
     </table>
-  </div>
-  {% endif %}
-
-  {% if quote_section_on(doc, 'ic_show_terms') %}
-  <div class="ic-box ic-terms">
-    <h3>Terms and Conditions</h3>
-    {{ doc.ic_terms_and_conditions or doc.terms or '' }}
-  </div>
-  {% endif %}
-  {% if quote_section_on(doc, 'ic_show_banking') %}
-  <div class="ic-box">
-    <h3>Payment Terms</h3>
-    {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
-    {% else %}<p>As agreed with Instacertify.</p>{% endif %}
-""" + GST_PAYMENT_TERMS_NOTE_HTML + """
-  </div>
-  <div class="ic-box">
-    <h3>Bank Details &amp; UPI Payment</h3>
-""" + BANK_UPI_PAYMENT_HTML + """
-  </div>
-  {% endif %}
-  {% if quote_section_on(doc, 'ic_show_force_majeure') %}
-  <div class="ic-box">
-    <h3>Force Majeure</h3>
-    {{ doc.ic_force_majeure or '' }}
   </div>
   {% endif %}
 
@@ -826,274 +828,300 @@ TESTING_QUOTATION_HTML = """
     <div><b>Currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(all charges below)</span></div>
   </div>
 
-  <table class="tq-grid">
+    <table class="tq-grid">
     <tr>
       <td class="tq-label">{{ doc.ic_label_subject or 'Subject' }}</td>
       <td class="tq-value"><b>{{ doc.ic_subject or 'Testing' }}</b></td>
     </tr>
-    {% if quote_section_on(doc, 'ic_show_about') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_about_testing or 'ABOUT' }}</td>
-      <td class="tq-value">
-        {% if doc.ic_about_testing %}
-          {{ doc.ic_about_testing }}
-        {% else %}
-          {{ doc.ic_scope_of_work or '' }}
-        {% endif %}
-      </td>
-    </tr>
-    {% endif %}
-    {% if quote_section_on(doc, 'ic_show_applicable_standards') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_applicable_standards or 'Applicable Standards' }}</td>
-      <td class="tq-value">
-        {% if doc.ic_applicable_standards_text %}
-          {{ doc.ic_applicable_standards_text }}
-        {% else %}
-          <div>The following standards are applicable for the proposed testing:</div>
-          <ul>
-          {% for row in doc.ic_test_items or [] %}
-            <li><b>{{ row.applicable_standard }}</b>{% if row.test_name %} – {{ row.test_name }}{% endif %}</li>
-          {% endfor %}
-          </ul>
-        {% endif %}
-      </td>
-    </tr>
-    {% endif %}
-    {% if quote_section_on(doc, 'ic_show_sample_required') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_samples_requirements or 'Samples Requirements' }}</td>
-      <td class="tq-value">
-        <div class="tq-h">Sample Required</div>
-        {% for row in doc.ic_test_items or [] %}
-          {%- set _n = row.number_of_samples or 1 -%}
-          <div style="margin-bottom:8px;">
-            <b>{{ row.applicable_standard or row.test_name or 'Test' }}:</b>
-            {{ row.sample_requirement or ((_n|string) + ' complete functional product sample' + ('s' if _n != 1 else '') + ', including all necessary accessories, cables, and power supply components.') }}
-            <div class="tq-note" style="margin-top:2px;">No. of Samples: <b>{{ _n }}</b></div>
-          </div>
-        {% endfor %}
-        <div class="tq-note"><b>Note:</b> {{ (doc.ic_samples_note or 'Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.')|replace('Note: ','') }}</div>
-      </td>
-    </tr>
-    {% endif %}
   </table>
 
-  <table class="tq-grid" style="margin-top:-1px;">
-    {% if quote_section_on(doc, 'ic_show_commercials') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_commercials or 'Commercials' }}</td>
-      <td class="tq-value">
-        <div class="tq-h">{{ doc.ic_label_commercials or 'Commercials' }} — Testing Charges ({{ curr }})</div>
-        <table class="tq-comm">
-          <thead>
-            <tr>
-              <th class="num" style="width:6%">S. No.</th>
-              <th style="width:16%">Test Name</th>
-              <th style="width:14%">Standard</th>
-              <th style="width:20%">Description</th>
-              <th class="num" style="width:10%">No. of Samples</th>
-              <th style="width:14%">Price ({{ curr }})</th>
-              <th style="width:14%">Total Price ({{ curr }})</th>
-            </tr>
-          </thead>
-          <tbody>
-          {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
-          {% for row in doc.ic_test_items or [] %}
-            {%- set units = row.number_of_samples or 1 -%}
-            {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
-            {%- set total = row.testing_charges or (per * units) -%}
-            {%- set ns.testing_grand = ns.testing_grand + (total or 0) -%}
-            <tr>
-              <td class="num">{{ loop.index }}</td>
-              <td>{{ row.test_name or '' }}</td>
-              <td>{{ row.applicable_standard or '' }}</td>
-              <td>{{ row.description or '' }}</td>
-              <td class="num">{{ units }}</td>
-              <td class="amt">{{ inr(per) }}</td>
-              <td class="amt"><b>{{ inr(total) }}</b></td>
-            </tr>
-          {% endfor %}
-            <tr>
-              <td colspan="6" style="text-align:right;font-weight:700;">Testing Total</td>
-              <td class="amt"><b>{{ inr(ns.testing_grand) }}</b></td>
-            </tr>
-          </tbody>
-        </table>
-        {% if doc.ic_cost_items %}
-        <div class="tq-h" style="margin-top:14px;">Commercials — Other Charges ({{ curr }})</div>
-        <table class="tq-comm">
-          <thead>
-            <tr>
-              <th class="num" style="width:6%">S. No.</th>
-              <th style="width:28%">Particulars</th>
-              <th style="width:22%">Description</th>
-              <th style="width:14%">Unit Price ({{ curr }})</th>
-              <th class="num" style="width:10%">No. of Units</th>
-              <th style="width:14%">Total ({{ curr }})</th>
-            </tr>
-          </thead>
-          <tbody>
-          {% for row in doc.ic_cost_items or [] %}
-            {%- set units = row.qty or 1 -%}
-            {%- set per = row.amount or 0 -%}
-            {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
-            {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
-            <tr>
-              <td class="num">{{ loop.index }}</td>
-              <td>{{ row.particulars or row.cost_component or '' }}</td>
-              <td>{{ row.description or '' }}</td>
-              <td class="amt">{{ inr(per) }}</td>
-              <td class="num">{{ units }}</td>
-              <td class="amt"><b>{{ inr(total) }}</b></td>
-            </tr>
-          {% endfor %}
-            <tr>
-              <td colspan="5" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
-              <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
-            </tr>
-          </tbody>
-        </table>
-        {% endif %}
-        <table class="tq-comm" style="margin-top:8px;">
-          <tbody>
-            <tr>
-              <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing — Grand Total (Testing{% if doc.ic_cost_items %} + Other Charges{% endif %})</td>
-              <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
-            </tr>
-          </tbody>
-        </table>
-      </td>
-    </tr>
+  {% for _sk in quote_section_order(doc) %}
+    {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_about_testing or 'ABOUT' }}</td>
+            <td class="tq-value">
+              {% if doc.ic_about_testing %}
+                {{ doc.ic_about_testing }}
+              {% else %}
+                {{ doc.ic_scope_of_work or '' }}
+              {% endif %}
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_deliverables') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_deliverable or 'Deliverable' }}</td>
-      <td class="tq-value">
-        <div class="tq-h">Deliverables</div>
-        {% if doc.ic_deliverables %}
-          <div class="tq-policy">{{ doc.ic_deliverables | replace('\t', ' ') }}</div>
-        {% else %}
-          <ul>
-            <li><b>Test Report</b> covering the applicable standards and tests performed.</li>
-            <li><b>Test Results</b> with observations and measured parameters.</li>
-            <li><b>Certificate/Report of Compliance</b>, wherever applicable.</li>
-          </ul>
-        {% endif %}
-      </td>
-    </tr>
+    {% if _sk == 'applicable_standards' and quote_section_on(doc, 'ic_show_applicable_standards') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_applicable_standards or 'Applicable Standards' }}</td>
+            <td class="tq-value">
+              {% if doc.ic_applicable_standards_text %}
+                {{ doc.ic_applicable_standards_text }}
+              {% else %}
+                <div>The following standards are applicable for the proposed testing:</div>
+                <ul>
+                {% for row in doc.ic_test_items or [] %}
+                  <li><b>{{ row.applicable_standard }}</b>{% if row.test_name %} – {{ row.test_name }}{% endif %}</li>
+                {% endfor %}
+                </ul>
+              {% endif %}
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_timelines') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
-      <td class="tq-value">
-        <div class="tq-h">{{ doc.ic_label_timeline or 'Timeline' }}</div>
-        <ul>
-          <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
-          <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
-          <li>The timeline may vary depending on laboratory scheduling, sample condition, test requirements, and any additional testing, if applicable.</li>
-        </ul>
-      </td>
-    </tr>
+    {% if _sk == 'sample_required' and quote_section_on(doc, 'ic_show_sample_required') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_samples_requirements or 'Samples Requirements' }}</td>
+            <td class="tq-value">
+              <div class="tq-h">Sample Required</div>
+              {% for row in doc.ic_test_items or [] %}
+                {%- set _n = row.number_of_samples or 1 -%}
+                <div style="margin-bottom:8px;">
+                  <b>{{ row.applicable_standard or row.test_name or 'Test' }}:</b>
+                  {{ row.sample_requirement or ((_n|string) + ' complete functional product sample' + ('s' if _n != 1 else '') + ', including all necessary accessories, cables, and power supply components.') }}
+                  <div class="tq-note" style="margin-top:2px;">No. of Samples: <b>{{ _n }}</b></div>
+                </div>
+              {% endfor %}
+              <div class="tq-note"><b>Note:</b> {{ (doc.ic_samples_note or 'Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.')|replace('Note: ','') }}</div>
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_payment_terms') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_payment_term or 'Payment Term' }}</td>
-      <td class="tq-value">
-        <div class="tq-h">Payment Terms</div>
-        {% if doc.ic_payment_terms %}
-          {{ doc.ic_payment_terms | replace('\t', ' ') }}
-        {% else %}
-          <ul>
-            <li><b>100% Advance Payment</b> is required to initiate the testing process.</li>
-            <li>Testing will commence upon receipt of the payment and sample.</li>
-            <li>Any additional testing or charges, if applicable, shall be communicated separately.</li>
-          </ul>
-        {% endif %}
-""" + GST_PAYMENT_TERMS_NOTE_HTML + """
-      </td>
-    </tr>
+    {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_commercials or 'Commercials' }}</td>
+            <td class="tq-value">
+              <div class="tq-h">{{ doc.ic_label_commercials or 'Commercials' }} — Testing Charges ({{ curr }})</div>
+              <table class="tq-comm">
+                <thead>
+                  <tr>
+                    <th class="num" style="width:6%">S. No.</th>
+                    <th style="width:16%">Test Name</th>
+                    <th style="width:14%">Standard</th>
+                    <th style="width:20%">Description</th>
+                    <th class="num" style="width:10%">No. of Samples</th>
+                    <th style="width:14%">Price ({{ curr }})</th>
+                    <th style="width:14%">Total Price ({{ curr }})</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
+                {% for row in doc.ic_test_items or [] %}
+                  {%- set units = row.number_of_samples or 1 -%}
+                  {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
+                  {%- set total = row.testing_charges or (per * units) -%}
+                  {%- set ns.testing_grand = ns.testing_grand + (total or 0) -%}
+                  <tr>
+                    <td class="num">{{ loop.index }}</td>
+                    <td>{{ row.test_name or '' }}</td>
+                    <td>{{ row.applicable_standard or '' }}</td>
+                    <td>{{ row.description or '' }}</td>
+                    <td class="num">{{ units }}</td>
+                    <td class="amt">{{ inr(per) }}</td>
+                    <td class="amt"><b>{{ inr(total) }}</b></td>
+                  </tr>
+                {% endfor %}
+                  <tr>
+                    <td colspan="6" style="text-align:right;font-weight:700;">Testing Total</td>
+                    <td class="amt"><b>{{ inr(ns.testing_grand) }}</b></td>
+                  </tr>
+                </tbody>
+              </table>
+              {% if doc.ic_cost_items %}
+              <div class="tq-h" style="margin-top:14px;">Commercials — Other Charges ({{ curr }})</div>
+              <table class="tq-comm">
+                <thead>
+                  <tr>
+                    <th class="num" style="width:6%">S. No.</th>
+                    <th style="width:28%">Particulars</th>
+                    <th style="width:22%">Description</th>
+                    <th style="width:14%">Unit Price ({{ curr }})</th>
+                    <th class="num" style="width:10%">No. of Units</th>
+                    <th style="width:14%">Total ({{ curr }})</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {% for row in doc.ic_cost_items or [] %}
+                  {%- set units = row.qty or 1 -%}
+                  {%- set per = row.amount or 0 -%}
+                  {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
+                  {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
+                  <tr>
+                    <td class="num">{{ loop.index }}</td>
+                    <td>{{ row.particulars or row.cost_component or '' }}</td>
+                    <td>{{ row.description or '' }}</td>
+                    <td class="amt">{{ inr(per) }}</td>
+                    <td class="num">{{ units }}</td>
+                    <td class="amt"><b>{{ inr(total) }}</b></td>
+                  </tr>
+                {% endfor %}
+                  <tr>
+                    <td colspan="5" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
+                    <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
+                  </tr>
+                </tbody>
+              </table>
+              {% endif %}
+              <table class="tq-comm" style="margin-top:8px;">
+                <tbody>
+                  <tr>
+                    <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing — Grand Total (Testing{% if doc.ic_cost_items %} + Other Charges{% endif %})</td>
+                    <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_sample_handling') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_sample_handling or 'Sample handling & disposal policy' }}</td>
-      <td class="tq-value">
-        {% if doc.ic_sample_handling_policy %}
-          {{ doc.ic_sample_handling_policy | replace('\t', ' ') }}
-        {% else %}
-          <ol>
-            <li>Samples may be subjected to destructive and/or non-destructive testing as required by the applicable standard or test protocol.</li>
-            <li>After completion of testing and receipt of the samples from the laboratory, Instacertify Labs Pvt. Ltd. shall retain the remaining samples for a maximum period of <b>15 days</b>.</li>
-            <li>Clients wishing to recover their samples must arrange collection or request return shipment within the 15-day retention period.</li>
-            <li>All sample shipping, return shipping, handling, storage, customs duties, taxes, and related logistics costs shall be borne solely by the Client.</li>
-            <li>For samples returned within India through a reputed courier service arranged by Instacertify Labs Pvt. Ltd., return shipping charges shall be <b>₹450 per kg + applicable GST</b>.</li>
-            <li>For samples returned outside India, return shipping charges shall be <b>USD 90 per kg</b>, exclusive of customs duties, taxes, import/export charges, and other applicable logistics costs, which shall be borne by the Client.</li>
-            <li>Samples not claimed, or for which return arrangements are not confirmed within 15 days, shall be considered abandoned and may be disposed of at the sole discretion of Instacertify Labs Pvt. Ltd., without further notice or liability.</li>
-            <li>Instacertify Labs Pvt. Ltd. shall not be responsible for any loss, damage, delay, or deterioration of samples during transit through third-party courier or logistics providers.</li>
-          </ol>
-        {% endif %}
-      </td>
-    </tr>
+    {% if _sk == 'deliverables' and quote_section_on(doc, 'ic_show_deliverables') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_deliverable or 'Deliverable' }}</td>
+            <td class="tq-value">
+              <div class="tq-h">Deliverables</div>
+              {% if doc.ic_deliverables %}
+                <div class="tq-policy">{{ doc.ic_deliverables | replace('\t', ' ') }}</div>
+              {% else %}
+                <ul>
+                  <li><b>Test Report</b> covering the applicable standards and tests performed.</li>
+                  <li><b>Test Results</b> with observations and measured parameters.</li>
+                  <li><b>Certificate/Report of Compliance</b>, wherever applicable.</li>
+                </ul>
+              {% endif %}
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_banking') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_banking or 'Our Banking Details' }}</td>
-      <td class="tq-value">
-        <div class="tq-h">Bank Details for Payment</div>
-""" + BANK_UPI_PAYMENT_HTML + """
-      </td>
-    </tr>
+    {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
+            <td class="tq-value">
+              <div class="tq-h">{{ doc.ic_label_timeline or 'Timeline' }}</div>
+              <ul>
+                <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
+                <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
+                <li>The timeline may vary depending on laboratory scheduling, sample condition, test requirements, and any additional testing, if applicable.</li>
+              </ul>
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_cancellation') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_cancellation or 'CANCELLATION AND REFUND POLICY' }}</td>
-      <td class="tq-value">
-        {% if doc.ic_cancellation_policy %}
-          {{ doc.ic_cancellation_policy | replace('\t', ' ') }}
-        {% else %}
-          Testing fees are payable in advance and are non-refundable once samples have been submitted or testing has commenced. Government fees may be refunded only if they have not been deposited with the relevant authority. Consultancy fees are charged based on the work completed and are non-refundable once services have been rendered. Any eligible refund request must be submitted to Instacertify in writing within 7 working days of payment.
-        {% endif %}
-      </td>
-    </tr>
+    {% if _sk == 'payment_terms' and quote_section_on(doc, 'ic_show_payment_terms') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_payment_term or 'Payment Term' }}</td>
+            <td class="tq-value">
+              <div class="tq-h">Payment Terms</div>
+              {% if doc.ic_payment_terms %}
+                {{ doc.ic_payment_terms | replace('\t', ' ') }}
+              {% else %}
+                <ul>
+                  <li><b>100% Advance Payment</b> is required to initiate the testing process.</li>
+                  <li>Testing will commence upon receipt of the payment and sample.</li>
+                  <li>Any additional testing or charges, if applicable, shall be communicated separately.</li>
+                </ul>
+              {% endif %}
+      """ + GST_PAYMENT_TERMS_NOTE_HTML + """
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_force_majeure') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_force_majeure or 'FORCE MAJEURE' }}</td>
-      <td class="tq-value">
-        {% if doc.ic_force_majeure %}
-          {{ doc.ic_force_majeure | replace('\t', ' ') }}
-        {% else %}
-          Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events
-        {% endif %}
-      </td>
-    </tr>
+    {% if _sk == 'sample_handling' and quote_section_on(doc, 'ic_show_sample_handling') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_sample_handling or 'Sample handling & disposal policy' }}</td>
+            <td class="tq-value">
+              {% if doc.ic_sample_handling_policy %}
+                {{ doc.ic_sample_handling_policy | replace('\t', ' ') }}
+              {% else %}
+                <ol>
+                  <li>Samples may be subjected to destructive and/or non-destructive testing as required by the applicable standard or test protocol.</li>
+                  <li>After completion of testing and receipt of the samples from the laboratory, Instacertify Labs Pvt. Ltd. shall retain the remaining samples for a maximum period of <b>15 days</b>.</li>
+                  <li>Clients wishing to recover their samples must arrange collection or request return shipment within the 15-day retention period.</li>
+                  <li>All sample shipping, return shipping, handling, storage, customs duties, taxes, and related logistics costs shall be borne solely by the Client.</li>
+                  <li>For samples returned within India through a reputed courier service arranged by Instacertify Labs Pvt. Ltd., return shipping charges shall be <b>₹450 per kg + applicable GST</b>.</li>
+                  <li>For samples returned outside India, return shipping charges shall be <b>USD 90 per kg</b>, exclusive of customs duties, taxes, import/export charges, and other applicable logistics costs, which shall be borne by the Client.</li>
+                  <li>Samples not claimed, or for which return arrangements are not confirmed within 15 days, shall be considered abandoned and may be disposed of at the sole discretion of Instacertify Labs Pvt. Ltd., without further notice or liability.</li>
+                  <li>Instacertify Labs Pvt. Ltd. shall not be responsible for any loss, damage, delay, or deterioration of samples during transit through third-party courier or logistics providers.</li>
+                </ol>
+              {% endif %}
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_confidentiality') %}
-    <tr>
-      <td class="tq-label">{{ doc.ic_label_confidentiality or 'CONFIDENTIALITY & DATA PROTECTION' }}</td>
-      <td class="tq-value">
-        {% if doc.ic_confidentiality %}
-          {{ doc.ic_confidentiality | replace('\t', ' ') }}
-        {% else %}
-          Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection
-        {% endif %}
-      </td>
-    </tr>
+    {% if _sk == 'banking' and quote_section_on(doc, 'ic_show_banking') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_banking or 'Our Banking Details' }}</td>
+            <td class="tq-value">
+              <div class="tq-h">Bank Details for Payment</div>
+      """ + BANK_UPI_PAYMENT_HTML + """
+            </td>
+          </tr>
+    </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_terms') %}
-    <tr>
-      <td class="tq-label">Terms and Conditions</td>
-      <td class="tq-value">
-        <div class="tq-h">Terms and Conditions</div>
-        {% if doc.ic_terms_and_conditions %}
-          {{ doc.ic_terms_and_conditions | replace('\t', ' ') }}
-        {% elif doc.terms %}
-          {{ doc.terms | replace('\t', ' ') }}
-        {% endif %}
-      </td>
-    </tr>
+    {% if _sk == 'cancellation' and quote_section_on(doc, 'ic_show_cancellation') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_cancellation or 'CANCELLATION AND REFUND POLICY' }}</td>
+            <td class="tq-value">
+              {% if doc.ic_cancellation_policy %}
+                {{ doc.ic_cancellation_policy | replace('\t', ' ') }}
+              {% else %}
+                Testing fees are payable in advance and are non-refundable once samples have been submitted or testing has commenced. Government fees may be refunded only if they have not been deposited with the relevant authority. Consultancy fees are charged based on the work completed and are non-refundable once services have been rendered. Any eligible refund request must be submitted to Instacertify in writing within 7 working days of payment.
+              {% endif %}
+            </td>
+          </tr>
+    </table>
     {% endif %}
-  </table>
+    {% if _sk == 'force_majeure' and quote_section_on(doc, 'ic_show_force_majeure') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_force_majeure or 'FORCE MAJEURE' }}</td>
+            <td class="tq-value">
+              {% if doc.ic_force_majeure %}
+                {{ doc.ic_force_majeure | replace('\t', ' ') }}
+              {% else %}
+                Instacertify Labs Pvt. Ltd. shall not be liable for any delay or failure in performing its obligations due to circumstances beyond its reasonable control, including but not limited to natural disasters, acts of government, regulatory changes, strikes, pandemics, war, civil unrest, transportation disruptions, laboratory delays, or certification authority actions. Any affected timelines shall be extended accordingly, and both parties shall make reasonable efforts to minimize the impact of such events
+              {% endif %}
+            </td>
+          </tr>
+    </table>
+    {% endif %}
+    {% if _sk == 'confidentiality' and quote_section_on(doc, 'ic_show_confidentiality') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_confidentiality or 'CONFIDENTIALITY & DATA PROTECTION' }}</td>
+            <td class="tq-value">
+              {% if doc.ic_confidentiality %}
+                {{ doc.ic_confidentiality | replace('\t', ' ') }}
+              {% else %}
+                Instacertify Labs Pvt. Ltd. shall maintain strict confidentiality of all documents, technical information, business data, and records shared by the Client. Such information will be used solely for the purpose of providing the agreed services and will not be disclosed to any third party except where required by law, regulatory authorities, laboratories, or certification bodies. Reasonable measures shall be implemented to ensure data security and protection
+              {% endif %}
+            </td>
+          </tr>
+    </table>
+    {% endif %}
+    {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">Terms and Conditions</td>
+            <td class="tq-value">
+              <div class="tq-h">Terms and Conditions</div>
+              {% if doc.ic_terms_and_conditions %}
+                {{ doc.ic_terms_and_conditions | replace('\t', ' ') }}
+              {% elif doc.terms %}
+                {{ doc.terms | replace('\t', ' ') }}
+              {% endif %}
+            </td>
+          </tr>
+    </table>
+    {% endif %}
+  {% endfor %}
 
   <div class="tq-close">
     <div class="tq-qr">
@@ -1191,7 +1219,8 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 
   <div class="cq-box">
-    {% if quote_section_on(doc, 'ic_show_about') %}
+    {% for _sk in quote_section_order(doc) %}
+    {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_about or ('ABOUT ' ~ short) }}</div>
       <div class="cq-body">
@@ -1201,7 +1230,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_applicable_standards') %}
+    {% if _sk == 'applicable_standards' and quote_section_on(doc, 'ic_show_applicable_standards') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_standard or ('STANDARD APPLICABLE FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1214,7 +1243,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_process') %}
+    {% if _sk == 'process' and quote_section_on(doc, 'ic_show_process') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_process or ('Process for ' ~ short) }}</div>
       <div class="cq-body">
@@ -1224,7 +1253,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_validity') %}
+    {% if _sk == 'validity' and quote_section_on(doc, 'ic_show_validity') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_validity or ('Validity of ' ~ short) }}</div>
       <div class="cq-body">
@@ -1234,7 +1263,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_commercials') %}
+    {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_commercials or ('Commercials for ' ~ short) }} ({{ doc.currency or 'INR' }})</div>
       <div class="cq-body">
@@ -1320,7 +1349,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_payment_terms') %}
+    {% if _sk == 'payment_terms' and quote_section_on(doc, 'ic_show_payment_terms') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_payment_terms or ('PAYMENT TERMS FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1338,7 +1367,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_timelines') %}
+    {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_timelines or ('Timelines for ' ~ short) }}</div>
       <div class="cq-body">
@@ -1350,7 +1379,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_sample_required') %}
+    {% if _sk == 'sample_required' and quote_section_on(doc, 'ic_show_sample_required') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_sample_required or ('SAMPLE REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1363,7 +1392,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_documents_required') %}
+    {% if _sk == 'documents_required' and quote_section_on(doc, 'ic_show_documents_required') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_documents_required or ('DOCUMENTS REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1373,7 +1402,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_banking') %}
+    {% if _sk == 'banking' and quote_section_on(doc, 'ic_show_banking') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_banking or ('OUR BANKING DETAILS FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1383,7 +1412,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_cancellation') %}
+    {% if _sk == 'cancellation' and quote_section_on(doc, 'ic_show_cancellation') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_cancellation or ('CANCELLATION & REFUND POLICY FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1396,7 +1425,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_force_majeure') %}
+    {% if _sk == 'force_majeure' and quote_section_on(doc, 'ic_show_force_majeure') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_force_majeure or ('FORCE MAJEURE FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1408,7 +1437,7 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if quote_section_on(doc, 'ic_show_confidentiality') %}
+    {% if _sk == 'confidentiality' and quote_section_on(doc, 'ic_show_confidentiality') %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_confidentiality or ('CONFIDENTIALITY & DATA PROTECTION FOR ' ~ short) }}</div>
       <div class="cq-body">
@@ -1419,7 +1448,7 @@ CONSULTING_QUOTATION_HTML = """
       </div>
     </div>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_terms') %}
+    {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
     <div class="cq-sec">
       <div class="cq-bar">Terms and Conditions</div>
       <div class="cq-body">
@@ -1430,6 +1459,7 @@ CONSULTING_QUOTATION_HTML = """
       </div>
     </div>
     {% endif %}
+    {% endfor %}
   </div>
 
   <div class="cq-close">
