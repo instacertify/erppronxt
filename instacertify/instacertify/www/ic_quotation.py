@@ -46,11 +46,18 @@ def get_quotation(token: str):
 
 	cost_items = []
 	for row in doc.get("ic_cost_items") or []:
+		qty = int(row.get("qty") or 1) or 1
+		unit = flt(row.amount)
+		total = row.get("total_amount")
+		if total in (None, ""):
+			total = unit * qty
 		cost_items.append(
 			{
 				"particulars": _plain(row.particulars or row.cost_component or row.description),
-				"description": _plain(row.description or row.charges_display or ""),
-				"amount": row.amount,
+				"description": _plain(row.description or ""),
+				"unit_price": unit,
+				"quantity": qty,
+				"amount": flt(total),
 				"payment_destination": _plain(row.payment_destination),
 			}
 		)

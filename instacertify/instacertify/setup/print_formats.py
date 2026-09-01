@@ -344,27 +344,31 @@ QUOTATION_HTML = """
     <div style="font-weight:600;margin:12px 0 6px;">Consulting &amp; Other Charges</div>
     <table class="ic-table">
       <thead><tr>
-        <th>Particulars</th><th>Description</th><th>Amount</th>
+        <th>Particulars</th><th>Description</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th>
       </tr></thead>
       <tbody>
       {% for row in doc.ic_cost_items %}
-        {%- set amt = row.amount or 0 -%}
-        {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
+        {%- set units = row.qty or 1 -%}
+        {%- set per = row.amount or 0 -%}
+        {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
+        {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
         <tr>
           <td>{{ row.particulars or row.cost_component }}</td>
           <td>{{ row.description or '' }}</td>
-          <td>{{ frappe.utils.fmt_money(amt, currency=doc.currency) }}</td>
+          <td>{{ frappe.utils.fmt_money(per, currency=doc.currency) }}</td>
+          <td>{{ units }}</td>
+          <td><b>{{ frappe.utils.fmt_money(total, currency=doc.currency) }}</b></td>
         </tr>
       {% endfor %}
         <tr>
-          <td colspan="2" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
+          <td colspan="4" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
           <td><b>{{ frappe.utils.fmt_money(ns.cost_grand, currency=doc.currency) }}</b></td>
         </tr>
       </tbody>
     </table>
     {% endif %}
     <div class="ic-grand-total" style="margin-top:10px;">
-      Grand Total: {{ frappe.utils.fmt_money(ns.testing_grand + ns.cost_grand, currency=doc.currency) }}
+      Final Costing (Testing + Other): {{ frappe.utils.fmt_money(ns.testing_grand + ns.cost_grand, currency=doc.currency) }}
     </div>
   </div>
   {% endif %}
@@ -894,25 +898,31 @@ TESTING_QUOTATION_HTML = """
         <table class="tq-comm">
           <thead>
             <tr>
-              <th class="num" style="width:8%">S. No.</th>
-              <th style="width:32%">Particulars</th>
-              <th style="width:36%">Description</th>
-              <th style="width:24%">Amount ({{ curr }})</th>
+              <th class="num" style="width:6%">S. No.</th>
+              <th style="width:28%">Particulars</th>
+              <th style="width:22%">Description</th>
+              <th style="width:14%">Unit Price ({{ curr }})</th>
+              <th class="num" style="width:10%">No. of Units</th>
+              <th style="width:14%">Total ({{ curr }})</th>
             </tr>
           </thead>
           <tbody>
           {% for row in doc.ic_cost_items or [] %}
-            {%- set amt = row.amount or 0 -%}
-            {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
+            {%- set units = row.qty or 1 -%}
+            {%- set per = row.amount or 0 -%}
+            {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
+            {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
             <tr>
               <td class="num">{{ loop.index }}</td>
               <td>{{ row.particulars or row.cost_component or '' }}</td>
-              <td>{{ row.description or row.charges_display or '' }}</td>
-              <td class="amt">{% if row.charges_display %}{{ row.charges_display }}{% else %}{{ inr(amt) }}{% endif %}</td>
+              <td>{{ row.description or '' }}</td>
+              <td class="amt">{{ inr(per) }}</td>
+              <td class="num">{{ units }}</td>
+              <td class="amt"><b>{{ inr(total) }}</b></td>
             </tr>
           {% endfor %}
             <tr>
-              <td colspan="3" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
+              <td colspan="5" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
               <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
             </tr>
           </tbody>
@@ -921,7 +931,7 @@ TESTING_QUOTATION_HTML = """
         <table class="tq-comm" style="margin-top:8px;">
           <tbody>
             <tr>
-              <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Grand Total (Testing{% if doc.ic_cost_items %} + Consulting / Other{% endif %})</td>
+              <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing — Grand Total (Testing{% if doc.ic_cost_items %} + Other Charges{% endif %})</td>
               <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
             </tr>
           </tbody>
@@ -1159,22 +1169,28 @@ CONSULTING_QUOTATION_HTML = """
           <div style="margin-bottom:8px;"><b>Applicable Standard:</b> {{ doc.ic_applicable_standard }}</div>
         {% endif %}
         <table class="cq-comm">
-          <thead><tr><th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th><th style="text-align:right;">{{ doc.ic_label_charges_col or 'Charges' }} ({{ doc.currency or 'INR' }})</th></tr></thead>
+          <thead><tr>
+            <th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th>
+            <th style="text-align:right;">Unit Price ({{ doc.currency or 'INR' }})</th>
+            <th style="text-align:center;">No. of Units</th>
+            <th style="text-align:right;">{{ doc.ic_label_charges_col or 'Total Charges' }} ({{ doc.currency or 'INR' }})</th>
+          </tr></thead>
           <tbody>
           {%- set ns = namespace(cost_grand=0) -%}
           {% for row in doc.ic_cost_items or [] %}
-            {%- set amt = row.amount or 0 -%}
-            {%- set ns.cost_grand = ns.cost_grand + (amt or 0) -%}
+            {%- set units = row.qty or 1 -%}
+            {%- set per = row.amount or 0 -%}
+            {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
+            {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
             <tr>
               <td>{{ row.particulars or row.description or row.cost_component }}</td>
-              <td class="amt">
-                {% if row.charges_display %}{{ row.charges_display }}
-                {% else %}{{ inr(row.amount) }}{% endif %}
-              </td>
+              <td class="amt">{{ inr(per) }}</td>
+              <td style="text-align:center;">{{ units }}</td>
+              <td class="amt"><b>{{ inr(total) }}</b></td>
             </tr>
           {% endfor %}
             <tr>
-              <td style="text-align:right;font-weight:700;">Grand Total</td>
+              <td colspan="3" style="text-align:right;font-weight:700;">Grand Total</td>
               <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
             </tr>
           </tbody>
