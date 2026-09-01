@@ -590,7 +590,8 @@
    "fieldname": "test_items",
    "fieldtype": "Table",
    "label": "Test Lines — Laboratory, Scope & Charges",
-   "options": "IC Quotation Test Item"
+   "options": "IC Quotation Test Item",
+   "description": "Default test rows for Testing quotes. No. of Samples is editable here and stays editable on every quotation created from this format."
   },
   {
    "doctype": "DocField",

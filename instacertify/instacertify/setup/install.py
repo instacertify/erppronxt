@@ -411,6 +411,7 @@ def setup_custom_fields():
 	_ensure_quotation_print_section_fields()
 	_ensure_quotation_commercials_layout()
 	_ensure_quotation_share_token_column()
+	_ensure_test_item_samples_editable()
 
 
 def _sync_custom_field_columns(doctypes: list[str] | None = None):
@@ -772,6 +773,48 @@ def _ensure_quotation_share_token_column():
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), f"ensure Quotation.{fieldname} column")
 	frappe.clear_cache(doctype="Quotation")
+
+
+def _ensure_test_item_samples_editable():
+	"""No. of Samples + Sample Required must stay editable on Template and Quotation grids."""
+	try:
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set read_only=0, hidden=0, in_list_view=1, bold=1,
+			    description=%s
+			where parent='IC Quotation Test Item' and fieldname='number_of_samples'
+			""",
+			(
+				"Editable on Template and every Quotation line. "
+				"Total Price = Suggested Selling × No. of Samples.",
+			),
+		)
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set read_only=0, hidden=0
+			where parent='IC Quotation Test Item' and fieldname='sample_requirement'
+			"""
+		)
+		# Drop property setters that locked these fields on older installs
+		for fieldname in ("number_of_samples", "sample_requirement"):
+			for ps in frappe.get_all(
+				"Property Setter",
+				filters={
+					"doc_type": "IC Quotation Test Item",
+					"field_name": fieldname,
+					"property": ["in", ["read_only", "hidden"]],
+				},
+				pluck="name",
+			):
+				try:
+					frappe.delete_doc("Property Setter", ps, force=1, ignore_permissions=True)
+				except Exception:
+					pass
+		frappe.clear_cache(doctype="IC Quotation Test Item")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure test item samples editable")
 
 
 def _ensure_lead_source_link_field():

@@ -1119,7 +1119,7 @@ QUOTATION_FIELDS = [
 		"label": "Commercials / Test Entries",
 		"options": "IC Quotation Test Item",
 		"insert_after": "ic_section_test_lines",
-		"description": "One row per test. Lab → Test → Standard fills prices. Edit No. of Samples on each row (drives Total Price and Sample Required on print).",
+		"description": "One row per test. Lab → Test → Standard fills prices. No. of Samples is editable on each row (drives Total Price and Sample Required on print).",
 	},
 	{
 		"fieldname": "ic_sample_handling_policy",
