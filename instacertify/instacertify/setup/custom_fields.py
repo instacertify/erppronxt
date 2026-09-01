@@ -674,7 +674,7 @@ QUOTATION_FIELDS = [
 		"label": "Print Sections — Uncheck to Hide on PDF",
 		"insert_after": "ic_label_sample_handling",
 		"collapsible": 1,
-		"description": "Uncheck any section to hide that row on Print/PDF. Prefills from the quote format; edit per quote.",
+		"description": "Uncheck to hide on Print/PDF/Share (Sample Required, Timelines, etc.). Prefills from Quote Format.",
 	},
 	{
 		"fieldname": "ic_show_about",
