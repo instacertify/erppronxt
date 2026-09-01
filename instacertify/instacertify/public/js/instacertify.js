@@ -2713,8 +2713,17 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 	const chain = Promise.resolve();
 	let p = chain;
 	Object.keys(fields).forEach((key) => {
-		// Skip fields not on this Quotation form (e.g. custom field not migrated yet)
-		if (!frm.fields_dict[key] && !(frm.meta && frm.meta.has_field && frm.meta.has_field(key))) {
+		// Skip unknown / not-yet-migrated fields (esp. ic_show_* print toggles).
+		// Check both form layout and client meta — frappe.model.set_value throws
+		// "Field X not found" when meta lacks the field even if we catch later.
+		if (!frm.fields_dict || !frm.fields_dict[key]) {
+			return;
+		}
+		try {
+			if (frappe.meta && !frappe.meta.has_field(frm.doctype, key)) {
+				return;
+			}
+		} catch (e) {
 			return;
 		}
 		const val = fields[key];
@@ -2723,9 +2732,13 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 		}
 		p = p.then(() => {
 			try {
-				return frm.set_value(key, val);
+				const ret = frm.set_value(key, val);
+				return Promise.resolve(ret).catch((e) => {
+					console.warn("Instacertify: skip template field", key, e);
+				});
 			} catch (e) {
 				console.warn("Instacertify: skip template field", key, e);
+				return Promise.resolve();
 			}
 		});
 	});
@@ -2744,10 +2757,18 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 					frm.add_child("ic_test_items", row);
 				});
 				frm.refresh_field("ic_test_items");
+				(frm.doc.ic_test_items || []).forEach((row) => {
+					if (row && row.name) {
+						instacertify.recalc_test_row(frm, row.doctype, row.name);
+					}
+				});
+				instacertify.refresh_quotation_cost_totals(frm);
 			}
 			instacertify.toggle_quotation_sections(frm);
 			instacertify.apply_quotation_naming_series(frm);
 			instacertify.render_quotation_entry_guide(frm);
+			instacertify.unlock_test_item_sample_fields(frm);
+			instacertify.configure_test_item_price_columns(frm);
 		})
 		.finally(() => {
 			frm._ic_skip_template_apply = false;
@@ -2759,7 +2780,8 @@ instacertify.QUOTATION_TYPE_HELP = {
 		title: "Consulting / Certification",
 		steps: [
 			"Quote type + library format are chosen first — edit title, standards, and headings below",
-			"Enter commercials in Cost Items",
+			"Add Test Lines (lab charges) when needed — Unit Price × samples = Total",
+			"Enter commercials in Cost Items — both feed Final Costing",
 			"Review payment terms → Share with Customer",
 		],
 	},
@@ -3074,13 +3096,16 @@ instacertify.toggle_quotation_sections = function (frm) {
 	const consultingLike = ["Consulting", "Renewal", "Service", "Other", "Multiple Products / Multiple Services"];
 	const isConsulting = consultingLike.includes(t);
 	const isTesting = ["Testing", "Multiple Products / Multiple Services"].includes(t);
+	const showTestLines = isTesting || isConsulting;
 	[
 		"ic_section_service",
 		"ic_section_about",
 		"ic_section_docs_timeline",
 		"ic_section_scope",
 	].forEach((f) => frm.toggle_display(f, isConsulting));
-	["ic_section_testing", "ic_section_test_lines"].forEach((f) => frm.toggle_display(f, isTesting));
+	// Testing narrative only for Testing; Test Lines (lab charges) for Testing + Consulting
+	frm.toggle_display("ic_section_testing", isTesting);
+	["ic_section_test_lines", "ic_test_items"].forEach((f) => frm.toggle_display(f, showTestLines));
 	frm.toggle_display("ic_section_products", t === "Multiple Products / Multiple Services");
 
 	[
@@ -3126,7 +3151,9 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"label",
 			isTesting
 				? __("5. Commercials / Other Charges (with Test Lines → Final Costing)")
-				: __("7. Cost Breakdown / Commercials")
+				: showTestLines
+					? __("8. Cost Breakdown / Commercials")
+					: __("7. Cost Breakdown / Commercials")
 		);
 	}
 	if (frm.fields_dict.ic_section_testing) {
@@ -3136,25 +3163,42 @@ instacertify.toggle_quotation_sections = function (frm) {
 		frm.set_df_property(
 			"ic_section_test_lines",
 			"label",
-			__("4. Test Lines — Laboratory, Scope & Charges")
+			showTestLines
+				? isTesting
+					? __("4. Test Lines — Laboratory, Scope & Charges")
+					: __("Test Lines — Laboratory, Scope & Charges")
+				: __("Test Lines — Laboratory, Scope & Charges")
 		);
 	}
+	if (frm.fields_dict.ic_test_items) {
+		frm.set_df_property(
+			"ic_test_items",
+			"description",
+			__(
+				"Lab → Test → Standard fills Unit Price. Edit No. of Samples — Total Price = Unit Price × samples. Purchase Price is internal only (not printed)."
+			)
+		);
+	}
+	instacertify.unlock_test_item_sample_fields(frm);
+	instacertify.configure_test_item_price_columns(frm);
 	if (frm.fields_dict.ic_section_cost_totals) {
 		frm.set_df_property(
 			"ic_section_cost_totals",
 			"label",
 			isTesting
-				? __("6. Final Costing (Testing + Commercials)")
-				: __("8. Final Costing")
+				? __("6. Final Costing (Test Lines + Commercials)")
+				: showTestLines
+					? __("9. Final Costing (Test Lines + Commercials)")
+					: __("8. Final Costing")
 		);
 	}
 	if (frm.fields_dict.ic_cost_items) {
 		frm.set_df_property(
 			"ic_cost_items",
 			"description",
-			isTesting
+			showTestLines
 				? __(
-						"Placed under Test Lines. Unit Price × No. of Units = Total. Currency matches Customer ({0}). Testing + these lines = Final Costing.",
+						"Under Test Lines. Unit Price × No. of Units = Total. Currency matches Customer ({0}). Test Lines + these = Final Costing.",
 						[frm.doc.currency || "INR"]
 				  )
 				: __(
@@ -3172,14 +3216,20 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"label",
 			isTesting
 				? __("7. Payment, Cancellation & Confidentiality")
-				: __("9. Payment, Cancellation & Confidentiality")
+				: showTestLines
+					? __("10. Payment, Cancellation & Confidentiality")
+					: __("9. Payment, Cancellation & Confidentiality")
 		);
 	}
 	if (frm.fields_dict.ic_section_terms) {
 		frm.set_df_property(
 			"ic_section_terms",
 			"label",
-			isTesting ? __("8. Terms & Force Majeure") : __("10. Terms & Force Majeure")
+			isTesting
+				? __("8. Terms & Force Majeure")
+				: showTestLines
+					? __("11. Terms & Force Majeure")
+					: __("10. Terms & Force Majeure")
 		);
 	}
 	if (isTesting) {
@@ -3189,16 +3239,6 @@ instacertify.toggle_quotation_sections = function (frm) {
 				frm.set_df_property(f, "read_only", 0);
 			}
 		});
-		if (frm.fields_dict.ic_test_items) {
-			frm.set_df_property(
-				"ic_test_items",
-				"description",
-				__(
-					"Edit No. of Samples on each row — it updates Total Price and the Sample Required text on Print. Expand a row to edit Sample Required (print text)."
-				)
-			);
-		}
-		instacertify.unlock_test_item_sample_fields(frm);
 	}
 	// Consulting Sample Required narrative — always editable
 	if (frm.fields_dict.ic_sample_required) {
@@ -3254,6 +3294,7 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		instacertify.load_quote_test_library_options(frm, cdt, cdn);
 		instacertify.load_lab_scope_options(frm, cdt, cdn);
 		instacertify.unlock_test_item_sample_fields(frm);
+		instacertify.configure_test_item_price_columns(frm);
 		const row = locals[cdt][cdn];
 		if (row && !cint(row.number_of_samples)) {
 			frappe.model.set_value(cdt, cdn, "number_of_samples", 1);
@@ -3261,6 +3302,7 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		if (row && !(row.sample_requirement || "").trim()) {
 			instacertify.sync_quote_sample_requirement(cdt, cdn, true);
 		}
+		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
 	product_name(frm, cdt, cdn) {},
 	laboratory(frm, cdt, cdn) {
@@ -3361,7 +3403,7 @@ instacertify.unlock_test_item_sample_fields = function (frm) {
 				"number_of_samples",
 				"description",
 				__(
-					"Editable — Total Price = Suggested Selling × No. of Samples. Also updates Sample Required print text."
+					"Editable — Total Price = Unit Price × No. of Samples. Also updates Sample Required print text."
 				)
 			);
 			grid.update_docfield_property("sample_requirement", "read_only", 0);
@@ -3370,6 +3412,120 @@ instacertify.unlock_test_item_sample_fields = function (frm) {
 			/* ignore */
 		}
 	});
+};
+
+/** Grid columns: hide Purchase from list; show Unit Price + Total; keep both editable in form. */
+instacertify.configure_test_item_price_columns = function (frm) {
+	if (!frm || !frm.fields_dict) return;
+	const grids = [];
+	if (frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid) {
+		grids.push(frm.fields_dict.ic_test_items.grid);
+	}
+	if (frm.fields_dict.test_items && frm.fields_dict.test_items.grid) {
+		grids.push(frm.fields_dict.test_items.grid);
+	}
+	grids.forEach((grid) => {
+		try {
+			// Purchase = internal only (expand row to edit; not in grid list; never printed)
+			grid.update_docfield_property("purchase_price", "in_list_view", 0);
+			grid.update_docfield_property("purchase_price", "read_only", 0);
+			grid.update_docfield_property("purchase_price", "label", __("Purchase Price (internal)"));
+			// Customer unit price — editable, shown in grid + print as Price
+			grid.update_docfield_property("suggested_selling_price", "in_list_view", 1);
+			grid.update_docfield_property("suggested_selling_price", "read_only", 0);
+			grid.update_docfield_property("suggested_selling_price", "bold", 1);
+			grid.update_docfield_property("suggested_selling_price", "label", __("Unit Price"));
+			grid.update_docfield_property("suggested_selling_price", "columns", 2);
+			grid.update_docfield_property("testing_charges", "read_only", 1);
+			grid.update_docfield_property("testing_charges", "in_list_view", 1);
+			grid.update_docfield_property("testing_charges", "label", __("Total Price"));
+			grid.update_docfield_property("testing_charges", "bold", 1);
+			grid.update_docfield_property("per_unit_charges", "hidden", 1);
+		} catch (e) {
+			/* ignore */
+		}
+	});
+};
+
+instacertify.recalc_test_row = function (frm, cdt, cdn) {
+	const row = locals[cdt] && locals[cdt][cdn];
+	if (!row || row._ic_recalc_busy) return;
+	row._ic_recalc_busy = true;
+	try {
+		let units = cint(row.number_of_samples);
+		if (!units || units < 1) {
+			units = 1;
+			row.number_of_samples = 1;
+		}
+		let rate = row.suggested_selling_price;
+		if (rate == null || rate === "") {
+			rate = row.per_unit_charges;
+		}
+		rate = flt(rate);
+		const total = rate * units;
+		row.per_unit_charges = rate;
+		row.testing_charges = total;
+		if (row.suggested_selling_price == null || row.suggested_selling_price === "") {
+			row.suggested_selling_price = rate;
+		}
+		// Refresh grid cell display without recursive set_value loops
+		if (frm && frm.fields_dict) {
+			const field =
+				(frm.fields_dict.ic_test_items && "ic_test_items") ||
+				(frm.fields_dict.test_items && "test_items");
+			if (field) {
+				frm.refresh_field(field);
+			}
+			instacertify.refresh_quotation_cost_totals(frm);
+		}
+	} finally {
+		row._ic_recalc_busy = false;
+	}
+};
+
+/** Live Final Costing strip: Test Lines + Commercials (mirrors server _calculate_revenue_split). */
+instacertify.refresh_quotation_cost_totals = function (frm) {
+	if (!frm || !frm.doc) return;
+	let testing = 0;
+	(frm.doc.ic_test_items || []).forEach((row) => {
+		testing += flt(row.testing_charges);
+	});
+	let commercial = 0;
+	let passthrough = 0;
+	(frm.doc.ic_cost_items || []).forEach((row) => {
+		const qty = cint(row.qty) || 1;
+		const amount =
+			row.total_amount != null && row.total_amount !== ""
+				? flt(row.total_amount)
+				: flt(row.amount) * qty;
+		const treatment = (row.revenue_treatment || "").trim();
+		let isPass = false;
+		if (treatment === "Do Not Count as Revenue") isPass = true;
+		else if (treatment === "Counted Revenue") isPass = false;
+		else {
+			isPass =
+				cint(row.is_passthrough) ||
+				[
+					"Payable Directly to Government",
+					"Payable Directly to Laboratory",
+					"Payable to Third Party",
+				].includes(row.payment_destination);
+		}
+		if (isPass) passthrough += amount;
+		else commercial += amount;
+	});
+	if (frm.fields_dict.ic_commercial_value) {
+		frm.doc.ic_commercial_value = commercial + testing;
+		frm.refresh_field("ic_commercial_value");
+	}
+	if (frm.fields_dict.ic_passthrough_value) {
+		frm.doc.ic_passthrough_value = passthrough;
+		frm.refresh_field("ic_passthrough_value");
+	}
+	if (frm.fields_dict.ic_total_quoted_value) {
+		frm.doc.ic_total_quoted_value = commercial + testing + passthrough;
+		frm.refresh_field("ic_total_quoted_value");
+	}
 };
 
 /** Auto Sample Required text from No. of Samples (editable afterwards). */
@@ -3742,21 +3898,6 @@ instacertify.apply_quote_test_lab_offer = function (frm, cdt, cdn, offer) {
 			apply(r.message);
 		},
 	});
-};
-
-instacertify.recalc_test_row = function (frm, cdt, cdn) {
-	const row = locals[cdt][cdn];
-	const units = row.number_of_samples || 1;
-	let rate = row.suggested_selling_price;
-	if (rate == null || rate === "") {
-		rate = row.per_unit_charges;
-	}
-	if (rate != null && rate !== "") {
-		if (flt(row.per_unit_charges) !== flt(rate)) {
-			frappe.model.set_value(cdt, cdn, "per_unit_charges", rate);
-		}
-		frappe.model.set_value(cdt, cdn, "testing_charges", flt(rate) * units);
-	}
 };
 
 instacertify.set_lab_scope_autocomplete = function (frm, options) {
@@ -6931,10 +7072,11 @@ instacertify.renumber_quotation_section_headers = function (frm) {
 					["ic_section_about", "4. About / Narrative"],
 					["ic_section_docs_timeline", "5. Documents & Timeline"],
 					["ic_section_scope", "6. Scope & Deliverables"],
-					["ic_section_costing", "7. Cost Breakdown / Commercials"],
-					["ic_section_cost_totals", "8. Final Costing"],
-					["ic_section_policies", "9. Payment, Cancellation & Confidentiality"],
-					["ic_section_terms", "10. Terms & Force Majeure"],
+					["ic_section_test_lines", "7. Test Lines — Laboratory, Scope & Charges"],
+					["ic_section_costing", "8. Cost Breakdown / Commercials"],
+					["ic_section_cost_totals", "9. Final Costing (Test Lines + Commercials)"],
+					["ic_section_policies", "10. Payment, Cancellation & Confidentiality"],
+					["ic_section_terms", "11. Terms & Force Majeure"],
 			  ]
 			: [
 					["ic_section_type", "1. Quotation Setup — Type & Template"],

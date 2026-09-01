@@ -412,6 +412,124 @@ def setup_custom_fields():
 	_ensure_quotation_commercials_layout()
 	_ensure_quotation_share_token_column()
 	_ensure_test_item_samples_editable()
+	_ensure_test_lines_on_consulting()
+	_ensure_test_item_price_columns()
+
+
+def _ensure_test_lines_on_consulting():
+	"""Show Test Lines section on Consulting (+ related) quotes, not only Testing."""
+	depends = (
+		"eval:in_list(['Testing','Consulting','Renewal','Service','Other',"
+		"'Multiple Products / Multiple Services'], doc.ic_quotation_type)"
+	)
+	try:
+		if frappe.db.exists("Custom Field", "Quotation-ic_section_test_lines"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_section_test_lines",
+				{
+					"depends_on": depends,
+					"description": (
+						"Available on Testing and Consulting quotes. "
+						"Lab → Test → Standard fills Unit Price; "
+						"Total = Unit Price × No. of Samples."
+					),
+					"label": "Test Lines — Laboratory, Scope & Charges",
+				},
+				update_modified=False,
+			)
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure test lines on consulting")
+
+
+def _ensure_test_item_price_columns():
+	"""Purchase = internal (not list); Unit Price editable + listed; Total = Unit × samples."""
+	try:
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set label=%s, in_list_view=0, read_only=0, hidden=0,
+			    description=%s
+			where parent='IC Quotation Test Item' and fieldname='purchase_price'
+			""",
+			(
+				"Purchase Price (internal)",
+				"Lab buy / cost — editable for staff; never shown to the customer on Print/PDF",
+			),
+		)
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set label=%s, in_list_view=1, read_only=0, bold=1, columns=2,
+			    description=%s
+			where parent='IC Quotation Test Item' and fieldname='suggested_selling_price'
+			""",
+			(
+				"Unit Price",
+				"Customer-facing unit price (printed as Price). "
+				"Editable. Total Price = Unit Price × No. of Samples",
+			),
+		)
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set label=%s, hidden=1, in_list_view=0,
+			    description=%s
+			where parent='IC Quotation Test Item' and fieldname='per_unit_charges'
+			""",
+			(
+				"Selling Price / Unit",
+				"Mirrors Unit Price for totals — hidden duplicate of suggested_selling_price",
+			),
+		)
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set label=%s, in_list_view=1, read_only=1, bold=1, columns=2,
+			    description=%s
+			where parent='IC Quotation Test Item' and fieldname='testing_charges'
+			""",
+			(
+				"Total Price",
+				"Unit Price × No. of Samples (auto-calculated)",
+			),
+		)
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set description=%s
+			where parent='IC Quotation Test Item' and fieldname='number_of_samples'
+			""",
+			(
+				"Editable on Template and every Quotation line. "
+				"Total Price = Unit Price × No. of Samples. "
+				"Also drives Sample Required text on print.",
+			),
+		)
+		# Clear property setters that force Purchase into the grid list
+		for fieldname, props in (
+			("purchase_price", ["in_list_view", "read_only", "hidden", "label"]),
+			("suggested_selling_price", ["in_list_view", "read_only", "hidden", "label"]),
+			("per_unit_charges", ["in_list_view", "hidden", "label"]),
+			("testing_charges", ["in_list_view", "read_only", "label"]),
+		):
+			for ps in frappe.get_all(
+				"Property Setter",
+				filters={
+					"doc_type": "IC Quotation Test Item",
+					"field_name": fieldname,
+					"property": ["in", props],
+				},
+				pluck="name",
+			):
+				try:
+					frappe.delete_doc("Property Setter", ps, force=1, ignore_permissions=True)
+				except Exception:
+					pass
+		frappe.clear_cache(doctype="IC Quotation Test Item")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure test item price columns")
 
 
 def _sync_custom_field_columns(doctypes: list[str] | None = None):
@@ -633,6 +751,7 @@ def _ensure_quotation_bank_account_field():
 def _ensure_quotation_print_section_fields():
 	"""Ensure Quotation ic_show_* Check fields exist (print section toggles)."""
 	from instacertify.quotation.print_sections import QUOTE_PRINT_SECTIONS
+	from frappe.database.schema import add_column
 
 	prev = "ic_label_sample_handling"
 	section_cf = "Quotation-ic_section_print_sections"
@@ -682,9 +801,8 @@ def _ensure_quotation_print_section_fields():
 						"insert_after": prev,
 					}
 				).insert(ignore_permissions=True)
+			# Always ensure DB column exists — Custom Field alone is not enough
 			if not frappe.db.has_column("Quotation", quote_key):
-				from frappe.database.schema import add_column
-
 				add_column("Quotation", quote_key, "Check")
 			prev = quote_key
 		if frappe.db.exists("Custom Field", "Quotation-ic_section_identity"):
@@ -696,6 +814,11 @@ def _ensure_quotation_print_section_fields():
 				update_modified=False,
 			)
 		frappe.clear_cache(doctype="Quotation")
+		# Force meta refresh so template apply never sees stale "field not found"
+		try:
+			frappe.get_meta("Quotation", cached=False)
+		except Exception:
+			pass
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "ensure quotation print section fields")
 
@@ -787,7 +910,7 @@ def _ensure_test_item_samples_editable():
 			""",
 			(
 				"Editable on Template and every Quotation line. "
-				"Total Price = Suggested Selling × No. of Samples.",
+				"Total Price = Unit Price × No. of Samples.",
 			),
 		)
 		frappe.db.sql(

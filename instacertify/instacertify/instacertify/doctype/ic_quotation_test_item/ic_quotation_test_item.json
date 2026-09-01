@@ -56,21 +56,24 @@
    "doctype": "DocField",
    "fieldname": "purchase_price",
    "fieldtype": "Currency",
-   "label": "Purchase Price",
+   "label": "Purchase Price (internal)",
    "options": "currency",
-   "in_list_view": 1,
+   "in_list_view": 0,
    "columns": 1,
-   "description": "Lab buy / cost — editable; never shown to the customer"
+   "read_only": 0,
+   "description": "Lab buy / cost — editable for staff; never shown to the customer on Print/PDF"
   },
   {
    "doctype": "DocField",
    "fieldname": "suggested_selling_price",
    "fieldtype": "Currency",
-   "label": "Suggested Selling Price",
+   "label": "Unit Price",
    "options": "currency",
    "in_list_view": 1,
-   "columns": 1,
-   "description": "Editable selling price — shown to the customer as Price"
+   "columns": 2,
+   "bold": 1,
+   "read_only": 0,
+   "description": "Customer-facing unit price (printed as Price). Editable. Total Price = Unit Price × No. of Samples"
   },
 	{
    "doctype": "DocField",
@@ -84,7 +87,7 @@
    "in_list_view": 1,
    "columns": 2,
    "non_negative": 1,
-   "description": "Editable on Template and every Quotation line. Total Price = Suggested Selling × No. of Samples. Also drives Sample Required text on print."
+   "description": "Editable on Template and every Quotation line. Total Price = Unit Price × No. of Samples. Also drives Sample Required text on print."
   },
   {
    "doctype": "DocField",
@@ -101,10 +104,11 @@
    "fieldtype": "Currency",
    "label": "Total Price",
    "in_list_view": 1,
-   "columns": 1,
+   "columns": 2,
    "options": "currency",
    "read_only": 1,
-   "description": "Suggested Selling Price × No. of Samples"
+   "bold": 1,
+   "description": "Unit Price × No. of Samples (auto-calculated)"
   },
   {
    "doctype": "DocField",

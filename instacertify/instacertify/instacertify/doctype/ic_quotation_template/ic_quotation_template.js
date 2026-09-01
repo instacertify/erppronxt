@@ -299,6 +299,9 @@ function _unlock_template_content_fields(frm) {
 	if (typeof instacertify !== "undefined" && instacertify.unlock_test_item_sample_fields) {
 		instacertify.unlock_test_item_sample_fields(frm);
 	}
+	if (typeof instacertify !== "undefined" && instacertify.configure_test_item_price_columns) {
+		instacertify.configure_test_item_price_columns(frm);
+	}
 }
 
 function _preview_template(frm, mode) {
