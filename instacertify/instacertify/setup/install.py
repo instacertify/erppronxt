@@ -409,6 +409,7 @@ def setup_custom_fields():
 	_ensure_pipeline_and_quote_accept_fields()
 	_ensure_quotation_bank_account_field()
 	_ensure_quotation_print_section_fields()
+	_ensure_quotation_commercials_layout()
 
 
 def _sync_custom_field_columns(doctypes: list[str] | None = None):
@@ -695,6 +696,64 @@ def _ensure_quotation_print_section_fields():
 		frappe.clear_cache(doctype="Quotation")
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "ensure quotation print section fields")
+
+
+def _ensure_quotation_commercials_layout():
+	"""Stack Test Lines → Commercials → Final Costing; Customer+Currency banner after entry guide."""
+	chain = [
+		("Quotation-ic_customer_currency_banner", {
+			"fieldname": "ic_customer_currency_banner",
+			"label": "Customer & Currency",
+			"fieldtype": "HTML",
+			"insert_after": "ic_entry_guide",
+		}),
+		("Quotation-ic_quotation_type", {"insert_after": "ic_customer_currency_banner"}),
+		("Quotation-ic_section_testing", {"insert_after": "ic_deliverables"}),
+		("Quotation-ic_section_test_lines", {
+			"label": "Test Lines — Laboratory, Scope & Charges",
+			"insert_after": "ic_gst_note",
+		}),
+		("Quotation-ic_sample_handling_policy", {"insert_after": "ic_test_items"}),
+		("Quotation-ic_section_costing", {
+			"label": "Commercials / Cost Breakdown",
+			"insert_after": "ic_sample_handling_policy",
+		}),
+		("Quotation-ic_cost_items", {"insert_after": "ic_section_costing"}),
+		("Quotation-ic_section_cost_totals", {
+			"label": "Final Costing (Testing + Commercials)",
+			"insert_after": "ic_cost_items",
+		}),
+		("Quotation-ic_section_policies", {"insert_after": "ic_total_quoted_value"}),
+	]
+	try:
+		for cf_name, updates in chain:
+			if cf_name == "Quotation-ic_customer_currency_banner" and not frappe.db.exists(
+				"Custom Field", cf_name
+			):
+				doc = frappe.get_doc(
+					{
+						"doctype": "Custom Field",
+						"dt": "Quotation",
+						"module": "Instacertify",
+						**updates,
+					}
+				)
+				doc.flags.ignore_permissions = True
+				doc.insert()
+				continue
+			if not frappe.db.exists("Custom Field", cf_name):
+				continue
+			for key, val in updates.items():
+				if key == "fieldname":
+					continue
+				cur = frappe.db.get_value("Custom Field", cf_name, key)
+				if cur != val:
+					frappe.db.set_value(
+						"Custom Field", cf_name, key, val, update_modified=False
+					)
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure quotation commercials layout")
 
 
 def _ensure_lead_source_link_field():

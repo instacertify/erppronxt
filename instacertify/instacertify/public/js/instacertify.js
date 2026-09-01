@@ -2422,6 +2422,7 @@ frappe.ui.form.on("Quotation", {
 
 		instacertify.setup_quotation_lab_queries(frm);
 		instacertify.render_quotation_entry_guide(frm);
+		instacertify.render_customer_currency_banner(frm);
 		if (frm.doc.ic_quotation_type) {
 			instacertify.toggle_quotation_sections(frm);
 		}
@@ -3073,8 +3074,27 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_section_costing",
 			"label",
 			isTesting
-				? __("Other Charges (added with Testing for Final Costing)")
+				? __("5. Commercials / Other Charges (with Test Lines → Final Costing)")
 				: __("7. Cost Breakdown / Commercials")
+		);
+	}
+	if (frm.fields_dict.ic_section_testing) {
+		frm.set_df_property("ic_section_testing", "label", __("3. Testing Details"));
+	}
+	if (frm.fields_dict.ic_section_test_lines) {
+		frm.set_df_property(
+			"ic_section_test_lines",
+			"label",
+			__("4. Test Lines — Laboratory, Scope & Charges")
+		);
+	}
+	if (frm.fields_dict.ic_section_cost_totals) {
+		frm.set_df_property(
+			"ic_section_cost_totals",
+			"label",
+			isTesting
+				? __("6. Final Costing (Testing + Commercials)")
+				: __("8. Final Costing")
 		);
 	}
 	if (frm.fields_dict.ic_cost_items) {
@@ -3083,19 +3103,32 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"description",
 			isTesting
 				? __(
-						"Default charges from the format (editable). Unit Price × No. of Units = Total. Currency symbol follows the quotation currency. Testing + these lines = Final Costing on Print."
+						"Placed under Test Lines. Unit Price × No. of Units = Total. Currency matches Customer ({0}). Testing + these lines = Final Costing.",
+						[frm.doc.currency || "INR"]
 				  )
 				: __(
-						"Default charges from the format (editable). Unit Price × No. of Units = Total Charges. Currency symbol follows the quotation currency (customer)."
+						"Unit Price × No. of Units = Total Charges. Currency matches Customer ({0}).",
+						[frm.doc.currency || "INR"]
 				  )
 		);
 	}
 	instacertify.sync_quote_cost_currency(frm);
+	instacertify.render_customer_currency_banner(frm);
+	instacertify.renumber_quotation_section_headers(frm);
 	if (frm.fields_dict.ic_section_policies) {
 		frm.set_df_property(
 			"ic_section_policies",
 			"label",
-			__("Payment, Cancellation & Confidentiality (all editable — bank details from selected account)")
+			isTesting
+				? __("7. Payment, Cancellation & Confidentiality")
+				: __("9. Payment, Cancellation & Confidentiality")
+		);
+	}
+	if (frm.fields_dict.ic_section_terms) {
+		frm.set_df_property(
+			"ic_section_terms",
+			"label",
+			isTesting ? __("8. Terms & Force Majeure") : __("10. Terms & Force Majeure")
 		);
 	}
 	if (isTesting) {
@@ -6741,15 +6774,23 @@ frappe.ui.form.on("Customer", {
 
 frappe.ui.form.on("Quotation", {
 	party_name(frm) {
-		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) return;
+		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) {
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
 		instacertify.apply_billing_currency(frm, frm.doc.party_name);
+		instacertify.render_customer_currency_banner(frm);
 	},
 	currency(frm) {
-		if (!frm.doc.currency || instacertify._auto_setting_currency) return;
+		if (!frm.doc.currency || instacertify._auto_setting_currency) {
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
 		if (!frm.doc.ic_currency_manual) {
 			frm.set_value("ic_currency_manual", 1);
 		}
 		instacertify.sync_quote_cost_currency(frm);
+		instacertify.render_customer_currency_banner(frm);
 	},
 	taxes_and_charges(frm) {
 		if (instacertify._auto_setting_currency) return;
@@ -6760,6 +6801,81 @@ frappe.ui.form.on("Quotation", {
 });
 
 /** Keep cost-line currency in sync; Unit Price uses quotation currency symbol. */
+/** Customer name + currency declared together — all quote amounts use this currency. */
+instacertify.render_customer_currency_banner = function (frm) {
+	const wrap =
+		frm.fields_dict.ic_customer_currency_banner &&
+		frm.fields_dict.ic_customer_currency_banner.$wrapper;
+	if (!wrap || !wrap.length) return;
+	const party = frm.doc.customer_name || frm.doc.party_name || __("Select customer");
+	const cur = frm.doc.currency || "INR";
+	const symbol =
+		cur === "INR" ? "₹" : cur === "USD" ? "$" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur;
+	wrap.html(`
+		<div class="ic-customer-currency-banner" style="
+			display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;
+			padding:12px 14px;margin:6px 0 12px;
+			border:1px solid var(--border-color,#c8d0d8);
+			background:linear-gradient(180deg,#f7fafc 0%,#eef3f7 100%);
+			border-radius:6px;font-size:13px;line-height:1.4;">
+			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Customer")}</span><br/>
+				<b style="font-size:15px;color:#065175;">${frappe.utils.escape_html(party)}</b></div>
+			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Currency for this quote")}</span><br/>
+				<b style="font-size:15px;color:#EC691F;">${frappe.utils.escape_html(symbol)} ${frappe.utils.escape_html(cur)}</b>
+				<span class="text-muted" style="margin-left:8px;font-size:12px;">${__("All prices & symbols on Print use this currency")}</span></div>
+		</div>
+	`);
+	if (frm.fields_dict.currency) {
+		frm.set_df_property(
+			"currency",
+			"description",
+			__("Declared for this customer — Unit Price, totals, and Print symbols all use {0}", [cur])
+		);
+	}
+};
+
+/** Keep section headers numbered in display order. */
+instacertify.renumber_quotation_section_headers = function (frm) {
+	const t = frm.doc.ic_quotation_type;
+	const isTesting = ["Testing", "Multiple Products / Multiple Services"].includes(t);
+	const isConsulting = ["Consulting", "Renewal", "Service", "Other", "Multiple Products / Multiple Services"].includes(t);
+	const map = isTesting
+		? [
+				["ic_section_type", "1. Quotation Setup — Type & Template"],
+				["ic_section_identity", "2. Quote Identity & Status"],
+				["ic_section_testing", "3. Testing Details"],
+				["ic_section_test_lines", "4. Test Lines — Laboratory, Scope & Charges"],
+				["ic_section_costing", "5. Commercials / Other Charges"],
+				["ic_section_cost_totals", "6. Final Costing (Testing + Commercials)"],
+				["ic_section_policies", "7. Payment, Cancellation & Confidentiality"],
+				["ic_section_terms", "8. Terms & Force Majeure"],
+		  ]
+		: isConsulting
+			? [
+					["ic_section_type", "1. Quotation Setup — Type & Template"],
+					["ic_section_identity", "2. Quote Identity & Status"],
+					["ic_section_service", "3. Consulting / Service Basics"],
+					["ic_section_about", "4. About / Narrative"],
+					["ic_section_docs_timeline", "5. Documents & Timeline"],
+					["ic_section_scope", "6. Scope & Deliverables"],
+					["ic_section_costing", "7. Cost Breakdown / Commercials"],
+					["ic_section_cost_totals", "8. Final Costing"],
+					["ic_section_policies", "9. Payment, Cancellation & Confidentiality"],
+					["ic_section_terms", "10. Terms & Force Majeure"],
+			  ]
+			: [
+					["ic_section_type", "1. Quotation Setup — Type & Template"],
+					["ic_section_identity", "2. Quote Identity & Status"],
+					["ic_section_costing", "3. Cost Breakdown / Commercials"],
+					["ic_section_cost_totals", "4. Final Costing"],
+					["ic_section_policies", "5. Payment, Cancellation & Confidentiality"],
+					["ic_section_terms", "6. Terms & Force Majeure"],
+			  ];
+	map.forEach(([field, label]) => {
+		if (frm.fields_dict[field]) frm.set_df_property(field, "label", __(label));
+	});
+};
+
 instacertify.sync_quote_cost_currency = function (frm) {
 	if (!frm || !frm.doc) return;
 	const cur = frm.doc.currency || "INR";
