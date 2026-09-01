@@ -3073,7 +3073,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_section_costing",
 			"label",
 			isTesting
-				? __("Consulting & Other Commercials (added to Testing Total on print)")
+				? __("Other Charges (added with Testing for Final Costing)")
 				: __("7. Cost Breakdown / Commercials")
 		);
 	}
@@ -3083,13 +3083,14 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"description",
 			isTesting
 				? __(
-						"Optional consulting / govt / other charges. On Print these are shown with Testing prices and summed into one Grand Total."
+						"Default charges from the format (editable). Unit Price × No. of Units = Total. Currency symbol follows the quotation currency. Testing + these lines = Final Costing on Print."
 				  )
 				: __(
-						"Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue."
+						"Default charges from the format (editable). Unit Price × No. of Units = Total Charges. Currency symbol follows the quotation currency (customer)."
 				  )
 		);
 	}
+	instacertify.sync_quote_cost_currency(frm);
 	if (frm.fields_dict.ic_section_policies) {
 		frm.set_df_property(
 			"ic_section_policies",
@@ -6748,6 +6749,7 @@ frappe.ui.form.on("Quotation", {
 		if (!frm.doc.ic_currency_manual) {
 			frm.set_value("ic_currency_manual", 1);
 		}
+		instacertify.sync_quote_cost_currency(frm);
 	},
 	taxes_and_charges(frm) {
 		if (instacertify._auto_setting_currency) return;
@@ -6757,6 +6759,46 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
+/** Keep cost-line currency in sync; Unit Price uses quotation currency symbol. */
+instacertify.sync_quote_cost_currency = function (frm) {
+	if (!frm || !frm.doc) return;
+	const cur = frm.doc.currency || "INR";
+	(frm.doc.ic_cost_items || []).forEach((row) => {
+		if (row.currency !== cur) {
+			frappe.model.set_value(row.doctype, row.name, "currency", cur);
+		}
+		const qty = cint(row.qty) || 1;
+		if (!cint(row.qty)) {
+			frappe.model.set_value(row.doctype, row.name, "qty", 1);
+		}
+		const total = flt(row.amount) * qty;
+		if (flt(row.total_amount) !== total) {
+			frappe.model.set_value(row.doctype, row.name, "total_amount", total);
+		}
+	});
+	const grid = frm.fields_dict.ic_cost_items && frm.fields_dict.ic_cost_items.grid;
+	if (grid) {
+		grid.update_docfield_property("amount", "read_only", 0);
+		grid.update_docfield_property("qty", "read_only", 0);
+		grid.update_docfield_property("charges_display", "hidden", 1);
+		grid.update_docfield_property(
+			"amount",
+			"description",
+			__("Unit price — symbol follows quotation currency ({0})", [cur])
+		);
+	}
+	if (frm.fields_dict.ic_cost_items) {
+		frm.set_df_property(
+			"ic_cost_items",
+			"description",
+			__(
+				"Default charges from the quote format (editable). Unit Price × No. of Units = Total. Currency: {0}. On Testing quotes, Testing + Other = Final Costing.",
+				[cur]
+			)
+		);
+	}
+	frm.refresh_field("ic_cost_items");
+};
 frappe.ui.form.on("Sales Invoice", {
 	setup(frm) {
 		instacertify.hide_pos_on_sales_invoice(frm);

@@ -111,15 +111,21 @@ def ensure_quotation_templates():
 
 
 def _revenue_row(particulars: str, amount: float, display: str | None = None) -> dict:
-	return {
+	row = {
 		"cost_component": "Consulting Charges",
 		"particulars": particulars,
 		"amount": amount,
-		"charges_display": display or f"₹ {amount:,.0f}/-",
+		"qty": 1,
+		"total_amount": amount,
+		"charges_display": "",
 		"payment_destination": "Payable to Instacertify",
 		"revenue_treatment": "Counted Revenue",
 		"is_passthrough": 0,
 	}
+	# Legacy display text like "At actuals" goes into description, not a hardcoded ₹ amount
+	if display and not str(display).strip().startswith("₹") and "/-" not in str(display):
+		row["description"] = display
+	return row
 
 
 def _passthrough_row(
@@ -129,11 +135,17 @@ def _passthrough_row(
 	destination: str = "Payable Directly to Government",
 	display: str | None = None,
 ) -> dict:
+	desc = display or "At actuals"
+	if str(desc).strip().startswith("₹") or "/-" in str(desc):
+		desc = "At actuals" if amount == 0 else ""
 	return {
 		"cost_component": component,
 		"particulars": particulars,
+		"description": desc,
 		"amount": amount,
-		"charges_display": display or "At actuals",
+		"qty": 1,
+		"total_amount": amount,
+		"charges_display": "",
 		"payment_destination": destination,
 		"revenue_treatment": "Do Not Count as Revenue",
 		"is_passthrough": 1,

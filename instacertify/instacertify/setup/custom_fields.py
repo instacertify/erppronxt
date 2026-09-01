@@ -1058,7 +1058,7 @@ QUOTATION_FIELDS = [
 		"label": "Cost Items / Commercials",
 		"options": "IC Quotation Cost Item",
 		"insert_after": "ic_section_costing",
-		"description": "Particulars / Line Name = customer-facing name (rename freely). Cost Component = any label. Charges Display overrides Amount on print. Mark pass-through lines as Do Not Count as Revenue.",
+		"description": "Default charges from the quote format — editable. Unit Price × No. of Units = Total Charges. Currency symbol follows the quotation currency (customer). On Testing quotes, Other Charges + Testing Charges = Final Costing.",
 	},
 	{
 		"fieldname": "ic_section_cost_totals",
@@ -1098,11 +1098,12 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_total_quoted_value",
 		"fieldtype": "Currency",
-		"label": "Total Quoted Value",
+		"label": "Total Quoted Value (Final Costing)",
 		"read_only": 1,
 		"bold": 1,
 		"insert_after": "ic_column_totals_3",
 		"options": "currency",
+		"description": "Testing Charges + Other / Consulting Charges (all units).",
 	},
 	# --- Testing ---
 	{
