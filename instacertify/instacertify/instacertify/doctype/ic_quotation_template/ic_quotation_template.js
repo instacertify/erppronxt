@@ -10,6 +10,7 @@ frappe.ui.form.on("IC Quotation Template", {
 
 		_render_edit_guide(frm);
 		_toggle_sections(frm);
+		_apply_template_section_visibility(frm);
 		_lock_template_id(frm);
 		_unlock_template_content_fields(frm);
 		if (frm.fields_dict.bank_account) {
@@ -177,6 +178,7 @@ frappe.ui.form.on("IC Quotation Template", {
 
 	quotation_type(frm) {
 		_toggle_sections(frm);
+		_apply_template_section_visibility(frm);
 		_render_edit_guide(frm);
 	},
 });
@@ -200,16 +202,66 @@ const IC_TEMPLATE_SHOW_FIELDS = [
 	"show_sample_handling",
 ];
 
+const IC_TEMPLATE_SECTION_CONTENT = {
+	show_about: ["about_service", "about_testing", "scope_of_work", "label_about", "label_about_testing"],
+	show_applicable_standards: [
+		"applicable_standard",
+		"standard_narrative",
+		"applicable_standards_text",
+		"label_standard",
+		"label_applicable_standards",
+	],
+	show_process: ["process_steps", "label_process"],
+	show_validity: ["validity_text", "validity_days", "label_validity"],
+	show_sample_required: ["sample_required", "samples_note", "label_sample_required", "label_samples_requirements"],
+	show_documents_required: ["documents_required", "label_documents_required"],
+	show_timelines: ["estimated_timeline", "timeline_details", "label_timelines", "label_timeline"],
+	show_deliverables: ["deliverables", "label_deliverable"],
+	show_commercials: ["cost_items", "test_items", "commercials_notes", "label_commercials"],
+	show_payment_terms: ["payment_terms", "label_payment_terms", "label_payment_term"],
+	show_banking: ["bank_account", "label_banking"],
+	show_cancellation: ["cancellation_policy", "label_cancellation"],
+	show_force_majeure: ["force_majeure", "label_force_majeure"],
+	show_confidentiality: ["confidentiality", "label_confidentiality"],
+	show_terms: ["terms_and_conditions"],
+	show_sample_handling: ["sample_handling_policy", "label_sample_handling"],
+};
+
+// Live hide related content when a Print Section is unchecked on the format
+(function registerTemplateShowHandlers() {
+	const handlers = {};
+	IC_TEMPLATE_SHOW_FIELDS.forEach((f) => {
+		handlers[f] = (frm) => _apply_template_section_visibility(frm);
+	});
+	frappe.ui.form.on("IC Quotation Template", handlers);
+})();
+
+function _apply_template_section_visibility(frm) {
+	if (!frm || !frm.fields_dict) return;
+	const isOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
+	Object.keys(IC_TEMPLATE_SECTION_CONTENT).forEach((showField) => {
+		const on = isOn(showField);
+		(IC_TEMPLATE_SECTION_CONTENT[showField] || []).forEach((fname) => {
+			if (!frm.fields_dict[fname]) return;
+			frm.toggle_display(fname, !!on);
+			try {
+				frm.set_df_property(fname, "hidden", on ? 0 : 1);
+			} catch (e) {}
+		});
+	});
+}
+
 function _set_all_print_sections(frm, value) {
 	IC_TEMPLATE_SHOW_FIELDS.forEach((f) => {
 		if (frm.fields_dict[f]) {
 			frm.set_value(f, value);
 		}
 	});
+	_apply_template_section_visibility(frm);
 	frappe.show_alert({
 		message: value
 			? __("All print sections set to Show")
-			: __("All print sections set to Hide"),
+			: __("All print sections set to Hide — they will not appear on customer quote / PDF"),
 		indicator: value ? "green" : "orange",
 	});
 }

@@ -267,7 +267,11 @@ def quote_section_on(doc=None, fieldname: str = "") -> bool:
 
 
 def template_show_defaults(tmpl=None) -> dict[str, Any]:
-	"""Map template show_* checks → quotation ic_show_* (default 1)."""
+	"""Map template show_* checks → quotation ic_show_* (default 1).
+
+	Unchecked (0) on the Quote Format must become ic_show_*=0 so the section is
+	hidden on the Quotation form, customer portal, and Print/PDF.
+	"""
 	out = {}
 	for tmpl_key, quote_key, _label in QUOTE_PRINT_SECTIONS:
 		val = 1
@@ -283,6 +287,14 @@ def template_show_defaults(tmpl=None) -> dict[str, Any]:
 			elif raw is None:
 				val = 1
 		out[quote_key] = val
+	return out
+
+
+def quote_show_flags(doc=None) -> dict[str, int]:
+	"""All ic_show_* flags for a quotation (1 unless explicitly unchecked)."""
+	out = {}
+	for _tmpl_key, quote_key, _label in QUOTE_PRINT_SECTIONS:
+		out[quote_key] = 1 if quote_section_on(doc, quote_key) else 0
 	return out
 
 

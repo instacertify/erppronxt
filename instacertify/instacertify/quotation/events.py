@@ -536,7 +536,11 @@ def get_quotation_template_payload(template: str):
 
 @frappe.whitelist()
 def apply_quotation_template(quotation: str, template: str):
-	"""Populate quotation fields from IC Quotation Template."""
+	"""Populate quotation fields from IC Quotation Template.
+
+	Unchecked Print Sections on the format are copied as ic_show_*=0 so they
+	stay hidden on the form, customer portal, and Print/PDF.
+	"""
 	qt = frappe.get_doc("Quotation", quotation)
 	payload = get_quotation_template_payload(template)
 	meta = qt.meta
@@ -545,7 +549,11 @@ def apply_quotation_template(quotation: str, template: str):
 			continue
 		if not meta.has_field(key):
 			continue
-		qt.set(key, val)
+		# Preserve explicit 0 for section toggles (do not treat as empty)
+		if key.startswith("ic_show_"):
+			qt.set(key, 1 if val in (1, "1", True) else 0)
+		else:
+			qt.set(key, val)
 	qt.set("ic_cost_items", [])
 	for row in payload.get("cost_items") or []:
 		qt.append("ic_cost_items", row)

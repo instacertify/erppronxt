@@ -186,6 +186,7 @@
             commercials += '<p style="margin-top:12px;font-weight:700;color:#0D47A1;">Final Costing (Testing + Other): ' +
               esc(money(combined, d.currency)) + '</p>';
           }
+          const aboutText = d.ic_about_service || d.ic_scope_of_work || '';
           document.getElementById('content').innerHTML =
             (d.portal_notice ? ('<p class="ic-portal-muted">' + esc(d.portal_notice) + '</p>') : '') +
             '<p><b>' + esc(d.reference || d.customer_name || 'Quotation') + '</b> · Revision ' + esc(d.ic_revision_number || 0) +
@@ -197,8 +198,15 @@
             '<p class="ic-portal-muted">Date: ' + esc(d.transaction_date || '') +
               (d.valid_till ? (' · Valid till ' + esc(d.valid_till)) : '') +
               (d.ic_show_timelines != 0 && d.ic_estimated_timeline ? (' · Timeline: ' + esc(d.ic_estimated_timeline)) : '') + '</p>' +
-            (d.ic_show_about != 0 && d.ic_scope_of_work ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(d.ic_scope_of_work) + '</div>') : '') +
+            (d.ic_show_about != 0 && aboutText ? ('<div style="margin-top:10px;white-space:pre-wrap;">' + esc(aboutText) + '</div>') : '') +
+            (d.ic_show_validity != 0
+              ? ('<h4 style="color:#0D47A1;">Validity</h4>' +
+                (d.ic_validity_text
+                  ? ('<div style="white-space:pre-wrap;">' + esc(d.ic_validity_text) + '</div>')
+                  : ('<p>This quotation is valid for ' + esc(d.ic_validity_days || 90) + ' days from the date of issuance unless otherwise specified.</p>')))
+              : '') +
             (d.ic_show_sample_required != 0 && d.ic_sample_required ? ('<h4 style="color:#0D47A1;">Sample Required</h4><div style="white-space:pre-wrap;">' + esc(d.ic_sample_required) + '</div>') : '') +
+            (d.ic_show_documents_required != 0 && d.ic_documents_required ? ('<h4 style="color:#0D47A1;">Documents Required</h4><div style="white-space:pre-wrap;">' + esc(d.ic_documents_required) + '</div>') : '') +
             (d.ic_show_deliverables != 0 && d.ic_deliverables ? ('<h4 style="color:#0D47A1;">Deliverables</h4><div style="white-space:pre-wrap;">' + esc(d.ic_deliverables) + '</div>') : '') +
             (d.ic_show_commercials != 0 ? ('<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials (' + esc(d.currency || 'INR') + ')</h4>' +
             (commercials || '<p class="ic-portal-muted">No commercial lines yet.</p>')) : '') +

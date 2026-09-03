@@ -2778,10 +2778,30 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 	frm._ic_skip_template_apply = true;
 	const chain = Promise.resolve();
 	let p = chain;
+
+	// Apply Print Section flags first (including explicit 0 = hide from customer quote + PDF)
+	const showFields = instacertify.QUOTE_PRINT_SECTION_FIELDS || [];
+	showFields.forEach((key) => {
+		if (!(key in fields)) return;
+		const val = cint(fields[key]);
+		frm.doc[key] = val;
+		if (frm.fields_dict && frm.fields_dict[key]) {
+			p = p.then(() => {
+				try {
+					return Promise.resolve(frm.set_value(key, val)).catch(() => {
+						frm.doc[key] = val;
+					});
+				} catch (e) {
+					frm.doc[key] = val;
+					return Promise.resolve();
+				}
+			});
+		}
+	});
+
 	Object.keys(fields).forEach((key) => {
-		// Skip unknown / not-yet-migrated fields (esp. ic_show_* print toggles).
-		// Check both form layout and client meta — frappe.model.set_value throws
-		// "Field X not found" when meta lacks the field even if we catch later.
+		if (showFields.includes(key)) return; // already applied
+		// Skip unknown / not-yet-migrated fields.
 		if (!frm.fields_dict || !frm.fields_dict[key]) {
 			return;
 		}
@@ -2793,6 +2813,7 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 			return;
 		}
 		const val = fields[key];
+		// Keep explicit 0 (unchecked section / numeric zero) — only skip blank subject
 		if (val === undefined || val === null || val === "") {
 			if (key === "ic_subject") return;
 		}
@@ -2831,6 +2852,7 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 				instacertify.refresh_quotation_cost_totals(frm);
 			}
 			instacertify.toggle_quotation_sections(frm);
+			instacertify.apply_quotation_section_visibility(frm);
 			instacertify.apply_quotation_naming_series(frm);
 			instacertify.render_quotation_entry_guide(frm);
 			instacertify.unlock_test_item_sample_fields(frm);

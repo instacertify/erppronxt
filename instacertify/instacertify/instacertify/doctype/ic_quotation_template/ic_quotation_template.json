@@ -89,8 +89,8 @@
    "fieldname": "section_print_sections",
    "fieldtype": "Section Break",
    "label": "2a. Print Sections \u2014 Uncheck to Hide",
-   "collapsible": 1,
-   "description": "Uncheck any row to hide it on Print/PDF for quotes using this format. Defaults are all shown. Quotes can override these after applying the format."
+   "collapsible": 0,
+   "description": "Uncheck any section to hide it from the customer on the quotation form, customer portal, and Print/PDF. Quotes inherit these flags when the format is applied (can still override per quote)."
   },
   {
    "doctype": "DocField",
