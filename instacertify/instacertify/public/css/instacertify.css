@@ -7130,3 +7130,67 @@ body,
   transform: none !important;
 }
 
+/* Home explore / KPI tile glyphs — fixed, no hover resize */
+.ic-explore-icon,
+.ic-explore-card .ic-explore-icon {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.ic-explore-icon svg,
+.ic-explore-svg,
+.ic-explore-card svg.icon,
+.ic-explore-card svg.es-icon {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  transform: none !important;
+}
+
+/* Unify Frappe icon-sm / icon-md so injectors can't change size mid-flight */
+.page-head .icon-sm,
+.page-head .icon-md,
+.page-actions .icon-sm,
+.page-actions .icon-md,
+.page-icon-group .icon-sm,
+.page-icon-group .icon-md,
+.standard-actions .icon-sm,
+.standard-actions .icon-md,
+.modal-header .icon-sm,
+.modal-header .icon-md,
+.ic-action-icon .icon-sm,
+.ic-action-icon .icon-md,
+.menu-item-icon .icon-sm,
+.menu-item-icon .icon-md {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Never animate icon size/position — kills “fidget” feel */
+.page-head svg.icon,
+.page-head svg.es-icon,
+.page-actions svg.icon,
+.page-actions svg.es-icon,
+.page-icon-group svg,
+.standard-actions svg,
+.modal-header svg,
+.ic-action-icon svg,
+.menu-item-icon svg,
+.desk-sidebar svg,
+.workspace-sidebar svg,
+.navbar svg.icon,
+.navbar svg.es-icon,
+.ic-explore-icon svg {
+  transition: none !important;
+  animation: none !important;
+}
+
+

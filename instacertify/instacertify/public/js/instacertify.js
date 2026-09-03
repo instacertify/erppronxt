@@ -1764,8 +1764,18 @@ instacertify.apply_favicon_brand_icons = function (root) {
 	setTimeout(schedule, 500);
 	setTimeout(schedule, 1500);
 
-	// Keep icons after Frappe rebuilds the toolbar
-	frappe.after_ajax && frappe.after_ajax(schedule);
+	// Keep icons after Frappe rebuilds the toolbar (throttled — after_ajax fires often)
+	let _icAfterAjaxArmed = false;
+	if (frappe.after_ajax) {
+		frappe.after_ajax(() => {
+			if (_icAfterAjaxArmed) return;
+			_icAfterAjaxArmed = true;
+			setTimeout(() => {
+				_icAfterAjaxArmed = false;
+				schedule();
+			}, 250);
+		});
+	}
 
 	// Watch page-head — only when new undecorated buttons appear (avoids bounce)
 	try {
