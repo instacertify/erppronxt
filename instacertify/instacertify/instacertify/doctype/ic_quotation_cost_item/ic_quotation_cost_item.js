@@ -1,5 +1,5 @@
 // Copyright (c) Instacertify
-/** Cost lines: unit price × qty = total; Counted Revenue vs Do Not Count. */
+/** Cost lines: numeric or Custom Value text; Do Not Sum; Counted Revenue vs pass-through. */
 
 function sync_revenue_from_treatment(cdt, cdn) {
 	const row = locals[cdt][cdn];
@@ -45,14 +45,36 @@ function recalc_cost_line_total(cdt, cdn) {
 	frappe.model.set_value(cdt, cdn, "total_amount", unit * qty);
 }
 
+function maybe_default_exclude_for_custom(cdt, cdn) {
+	const row = locals[cdt][cdn];
+	if (!row) return;
+	const custom = (row.charges_display || "").trim();
+	if (custom && flt(row.amount) === 0 && !cint(row.exclude_from_total)) {
+		frappe.model.set_value(cdt, cdn, "exclude_from_total", 1);
+	}
+}
+
+function refresh_parent_cost_totals(frm) {
+	if (!frm) return;
+	if (window.instacertify && typeof instacertify.refresh_quotation_cost_totals === "function") {
+		instacertify.refresh_quotation_cost_totals(frm);
+	} else if (frm.doc && frm.fields_dict.ic_total_quoted_value) {
+		frm.refresh_field("ic_cost_items");
+	}
+}
+
 frappe.ui.form.on("IC Quotation Cost Item", {
 	form_render(frm, cdt, cdn) {
 		const grid = frm.fields_dict.ic_cost_items && frm.fields_dict.ic_cost_items.grid;
 		if (grid) {
 			grid.update_docfield_property("amount", "read_only", 0);
 			grid.update_docfield_property("qty", "read_only", 0);
-			grid.update_docfield_property("charges_display", "hidden", 1);
-			grid.update_docfield_property("charges_display", "in_list_view", 0);
+			grid.update_docfield_property("charges_display", "hidden", 0);
+			grid.update_docfield_property("charges_display", "in_list_view", 1);
+			grid.update_docfield_property("exclude_from_total", "hidden", 0);
+			grid.update_docfield_property("exclude_from_total", "in_list_view", 1);
+			grid.update_docfield_property("line_label", "hidden", 0);
+			grid.update_docfield_property("line_label", "in_list_view", 1);
 			grid.update_docfield_property("currency", "hidden", 0);
 			grid.update_docfield_property("currency", "in_list_view", 1);
 		}
@@ -80,18 +102,32 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 				__("Printed line name — change freely")
 			);
 		}
+		const custom = grid_row.get_field("charges_display");
+		if (custom && custom.$input) {
+			custom.$input.attr(
+				"placeholder",
+				__("At actuals / Included / TBD / any text")
+			);
+		}
+		const lineRef = grid_row.get_field("line_label");
+		if (lineRef && lineRef.$input) {
+			lineRef.$input.attr("placeholder", __("A, B, C…"));
+		}
 	},
 	amount(frm, cdt, cdn) {
 		recalc_cost_line_total(cdt, cdn);
-		if (frm && typeof frm.trigger === "function") {
-			// Parent totals refresh on validate; soft-refresh commercial totals if present
-			if (frm.doc && frm.fields_dict.ic_total_quoted_value) {
-				frm.refresh_field("ic_cost_items");
-			}
-		}
+		refresh_parent_cost_totals(frm);
 	},
 	qty(frm, cdt, cdn) {
 		recalc_cost_line_total(cdt, cdn);
+		refresh_parent_cost_totals(frm);
+	},
+	charges_display(frm, cdt, cdn) {
+		maybe_default_exclude_for_custom(cdt, cdn);
+		refresh_parent_cost_totals(frm);
+	},
+	exclude_from_total(frm) {
+		refresh_parent_cost_totals(frm);
 	},
 	currency(frm) {
 		if (frm && window.instacertify && instacertify.render_customer_currency_banner) {
@@ -100,12 +136,15 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 	},
 	revenue_treatment(frm, cdt, cdn) {
 		sync_revenue_from_treatment(cdt, cdn);
+		refresh_parent_cost_totals(frm);
 	},
 	is_passthrough(frm, cdt, cdn) {
 		sync_treatment_from_passthrough(cdt, cdn);
+		refresh_parent_cost_totals(frm);
 	},
 	payment_destination(frm, cdt, cdn) {
 		sync_from_destination(cdt, cdn);
+		refresh_parent_cost_totals(frm);
 	},
 	cost_component(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];

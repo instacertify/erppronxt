@@ -334,6 +334,76 @@ def quote_money(amount, currency=None, doc=None) -> str:
 		return f"{cur} {amt:,.2f}"
 
 
+def quote_cost_line_ref(row=None, index=1) -> str:
+	"""Print serial for a commercial line — custom A/B/C or auto number."""
+	label = ""
+	if row is not None:
+		try:
+			label = row.get("line_label") if hasattr(row, "get") else getattr(row, "line_label", None)
+		except Exception:
+			label = getattr(row, "line_label", None)
+	label = (str(label).strip() if label else "")
+	return label or str(index)
+
+
+def quote_cost_charge_display(row, doc=None, kind: str = "total") -> str:
+	"""Commercial line charge for Print — Custom Value text wins over money."""
+	custom = ""
+	if row is not None:
+		try:
+			custom = row.get("charges_display") if hasattr(row, "get") else getattr(row, "charges_display", None)
+		except Exception:
+			custom = getattr(row, "charges_display", None)
+	custom = (str(custom).strip() if custom else "")
+	if custom:
+		return custom
+	try:
+		units = float(row.get("qty") or 1) or 1.0
+	except Exception:
+		units = 1.0
+	try:
+		per = float(row.get("amount") or 0)
+	except Exception:
+		per = 0.0
+	total = row.get("total_amount") if row is not None else None
+	if total in (None, ""):
+		total = per * units
+	try:
+		total = float(total or 0)
+	except Exception:
+		total = 0.0
+	cur = quote_line_currency(row, doc)
+	if kind == "unit":
+		return quote_money(per, cur, doc)
+	return quote_money(total, cur, doc)
+
+
+def quote_cost_line_sums(row) -> bool:
+	"""Whether a commercial line should feed Commercials / Final Costing totals."""
+	if not row:
+		return False
+	try:
+		if int(row.get("exclude_from_total") or 0):
+			return False
+	except Exception:
+		if getattr(row, "exclude_from_total", None):
+			return False
+	custom = ""
+	try:
+		custom = (row.get("charges_display") or "").strip()
+	except Exception:
+		custom = (getattr(row, "charges_display", None) or "").strip()
+	try:
+		amount = float(row.get("amount") or 0)
+		total = float(row.get("total_amount") or 0)
+	except Exception:
+		amount = float(getattr(row, "amount", 0) or 0)
+		total = float(getattr(row, "total_amount", 0) or 0)
+	if custom and amount == 0 and total == 0:
+		return False
+	return True
+
+
 def quote_totals_by_currency(doc) -> list[dict[str, Any]]:
 	"""Per-currency testing / commercials / combined totals for multi-currency quotes."""
 	from collections import OrderedDict
@@ -362,6 +432,8 @@ def quote_totals_by_currency(doc) -> list[dict[str, Any]]:
 		bump(quote_line_currency(row, doc), testing=float(total or 0))
 
 	for row in (doc.get("ic_cost_items") if doc else None) or []:
+		if not quote_cost_line_sums(row):
+			continue
 		units = float(row.get("qty") or 1) or 1.0
 		per = float(row.get("amount") or 0)
 		total = row.get("total_amount")
