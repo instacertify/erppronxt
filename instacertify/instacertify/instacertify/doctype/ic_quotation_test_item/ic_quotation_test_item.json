@@ -54,6 +54,17 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "in_list_view": 1,
+   "columns": 1,
+   "reqd": 0,
+   "description": "Per-line currency — change this first so Unit Price / Total symbols stay aligned."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "purchase_price",
    "fieldtype": "Currency",
    "label": "Purchase Price (internal)",
@@ -174,17 +185,6 @@
    "fieldname": "testing_timeline",
    "fieldtype": "Data",
    "label": "Testing Timeline"
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "currency",
-   "fieldtype": "Link",
-   "options": "Currency",
-   "label": "Currency",
-   "in_list_view": 1,
-   "columns": 1,
-   "reqd": 0,
-   "description": "Per-line currency. Defaults to the quotation primary currency; change for multi-currency quotes."
   }
  ],
  "permissions": [],

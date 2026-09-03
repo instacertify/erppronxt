@@ -43,6 +43,17 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "options": "Currency",
+   "label": "Currency",
+   "in_list_view": 1,
+   "columns": 1,
+   "reqd": 0,
+   "description": "Per-line currency — change this first so Unit Price / Total symbols stay aligned."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "amount",
    "fieldtype": "Currency",
    "label": "Unit Price (Default Charges)",
@@ -86,7 +97,7 @@
    "in_list_view": 1,
    "columns": 1,
    "bold": 1,
-   "description": "Free text for Print (letters/words OK): At actuals, Included, As applicable, TBD, A… Overrides numeric Unit Price / Total on PDF."
+   "description": "Free text for Print (letters/words OK): At actuals, Included, As applicable, TBD, A… Overrides numeric Total on PDF."
   },
   {
    "doctype": "DocField",
@@ -129,17 +140,6 @@
    "label": "Do Not Count as Revenue",
    "in_list_view": 0,
    "description": "Synced from Revenue. Tick = pass-through (not Instacertify revenue)."
-  },
-  {
-   "doctype": "DocField",
-   "fieldname": "currency",
-   "fieldtype": "Link",
-   "options": "Currency",
-   "label": "Currency",
-   "in_list_view": 1,
-   "columns": 1,
-   "reqd": 0,
-   "description": "Per-line currency. Defaults to the quotation primary currency; set different currencies on different lines when needed."
   }
  ],
  "permissions": [],

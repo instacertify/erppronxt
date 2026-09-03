@@ -299,17 +299,28 @@ QUOTATION_HTML = """
   </div>
 
   {% for _sk in quote_section_order(doc) %}
-  {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') and (doc.ic_service_name or doc.ic_scope_of_work) %}
+  {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') and (doc.ic_service_name or doc.ic_scope_of_work or doc.ic_about_service or doc.ic_about_testing) %}
   <div class="ic-box">
     <h3>Service Scope</h3>
     <div><b>Service:</b> {{ doc.ic_service_name or '' }}</div>
     <div><b>Certification Type:</b> {{ doc.ic_certification_type or '' }}</div>
     <div><b>Standard:</b> {{ doc.ic_applicable_standard or '' }}</div>
-    {% if quote_section_on(doc, 'ic_show_timelines') %}
-    <div><b>Timeline:</b> {{ doc.ic_estimated_timeline or '' }}</div>
-    {% endif %}
-    <div style="margin-top:8px;">{{ doc.ic_scope_of_work or '' }}</div>
-    {% if quote_section_on(doc, 'ic_show_deliverables') and doc.ic_deliverables %}<div style="margin-top:8px;"><b>Deliverables</b>{{ doc.ic_deliverables }}</div>{% endif %}
+    <div style="margin-top:8px;">{{ doc.ic_about_service or doc.ic_about_testing or doc.ic_scope_of_work or '' }}</div>
+  </div>
+  {% endif %}
+
+  {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') and doc.ic_estimated_timeline %}
+  <div class="ic-box">
+    <h3>Timeline</h3>
+    <div>{{ doc.ic_estimated_timeline or '' }}</div>
+    {% if doc.ic_timeline_details %}<div style="margin-top:6px;">{{ doc.ic_timeline_details }}</div>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if _sk == 'deliverables' and quote_section_on(doc, 'ic_show_deliverables') and doc.ic_deliverables %}
+  <div class="ic-box">
+    <h3>Deliverables</h3>
+    <div>{{ doc.ic_deliverables }}</div>
   </div>
   {% endif %}
 
@@ -401,13 +412,15 @@ QUOTATION_HTML = """
     {{ doc.ic_terms_and_conditions or doc.terms or '' }}
   </div>
   {% endif %}
-  {% if _sk == 'banking' and quote_section_on(doc, 'ic_show_banking') %}
+  {% if _sk == 'payment_terms' and quote_section_on(doc, 'ic_show_payment_terms') %}
   <div class="ic-box">
     <h3>Payment Terms</h3>
     {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
     {% else %}<p>As agreed with Instacertify.</p>{% endif %}
 """ + GST_PAYMENT_TERMS_NOTE_HTML + """
   </div>
+  {% endif %}
+  {% if _sk == 'banking' and quote_section_on(doc, 'ic_show_banking') %}
   <div class="ic-box">
     <h3>Bank Details &amp; UPI Payment</h3>
 """ + BANK_UPI_PAYMENT_HTML + """
