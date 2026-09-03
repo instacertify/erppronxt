@@ -6,6 +6,15 @@
  "fields": [
   {
    "doctype": "DocField",
+   "fieldname": "line_label",
+   "fieldtype": "Data",
+   "label": "Line Ref (A, B…)",
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "Optional print serial — A, B, C or any custom marker. Blank = auto number."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "particulars",
    "fieldtype": "Data",
    "label": "Particulars / Line Name (Print)",
@@ -43,7 +52,7 @@
    "default": "0",
    "options": "currency",
    "bold": 1,
-   "description": "Default unit charge from the quote format — editable on every quote. Symbol follows this line's Currency (defaults to quotation primary)."
+   "description": "Numeric unit charge. Leave 0 and use Custom Value for text-only lines (At actuals, Included, TBD…)."
   },
   {
    "doctype": "DocField",
@@ -55,35 +64,46 @@
    "default": 1,
    "non_negative": 1,
    "bold": 1,
-   "description": "Quantity of units. Total Charges = Unit Price × No. of Units."
+   "description": "Quantity of units. Total Charges = Unit Price × No. of Units (ignored when Custom Value is set)."
   },
   {
    "doctype": "DocField",
    "fieldname": "total_amount",
    "fieldtype": "Currency",
    "label": "Total Charges",
-   "in_list_view": 1,
+   "in_list_view": 0,
    "columns": 1,
    "options": "currency",
    "read_only": 1,
    "bold": 1,
-   "description": "Unit Price × No. of Units — shown to the customer."
+   "description": "Unit Price × No. of Units — used for summing when Do Not Sum is off and Custom Value is blank."
   },
   {
    "doctype": "DocField",
    "fieldname": "charges_display",
    "fieldtype": "Data",
-   "label": "Charges Display (legacy)",
-   "in_list_view": 0,
-   "hidden": 1,
-   "description": "Deprecated — print uses Unit Price with quotation currency symbol."
+   "label": "Custom Value",
+   "in_list_view": 1,
+   "columns": 1,
+   "bold": 1,
+   "description": "Free text for Print (letters/words OK): At actuals, Included, As applicable, TBD, A… Overrides numeric Unit Price / Total on PDF."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "exclude_from_total",
+   "fieldtype": "Check",
+   "label": "Do Not Sum",
+   "in_list_view": 1,
+   "columns": 1,
+   "default": 0,
+   "description": "Tick to show the line on the quote but exclude it from Commercials Total / Final Costing."
   },
   {
    "doctype": "DocField",
    "fieldname": "payment_destination",
    "fieldtype": "Select",
    "label": "Payment Destination",
-   "in_list_view": 1,
+   "in_list_view": 0,
    "columns": 1,
    "reqd": 0,
    "default": "Payable to Instacertify",

@@ -416,6 +416,156 @@ def setup_custom_fields():
 	_ensure_test_lines_on_consulting()
 	_ensure_test_item_price_columns()
 	_ensure_quote_line_currency_fields()
+	_ensure_commercial_custom_value_fields()
+
+
+def _ensure_commercial_custom_value_fields():
+	"""Custom Value (text), Do Not Sum, Line Ref on Commercial / Cost lines."""
+	parent = "IC Quotation Cost Item"
+	try:
+		# Ensure DocFields exist (sync from JSON via reload when possible)
+		try:
+			frappe.reload_doc("instacertify", "doctype", "ic_quotation_cost_item", force=True)
+		except Exception:
+			pass
+
+		# charges_display → Custom Value (visible)
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set label=%s, hidden=0, in_list_view=1, columns=1, bold=1,
+			    description=%s
+			where parent=%s and fieldname='charges_display'
+			""",
+			(
+				"Custom Value",
+				"Free text for Print (letters/words OK): At actuals, Included, As applicable, TBD, A… "
+				"Overrides numeric Unit Price / Total on PDF.",
+				parent,
+			),
+		)
+		# payment_destination off list to free columns
+		frappe.db.sql(
+			"""
+			update `tabDocField`
+			set in_list_view=0
+			where parent=%s and fieldname in ('payment_destination', 'total_amount')
+			""",
+			(parent,),
+		)
+
+		# Create missing DocFields for line_label / exclude_from_total if reload did not
+		# Direct SQL insert if DocField row missing (post-reload)
+		if not frappe.db.exists("DocField", {"parent": parent, "fieldname": "exclude_from_total"}):
+			max_idx = frappe.db.sql(
+				"select max(idx) from `tabDocField` where parent=%s", (parent,)
+			)[0][0] or 0
+			frappe.get_doc(
+				{
+					"doctype": "DocField",
+					"parent": parent,
+					"parenttype": "DocType",
+					"parentfield": "fields",
+					"fieldname": "exclude_from_total",
+					"label": "Do Not Sum",
+					"fieldtype": "Check",
+					"in_list_view": 1,
+					"columns": 1,
+					"default": "0",
+					"idx": max_idx + 1,
+					"description": "Show on quote but exclude from Commercials Total / Final Costing.",
+				}
+			).insert(ignore_permissions=True)
+		else:
+			frappe.db.sql(
+				"""
+				update `tabDocField`
+				set label=%s, hidden=0, in_list_view=1, columns=1,
+				    description=%s
+				where parent=%s and fieldname='exclude_from_total'
+				""",
+				(
+					"Do Not Sum",
+					"Show on quote but exclude from Commercials Total / Final Costing.",
+					parent,
+				),
+			)
+
+		if not frappe.db.exists("DocField", {"parent": parent, "fieldname": "line_label"}):
+			max_idx = frappe.db.sql(
+				"select max(idx) from `tabDocField` where parent=%s", (parent,)
+			)[0][0] or 0
+			frappe.get_doc(
+				{
+					"doctype": "DocField",
+					"parent": parent,
+					"parenttype": "DocType",
+					"parentfield": "fields",
+					"fieldname": "line_label",
+					"label": "Line Ref (A, B…)",
+					"fieldtype": "Data",
+					"in_list_view": 1,
+					"columns": 1,
+					"idx": 1,
+					"description": "Optional print serial — A, B, C or any custom marker. Blank = auto number.",
+				}
+			).insert(ignore_permissions=True)
+		else:
+			frappe.db.sql(
+				"""
+				update `tabDocField`
+				set label=%s, hidden=0, in_list_view=1, columns=1,
+				    description=%s
+				where parent=%s and fieldname='line_label'
+				""",
+				(
+					"Line Ref (A, B…)",
+					"Optional print serial — A, B, C or any custom marker. Blank = auto number.",
+					parent,
+				),
+			)
+
+		# Ensure DB columns exist
+		from frappe.database.schema import add_column
+
+		if not frappe.db.has_column(parent, "exclude_from_total"):
+			add_column(parent, "exclude_from_total", "Check")
+		if not frappe.db.has_column(parent, "line_label"):
+			add_column(parent, "line_label", "Data")
+
+		for fieldname, props in (
+			("charges_display", ["hidden", "in_list_view", "label", "columns"]),
+			("exclude_from_total", ["hidden", "in_list_view", "label", "columns"]),
+			("line_label", ["hidden", "in_list_view", "label", "columns"]),
+		):
+			for ps in frappe.get_all(
+				"Property Setter",
+				filters={
+					"doc_type": parent,
+					"field_name": fieldname,
+					"property": ["in", props],
+				},
+				pluck="name",
+			):
+				try:
+					frappe.delete_doc("Property Setter", ps, force=1, ignore_permissions=True)
+				except Exception:
+					pass
+
+		if frappe.db.exists("Custom Field", "Quotation-ic_cost_items"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_cost_items",
+				"description",
+				"Fully customisable commercials. Unit Price for numbers, or Custom Value for any text "
+				"(At actuals / Included / letters). Tick Do Not Sum to exclude from Final Costing. "
+				"Line Ref = A, B, C…",
+				update_modified=False,
+			)
+		frappe.clear_cache(doctype=parent)
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure commercial custom value fields")
 
 
 def _ensure_quote_line_currency_fields():

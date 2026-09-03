@@ -205,6 +205,9 @@ jinja = {
 		"instacertify.quotation.print_sections.quote_line_currency",
 		"instacertify.quotation.print_sections.quote_money",
 		"instacertify.quotation.print_sections.quote_totals_by_currency",
+		"instacertify.quotation.print_sections.quote_cost_line_ref",
+		"instacertify.quotation.print_sections.quote_cost_charge_display",
+		"instacertify.quotation.print_sections.quote_cost_line_sums",
 	],
 }
 

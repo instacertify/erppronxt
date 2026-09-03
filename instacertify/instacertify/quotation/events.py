@@ -148,12 +148,12 @@ def _calculate_cost_line_totals(doc):
 	parent_currency = doc.get("currency") or "INR"
 	has_total = True
 	has_currency = True
-	has_display = True
+	has_exclude = True
 	try:
 		meta = frappe.get_meta("IC Quotation Cost Item")
 		has_total = meta.has_field("total_amount")
 		has_currency = meta.has_field("currency")
-		has_display = meta.has_field("charges_display")
+		has_exclude = meta.has_field("exclude_from_total")
 	except Exception:
 		pass
 	for row in doc.get("ic_cost_items") or []:
@@ -166,17 +166,20 @@ def _calculate_cost_line_totals(doc):
 		# Default blank line currency from parent; keep explicit multi-currency overrides
 		if has_currency and parent_currency and not (row.get("currency") or "").strip():
 			row.currency = parent_currency
-		# Drop legacy hardcoded ₹ display so print uses line / quotation currency
-		if has_display and row.get("charges_display"):
-			disp = str(row.charges_display).strip()
-			if disp.startswith("₹") or disp.startswith("Rs") or "/-" in disp:
-				if not (row.get("description") or "").strip() and "actual" in disp.lower():
-					row.description = "At actuals"
-				row.charges_display = ""
+		# Custom Value (letters/words) with no numeric amount → default Do Not Sum
+		custom = (row.get("charges_display") or "").strip()
+		if has_exclude and custom and unit == 0 and row.get("exclude_from_total") in (None, ""):
+			row.exclude_from_total = 1
 
 
 def _line_total(row) -> float:
-	"""Prefer total_amount; fall back to amount × qty or amount."""
+	"""Prefer total_amount; fall back to amount × qty. Skip Do Not Sum lines."""
+	if cint(row.get("exclude_from_total")):
+		return 0.0
+	# Custom text-only lines (no money) never inflate totals
+	custom = (row.get("charges_display") or "").strip()
+	if custom and not float(row.get("amount") or 0) and not float(row.get("total_amount") or 0):
+		return 0.0
 	if row.get("total_amount") not in (None, ""):
 		return float(row.total_amount or 0)
 	qty = cint(row.get("qty") or 0) or 1

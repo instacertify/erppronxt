@@ -354,27 +354,26 @@ QUOTATION_HTML = """
     <div style="font-weight:600;margin:12px 0 6px;">Commercials / Other Charges</div>
     <table class="ic-table">
       <thead><tr>
-        <th>Particulars</th><th>Description</th><th>Currency</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th>
+        <th>#</th><th>Particulars</th><th>Description</th><th>Currency</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th>
       </tr></thead>
       <tbody>
       {% for row in doc.ic_cost_items %}
         {%- set units = row.qty or 1 -%}
-        {%- set per = row.amount or 0 -%}
-        {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
         {%- set rcur = quote_line_currency(row, doc) -%}
         <tr>
+          <td>{{ quote_cost_line_ref(row, loop.index) }}</td>
           <td>{{ row.particulars or row.cost_component }}</td>
           <td>{{ row.description or '' }}</td>
-          <td>{{ rcur }}</td>
-          <td>{{ quote_money(per, rcur) }}</td>
-          <td>{{ units }}</td>
-          <td><b>{{ quote_money(total, rcur) }}</b></td>
+          <td>{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
+          <td>{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
+          <td>{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
+          <td><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total %} <span style="color:#667;font-size:10px;">(not summed)</span>{% endif %}</td>
         </tr>
       {% endfor %}
       {% for t in _by %}
         {% if t.cost %}
         <tr>
-          <td colspan="5" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
+          <td colspan="6" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
           <td><b>{{ quote_money(t.cost, t.currency) }}</b></td>
         </tr>
         {% endif %}
@@ -968,17 +967,15 @@ TESTING_QUOTATION_HTML = """
                 <tbody>
                 {% for row in doc.ic_cost_items or [] %}
                   {%- set units = row.qty or 1 -%}
-                  {%- set per = row.amount or 0 -%}
-                  {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
                   {%- set rcur = quote_line_currency(row, doc) -%}
                   <tr>
-                    <td class="num">{{ loop.index }}</td>
+                    <td class="num">{{ quote_cost_line_ref(row, loop.index) }}</td>
                     <td>{{ row.particulars or row.cost_component or '' }}</td>
                     <td>{{ row.description or '' }}</td>
-                    <td class="num">{{ rcur }}</td>
-                    <td class="amt">{{ inr(per, rcur) }}</td>
-                    <td class="num">{{ units }}</td>
-                    <td class="amt"><b>{{ inr(total, rcur) }}</b></td>
+                    <td class="num">{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
+                    <td class="amt">{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
+                    <td class="num">{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
+                    <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
                   </tr>
                 {% endfor %}
                 {% for t in _by %}
@@ -1361,15 +1358,13 @@ CONSULTING_QUOTATION_HTML = """
           <tbody>
           {% for row in doc.ic_cost_items or [] %}
             {%- set units = row.qty or 1 -%}
-            {%- set per = row.amount or 0 -%}
-            {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
             {%- set rcur = quote_line_currency(row, doc) -%}
             <tr>
-              <td>{{ row.particulars or row.description or row.cost_component }}</td>
-              <td style="text-align:center;">{{ rcur }}</td>
-              <td class="amt">{{ inr(per, rcur) }}</td>
-              <td style="text-align:center;">{{ units }}</td>
-              <td class="amt"><b>{{ inr(total, rcur) }}</b></td>
+              <td>{% if row.line_label %}<b>{{ row.line_label }}.</b> {% endif %}{{ row.particulars or row.description or row.cost_component }}</td>
+              <td style="text-align:center;">{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
+              <td class="amt">{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
+              <td style="text-align:center;">{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
+              <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
             </tr>
           {% endfor %}
           {% for t in _by %}

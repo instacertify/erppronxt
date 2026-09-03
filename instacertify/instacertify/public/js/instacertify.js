@@ -3401,7 +3401,11 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 			"particulars",
 			"description",
 			"amount",
+			"qty",
 			"charges_display",
+			"exclude_from_total",
+			"line_label",
+			"currency",
 			"payment_destination",
 			"revenue_treatment",
 			"is_passthrough",
@@ -3410,6 +3414,11 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 				cost_grid.update_docfield_property(f, "read_only", 0);
 			} catch (e) {}
 		});
+		try {
+			cost_grid.update_docfield_property("charges_display", "hidden", 0);
+			cost_grid.update_docfield_property("exclude_from_total", "hidden", 0);
+			cost_grid.update_docfield_property("line_label", "hidden", 0);
+		} catch (e) {}
 	}
 };
 
@@ -3520,11 +3529,11 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"description",
 			showTestLines
 				? __(
-						"Under Test Lines. Unit Price × No. of Units = Total. Set Currency per line (default {0}). Test Lines + these = Final Costing.",
+						"Customisable commercials. Unit Price or Custom Value (text). Do Not Sum = skip Final Costing. Default currency {0}.",
 						[frm.doc.currency || "INR"]
 				  )
 				: __(
-						"Unit Price × No. of Units = Total Charges. Set Currency per line (default {0}).",
+						"Unit Price or Custom Value (text). Do Not Sum excludes from totals. Default currency {0}.",
 						[frm.doc.currency || "INR"]
 				  )
 		);
@@ -3815,11 +3824,15 @@ instacertify.refresh_quotation_cost_totals = function (frm) {
 	let commercial = 0;
 	let passthrough = 0;
 	(frm.doc.ic_cost_items || []).forEach((row) => {
+		// Do Not Sum / custom text-only → skip Final Costing
+		if (cint(row.exclude_from_total)) return;
+		const custom = (row.charges_display || "").trim();
 		const qty = cint(row.qty) || 1;
 		const amount =
 			row.total_amount != null && row.total_amount !== ""
 				? flt(row.total_amount)
 				: flt(row.amount) * qty;
+		if (custom && !flt(row.amount) && !amount) return;
 		const treatment = (row.revenue_treatment || "").trim();
 		let isPass = false;
 		if (treatment === "Do Not Count as Revenue") isPass = true;
@@ -7516,13 +7529,28 @@ instacertify.sync_quote_cost_currency = function (frm) {
 	if (costGrid) {
 		costGrid.update_docfield_property("amount", "read_only", 0);
 		costGrid.update_docfield_property("qty", "read_only", 0);
-		costGrid.update_docfield_property("charges_display", "hidden", 1);
+		costGrid.update_docfield_property("charges_display", "hidden", 0);
+		costGrid.update_docfield_property("charges_display", "in_list_view", 1);
+		costGrid.update_docfield_property("exclude_from_total", "hidden", 0);
+		costGrid.update_docfield_property("exclude_from_total", "in_list_view", 1);
+		costGrid.update_docfield_property("line_label", "hidden", 0);
+		costGrid.update_docfield_property("line_label", "in_list_view", 1);
 		costGrid.update_docfield_property("currency", "hidden", 0);
 		costGrid.update_docfield_property("currency", "in_list_view", 1);
 		costGrid.update_docfield_property(
 			"amount",
 			"description",
-			__("Unit price — symbol follows this line's Currency (default {0})", [cur])
+			__("Numeric unit price (default {0}). Or leave 0 and set Custom Value for text.", [cur])
+		);
+		costGrid.update_docfield_property(
+			"charges_display",
+			"description",
+			__("Free text on Print: At actuals, Included, TBD, A… Overrides money columns.")
+		);
+		costGrid.update_docfield_property(
+			"exclude_from_total",
+			"description",
+			__("Show on quote but do not add into Commercials Total / Final Costing.")
 		);
 	}
 	const testGrid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
@@ -7535,7 +7563,7 @@ instacertify.sync_quote_cost_currency = function (frm) {
 			"ic_cost_items",
 			"description",
 			__(
-				"Default charges from the quote format (editable). Unit Price × No. of Units = Total. Set Currency per line for multi-currency quotes (default {0}). On Testing quotes, Testing + Other = Final Costing.",
+				"Fully customisable. Use Unit Price for numbers, or Custom Value for any text (At actuals / Included / letters). Tick Do Not Sum to exclude from Final Costing. Line Ref = A, B, C… Currency default {0}.",
 				[cur]
 			)
 		);
