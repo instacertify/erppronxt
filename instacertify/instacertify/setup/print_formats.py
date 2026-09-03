@@ -893,7 +893,7 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_commercials or 'Commercials' }}</td>
             <td class="tq-value">
-              <div class="tq-h">{{ doc.ic_label_commercials or 'Commercials' }} — Testing Charges ({{ curr }})</div>
+              <div class="tq-h">Testing Charges ({{ curr }})</div>
               <table class="tq-comm">
                 <thead>
                   <tr>
@@ -1224,8 +1224,12 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_about or ('ABOUT ' ~ short) }}</div>
       <div class="cq-body">
-        {% if doc.ic_about_service %}{{ doc.ic_about_service }}
-        {% else %}{{ doc.ic_scope_of_work or '' }}{% endif %}
+        {% if doc.ic_about_service %}{{ doc.ic_about_service }}{% endif %}
+        {% if doc.ic_scope_of_work %}
+          {% if doc.ic_about_service %}<div style="margin-top:10px;"></div>{% endif %}
+          {{ doc.ic_scope_of_work }}
+        {% endif %}
+        {% if not doc.ic_about_service and not doc.ic_scope_of_work %}<p></p>{% endif %}
       </div>
     </div>
     {% endif %}
@@ -1267,7 +1271,6 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_commercials or ('Commercials for ' ~ short) }} ({{ doc.currency or 'INR' }})</div>
       <div class="cq-body">
-        <div class="cq-h">{{ doc.ic_label_commercials or ('Commercials – ' ~ title) }}</div>
         {% if doc.ic_applicable_standard %}
           <div style="margin-bottom:8px;"><b>Applicable Standard:</b> {{ doc.ic_applicable_standard }}</div>
         {% endif %}
@@ -1304,7 +1307,7 @@ CONSULTING_QUOTATION_HTML = """
         </table>
         {% endif %}
         {% if doc.ic_cost_items %}
-        <div class="cq-h" style="margin-top:12px;">{% if doc.ic_test_items %}{% endif %}{{ doc.ic_label_commercials or 'Commercials / Cost Breakdown' }} ({{ doc.currency or 'INR' }})</div>
+        <div class="cq-h" style="margin-top:12px;">Cost Breakdown ({{ doc.currency or 'INR' }})</div>
         <table class="cq-comm">
           <thead><tr>
             <th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th>
@@ -1397,6 +1400,16 @@ CONSULTING_QUOTATION_HTML = """
       <div class="cq-bar">{{ doc.ic_label_documents_required or ('DOCUMENTS REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_documents_required %}{{ doc.ic_documents_required }}
+        {% else %}<p></p>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if _sk == 'deliverables' and quote_section_on(doc, 'ic_show_deliverables') %}
+    <div class="cq-sec">
+      <div class="cq-bar">{{ doc.ic_label_deliverable or ('Deliverables for ' ~ short) }}</div>
+      <div class="cq-body">
+        {% if doc.ic_deliverables %}{{ doc.ic_deliverables | replace('\t', ' ') }}
         {% else %}<p></p>{% endif %}
       </div>
     </div>

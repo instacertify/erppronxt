@@ -3076,6 +3076,7 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 				);
 			});
 			p.then(() => {
+				instacertify.toggle_quotation_sections(frm);
 				instacertify.apply_quotation_section_visibility(frm);
 				d.hide();
 				frappe.show_alert({
@@ -3134,8 +3135,15 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 /** Hide form fields for sections unchecked in Arrange / Print Sections. */
 instacertify.apply_quotation_section_visibility = function (frm) {
 	if (!frm || !frm.fields_dict) return;
+	const isOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
 	const map = {
-		ic_show_about: ["ic_section_about", "ic_about_service", "ic_about_testing", "ic_scope_of_work"],
+		ic_show_about: [
+			"ic_section_about",
+			"ic_about_service",
+			"ic_about_testing",
+			"ic_scope_of_work",
+			"ic_section_scope",
+		],
 		ic_show_applicable_standards: [
 			"ic_applicable_standard",
 			"ic_standard_narrative",
@@ -3146,7 +3154,7 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 		ic_show_sample_required: ["ic_sample_required", "ic_samples_note"],
 		ic_show_documents_required: ["ic_documents_required"],
 		ic_show_timelines: ["ic_estimated_timeline", "ic_timeline_details", "ic_section_docs_timeline"],
-		ic_show_deliverables: ["ic_deliverables"],
+		ic_show_deliverables: ["ic_deliverables", "ic_section_scope"],
 		ic_show_commercials: [
 			"ic_section_test_lines",
 			"ic_test_items",
@@ -3166,24 +3174,58 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 		ic_show_terms: ["ic_terms_and_conditions", "ic_section_terms"],
 		ic_show_sample_handling: ["ic_sample_handling_policy"],
 	};
+
+	const hideField = (fname, show) => {
+		if (!frm.fields_dict[fname]) return;
+		try {
+			frm.set_df_property(fname, "hidden", show ? 0 : 1);
+		} catch (e) {
+			/* ignore */
+		}
+		frm.toggle_display(fname, !!show);
+		// Also hide the wrapper so depends_on cannot force it back open
+		try {
+			const $w = frm.fields_dict[fname].$wrapper;
+			if ($w && $w.length) {
+				if (show) $w.removeClass("hide").show();
+				else $w.addClass("hide").hide();
+			}
+			const section = frm.fields_dict[fname].section;
+			if (section && section.wrapper) {
+				// leave section wrapper alone unless this IS a section break
+			}
+		} catch (e) {
+			/* ignore */
+		}
+	};
+
 	Object.keys(map).forEach((showField) => {
 		if (!frm.fields_dict[showField] && frm.doc[showField] == null) return;
-		const on = frm.doc[showField] == null ? true : cint(frm.doc[showField]) === 1;
-		(map[showField] || []).forEach((f) => {
-			if (frm.fields_dict[f]) {
-				frm.toggle_display(f, on);
-			}
-		});
+		const on = isOn(showField);
+		(map[showField] || []).forEach((f) => hideField(f, on));
 	});
-	// Policies section: show if any of payment/cancel/confidentiality/banking on
+
+	// Scope section: visible if about OR deliverables still included
+	if (frm.fields_dict.ic_section_scope) {
+		hideField("ic_section_scope", isOn("ic_show_about") || isOn("ic_show_deliverables"));
+	}
+
+	// Policies section: show if any related block is on
 	if (frm.fields_dict.ic_section_policies) {
-		const isOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
 		const any =
 			isOn("ic_show_payment_terms") ||
 			isOn("ic_show_cancellation") ||
 			isOn("ic_show_confidentiality") ||
 			isOn("ic_show_banking");
-		frm.toggle_display("ic_section_policies", any);
+		hideField("ic_section_policies", any);
+	}
+
+	// Terms section
+	if (frm.fields_dict.ic_section_terms) {
+		hideField(
+			"ic_section_terms",
+			isOn("ic_show_terms") || isOn("ic_show_force_majeure")
+		);
 	}
 };
 
@@ -3355,6 +3397,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 	const isConsulting = consultingLike.includes(t);
 	const isTesting = ["Testing", "Multiple Products / Multiple Services"].includes(t);
 	const showTestLines = isTesting || isConsulting;
+	const sectionOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
 	[
 		"ic_section_service",
 		"ic_section_about",
@@ -3363,13 +3406,20 @@ instacertify.toggle_quotation_sections = function (frm) {
 	].forEach((f) => frm.toggle_display(f, isConsulting));
 	// Testing narrative only for Testing; Test Lines (lab charges) for Testing + Consulting
 	frm.toggle_display("ic_section_testing", isTesting);
-	["ic_section_test_lines", "ic_test_items"].forEach((f) => frm.toggle_display(f, showTestLines));
+	["ic_section_test_lines", "ic_test_items"].forEach((f) =>
+		frm.toggle_display(f, showTestLines && sectionOn("ic_show_commercials"))
+	);
 	frm.toggle_display("ic_section_products", t === "Multiple Products / Multiple Services");
 
 	[
 		"ic_section_costing",
 		"ic_cost_items",
 		"ic_section_cost_totals",
+		"ic_commercials_notes",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) frm.toggle_display(f, sectionOn("ic_show_commercials"));
+	});
+	[
 		"ic_section_policies",
 		"ic_bank_account",
 		"ic_payment_terms",
@@ -7140,6 +7190,12 @@ instacertify.apply_manual_currency = function (frm, currency, opts) {
 	const field = opts.fieldname || "currency";
 	if (!currency) return;
 	const done = () => {
+		instacertify.sync_quote_cost_currency(frm);
+		instacertify.render_customer_currency_banner(frm);
+		frm.refresh_field(field);
+		if (frm.fields_dict.ic_cost_items) frm.refresh_field("ic_cost_items");
+		if (frm.fields_dict.ic_test_items) frm.refresh_field("ic_test_items");
+		if (frm.fields_dict.conversion_rate) frm.refresh_field("conversion_rate");
 		frappe.show_alert({
 			message: __("Currency set to {0}", [currency]),
 			indicator: "green",
@@ -7170,6 +7226,7 @@ instacertify.apply_manual_currency = function (frm, currency, opts) {
 		})
 		.catch(() => {
 			instacertify._auto_setting_currency = false;
+			done();
 		});
 };
 
@@ -7237,21 +7294,72 @@ frappe.ui.form.on("Quotation", {
 		instacertify.render_customer_currency_banner(frm);
 	},
 	currency(frm) {
-		if (!frm.doc.currency || instacertify._auto_setting_currency) {
+		if (!frm.doc.currency) {
 			instacertify.render_customer_currency_banner(frm);
 			return;
 		}
-		if (!frm.doc.ic_currency_manual) {
+		if (!instacertify._auto_setting_currency && !frm.doc.ic_currency_manual) {
 			frm.set_value("ic_currency_manual", 1);
 		}
 		instacertify.sync_quote_cost_currency(frm);
 		instacertify.render_customer_currency_banner(frm);
+		frm.refresh_field("currency");
+		if (frm.fields_dict.ic_cost_items) frm.refresh_field("ic_cost_items");
+		if (frm.fields_dict.ic_test_items) frm.refresh_field("ic_test_items");
 	},
 	taxes_and_charges(frm) {
 		if (instacertify._auto_setting_currency) return;
 		if (frm.doc.taxes_and_charges && !frm.doc.ic_tax_manual) {
 			frm.set_value("ic_tax_manual", 1);
 		}
+	},
+	ic_show_about(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_applicable_standards(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_process(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_validity(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_sample_required(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_documents_required(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_timelines(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_deliverables(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_commercials(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_payment_terms(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_banking(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_cancellation(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_force_majeure(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_confidentiality(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_terms(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+	},
+	ic_show_sample_handling(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
 	},
 });
 
