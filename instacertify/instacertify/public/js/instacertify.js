@@ -3092,8 +3092,8 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 			{
 				fieldtype: "HTML",
 				fieldname: "help",
-				options: `<p class="text-muted">${__(
-					"Uncheck Include to remove a section from this quote (form + Print/PDF). Use ↑ ↓ to set order (1st, 2nd, 3rd…) on Print/PDF."
+				options: `<p class="text-muted" style="margin:0 0 10px;">${__(
+					"Uncheck <b>Include</b> to hide a section on this quote (form + Print/PDF). Example: untick Validity, Payment Terms, or Estimated Timelines. Use ↑ ↓ for print order."
 				)}</p><div class="ic-section-arrange-list" style="max-height:420px;overflow:auto;"></div>`,
 			},
 		],
@@ -3112,9 +3112,14 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 				frm.doc.ic_section_order = keys.join(",");
 			}
 			state.forEach((row) => {
-				if (!frm.fields_dict[row.show_field]) return;
+				if (!frm.fields_dict[row.show_field]) {
+					frm.doc[row.show_field] = cint(row.include);
+					return;
+				}
 				p = p.then(() =>
-					Promise.resolve(frm.set_value(row.show_field, cint(row.include))).catch(() => {})
+					Promise.resolve(frm.set_value(row.show_field, cint(row.include))).catch(() => {
+						frm.doc[row.show_field] = cint(row.include);
+					})
 				);
 			});
 			p.then(() => {
@@ -3129,18 +3134,34 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 		},
 	});
 
+	function applyIncludeLive(row) {
+		if (!row || !row.show_field) return;
+		const val = cint(row.include);
+		frm.doc[row.show_field] = val;
+		if (frm.fields_dict[row.show_field]) {
+			Promise.resolve(frm.set_value(row.show_field, val)).catch(() => {
+				frm.doc[row.show_field] = val;
+			});
+		}
+		instacertify.apply_quotation_section_visibility(frm);
+	}
+
 	function render() {
 		const $list = d.$wrapper.find(".ic-section-arrange-list");
 		if (!$list.length) return;
+		const highlight = new Set(["validity", "payment_terms", "timelines"]);
 		const rows = state
 			.map((row, idx) => {
+				const hi = highlight.has(row.key)
+					? "border-color:#EC691F;background:#fff8f3;"
+					: "border-color:var(--border-color,#d0d7de);background:#fff;";
 				return `<div class="ic-section-arrange-row" data-idx="${idx}" style="
 					display:flex;align-items:center;gap:10px;padding:8px 10px;margin:4px 0;
-					border:1px solid var(--border-color,#d0d7de);border-radius:6px;background:#fff;">
+					border:1px solid;border-radius:6px;${hi}">
 					<span style="width:28px;text-align:center;color:#667;font-weight:600;">${idx + 1}</span>
 					<label style="flex:1;margin:0;display:flex;align-items:center;gap:8px;cursor:pointer;">
 						<input type="checkbox" class="ic-sec-include" ${row.include ? "checked" : ""}/>
-						<span>${frappe.utils.escape_html(row.label)}</span>
+						<span><b>${__("Include")}</b> — ${frappe.utils.escape_html(row.label)}</span>
 					</label>
 					<button type="button" class="btn btn-xs btn-default ic-sec-up" title="${__("Move up")}">↑</button>
 					<button type="button" class="btn btn-xs btn-default ic-sec-down" title="${__("Move down")}">↓</button>
@@ -3151,6 +3172,7 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 		$list.find(".ic-sec-include").on("change", function () {
 			const idx = cint($(this).closest(".ic-section-arrange-row").data("idx"));
 			state[idx].include = $(this).is(":checked") ? 1 : 0;
+			applyIncludeLive(state[idx]);
 		});
 		$list.find(".ic-sec-up").on("click", function () {
 			const idx = cint($(this).closest(".ic-section-arrange-row").data("idx"));
@@ -3191,10 +3213,16 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			"ic_applicable_standards_text",
 		],
 		ic_show_process: ["ic_process_steps"],
-		ic_show_validity: ["ic_validity_text", "ic_validity_days"],
+		ic_show_validity: ["ic_validity_text", "ic_validity_days", "ic_label_validity"],
 		ic_show_sample_required: ["ic_sample_required", "ic_samples_note"],
 		ic_show_documents_required: ["ic_documents_required"],
-		ic_show_timelines: ["ic_estimated_timeline", "ic_timeline_details", "ic_section_docs_timeline"],
+		ic_show_timelines: [
+			"ic_estimated_timeline",
+			"ic_timeline_details",
+			"ic_section_docs_timeline",
+			"ic_label_timelines",
+			"ic_label_timeline",
+		],
 		ic_show_deliverables: ["ic_deliverables"],
 		ic_show_commercials: [
 			"ic_section_test_lines",
@@ -3207,7 +3235,11 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			"ic_total_quoted_value",
 			"ic_commercials_notes",
 		],
-		ic_show_payment_terms: ["ic_payment_terms"],
+		ic_show_payment_terms: [
+			"ic_payment_terms",
+			"ic_label_payment_terms",
+			"ic_label_payment_term",
+		],
 		ic_show_banking: ["ic_bank_account"],
 		ic_show_cancellation: ["ic_cancellation_policy"],
 		ic_show_force_majeure: ["ic_force_majeure"],
@@ -3598,6 +3630,12 @@ instacertify.toggle_quotation_sections = function (frm) {
 	// Print section toggles — always editable; uncheck to hide that row on PDF
 	if (frm.fields_dict.ic_section_print_sections) {
 		frm.toggle_display("ic_section_print_sections", true);
+		frm.set_df_property("ic_section_print_sections", "collapsible", 0);
+		frm.set_df_property(
+			"ic_section_print_sections",
+			"label",
+			__("Print Sections — Uncheck to Hide on PDF")
+		);
 		frm.set_df_property(
 			"ic_section_print_sections",
 			"description",
@@ -3606,6 +3644,13 @@ instacertify.toggle_quotation_sections = function (frm) {
 			)
 		);
 	}
+	[
+		["ic_show_validity", __("Show Validity")],
+		["ic_show_payment_terms", __("Show Payment Terms")],
+		["ic_show_timelines", __("Show Estimated Timelines")],
+	].forEach(([f, label]) => {
+		if (frm.fields_dict[f]) frm.set_df_property(f, "label", label);
+	});
 	[
 		"ic_show_about",
 		"ic_show_applicable_standards",

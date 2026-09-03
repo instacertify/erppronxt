@@ -412,6 +412,13 @@ QUOTATION_HTML = """
     {{ doc.ic_terms_and_conditions or doc.terms or '' }}
   </div>
   {% endif %}
+  {% if _sk == 'validity' and quote_section_on(doc, 'ic_show_validity') %}
+  <div class="ic-box">
+    <h3>Validity</h3>
+    {% if doc.ic_validity_text %}{{ doc.ic_validity_text | replace('\t', ' ') }}
+    {% else %}<p>This quotation is valid for {{ doc.ic_validity_days or 90 }} days from the date of issuance unless otherwise specified.</p>{% endif %}
+  </div>
+  {% endif %}
   {% if _sk == 'payment_terms' and quote_section_on(doc, 'ic_show_payment_terms') %}
   <div class="ic-box">
     <h3>Payment Terms</h3>
@@ -1435,7 +1442,9 @@ CONSULTING_QUOTATION_HTML = """
           <ul>
             <li>Professional Consultancy Charges shall be payable upon confirmation of the project and commencement of consultancy services.</li>
             <li>Government Fees and Product Testing Charges shall be payable in advance.</li>
+            {% if quote_section_on(doc, 'ic_show_validity') %}
             <li>This quotation is valid for {{ doc.ic_validity_days or 90 }} days from the date of issuance unless otherwise specified.</li>
+            {% endif %}
           </ul>
         {% endif %}
 """ + GST_PAYMENT_TERMS_NOTE_HTML + """

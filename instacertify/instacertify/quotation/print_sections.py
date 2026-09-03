@@ -66,7 +66,7 @@ SECTION_META: dict[str, dict[str, Any]] = {
 	"validity": {
 		"show_field": "ic_show_validity",
 		"label": "Validity",
-		"form_fields": ["ic_validity_text", "ic_validity_days"],
+		"form_fields": ["ic_validity_text", "ic_validity_days", "ic_label_validity"],
 	},
 	"sample_required": {
 		"show_field": "ic_show_sample_required",
@@ -81,7 +81,13 @@ SECTION_META: dict[str, dict[str, Any]] = {
 	"timelines": {
 		"show_field": "ic_show_timelines",
 		"label": "Estimated Timelines",
-		"form_fields": ["ic_estimated_timeline", "ic_timeline_details", "ic_section_docs_timeline"],
+		"form_fields": [
+			"ic_estimated_timeline",
+			"ic_timeline_details",
+			"ic_section_docs_timeline",
+			"ic_label_timelines",
+			"ic_label_timeline",
+		],
 	},
 	"deliverables": {
 		"show_field": "ic_show_deliverables",
@@ -108,7 +114,7 @@ SECTION_META: dict[str, dict[str, Any]] = {
 		"show_field": "ic_show_payment_terms",
 		"label": "Payment Terms",
 		# Own content only — policies header is OR of payment/cancel/confidentiality/banking
-		"form_fields": ["ic_payment_terms"],
+		"form_fields": ["ic_payment_terms", "ic_label_payment_terms", "ic_label_payment_term"],
 	},
 	"banking": {
 		"show_field": "ic_show_banking",

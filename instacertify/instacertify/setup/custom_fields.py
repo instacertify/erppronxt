@@ -673,8 +673,8 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "Print Sections — Uncheck to Hide on PDF",
 		"insert_after": "ic_label_sample_handling",
-		"collapsible": 1,
-		"description": "Uncheck to hide on Print/PDF/Share (Sample Required, Timelines, etc.). Prefills from Quote Format.",
+		"collapsible": 0,
+		"description": "Uncheck any box to hide that block on form + Print/PDF (e.g. Validity, Payment Terms, Estimated Timelines). Or use Print Sections → Arrange Sections…",
 	},
 	{
 		"fieldname": "ic_show_about",
