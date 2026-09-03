@@ -673,8 +673,8 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "Print Sections — Uncheck to Hide on PDF",
 		"insert_after": "ic_label_sample_handling",
-		"collapsible": 1,
-		"description": "Uncheck to hide on Print/PDF/Share (Sample Required, Timelines, etc.). Prefills from Quote Format.",
+		"collapsible": 0,
+		"description": "Uncheck any box to hide that block on form + Print/PDF (e.g. Validity, Payment Terms, Estimated Timelines). Or use Print Sections → Arrange Sections…",
 	},
 	{
 		"fieldname": "ic_show_about",
@@ -703,6 +703,7 @@ QUOTATION_FIELDS = [
 		"label": "Show Validity",
 		"default": 1,
 		"insert_after": "ic_show_process",
+		"description": "Uncheck to hide Validity on form + Print/PDF.",
 	},
 	{
 		"fieldname": "ic_show_sample_required",
@@ -721,9 +722,10 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_show_timelines",
 		"fieldtype": "Check",
-		"label": "Show Timelines",
+		"label": "Show Estimated Timelines",
 		"default": 1,
 		"insert_after": "ic_show_documents_required",
+		"description": "Uncheck to hide Estimated Timelines on form + Print/PDF.",
 	},
 	{
 		"fieldname": "ic_show_deliverables",
@@ -750,6 +752,7 @@ QUOTATION_FIELDS = [
 		"label": "Show Payment Terms",
 		"default": 1,
 		"insert_after": "ic_show_commercials",
+		"description": "Uncheck to hide Payment Terms on form + Print/PDF.",
 	},
 	{
 		"fieldname": "ic_show_banking",
@@ -1024,8 +1027,9 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_sample_required",
 		"fieldtype": "Text Editor",
-		"label": "Sample Required",
+		"label": "Sample required text",
 		"insert_after": "ic_timeline_details",
+		"description": "Printed under Sample Required — body only, no repeated heading.",
 	},
 	{
 		"fieldname": "ic_documents_required",
@@ -1057,9 +1061,9 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_deliverables",
 		"fieldtype": "Text Editor",
-		"label": "Deliverables",
+		"label": "Deliverables text",
 		"insert_after": "ic_scope_of_work",
-		"description": "Editable on every quote — prints when Deliverables is included.",
+		"description": "Printed under Deliverables heading — body only. Editable on every quote.",
 	},
 	# --- Testing (then Test Lines → Commercials → Final Costing, stacked) ---
 	{
@@ -1219,20 +1223,23 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_payment_terms",
 		"fieldtype": "Text Editor",
-		"label": "Payment Terms",
+		"label": "Payment terms text",
 		"insert_after": "ic_bank_account",
+		"description": "Printed under the Payment Terms heading — do not repeat the heading here.",
 	},
 	{
 		"fieldname": "ic_cancellation_policy",
 		"fieldtype": "Text Editor",
-		"label": "Cancellation & Refund Policy",
+		"label": "Cancellation policy text",
 		"insert_after": "ic_payment_terms",
+		"description": "Printed under Cancellation heading — body only.",
 	},
 	{
 		"fieldname": "ic_confidentiality",
 		"fieldtype": "Text Editor",
-		"label": "Confidentiality & Data Protection",
+		"label": "Confidentiality text",
 		"insert_after": "ic_cancellation_policy",
+		"description": "Printed under Confidentiality heading — body only.",
 	},
 	{
 		"fieldname": "ic_section_products",
@@ -1259,14 +1266,16 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_terms_and_conditions",
 		"fieldtype": "Text Editor",
-		"label": "Terms and Conditions",
+		"label": "Terms text",
 		"insert_after": "ic_section_terms",
+		"description": "Printed under Terms and Conditions — do not repeat the heading.",
 	},
 	{
 		"fieldname": "ic_force_majeure",
 		"fieldtype": "Text Editor",
-		"label": "Force Majeure",
+		"label": "Force majeure text",
 		"insert_after": "ic_terms_and_conditions",
+		"description": "Printed under Force Majeure heading — body only.",
 	},
 	{
 		"fieldname": "ic_parent_quotation",
