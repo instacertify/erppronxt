@@ -458,6 +458,9 @@ def _ensure_test_lines_on_consulting():
 		"eval:in_list(['Testing','Consulting','Renewal','Service','Other',"
 		"'Multiple Products / Multiple Services'], doc.ic_quotation_type)"
 	)
+	consulting_depends = (
+		"eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)"
+	)
 	try:
 		if frappe.db.exists("Custom Field", "Quotation-ic_section_test_lines"):
 			frappe.db.set_value(
@@ -471,6 +474,40 @@ def _ensure_test_lines_on_consulting():
 						"Total = Unit Price × No. of Samples."
 					),
 					"label": "Test Lines — Laboratory, Scope & Charges",
+				},
+				update_modified=False,
+			)
+		for cf_name in (
+			"Quotation-ic_section_about",
+			"Quotation-ic_section_docs_timeline",
+			"Quotation-ic_section_scope",
+			"Quotation-ic_section_service",
+		):
+			if frappe.db.exists("Custom Field", cf_name):
+				frappe.db.set_value(
+					"Custom Field",
+					cf_name,
+					"depends_on",
+					consulting_depends,
+					update_modified=False,
+				)
+		if frappe.db.exists("Custom Field", "Quotation-ic_scope_of_work"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_scope_of_work",
+				{
+					"label": "Scope of Work",
+					"description": "Editable on every quote — prints under About / Scope.",
+				},
+				update_modified=False,
+			)
+		if frappe.db.exists("Custom Field", "Quotation-ic_deliverables"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_deliverables",
+				{
+					"label": "Deliverables",
+					"description": "Editable on every quote — prints when Deliverables is included.",
 				},
 				update_modified=False,
 			)
