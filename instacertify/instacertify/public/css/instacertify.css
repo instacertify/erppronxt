@@ -6462,8 +6462,8 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   stroke-width: 0 !important;
   color: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
-  width: clamp(14px, 1.8vw, 18px) !important;
-  height: clamp(14px, 1.8vw, 18px) !important;
+  width: 18px !important;
+  height: 18px !important;
   max-width: 100% !important;
   max-height: 100% !important;
   opacity: 1 !important;
@@ -6479,8 +6479,8 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   fill: none !important;
   color: #0B1820 !important;
   --icon-stroke: #0B1820 !important;
-  width: clamp(14px, 1.8vw, 18px) !important;
-  height: clamp(14px, 1.8vw, 18px) !important;
+  width: 18px !important;
+  height: 18px !important;
   max-width: 100% !important;
   max-height: 100% !important;
   opacity: 1 !important;
@@ -6715,8 +6715,8 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   stroke: none !important;
   opacity: 1 !important;
   visibility: visible !important;
-  width: clamp(14px, 1.8vw, 18px) !important;
-  height: clamp(14px, 1.8vw, 18px) !important;
+  width: 18px !important;
+  height: 18px !important;
   max-width: 100% !important;
   max-height: 100% !important;
 }
@@ -6725,8 +6725,8 @@ body .input-with-feedback:not([disabled]):not([readonly]):focus,
   fill: none !important;
   opacity: 1 !important;
   visibility: visible !important;
-  width: clamp(14px, 1.8vw, 18px) !important;
-  height: clamp(14px, 1.8vw, 18px) !important;
+  width: 18px !important;
+  height: 18px !important;
   max-width: 100% !important;
   max-height: 100% !important;
 }
