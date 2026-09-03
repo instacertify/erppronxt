@@ -1742,13 +1742,19 @@ instacertify.apply_favicon_brand_icons = function (root) {
 	let _icDecorateTimer = null;
 	const schedule = () => {
 		if (_icDecorateTimer) clearTimeout(_icDecorateTimer);
-		_icDecorateTimer = setTimeout(decorateAll, 80);
+		// Longer debounce — rapid MutationObserver bursts were causing icon fidget
+		_icDecorateTimer = setTimeout(decorateAll, 140);
 	};
 
 	$(document).on("page-change", () => {
-		$(".page-icon-group").removeData("ic-styled");
-		$(".page-icon-group .icon-btn, .page-icon-group button").removeData("ic-box");
-		$(".btn").removeData("ic-icon-ready");
+		// Only reset the active page toolbar — clearing every .btn site-wide
+		// forced re-injection and made icons jump on every route change.
+		const $active =
+			$(".page-container:not(.hide) .page-icon-group, .page-head:visible .page-icon-group").first();
+		if ($active.length) {
+			$active.removeData("ic-styled");
+			$active.find(".icon-btn, button").removeData("ic-box");
+		}
 		schedule();
 	});
 	$(document).on("form-refresh", schedule);
@@ -1764,7 +1770,9 @@ instacertify.apply_favicon_brand_icons = function (root) {
 	// Watch page-head — only when new undecorated buttons appear (avoids bounce)
 	try {
 		if (window.MutationObserver) {
+			let _moBusy = false;
 			const mo = new MutationObserver((mutations) => {
+				if (_moBusy) return;
 				for (let i = 0; i < mutations.length; i++) {
 					const nodes = mutations[i].addedNodes;
 					if (!nodes || !nodes.length) continue;
@@ -1776,7 +1784,11 @@ instacertify.apply_favicon_brand_icons = function (root) {
 							$n.is(".btn, .icon-btn, .page-icon-group, .page-actions") ||
 							$n.find(".btn:not(.ic-has-action-icon), .icon-btn:not([data-ic-box])").length
 						) {
+							_moBusy = true;
 							schedule();
+							setTimeout(() => {
+								_moBusy = false;
+							}, 200);
 							return;
 						}
 					}

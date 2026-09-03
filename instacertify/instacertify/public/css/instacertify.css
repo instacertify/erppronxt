@@ -7037,3 +7037,96 @@ body,
 .page-icon-group .icon-btn:active {
   transform: none !important;
 }
+
+/* ==========================================================================
+   ERP-wide icon stability — fixed glyph size, no viewport clamp, no hover jump
+   ========================================================================== */
+.page-head svg.icon,
+.page-head svg.es-icon,
+.page-actions svg.icon,
+.page-actions svg.es-icon,
+.page-icon-group svg.icon,
+.page-icon-group svg.es-icon,
+.standard-actions svg.icon,
+.standard-actions svg.es-icon,
+.modal-header svg.icon,
+.modal-header svg.es-icon,
+.ic-action-icon svg.icon,
+.ic-action-icon svg.es-icon,
+.menu-item-icon svg.icon,
+.menu-item-icon svg.es-icon,
+.list-row-container .btn svg.icon,
+.list-row-container .btn svg.es-icon,
+.form-dashboard svg.icon,
+.form-dashboard svg.es-icon,
+.workspace-sidebar svg.icon,
+.workspace-sidebar svg.es-icon,
+.desk-sidebar svg.icon,
+.desk-sidebar svg.es-icon,
+.navbar .dropdown-navbar-user svg.icon,
+.navbar .dropdown-help svg.icon,
+.navbar .notifications-icon svg.icon,
+.navbar svg.es-icon {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  flex-shrink: 0 !important;
+  transform: none !important;
+}
+
+.ic-action-icon,
+.menu-item-icon {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Toolbar / action buttons: fixed hit-box so icons never reflow the bar */
+.page-head .btn,
+.page-actions .btn,
+.standard-actions .btn,
+.modal-header .btn,
+.list-row-action .btn,
+.row-actions .btn {
+  transform: none !important;
+}
+.page-head .btn:hover,
+.page-actions .btn:hover,
+.standard-actions .btn:hover,
+.page-icon-group .icon-btn:hover,
+.page-icon-group button:hover,
+.modal-header .btn:hover {
+  transform: none !important;
+}
+
+/* Sidebar nav icons — lock size so workspace switch doesn't jitter */
+.desk-sidebar .sidebar-item-icon,
+.workspace-sidebar .sidebar-item-icon,
+.desk-sidebar .item-anchor .sidebar-item-icon,
+.sidebar-item-container .sidebar-item-icon {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  flex-shrink: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.desk-sidebar .sidebar-item-icon svg,
+.workspace-sidebar .sidebar-item-icon svg,
+.sidebar-item-container .sidebar-item-icon svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  transform: none !important;
+}
+
