@@ -15,7 +15,7 @@ QUOTE_PRINT_SECTIONS: list[tuple[str, str, str]] = [
 	("show_validity", "ic_show_validity", "Validity"),
 	("show_sample_required", "ic_show_sample_required", "Sample Required"),
 	("show_documents_required", "ic_show_documents_required", "Documents Required"),
-	("show_timelines", "ic_show_timelines", "Timelines"),
+	("show_timelines", "ic_show_timelines", "Estimated Timelines"),
 	("show_deliverables", "ic_show_deliverables", "Deliverables"),
 	("show_commercials", "ic_show_commercials", "Commercials"),
 	("show_payment_terms", "ic_show_payment_terms", "Payment Terms"),
@@ -80,7 +80,7 @@ SECTION_META: dict[str, dict[str, Any]] = {
 	},
 	"timelines": {
 		"show_field": "ic_show_timelines",
-		"label": "Timelines",
+		"label": "Estimated Timelines",
 		"form_fields": ["ic_estimated_timeline", "ic_timeline_details", "ic_section_docs_timeline"],
 	},
 	"deliverables": {

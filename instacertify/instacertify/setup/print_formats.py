@@ -897,6 +897,20 @@ TESTING_QUOTATION_HTML = """
           </tr>
     </table>
     {% endif %}
+    {% if _sk == 'validity' and quote_section_on(doc, 'ic_show_validity') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_validity or 'Validity' }}</td>
+            <td class="tq-value">
+              {% if doc.ic_validity_text %}
+                {{ doc.ic_validity_text | replace('\t', ' ') }}
+              {% else %}
+                <p>This quotation is valid for {{ doc.ic_validity_days or 90 }} days from the date of issuance unless otherwise specified.</p>
+              {% endif %}
+            </td>
+          </tr>
+    </table>
+    {% endif %}
     {% if _sk == 'sample_required' and quote_section_on(doc, 'ic_show_sample_required') %}
     <table class="tq-grid" style="margin-top:-1px;">
       <tr>

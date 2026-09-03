@@ -3010,7 +3010,7 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 		{ key: "validity", show_field: "ic_show_validity", label: __("Validity") },
 		{ key: "sample_required", show_field: "ic_show_sample_required", label: __("Sample Required") },
 		{ key: "documents_required", show_field: "ic_show_documents_required", label: __("Documents Required") },
-		{ key: "timelines", show_field: "ic_show_timelines", label: __("Timelines") },
+		{ key: "timelines", show_field: "ic_show_timelines", label: __("Estimated Timelines") },
 		{ key: "deliverables", show_field: "ic_show_deliverables", label: __("Deliverables") },
 		{ key: "commercials", show_field: "ic_show_commercials", label: __("Commercials / Test Lines") },
 		{ key: "payment_terms", show_field: "ic_show_payment_terms", label: __("Payment Terms") },
@@ -3602,7 +3602,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_section_print_sections",
 			"description",
 			__(
-				"Uncheck to hide on form + Print/PDF (Sample Required, Timelines, …). Or Print Sections → Arrange Sections… to delete and reorder."
+				"Uncheck any box to hide that block on form + Print/PDF (Validity, Payment Terms, Estimated Timelines, …). Or Print Sections → Arrange Sections… to untick Include and reorder."
 			)
 		);
 	}

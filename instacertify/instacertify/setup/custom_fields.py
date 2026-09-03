@@ -703,6 +703,7 @@ QUOTATION_FIELDS = [
 		"label": "Show Validity",
 		"default": 1,
 		"insert_after": "ic_show_process",
+		"description": "Uncheck to hide Validity on form + Print/PDF.",
 	},
 	{
 		"fieldname": "ic_show_sample_required",
@@ -721,9 +722,10 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_show_timelines",
 		"fieldtype": "Check",
-		"label": "Show Timelines",
+		"label": "Show Estimated Timelines",
 		"default": 1,
 		"insert_after": "ic_show_documents_required",
+		"description": "Uncheck to hide Estimated Timelines on form + Print/PDF.",
 	},
 	{
 		"fieldname": "ic_show_deliverables",
@@ -750,6 +752,7 @@ QUOTATION_FIELDS = [
 		"label": "Show Payment Terms",
 		"default": 1,
 		"insert_after": "ic_show_commercials",
+		"description": "Uncheck to hide Payment Terms on form + Print/PDF.",
 	},
 	{
 		"fieldname": "ic_show_banking",
