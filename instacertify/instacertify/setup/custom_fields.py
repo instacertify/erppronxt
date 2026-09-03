@@ -933,7 +933,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "3. Consulting / Service Basics",
 		"insert_after": "ic_qr_code",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -980,7 +980,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "4. About, Standards & Process",
 		"insert_after": "ic_validity_days",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -1006,7 +1006,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "5. Validity, Samples & Documents",
 		"insert_after": "ic_process_steps",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -1038,7 +1038,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "6. Scope, Deliverables & Commercial Notes",
 		"insert_after": "ic_documents_required",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -1050,14 +1050,16 @@ QUOTATION_FIELDS = [
 	{
 		"fieldname": "ic_scope_of_work",
 		"fieldtype": "Text Editor",
-		"label": "Scope of Work (Additional)",
+		"label": "Scope of Work",
 		"insert_after": "ic_commercials_notes",
+		"description": "Editable on every quote — prints under About / Scope.",
 	},
 	{
 		"fieldname": "ic_deliverables",
 		"fieldtype": "Text Editor",
 		"label": "Deliverables",
 		"insert_after": "ic_scope_of_work",
+		"description": "Editable on every quote — prints when Deliverables is included.",
 	},
 	# --- Testing (then Test Lines → Commercials → Final Costing, stacked) ---
 	{
@@ -1151,7 +1153,7 @@ QUOTATION_FIELDS = [
 		"label": "Cost Items / Commercials",
 		"options": "IC Quotation Cost Item",
 		"insert_after": "ic_section_costing",
-		"description": "Shown directly under Test Lines on Testing quotes. Unit Price × No. of Units = Total. Same currency as Customer. Testing Charges + these lines = Final Costing.",
+		"description": "Shown directly under Test Lines on Testing quotes. Unit Price × No. of Units = Total. Set Currency per line for multi-currency quotes. Testing Charges + these lines = Final Costing.",
 	},
 	{
 		"fieldname": "ic_section_cost_totals",

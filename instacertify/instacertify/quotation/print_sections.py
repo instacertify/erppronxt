@@ -293,3 +293,80 @@ def section_catalog_for_client(quotation_type: str | None = None) -> list[dict[s
 			}
 		)
 	return rows
+
+
+def quote_line_currency(row=None, doc=None) -> str:
+	"""Currency for a quote line — row override, else quotation primary, else INR."""
+	cur = None
+	if row is not None:
+		try:
+			cur = row.get("currency") if hasattr(row, "get") else getattr(row, "currency", None)
+		except Exception:
+			cur = getattr(row, "currency", None)
+	if not cur and doc is not None:
+		try:
+			cur = doc.get("currency") if hasattr(doc, "get") else getattr(doc, "currency", None)
+		except Exception:
+			cur = getattr(doc, "currency", None)
+	cur = (str(cur).strip() if cur else "") or "INR"
+	return cur
+
+
+def quote_money(amount, currency=None, doc=None) -> str:
+	"""Format an amount in the given (or document) currency for Print/PDF."""
+	from frappe.utils import fmt_money
+
+	cur = (currency or "").strip() if currency else ""
+	if not cur:
+		cur = quote_line_currency(None, doc)
+	try:
+		amt = float(amount or 0)
+	except Exception:
+		amt = 0.0
+	if cur == "INR":
+		try:
+			return f"₹{amt:,.0f}/-"
+		except Exception:
+			pass
+	try:
+		return fmt_money(amt, currency=cur)
+	except Exception:
+		return f"{cur} {amt:,.2f}"
+
+
+def quote_totals_by_currency(doc) -> list[dict[str, Any]]:
+	"""Per-currency testing / commercials / combined totals for multi-currency quotes."""
+	from collections import OrderedDict
+
+	buckets: OrderedDict[str, dict[str, Any]] = OrderedDict()
+
+	def bump(cur: str, *, testing: float = 0.0, cost: float = 0.0) -> None:
+		cur = (cur or "INR").strip() or "INR"
+		if cur not in buckets:
+			buckets[cur] = {"currency": cur, "testing": 0.0, "cost": 0.0, "total": 0.0}
+		buckets[cur]["testing"] += float(testing or 0)
+		buckets[cur]["cost"] += float(cost or 0)
+		buckets[cur]["total"] = buckets[cur]["testing"] + buckets[cur]["cost"]
+
+	for row in (doc.get("ic_test_items") if doc else None) or []:
+		units = float(row.get("number_of_samples") or 1) or 1.0
+		per = row.get("suggested_selling_price")
+		if per in (None, ""):
+			per = row.get("per_unit_charges")
+		total = row.get("testing_charges")
+		if total in (None, ""):
+			try:
+				total = float(per or 0) * units
+			except Exception:
+				total = 0.0
+		bump(quote_line_currency(row, doc), testing=float(total or 0))
+
+	for row in (doc.get("ic_cost_items") if doc else None) or []:
+		units = float(row.get("qty") or 1) or 1.0
+		per = float(row.get("amount") or 0)
+		total = row.get("total_amount")
+		if total in (None, ""):
+			total = per * units
+		bump(quote_line_currency(row, doc), cost=float(total or 0))
+
+	return list(buckets.values())

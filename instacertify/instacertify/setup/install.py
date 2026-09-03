@@ -415,6 +415,54 @@ def setup_custom_fields():
 	_ensure_test_item_samples_editable()
 	_ensure_test_lines_on_consulting()
 	_ensure_test_item_price_columns()
+	_ensure_quote_line_currency_fields()
+
+
+def _ensure_quote_line_currency_fields():
+	"""Show per-line Currency on Test Lines and Commercials for multi-currency quotes."""
+	try:
+		for parent in ("IC Quotation Test Item", "IC Quotation Cost Item"):
+			frappe.db.sql(
+				"""
+				update `tabDocField`
+				set hidden=0, in_list_view=1, columns=1, reqd=0,
+				    label=%s, description=%s
+				where parent=%s and fieldname='currency'
+				""",
+				(
+					"Currency",
+					"Per-line currency. Defaults to the quotation primary currency; "
+					"change for multi-currency quotes.",
+					parent,
+				),
+			)
+			for ps in frappe.get_all(
+				"Property Setter",
+				filters={
+					"doc_type": parent,
+					"field_name": "currency",
+					"property": ["in", ["hidden", "in_list_view", "columns", "label"]],
+				},
+				pluck="name",
+			):
+				try:
+					frappe.delete_doc("Property Setter", ps, force=1, ignore_permissions=True)
+				except Exception:
+					pass
+			frappe.clear_cache(doctype=parent)
+		# Cost items table description on Quotation
+		if frappe.db.exists("Custom Field", "Quotation-ic_cost_items"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_cost_items",
+				"description",
+				"Shown directly under Test Lines on Testing quotes. Unit Price × No. of Units = Total. "
+				"Set Currency per line for multi-currency quotes. Testing Charges + these lines = Final Costing.",
+				update_modified=False,
+			)
+		frappe.clear_cache(doctype="Quotation")
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "ensure quote line currency fields")
 
 
 def _ensure_quotation_section_order_field():
@@ -458,6 +506,9 @@ def _ensure_test_lines_on_consulting():
 		"eval:in_list(['Testing','Consulting','Renewal','Service','Other',"
 		"'Multiple Products / Multiple Services'], doc.ic_quotation_type)"
 	)
+	consulting_depends = (
+		"eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)"
+	)
 	try:
 		if frappe.db.exists("Custom Field", "Quotation-ic_section_test_lines"):
 			frappe.db.set_value(
@@ -471,6 +522,40 @@ def _ensure_test_lines_on_consulting():
 						"Total = Unit Price × No. of Samples."
 					),
 					"label": "Test Lines — Laboratory, Scope & Charges",
+				},
+				update_modified=False,
+			)
+		for cf_name in (
+			"Quotation-ic_section_about",
+			"Quotation-ic_section_docs_timeline",
+			"Quotation-ic_section_scope",
+			"Quotation-ic_section_service",
+		):
+			if frappe.db.exists("Custom Field", cf_name):
+				frappe.db.set_value(
+					"Custom Field",
+					cf_name,
+					"depends_on",
+					consulting_depends,
+					update_modified=False,
+				)
+		if frappe.db.exists("Custom Field", "Quotation-ic_scope_of_work"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_scope_of_work",
+				{
+					"label": "Scope of Work",
+					"description": "Editable on every quote — prints under About / Scope.",
+				},
+				update_modified=False,
+			)
+		if frappe.db.exists("Custom Field", "Quotation-ic_deliverables"):
+			frappe.db.set_value(
+				"Custom Field",
+				"Quotation-ic_deliverables",
+				{
+					"label": "Deliverables",
+					"description": "Editable on every quote — prints when Deliverables is included.",
 				},
 				update_modified=False,
 			)

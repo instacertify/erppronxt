@@ -181,7 +181,10 @@
    "fieldtype": "Link",
    "options": "Currency",
    "label": "Currency",
-   "hidden": 1
+   "in_list_view": 1,
+   "columns": 1,
+   "reqd": 0,
+   "description": "Per-line currency. Defaults to the quotation primary currency; change for multi-currency quotes."
   }
  ],
  "permissions": [],

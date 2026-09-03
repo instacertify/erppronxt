@@ -53,10 +53,15 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 			grid.update_docfield_property("qty", "read_only", 0);
 			grid.update_docfield_property("charges_display", "hidden", 1);
 			grid.update_docfield_property("charges_display", "in_list_view", 0);
+			grid.update_docfield_property("currency", "hidden", 0);
+			grid.update_docfield_property("currency", "in_list_view", 1);
 		}
 		const row = locals[cdt][cdn];
 		if (row && !cint(row.qty)) {
 			frappe.model.set_value(cdt, cdn, "qty", 1);
+		}
+		if (row && !(row.currency || "").trim() && frm.doc.currency) {
+			frappe.model.set_value(cdt, cdn, "currency", frm.doc.currency);
 		}
 		recalc_cost_line_total(cdt, cdn);
 		const grid_row = frm.open_grid_row && frm.open_grid_row();
@@ -87,6 +92,11 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 	},
 	qty(frm, cdt, cdn) {
 		recalc_cost_line_total(cdt, cdn);
+	},
+	currency(frm) {
+		if (frm && window.instacertify && instacertify.render_customer_currency_banner) {
+			instacertify.render_customer_currency_banner(frm);
+		}
 	},
 	revenue_treatment(frm, cdt, cdn) {
 		sync_revenue_from_treatment(cdt, cdn);
