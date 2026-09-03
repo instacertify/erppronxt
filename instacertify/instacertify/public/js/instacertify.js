@@ -3164,7 +3164,6 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			"ic_about_service",
 			"ic_about_testing",
 			"ic_scope_of_work",
-			"ic_section_scope",
 		],
 		ic_show_applicable_standards: [
 			"ic_applicable_standard",
@@ -3176,7 +3175,7 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 		ic_show_sample_required: ["ic_sample_required", "ic_samples_note"],
 		ic_show_documents_required: ["ic_documents_required"],
 		ic_show_timelines: ["ic_estimated_timeline", "ic_timeline_details", "ic_section_docs_timeline"],
-		ic_show_deliverables: ["ic_deliverables", "ic_section_scope"],
+		ic_show_deliverables: ["ic_deliverables"],
 		ic_show_commercials: [
 			"ic_section_test_lines",
 			"ic_test_items",
@@ -3193,7 +3192,7 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 		ic_show_cancellation: ["ic_cancellation_policy"],
 		ic_show_force_majeure: ["ic_force_majeure"],
 		ic_show_confidentiality: ["ic_confidentiality"],
-		ic_show_terms: ["ic_terms_and_conditions", "ic_section_terms"],
+		ic_show_terms: ["ic_terms_and_conditions"],
 		ic_show_sample_handling: ["ic_sample_handling_policy"],
 	};
 
@@ -3450,17 +3449,8 @@ instacertify.toggle_quotation_sections = function (frm) {
 	].forEach((f) => {
 		if (frm.fields_dict[f]) frm.toggle_display(f, sectionOn("ic_show_commercials"));
 	});
-	[
-		"ic_section_policies",
-		"ic_bank_account",
-		"ic_payment_terms",
-		"ic_cancellation_policy",
-		"ic_confidentiality",
-		"ic_section_terms",
-		"ic_force_majeure",
-	].forEach((f) => {
-		if (frm.fields_dict[f]) frm.toggle_display(f, true);
-	});
+	// Do NOT force-show policies/terms/bank here — apply_quotation_section_visibility owns that
+	// (force-show was merging unchecked sections back into the form).
 
 	// Prefill / narrative fields — fully editable on every quote (except banking details)
 	instacertify.unlock_quotation_content_fields(frm);
@@ -3707,7 +3697,7 @@ frappe.ui.form.on("IC Quotation Test Item", {
 	},
 	purchase_price(frm, cdt, cdn) {},
 	currency(frm, cdt, cdn) {
-		instacertify.render_customer_currency_banner(frm);
+		instacertify.refresh_quote_line_currency(frm, "ic_test_items");
 	},
 });
 
@@ -3772,6 +3762,19 @@ instacertify.configure_test_item_price_columns = function (frm) {
 			grid.update_docfield_property("currency", "hidden", 0);
 			grid.update_docfield_property("currency", "in_list_view", 1);
 			grid.update_docfield_property("currency", "columns", 1);
+			// Keep Currency before Unit Price in the editable grid when possible
+			try {
+				const df = grid.docfields || [];
+				const cur = df.find((d) => d.fieldname === "currency");
+				const price = df.find((d) => d.fieldname === "suggested_selling_price");
+				if (cur && price && cur.idx > price.idx) {
+					const tmp = cur.idx;
+					cur.idx = price.idx;
+					price.idx = tmp;
+				}
+			} catch (e) {
+				/* ignore */
+			}
 		} catch (e) {
 			/* ignore */
 		}
@@ -3814,17 +3817,20 @@ instacertify.recalc_test_row = function (frm, cdt, cdn) {
 	}
 };
 
-/** Live Final Costing strip: Test Lines + Commercials (mirrors server _calculate_revenue_split). */
+/** Live Final Costing strip: Test Lines + Commercials (respects Do Not Sum + per-currency). */
 instacertify.refresh_quotation_cost_totals = function (frm) {
 	if (!frm || !frm.doc) return;
-	let testing = 0;
+	const byCur = {};
+	const add = (cur, amt) => {
+		const c = (cur || frm.doc.currency || "INR").trim() || "INR";
+		byCur[c] = (byCur[c] || 0) + flt(amt);
+	};
 	(frm.doc.ic_test_items || []).forEach((row) => {
-		testing += flt(row.testing_charges);
+		add(row.currency, row.testing_charges);
 	});
 	let commercial = 0;
 	let passthrough = 0;
 	(frm.doc.ic_cost_items || []).forEach((row) => {
-		// Do Not Sum / custom text-only → skip Final Costing
 		if (cint(row.exclude_from_total)) return;
 		const custom = (row.charges_display || "").trim();
 		const qty = cint(row.qty) || 1;
@@ -3833,6 +3839,7 @@ instacertify.refresh_quotation_cost_totals = function (frm) {
 				? flt(row.total_amount)
 				: flt(row.amount) * qty;
 		if (custom && !flt(row.amount) && !amount) return;
+		add(row.currency, amount);
 		const treatment = (row.revenue_treatment || "").trim();
 		let isPass = false;
 		if (treatment === "Do Not Count as Revenue") isPass = true;
@@ -3849,6 +3856,10 @@ instacertify.refresh_quotation_cost_totals = function (frm) {
 		if (isPass) passthrough += amount;
 		else commercial += amount;
 	});
+	let testing = 0;
+	(frm.doc.ic_test_items || []).forEach((row) => {
+		testing += flt(row.testing_charges);
+	});
 	if (frm.fields_dict.ic_commercial_value) {
 		frm.doc.ic_commercial_value = commercial + testing;
 		frm.refresh_field("ic_commercial_value");
@@ -3860,6 +3871,33 @@ instacertify.refresh_quotation_cost_totals = function (frm) {
 	if (frm.fields_dict.ic_total_quoted_value) {
 		frm.doc.ic_total_quoted_value = commercial + testing + passthrough;
 		frm.refresh_field("ic_total_quoted_value");
+		const keys = Object.keys(byCur);
+		if (keys.length > 1) {
+			const parts = keys.map((c) => `${c}: ${format_currency(byCur[c], c)}`);
+			frm.set_df_property(
+				"ic_total_quoted_value",
+				"description",
+				__("Mixed currencies — Print totals by currency: {0}", [parts.join(" · ")])
+			);
+		} else {
+			frm.set_df_property(
+				"ic_total_quoted_value",
+				"description",
+				__("Total Quoted Value (Final Costing). Do Not Sum / Custom text lines are excluded.")
+			);
+		}
+	}
+};
+
+/** Refresh amount symbols after a row currency change (Currency options="currency"). */
+instacertify.refresh_quote_line_currency = function (frm, tableField) {
+	if (!frm || !frm.fields_dict || !frm.fields_dict[tableField]) return;
+	frm.refresh_field(tableField);
+	if (typeof instacertify.render_customer_currency_banner === "function") {
+		instacertify.render_customer_currency_banner(frm);
+	}
+	if (typeof instacertify.refresh_quotation_cost_totals === "function") {
+		instacertify.refresh_quotation_cost_totals(frm);
 	}
 };
 

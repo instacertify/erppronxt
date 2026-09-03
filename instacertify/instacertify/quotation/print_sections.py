@@ -86,7 +86,8 @@ SECTION_META: dict[str, dict[str, Any]] = {
 	"deliverables": {
 		"show_field": "ic_show_deliverables",
 		"label": "Deliverables",
-		"form_fields": ["ic_deliverables", "ic_section_scope"],
+		# Own content only — shared section break handled in JS OR-helper
+		"form_fields": ["ic_deliverables"],
 	},
 	"commercials": {
 		"show_field": "ic_show_commercials",
@@ -106,7 +107,8 @@ SECTION_META: dict[str, dict[str, Any]] = {
 	"payment_terms": {
 		"show_field": "ic_show_payment_terms",
 		"label": "Payment Terms",
-		"form_fields": ["ic_payment_terms", "ic_section_policies", "ic_bank_account"],
+		# Own content only — policies header is OR of payment/cancel/confidentiality/banking
+		"form_fields": ["ic_payment_terms"],
 	},
 	"banking": {
 		"show_field": "ic_show_banking",
@@ -121,7 +123,7 @@ SECTION_META: dict[str, dict[str, Any]] = {
 	"force_majeure": {
 		"show_field": "ic_show_force_majeure",
 		"label": "Force Majeure",
-		"form_fields": ["ic_force_majeure", "ic_section_terms"],
+		"form_fields": ["ic_force_majeure"],
 	},
 	"confidentiality": {
 		"show_field": "ic_show_confidentiality",
@@ -323,14 +325,18 @@ def quote_money(amount, currency=None, doc=None) -> str:
 		amt = float(amount or 0)
 	except Exception:
 		amt = 0.0
-	if cur == "INR":
-		try:
-			return f"₹{amt:,.0f}/-"
-		except Exception:
-			pass
+	# Keep one consistent money style across currencies (avoids column skew)
 	try:
-		return fmt_money(amt, currency=cur)
+		formatted = fmt_money(amt, currency=cur)
+		if cur == "INR" and formatted and not str(formatted).endswith("/-"):
+			return f"{formatted}/-"
+		return formatted
 	except Exception:
+		if cur == "INR":
+			try:
+				return f"₹{amt:,.2f}/-"
+			except Exception:
+				pass
 		return f"{cur} {amt:,.2f}"
 
 
@@ -347,7 +353,7 @@ def quote_cost_line_ref(row=None, index=1) -> str:
 
 
 def quote_cost_charge_display(row, doc=None, kind: str = "total") -> str:
-	"""Commercial line charge for Print — Custom Value text wins over money."""
+	"""Commercial line charge for Print — Custom Value text wins on Total only."""
 	custom = ""
 	if row is not None:
 		try:
@@ -356,6 +362,9 @@ def quote_cost_charge_display(row, doc=None, kind: str = "total") -> str:
 			custom = getattr(row, "charges_display", None)
 	custom = (str(custom).strip() if custom else "")
 	if custom:
+		# Unit / currency / qty stay blank placeholders; Total shows the free text
+		if kind == "unit":
+			return "—"
 		return custom
 	try:
 		units = float(row.get("qty") or 1) or 1.0

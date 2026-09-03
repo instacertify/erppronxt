@@ -130,7 +130,9 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 		refresh_parent_cost_totals(frm);
 	},
 	currency(frm) {
-		if (frm && window.instacertify && instacertify.render_customer_currency_banner) {
+		if (frm && window.instacertify && instacertify.refresh_quote_line_currency) {
+			instacertify.refresh_quote_line_currency(frm, "ic_cost_items");
+		} else if (frm && window.instacertify && instacertify.render_customer_currency_banner) {
 			instacertify.render_customer_currency_banner(frm);
 		}
 	},
