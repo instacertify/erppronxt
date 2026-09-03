@@ -7194,3 +7194,22 @@ body,
 }
 
 
+
+/* Stable toolbar + quote grids — no jump/fidget on dropdown / selection changes */
+.page-head .page-icon-group,
+.page-actions .page-icon-group {
+  min-height: 32px;
+  align-items: center;
+}
+.ic-quotation-form .form-grid,
+.ic-quotation-form .grid-body,
+.ic-quotation-form .rows {
+  min-height: 0;
+}
+.ic-quotation-form .grid-row .data-row {
+  min-height: 40px;
+}
+.ic-customer-currency-banner {
+  min-height: 58px;
+  box-sizing: border-box;
+}

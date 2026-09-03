@@ -902,7 +902,6 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_samples_requirements or 'Samples Requirements' }}</td>
             <td class="tq-value">
-              <div class="tq-h">Sample Required</div>
               {% for row in doc.ic_test_items or [] %}
                 {%- set _n = row.number_of_samples or 1 -%}
                 <div style="margin-bottom:8px;">
@@ -1029,7 +1028,6 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_deliverable or 'Deliverable' }}</td>
             <td class="tq-value">
-              <div class="tq-h">Deliverables</div>
               {% if doc.ic_deliverables %}
                 <div class="tq-policy">{{ doc.ic_deliverables | replace('\t', ' ') }}</div>
               {% else %}
@@ -1048,7 +1046,6 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
             <td class="tq-value">
-              <div class="tq-h">{{ doc.ic_label_timeline or 'Timeline' }}</div>
               <ul>
                 <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
                 <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
@@ -1063,7 +1060,6 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_payment_term or 'Payment Term' }}</td>
             <td class="tq-value">
-              <div class="tq-h">Payment Terms</div>
               {% if doc.ic_payment_terms %}
                 {{ doc.ic_payment_terms | replace('\t', ' ') }}
               {% else %}
@@ -1106,7 +1102,6 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_banking or 'Our Banking Details' }}</td>
             <td class="tq-value">
-              <div class="tq-h">Bank Details for Payment</div>
       """ + BANK_UPI_PAYMENT_HTML + """
             </td>
           </tr>
@@ -1159,7 +1154,6 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">Terms and Conditions</td>
             <td class="tq-value">
-              <div class="tq-h">Terms and Conditions</div>
               {% if doc.ic_terms_and_conditions %}
                 {{ doc.ic_terms_and_conditions | replace('\t', ' ') }}
               {% elif doc.terms %}
@@ -1422,7 +1416,6 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_payment_terms or ('PAYMENT TERMS FOR ' ~ short) }}</div>
       <div class="cq-body">
-        <div class="cq-h">Payment Terms &amp; Conditions</div>
         {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
         {% else %}
           <ul>
@@ -1452,7 +1445,6 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_sample_required or ('SAMPLE REQUIRED FOR ' ~ short) }}</div>
       <div class="cq-body">
-        <div class="cq-h">Sample Required</div>
         {% if doc.ic_sample_required %}{{ doc.ic_sample_required }}
         {% else %}
           <p>One (01) product sample with complete accessories, packaging, technical specifications, and user manual shall be required for testing at a BIS-recognized laboratory. Additional samples, if required, shall be provided by the applicant.</p>
@@ -1485,7 +1477,6 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_banking or ('OUR BANKING DETAILS FOR ' ~ short) }}</div>
       <div class="cq-body">
-        <div class="cq-h">Bank Details for Payment</div>
 """ + BANK_UPI_PAYMENT_HTML + """
       </div>
     </div>
@@ -1495,7 +1486,6 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_cancellation or ('CANCELLATION & REFUND POLICY FOR ' ~ short) }}</div>
       <div class="cq-body">
-        <div class="cq-h">Cancellation &amp; Refund Policy</div>
         {% if doc.ic_cancellation_policy %}{{ doc.ic_cancellation_policy | replace('\t', ' ') }}
         {% else %}
           Testing fees are payable in advance and are non-refundable once samples have been submitted or testing has commenced. Government fees may be refunded only if they have not been deposited with the relevant authority. Consultancy fees are charged based on the work completed and are non-refundable once services have been rendered. Any eligible refund request must be submitted to Instacertify in writing within 7 working days of payment.
@@ -1531,7 +1521,6 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">Terms and Conditions</div>
       <div class="cq-body">
-        <div class="cq-h">Terms and Conditions</div>
         {% if doc.ic_terms_and_conditions %}{{ doc.ic_terms_and_conditions | replace('	', ' ') }}
         {% elif doc.terms %}{{ doc.terms | replace('	', ' ') }}
         {% endif %}

@@ -1743,8 +1743,17 @@ instacertify.apply_favicon_brand_icons = function (root) {
 	const schedule = () => {
 		if (_icDecorateTimer) clearTimeout(_icDecorateTimer);
 		// Longer debounce — rapid MutationObserver bursts were causing icon fidget
-		_icDecorateTimer = setTimeout(decorateAll, 140);
+		_icDecorateTimer = setTimeout(decorateAll, 200);
 	};
+
+	function needsDecoration() {
+		const $head = $(".page-head:visible .page-icon-group, .page-container:not(.hide) .page-icon-group").first();
+		if ($head.length && $head.find(".icon-btn:not([data-ic-box]), button:not([data-ic-box])").length) {
+			return true;
+		}
+		const $actions = $(".page-head:visible .page-actions .btn:not(.ic-has-action-icon)").first();
+		return !!$actions.length;
+	}
 
 	$(document).on("page-change", () => {
 		// Only reset the active page toolbar — clearing every .btn site-wide
@@ -1757,7 +1766,12 @@ instacertify.apply_favicon_brand_icons = function (root) {
 		}
 		schedule();
 	});
-	$(document).on("form-refresh", schedule);
+	// Do NOT schedule on every form-refresh — dropdown/selection changes fire
+	// form-refresh and were making toolbar icons fidget/jump. Only decorate when
+	// undecorated buttons actually appear.
+	$(document).on("form-refresh", () => {
+		if (needsDecoration()) schedule();
+	});
 	$(document).on("shown.bs.modal", schedule);
 	$(document).on("list_view_rendered", schedule);
 	$(document).ready(schedule);
@@ -1772,8 +1786,8 @@ instacertify.apply_favicon_brand_icons = function (root) {
 			_icAfterAjaxArmed = true;
 			setTimeout(() => {
 				_icAfterAjaxArmed = false;
-				schedule();
-			}, 250);
+				if (needsDecoration()) schedule();
+			}, 320);
 		});
 	}
 
@@ -1792,7 +1806,9 @@ instacertify.apply_favicon_brand_icons = function (root) {
 						const $n = $(n);
 						if (
 							$n.is(".btn, .icon-btn, .page-icon-group, .page-actions") ||
-							$n.find(".btn:not(.ic-has-action-icon), .icon-btn:not([data-ic-box])").length
+							$n.find(
+								".page-head .btn:not(.ic-has-action-icon), .page-icon-group .icon-btn:not([data-ic-box]), .page-actions .btn:not(.ic-has-action-icon)"
+							).length
 						) {
 							_moBusy = true;
 							schedule();
@@ -1804,7 +1820,11 @@ instacertify.apply_favicon_brand_icons = function (root) {
 					}
 				}
 			});
-			mo.observe(document.body, { childList: true, subtree: true });
+			const observeRoot =
+				document.querySelector(".main-section .container.page-body") ||
+				document.querySelector(".main-section") ||
+				document.body;
+			mo.observe(observeRoot, { childList: true, subtree: true });
 		}
 	} catch (e) {
 		/* ignore */
@@ -3365,6 +3385,28 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 		frm.set_df_property(f, "read_only", 0);
 	});
 
+	// Content fields: label is body text only — print section bar is the heading (don't repeat)
+	const contentLabels = [
+		["ic_payment_terms", __("Payment terms text"), __("Printed under the Payment Terms heading — do not repeat the heading here.")],
+		["ic_cancellation_policy", __("Cancellation policy text"), __("Printed under Cancellation heading — no need to repeat the title.")],
+		["ic_confidentiality", __("Confidentiality text"), __("Printed under Confidentiality heading — body only.")],
+		["ic_terms_and_conditions", __("Terms text"), __("Printed under Terms and Conditions — do not repeat the heading.")],
+		["ic_force_majeure", __("Force majeure text"), __("Printed under Force Majeure heading — body only.")],
+		["ic_sample_required", __("Sample required text"), __("Printed under Sample Required — body only, no repeated heading.")],
+		["ic_deliverables", __("Deliverables text"), __("Printed under Deliverables heading — body only.")],
+		["ic_documents_required", __("Documents required text"), __("Printed under Documents Required — body only.")],
+		["ic_timeline_details", __("Timeline details"), __("Printed under Timelines — body only.")],
+		["ic_sample_handling_policy", __("Sample handling text"), __("Printed under Sample handling heading — body only.")],
+		["ic_about_service", __("About / narrative text"), __("Printed under About heading — body only.")],
+		["ic_about_testing", __("About testing text"), __("Printed under About heading — body only.")],
+		["ic_scope_of_work", __("Scope text"), __("Printed under About / scope — body only.")],
+	];
+	contentLabels.forEach(([f, label, desc]) => {
+		if (!frm.fields_dict[f]) return;
+		frm.set_df_property(f, "label", label);
+		frm.set_df_property(f, "description", desc);
+	});
+
 	(instacertify.QUOTE_PRINT_SECTION_FIELDS || []).forEach((f) => {
 		if (!frm.fields_dict[f]) return;
 		frm.set_df_property(f, "read_only", 0);
@@ -3802,13 +3844,20 @@ instacertify.recalc_test_row = function (frm, cdt, cdn) {
 		if (row.suggested_selling_price == null || row.suggested_selling_price === "") {
 			row.suggested_selling_price = rate;
 		}
-		// Refresh grid cell display without recursive set_value loops
+		// Soft-refresh this row only — full table refresh jumps the grid/icons
 		if (frm && frm.fields_dict) {
 			const field =
 				(frm.fields_dict.ic_test_items && "ic_test_items") ||
 				(frm.fields_dict.test_items && "test_items");
 			if (field) {
-				frm.refresh_field(field);
+				instacertify.refresh_grid_row_soft(frm, field, cdn, [
+					"number_of_samples",
+					"per_unit_charges",
+					"suggested_selling_price",
+					"testing_charges",
+					"currency",
+					"sample_requirement",
+				]);
 			}
 			instacertify.refresh_quotation_cost_totals(frm);
 		}
@@ -3889,10 +3938,64 @@ instacertify.refresh_quotation_cost_totals = function (frm) {
 	}
 };
 
+/**
+ * Soft-refresh one grid row (or specific cells) without rebuilding the whole table.
+ * Full frm.refresh_field(table) reflows the grid and makes icons/layout jump.
+ */
+instacertify.refresh_grid_row_soft = function (frm, tableField, cdn, fieldnames) {
+	if (!frm || !frm.fields_dict || !frm.fields_dict[tableField]) return;
+	const grid = frm.fields_dict[tableField].grid;
+	if (!grid) {
+		frm.refresh_field(tableField);
+		return;
+	}
+	const grow =
+		(cdn && grid.grid_rows_by_docname && grid.grid_rows_by_docname[cdn]) || null;
+	const rows = grow ? [grow] : grid.grid_rows || [];
+	const fields = fieldnames && fieldnames.length ? fieldnames : null;
+	let touched = false;
+	rows.forEach((row) => {
+		if (!row) return;
+		try {
+			if (fields) {
+				fields.forEach((fn) => {
+					if (typeof row.refresh_field === "function") {
+						row.refresh_field(fn);
+						touched = true;
+					}
+				});
+			} else if (typeof row.refresh === "function") {
+				row.refresh();
+				touched = true;
+			}
+		} catch (e) {
+			/* ignore */
+		}
+	});
+	if (!touched) {
+		frm.refresh_field(tableField);
+	}
+};
+
+/** Soft-refresh all rows in a child table (currency / amounts) without full grid rebuild. */
+instacertify.refresh_grid_soft = function (frm, tableField, fieldnames) {
+	instacertify.refresh_grid_row_soft(frm, tableField, null, fieldnames);
+};
+
 /** Refresh amount symbols after a row currency change (Currency options="currency"). */
 instacertify.refresh_quote_line_currency = function (frm, tableField) {
 	if (!frm || !frm.fields_dict || !frm.fields_dict[tableField]) return;
-	frm.refresh_field(tableField);
+	const moneyFields =
+		tableField === "ic_cost_items"
+			? ["currency", "amount", "total_amount", "charges_display", "qty"]
+			: [
+					"currency",
+					"testing_charges",
+					"suggested_selling_price",
+					"per_unit_charges",
+					"number_of_samples",
+			  ];
+	instacertify.refresh_grid_soft(frm, tableField, moneyFields);
 	if (typeof instacertify.render_customer_currency_banner === "function") {
 		instacertify.render_customer_currency_banner(frm);
 	}
@@ -7275,8 +7378,23 @@ instacertify.apply_manual_currency = function (frm, currency, opts) {
 		instacertify.sync_quote_cost_currency(frm);
 		instacertify.render_customer_currency_banner(frm);
 		frm.refresh_field(field);
-		if (frm.fields_dict.ic_cost_items) frm.refresh_field("ic_cost_items");
-		if (frm.fields_dict.ic_test_items) frm.refresh_field("ic_test_items");
+		if (frm.fields_dict.ic_cost_items) {
+			instacertify.refresh_grid_soft(frm, "ic_cost_items", [
+				"currency",
+				"amount",
+				"total_amount",
+				"charges_display",
+				"qty",
+			]);
+		}
+		if (frm.fields_dict.ic_test_items) {
+			instacertify.refresh_grid_soft(frm, "ic_test_items", [
+				"currency",
+				"testing_charges",
+				"suggested_selling_price",
+				"per_unit_charges",
+			]);
+		}
 		if (frm.fields_dict.conversion_rate) frm.refresh_field("conversion_rate");
 		frappe.show_alert({
 			message: __("Currency set to {0}", [currency]),
@@ -7386,8 +7504,9 @@ frappe.ui.form.on("Quotation", {
 		instacertify.sync_quote_cost_currency(frm);
 		instacertify.render_customer_currency_banner(frm);
 		frm.refresh_field("currency");
-		if (frm.fields_dict.ic_cost_items) frm.refresh_field("ic_cost_items");
-		if (frm.fields_dict.ic_test_items) frm.refresh_field("ic_test_items");
+		if (typeof instacertify.refresh_quotation_cost_totals === "function") {
+			instacertify.refresh_quotation_cost_totals(frm);
+		}
 	},
 	taxes_and_charges(frm) {
 		if (instacertify._auto_setting_currency) return;
@@ -7457,13 +7576,18 @@ instacertify.render_customer_currency_banner = function (frm) {
 	const symbol =
 		cur === "INR" ? "₹" : cur === "USD" ? "$" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur;
 	const mixed = instacertify.quote_has_mixed_currencies(frm);
+	const sig = `${party}|${cur}|${mixed ? 1 : 0}`;
+	// Skip identical rewrites — HTML replace was causing layout fidget on every dropdown change
+	if (wrap.data("ic-banner-sig") === sig) return;
+	wrap.data("ic-banner-sig", sig);
 	wrap.html(`
 		<div class="ic-customer-currency-banner" style="
 			display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;
 			padding:12px 14px;margin:6px 0 12px;
 			border:1px solid var(--border-color,#c8d0d8);
 			background:linear-gradient(180deg,#f7fafc 0%,#eef3f7 100%);
-			border-radius:6px;font-size:13px;line-height:1.4;">
+			border-radius:6px;font-size:13px;line-height:1.4;
+			min-height:58px;box-sizing:border-box;">
 			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Customer")}</span><br/>
 				<b style="font-size:15px;color:#065175;">${frappe.utils.escape_html(party)}</b></div>
 			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Primary currency")}</span><br/>
@@ -7615,8 +7739,25 @@ instacertify.sync_quote_cost_currency = function (frm) {
 			)
 		);
 	}
-	frm.refresh_field("ic_cost_items");
-	if (frm.fields_dict.ic_test_items) frm.refresh_field("ic_test_items");
+	// Soft refresh only — full refresh_field rebuilds grids and makes the form jump
+	instacertify.refresh_grid_soft(frm, "ic_cost_items", [
+		"currency",
+		"amount",
+		"total_amount",
+		"charges_display",
+		"qty",
+		"exclude_from_total",
+		"line_label",
+	]);
+	if (frm.fields_dict.ic_test_items) {
+		instacertify.refresh_grid_soft(frm, "ic_test_items", [
+			"currency",
+			"testing_charges",
+			"suggested_selling_price",
+			"per_unit_charges",
+			"number_of_samples",
+		]);
+	}
 	instacertify.render_customer_currency_banner(frm);
 };
 frappe.ui.form.on("Sales Invoice", {
