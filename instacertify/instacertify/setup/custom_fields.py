@@ -1153,7 +1153,7 @@ QUOTATION_FIELDS = [
 		"label": "Cost Items / Commercials",
 		"options": "IC Quotation Cost Item",
 		"insert_after": "ic_section_costing",
-		"description": "Shown directly under Test Lines on Testing quotes. Unit Price × No. of Units = Total. Same currency as Customer. Testing Charges + these lines = Final Costing.",
+		"description": "Shown directly under Test Lines on Testing quotes. Unit Price × No. of Units = Total. Set Currency per line for multi-currency quotes. Testing Charges + these lines = Final Costing.",
 	},
 	{
 		"fieldname": "ic_section_cost_totals",

@@ -202,6 +202,9 @@ jinja = {
 		"instacertify.accounting.banking.bank_for_document",
 		"instacertify.quotation.print_sections.quote_section_on",
 		"instacertify.quotation.print_sections.quote_section_order",
+		"instacertify.quotation.print_sections.quote_line_currency",
+		"instacertify.quotation.print_sections.quote_money",
+		"instacertify.quotation.print_sections.quote_totals_by_currency",
 	],
 }
 

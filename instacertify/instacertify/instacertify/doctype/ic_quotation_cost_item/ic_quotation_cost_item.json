@@ -43,7 +43,7 @@
    "default": "0",
    "options": "currency",
    "bold": 1,
-   "description": "Default unit charge from the quote format — editable on every quote. Currency symbol follows the quotation currency (customer)."
+   "description": "Default unit charge from the quote format — editable on every quote. Symbol follows this line's Currency (defaults to quotation primary)."
   },
   {
    "doctype": "DocField",
@@ -116,7 +116,10 @@
    "fieldtype": "Link",
    "options": "Currency",
    "label": "Currency",
-   "hidden": 1
+   "in_list_view": 1,
+   "columns": 1,
+   "reqd": 0,
+   "description": "Per-line currency. Defaults to the quotation primary currency; set different currencies on different lines when needed."
   }
  ],
  "permissions": [],

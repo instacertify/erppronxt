@@ -285,7 +285,7 @@ QUOTATION_HTML = """
       <div><b>Type:</b> {{ doc.ic_quotation_type or '' }}</div>
     </div>
     <div style="text-align:right;">
-      <div><b>Currency:</b> {{ doc.currency }}</div>
+      <div><b>Currency:</b> {{ doc.currency or 'INR' }}</div>
       <div><span class="badge-rev">{{ doc.ic_workflow_status or doc.status }}</span></div>
     </div>
   </div>
@@ -293,8 +293,8 @@ QUOTATION_HTML = """
   <div class="ic-box">
     <h3>Customer Details</h3>
     <div><b>{{ doc.customer_name or doc.party_name }}</b>
-      &nbsp;·&nbsp; <b>Currency:</b> {{ doc.currency or 'INR' }}
-      <span style="color:#667;">(all charges use this currency)</span></div>
+      &nbsp;·&nbsp; <b>Primary currency:</b> {{ doc.currency or 'INR' }}
+      <span style="color:#667;">(line items may use other currencies)</span></div>
     <div>{{ doc.address_display or '' }}</div>
   </div>
 
@@ -315,33 +315,38 @@ QUOTATION_HTML = """
 
   {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') and (doc.ic_test_items or doc.ic_cost_items) %}
   <div class="ic-box">
-    <h3>Commercials ({{ doc.currency or 'INR' }})</h3>
-    {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
+    <h3>Commercials</h3>
+    {%- set _by = quote_totals_by_currency(doc) -%}
     {% if doc.ic_test_items %}
     <div style="font-weight:600;margin:4px 0 6px;">Testing Charges</div>
     <table class="ic-table">
       <thead><tr>
-        <th>Test Name</th><th>Standard</th><th>Description</th><th>No. of Samples</th><th>Price</th><th>Total Price</th>
+        <th>Test Name</th><th>Standard</th><th>Description</th><th>No. of Samples</th><th>Currency</th><th>Price</th><th>Total Price</th>
       </tr></thead>
       <tbody>
       {% for row in doc.ic_test_items %}
         {%- set units = row.number_of_samples or 1 -%}
         {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
         {%- set total = row.testing_charges or (per * units) -%}
-        {%- set ns.testing_grand = ns.testing_grand + (total or 0) -%}
+        {%- set rcur = quote_line_currency(row, doc) -%}
         <tr>
           <td>{{ row.test_name or '' }}</td>
           <td>{{ row.applicable_standard or '' }}</td>
           <td>{{ row.description or '' }}</td>
           <td>{{ units }}</td>
-          <td>{{ frappe.utils.fmt_money(per, currency=doc.currency) }}</td>
-          <td><b>{{ frappe.utils.fmt_money(total, currency=doc.currency) }}</b></td>
+          <td>{{ rcur }}</td>
+          <td>{{ quote_money(per, rcur) }}</td>
+          <td><b>{{ quote_money(total, rcur) }}</b></td>
         </tr>
       {% endfor %}
+      {% for t in _by %}
+        {% if t.testing %}
         <tr>
-          <td colspan="5" style="text-align:right;font-weight:700;">Testing Total</td>
-          <td><b>{{ frappe.utils.fmt_money(ns.testing_grand, currency=doc.currency) }}</b></td>
+          <td colspan="6" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
+          <td><b>{{ quote_money(t.testing, t.currency) }}</b></td>
         </tr>
+        {% endif %}
+      {% endfor %}
       </tbody>
     </table>
     {% endif %}
@@ -349,31 +354,44 @@ QUOTATION_HTML = """
     <div style="font-weight:600;margin:12px 0 6px;">Commercials / Other Charges</div>
     <table class="ic-table">
       <thead><tr>
-        <th>Particulars</th><th>Description</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th>
+        <th>Particulars</th><th>Description</th><th>Currency</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th>
       </tr></thead>
       <tbody>
       {% for row in doc.ic_cost_items %}
         {%- set units = row.qty or 1 -%}
         {%- set per = row.amount or 0 -%}
         {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
-        {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
+        {%- set rcur = quote_line_currency(row, doc) -%}
         <tr>
           <td>{{ row.particulars or row.cost_component }}</td>
           <td>{{ row.description or '' }}</td>
-          <td>{{ frappe.utils.fmt_money(per, currency=doc.currency) }}</td>
+          <td>{{ rcur }}</td>
+          <td>{{ quote_money(per, rcur) }}</td>
           <td>{{ units }}</td>
-          <td><b>{{ frappe.utils.fmt_money(total, currency=doc.currency) }}</b></td>
+          <td><b>{{ quote_money(total, rcur) }}</b></td>
         </tr>
       {% endfor %}
+      {% for t in _by %}
+        {% if t.cost %}
         <tr>
-          <td colspan="4" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
-          <td><b>{{ frappe.utils.fmt_money(ns.cost_grand, currency=doc.currency) }}</b></td>
+          <td colspan="5" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
+          <td><b>{{ quote_money(t.cost, t.currency) }}</b></td>
         </tr>
+        {% endif %}
+      {% endfor %}
       </tbody>
     </table>
     {% endif %}
     <div class="ic-grand-total" style="margin-top:10px;">
-      Final Costing (Testing + Other): {{ frappe.utils.fmt_money(ns.testing_grand + ns.cost_grand, currency=doc.currency) }}
+      {% if _by|length <= 1 %}
+        {%- set _one = _by[0] if _by else {'currency': doc.currency or 'INR', 'total': 0} -%}
+        Final Costing (Testing + Other): {{ quote_money(_one.total, _one.currency) }}
+      {% else %}
+        Final Costing (by currency):
+        {% for t in _by %}
+          <div>{{ t.currency }}: {{ quote_money(t.total, t.currency) }}</div>
+        {% endfor %}
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -755,10 +773,8 @@ JOINING_HTML = """
 # Matches uploaded Instacertify Labs testing quotation template (A4)
 # Source: public/templates/testing_quotation_template.pdf
 TESTING_QUOTATION_HTML = """
-{%- macro inr(amount) -%}
-{%- if (doc.currency or 'INR') == 'INR' -%}₹{{ '{:,.0f}'.format(amount or 0) }}/-
-{%- else -%}{{ frappe.utils.fmt_money(amount or 0, currency=doc.currency) }}/-
-{%- endif -%}
+{%- macro inr(amount, cur=None) -%}
+{{ quote_money(amount, cur or doc.currency or 'INR') }}
 {%- endmacro -%}
 """ + LETTERHEAD_CONTEXT_JINJA + """
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
@@ -825,7 +841,7 @@ TESTING_QUOTATION_HTML = """
   <div class="tq-title">Quotation</div>
   <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
     <div><b>Customer:</b> {{ _party }}</div>
-    <div><b>Currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(all charges below)</span></div>
+    <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(lines may use other currencies)</span></div>
   </div>
 
     <table class="tq-grid">
@@ -893,53 +909,60 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_commercials or 'Commercials' }}</td>
             <td class="tq-value">
-              <div class="tq-h">Testing Charges ({{ curr }})</div>
+              {%- set _by = quote_totals_by_currency(doc) -%}
+              <div class="tq-h">Testing Charges</div>
               <table class="tq-comm">
                 <thead>
                   <tr>
                     <th class="num" style="width:6%">S. No.</th>
-                    <th style="width:16%">Test Name</th>
-                    <th style="width:14%">Standard</th>
-                    <th style="width:20%">Description</th>
-                    <th class="num" style="width:10%">No. of Samples</th>
-                    <th style="width:14%">Price ({{ curr }})</th>
-                    <th style="width:14%">Total Price ({{ curr }})</th>
+                    <th style="width:15%">Test Name</th>
+                    <th style="width:13%">Standard</th>
+                    <th style="width:18%">Description</th>
+                    <th class="num" style="width:9%">No. of Samples</th>
+                    <th style="width:8%">Cur</th>
+                    <th style="width:14%">Price</th>
+                    <th style="width:14%">Total Price</th>
                   </tr>
                 </thead>
                 <tbody>
-                {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
                 {% for row in doc.ic_test_items or [] %}
                   {%- set units = row.number_of_samples or 1 -%}
                   {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
                   {%- set total = row.testing_charges or (per * units) -%}
-                  {%- set ns.testing_grand = ns.testing_grand + (total or 0) -%}
+                  {%- set rcur = quote_line_currency(row, doc) -%}
                   <tr>
                     <td class="num">{{ loop.index }}</td>
                     <td>{{ row.test_name or '' }}</td>
                     <td>{{ row.applicable_standard or '' }}</td>
                     <td>{{ row.description or '' }}</td>
                     <td class="num">{{ units }}</td>
-                    <td class="amt">{{ inr(per) }}</td>
-                    <td class="amt"><b>{{ inr(total) }}</b></td>
+                    <td class="num">{{ rcur }}</td>
+                    <td class="amt">{{ inr(per, rcur) }}</td>
+                    <td class="amt"><b>{{ inr(total, rcur) }}</b></td>
                   </tr>
                 {% endfor %}
+                {% for t in _by %}
+                  {% if t.testing %}
                   <tr>
-                    <td colspan="6" style="text-align:right;font-weight:700;">Testing Total</td>
-                    <td class="amt"><b>{{ inr(ns.testing_grand) }}</b></td>
+                    <td colspan="7" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
+                    <td class="amt"><b>{{ inr(t.testing, t.currency) }}</b></td>
                   </tr>
+                  {% endif %}
+                {% endfor %}
                 </tbody>
               </table>
               {% if doc.ic_cost_items %}
-              <div class="tq-h" style="margin-top:14px;">Commercials — Other Charges ({{ curr }})</div>
+              <div class="tq-h" style="margin-top:14px;">Commercials — Other Charges</div>
               <table class="tq-comm">
                 <thead>
                   <tr>
                     <th class="num" style="width:6%">S. No.</th>
-                    <th style="width:28%">Particulars</th>
-                    <th style="width:22%">Description</th>
-                    <th style="width:14%">Unit Price ({{ curr }})</th>
+                    <th style="width:26%">Particulars</th>
+                    <th style="width:20%">Description</th>
+                    <th style="width:8%">Cur</th>
+                    <th style="width:14%">Unit Price</th>
                     <th class="num" style="width:10%">No. of Units</th>
-                    <th style="width:14%">Total ({{ curr }})</th>
+                    <th style="width:14%">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -947,29 +970,44 @@ TESTING_QUOTATION_HTML = """
                   {%- set units = row.qty or 1 -%}
                   {%- set per = row.amount or 0 -%}
                   {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
-                  {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
+                  {%- set rcur = quote_line_currency(row, doc) -%}
                   <tr>
                     <td class="num">{{ loop.index }}</td>
                     <td>{{ row.particulars or row.cost_component or '' }}</td>
                     <td>{{ row.description or '' }}</td>
-                    <td class="amt">{{ inr(per) }}</td>
+                    <td class="num">{{ rcur }}</td>
+                    <td class="amt">{{ inr(per, rcur) }}</td>
                     <td class="num">{{ units }}</td>
-                    <td class="amt"><b>{{ inr(total) }}</b></td>
+                    <td class="amt"><b>{{ inr(total, rcur) }}</b></td>
                   </tr>
                 {% endfor %}
+                {% for t in _by %}
+                  {% if t.cost %}
                   <tr>
-                    <td colspan="5" style="text-align:right;font-weight:700;">Consulting / Other Total</td>
-                    <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
+                    <td colspan="6" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
+                    <td class="amt"><b>{{ inr(t.cost, t.currency) }}</b></td>
                   </tr>
+                  {% endif %}
+                {% endfor %}
                 </tbody>
               </table>
               {% endif %}
               <table class="tq-comm" style="margin-top:8px;">
                 <tbody>
+                  {% if _by|length <= 1 %}
+                  {%- set _one = _by[0] if _by else {'currency': doc.currency or 'INR', 'total': 0} -%}
                   <tr>
                     <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing — Grand Total (Testing{% if doc.ic_cost_items %} + Other Charges{% endif %})</td>
-                    <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
+                    <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(_one.total, _one.currency) }}</b></td>
                   </tr>
+                  {% else %}
+                  {% for t in _by %}
+                  <tr>
+                    <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing ({{ t.currency }})</td>
+                    <td class="amt" style="width:24%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(t.total, t.currency) }}</b></td>
+                  </tr>
+                  {% endfor %}
+                  {% endif %}
                 </tbody>
               </table>
             </td>
@@ -1147,10 +1185,8 @@ TESTING_QUOTATION_HTML = """
 # Matches uploaded Instacertify Labs consulting quotation template (A4)
 # Source: public/templates/consulting_quotation_template.pdf
 CONSULTING_QUOTATION_HTML = """
-{%- macro inr(amount) -%}
-{%- if (doc.currency or 'INR') == 'INR' -%}₹ {{ '{:,.0f}'.format(amount or 0) }}/-
-{%- else -%}{{ frappe.utils.fmt_money(amount or 0, currency=doc.currency) }}/-
-{%- endif -%}
+{%- macro inr(amount, cur=None) -%}
+{{ quote_money(amount, cur or doc.currency or 'INR') }}
 {%- endmacro -%}
 """ + LETTERHEAD_CONTEXT_JINJA + """
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
@@ -1215,7 +1251,7 @@ CONSULTING_QUOTATION_HTML = """
   <div class="cq-service">{{ title }}</div>
   <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
     <div><b>Customer:</b> {{ _party }}</div>
-    <div><b>Currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(all charges below)</span></div>
+    <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(lines may use other currencies)</span></div>
   </div>
 
   <div class="cq-box">
@@ -1269,79 +1305,101 @@ CONSULTING_QUOTATION_HTML = """
 
     {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_commercials or ('Commercials for ' ~ short) }} ({{ doc.currency or 'INR' }})</div>
+      <div class="cq-bar">{{ doc.ic_label_commercials or ('Commercials for ' ~ short) }}</div>
       <div class="cq-body">
         {% if doc.ic_applicable_standard %}
           <div style="margin-bottom:8px;"><b>Applicable Standard:</b> {{ doc.ic_applicable_standard }}</div>
         {% endif %}
-        {%- set ns = namespace(testing_grand=0, cost_grand=0) -%}
+        {%- set _by = quote_totals_by_currency(doc) -%}
         {% if doc.ic_test_items %}
-        <div class="cq-h" style="margin-top:4px;">Test Lines — Laboratory, Scope &amp; Charges ({{ doc.currency or 'INR' }})</div>
+        <div class="cq-h" style="margin-top:4px;">Test Lines — Laboratory, Scope &amp; Charges</div>
         <table class="cq-comm">
           <thead><tr>
             <th>Test Name</th>
             <th>Standard</th>
             <th style="text-align:center;">No. of Samples</th>
-            <th style="text-align:right;">Price ({{ doc.currency or 'INR' }})</th>
-            <th style="text-align:right;">Total ({{ doc.currency or 'INR' }})</th>
+            <th style="text-align:center;">Cur</th>
+            <th style="text-align:right;">Price</th>
+            <th style="text-align:right;">Total</th>
           </tr></thead>
           <tbody>
           {% for row in doc.ic_test_items or [] %}
             {%- set units = row.number_of_samples or 1 -%}
             {%- set per = row.suggested_selling_price or row.per_unit_charges or (row.testing_charges / units if units and row.testing_charges else 0) -%}
             {%- set total = row.testing_charges or (per * units) -%}
-            {%- set ns.testing_grand = ns.testing_grand + (total or 0) -%}
+            {%- set rcur = quote_line_currency(row, doc) -%}
             <tr>
               <td>{{ row.test_name or '' }}</td>
               <td>{{ row.applicable_standard or '' }}</td>
               <td style="text-align:center;">{{ units }}</td>
-              <td class="amt">{{ inr(per) }}</td>
-              <td class="amt"><b>{{ inr(total) }}</b></td>
+              <td style="text-align:center;">{{ rcur }}</td>
+              <td class="amt">{{ inr(per, rcur) }}</td>
+              <td class="amt"><b>{{ inr(total, rcur) }}</b></td>
             </tr>
           {% endfor %}
+          {% for t in _by %}
+            {% if t.testing %}
             <tr>
-              <td colspan="4" style="text-align:right;font-weight:700;">Testing Total</td>
-              <td class="amt"><b>{{ inr(ns.testing_grand) }}</b></td>
+              <td colspan="5" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
+              <td class="amt"><b>{{ inr(t.testing, t.currency) }}</b></td>
             </tr>
+            {% endif %}
+          {% endfor %}
           </tbody>
         </table>
         {% endif %}
         {% if doc.ic_cost_items %}
-        <div class="cq-h" style="margin-top:12px;">Cost Breakdown ({{ doc.currency or 'INR' }})</div>
+        <div class="cq-h" style="margin-top:12px;">Cost Breakdown</div>
         <table class="cq-comm">
           <thead><tr>
             <th>{{ doc.ic_label_particulars_col or 'Particulars' }}</th>
-            <th style="text-align:right;">Unit Price ({{ doc.currency or 'INR' }})</th>
+            <th style="text-align:center;">Cur</th>
+            <th style="text-align:right;">Unit Price</th>
             <th style="text-align:center;">No. of Units</th>
-            <th style="text-align:right;">{{ doc.ic_label_charges_col or 'Total Charges' }} ({{ doc.currency or 'INR' }})</th>
+            <th style="text-align:right;">{{ doc.ic_label_charges_col or 'Total Charges' }}</th>
           </tr></thead>
           <tbody>
           {% for row in doc.ic_cost_items or [] %}
             {%- set units = row.qty or 1 -%}
             {%- set per = row.amount or 0 -%}
             {%- set total = row.total_amount if row.total_amount is not none else (per * units) -%}
-            {%- set ns.cost_grand = ns.cost_grand + (total or 0) -%}
+            {%- set rcur = quote_line_currency(row, doc) -%}
             <tr>
               <td>{{ row.particulars or row.description or row.cost_component }}</td>
-              <td class="amt">{{ inr(per) }}</td>
+              <td style="text-align:center;">{{ rcur }}</td>
+              <td class="amt">{{ inr(per, rcur) }}</td>
               <td style="text-align:center;">{{ units }}</td>
-              <td class="amt"><b>{{ inr(total) }}</b></td>
+              <td class="amt"><b>{{ inr(total, rcur) }}</b></td>
             </tr>
           {% endfor %}
+          {% for t in _by %}
+            {% if t.cost %}
             <tr>
-              <td colspan="3" style="text-align:right;font-weight:700;">Commercials Total</td>
-              <td class="amt"><b>{{ inr(ns.cost_grand) }}</b></td>
+              <td colspan="4" style="text-align:right;font-weight:700;">Commercials Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
+              <td class="amt"><b>{{ inr(t.cost, t.currency) }}</b></td>
             </tr>
+            {% endif %}
+          {% endfor %}
           </tbody>
         </table>
         {% endif %}
         {% if (doc.ic_test_items or doc.ic_cost_items) %}
         <table class="cq-comm" style="margin-top:8px;">
           <tbody>
+            {% if _by|length <= 1 %}
+            {%- set _one = _by[0] if _by else {'currency': doc.currency or 'INR', 'total': 0} -%}
             <tr>
               <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing{% if doc.ic_test_items and doc.ic_cost_items %} (Test Lines + Commercials){% endif %}</td>
-              <td class="amt" style="width:28%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(ns.testing_grand + ns.cost_grand) }}</b></td>
+              <td class="amt" style="width:28%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(_one.total, _one.currency) }}</b></td>
             </tr>
+            {% else %}
+            {% for t in _by %}
+            <tr>
+              <td style="text-align:right;font-weight:700;padding:8px;border:1px solid #555;">Final Costing ({{ t.currency }})</td>
+              <td class="amt" style="width:28%;font-weight:700;padding:8px;border:1px solid #555;"><b>{{ inr(t.total, t.currency) }}</b></td>
+            </tr>
+            {% endfor %}
+            {% endif %}
           </tbody>
         </table>
         {% endif %}

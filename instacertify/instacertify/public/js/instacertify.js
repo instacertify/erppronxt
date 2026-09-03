@@ -3498,11 +3498,11 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"description",
 			showTestLines
 				? __(
-						"Under Test Lines. Unit Price × No. of Units = Total. Currency matches Customer ({0}). Test Lines + these = Final Costing.",
+						"Under Test Lines. Unit Price × No. of Units = Total. Set Currency per line (default {0}). Test Lines + these = Final Costing.",
 						[frm.doc.currency || "INR"]
 				  )
 				: __(
-						"Unit Price × No. of Units = Total Charges. Currency matches Customer ({0}).",
+						"Unit Price × No. of Units = Total Charges. Set Currency per line (default {0}).",
 						[frm.doc.currency || "INR"]
 				  )
 		);
@@ -3593,6 +3593,9 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		if (row && !(row.sample_requirement || "").trim()) {
 			instacertify.sync_quote_sample_requirement(cdt, cdn, true);
 		}
+		if (row && !(row.currency || "").trim() && frm.doc.currency) {
+			frappe.model.set_value(cdt, cdn, "currency", frm.doc.currency);
+		}
 		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
 	product_name(frm, cdt, cdn) {},
@@ -3672,6 +3675,9 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
 	purchase_price(frm, cdt, cdn) {},
+	currency(frm, cdt, cdn) {
+		instacertify.render_customer_currency_banner(frm);
+	},
 });
 
 /** Unlock No. of Samples + Sample Required on Quotation (ic_test_items) and Template (test_items). */
@@ -3732,6 +3738,9 @@ instacertify.configure_test_item_price_columns = function (frm) {
 			grid.update_docfield_property("testing_charges", "label", __("Total Price"));
 			grid.update_docfield_property("testing_charges", "bold", 1);
 			grid.update_docfield_property("per_unit_charges", "hidden", 1);
+			grid.update_docfield_property("currency", "hidden", 0);
+			grid.update_docfield_property("currency", "in_list_view", 1);
+			grid.update_docfield_property("currency", "columns", 1);
 		} catch (e) {
 			/* ignore */
 		}
@@ -7148,7 +7157,7 @@ instacertify.open_change_currency = function (frm, opts) {
 				options: `<p class="text-muted" style="margin:0 0 8px;">${__(
 					"Current"
 				)}: <b>${frappe.utils.escape_html(current)}</b>. ${__(
-					"Pick INR / USD or any currency. Amounts stay the same numbers — only the currency label changes (edit rates if needed)."
+					"Sets the primary / default currency for new lines. Existing Test Lines and Commercials keep their own Currency unless blank. Amounts stay the same numbers."
 				)}</p>`,
 			},
 			{
@@ -7363,8 +7372,8 @@ frappe.ui.form.on("Quotation", {
 	},
 });
 
-/** Keep cost-line currency in sync; Unit Price uses quotation currency symbol. */
-/** Customer name + currency declared together — all quote amounts use this currency. */
+/** Keep blank cost/test line currency defaulted to primary; allow multi-currency overrides. */
+/** Customer name + primary currency — line items may use other currencies. */
 instacertify.render_customer_currency_banner = function (frm) {
 	const wrap =
 		frm.fields_dict.ic_customer_currency_banner &&
@@ -7374,6 +7383,7 @@ instacertify.render_customer_currency_banner = function (frm) {
 	const cur = frm.doc.currency || "INR";
 	const symbol =
 		cur === "INR" ? "₹" : cur === "USD" ? "$" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur;
+	const mixed = instacertify.quote_has_mixed_currencies(frm);
 	wrap.html(`
 		<div class="ic-customer-currency-banner" style="
 			display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;
@@ -7383,18 +7393,36 @@ instacertify.render_customer_currency_banner = function (frm) {
 			border-radius:6px;font-size:13px;line-height:1.4;">
 			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Customer")}</span><br/>
 				<b style="font-size:15px;color:#065175;">${frappe.utils.escape_html(party)}</b></div>
-			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Currency for this quote")}</span><br/>
+			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Primary currency")}</span><br/>
 				<b style="font-size:15px;color:#EC691F;">${frappe.utils.escape_html(symbol)} ${frappe.utils.escape_html(cur)}</b>
-				<span class="text-muted" style="margin-left:8px;font-size:12px;">${__("All prices & symbols on Print use this currency")}</span></div>
+				<span class="text-muted" style="margin-left:8px;font-size:12px;">${
+					mixed
+						? __("Multi-currency quote — each Test Line / Commercial has its own Currency")
+						: __("Default for new lines; change Currency on any line for multi-currency quotes")
+				}</span></div>
 		</div>
 	`);
 	if (frm.fields_dict.currency) {
 		frm.set_df_property(
 			"currency",
 			"description",
-			__("Declared for this customer — Unit Price, totals, and Print symbols all use {0}", [cur])
+			__(
+				"Primary / default currency for this quote. Set Currency on individual Test Lines or Commercials to quote in multiple currencies."
+			)
 		);
 	}
+};
+
+instacertify.quote_has_mixed_currencies = function (frm) {
+	if (!frm || !frm.doc) return false;
+	const seen = {};
+	const add = (c) => {
+		const cur = (c || frm.doc.currency || "INR").trim() || "INR";
+		seen[cur] = 1;
+	};
+	(frm.doc.ic_test_items || []).forEach((r) => add(r.currency));
+	(frm.doc.ic_cost_items || []).forEach((r) => add(r.currency));
+	return Object.keys(seen).length > 1;
 };
 
 /** Section headers without serial numbers (print PDF also unnumbered). */
@@ -7443,10 +7471,16 @@ instacertify.renumber_quotation_section_headers = function (frm) {
 instacertify.sync_quote_cost_currency = function (frm) {
 	if (!frm || !frm.doc) return;
 	const cur = frm.doc.currency || "INR";
+	const default_blank = (rows) => {
+		(rows || []).forEach((row) => {
+			if (!(row.currency || "").trim()) {
+				frappe.model.set_value(row.doctype, row.name, "currency", cur);
+			}
+		});
+	};
+	default_blank(frm.doc.ic_cost_items);
+	default_blank(frm.doc.ic_test_items);
 	(frm.doc.ic_cost_items || []).forEach((row) => {
-		if (row.currency !== cur) {
-			frappe.model.set_value(row.doctype, row.name, "currency", cur);
-		}
 		const qty = cint(row.qty) || 1;
 		if (!cint(row.qty)) {
 			frappe.model.set_value(row.doctype, row.name, "qty", 1);
@@ -7456,28 +7490,46 @@ instacertify.sync_quote_cost_currency = function (frm) {
 			frappe.model.set_value(row.doctype, row.name, "total_amount", total);
 		}
 	});
-	const grid = frm.fields_dict.ic_cost_items && frm.fields_dict.ic_cost_items.grid;
-	if (grid) {
-		grid.update_docfield_property("amount", "read_only", 0);
-		grid.update_docfield_property("qty", "read_only", 0);
-		grid.update_docfield_property("charges_display", "hidden", 1);
-		grid.update_docfield_property(
+	const costGrid = frm.fields_dict.ic_cost_items && frm.fields_dict.ic_cost_items.grid;
+	if (costGrid) {
+		costGrid.update_docfield_property("amount", "read_only", 0);
+		costGrid.update_docfield_property("qty", "read_only", 0);
+		costGrid.update_docfield_property("charges_display", "hidden", 1);
+		costGrid.update_docfield_property("currency", "hidden", 0);
+		costGrid.update_docfield_property("currency", "in_list_view", 1);
+		costGrid.update_docfield_property(
 			"amount",
 			"description",
-			__("Unit price — symbol follows quotation currency ({0})", [cur])
+			__("Unit price — symbol follows this line's Currency (default {0})", [cur])
 		);
+	}
+	const testGrid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
+	if (testGrid) {
+		testGrid.update_docfield_property("currency", "hidden", 0);
+		testGrid.update_docfield_property("currency", "in_list_view", 1);
 	}
 	if (frm.fields_dict.ic_cost_items) {
 		frm.set_df_property(
 			"ic_cost_items",
 			"description",
 			__(
-				"Default charges from the quote format (editable). Unit Price × No. of Units = Total. Currency: {0}. On Testing quotes, Testing + Other = Final Costing.",
+				"Default charges from the quote format (editable). Unit Price × No. of Units = Total. Set Currency per line for multi-currency quotes (default {0}). On Testing quotes, Testing + Other = Final Costing.",
 				[cur]
 			)
 		);
 	}
+	if (frm.fields_dict.ic_test_items) {
+		frm.set_df_property(
+			"ic_test_items",
+			"description",
+			__(
+				"Lab → Test → Standard fills Unit Price. Edit No. of Samples and Currency per line. Total Price = Unit Price × samples. Purchase Price is internal only."
+			)
+		);
+	}
 	frm.refresh_field("ic_cost_items");
+	if (frm.fields_dict.ic_test_items) frm.refresh_field("ic_test_items");
+	instacertify.render_customer_currency_banner(frm);
 };
 frappe.ui.form.on("Sales Invoice", {
 	setup(frm) {

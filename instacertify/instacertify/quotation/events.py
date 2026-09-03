@@ -115,9 +115,13 @@ def _sync_quote_number_from_name(doc):
 
 
 def _calculate_test_line_totals(doc):
+	parent_currency = doc.get("currency") or "INR"
 	for row in doc.get("ic_test_items") or []:
 		units = float(row.number_of_samples or 0) or 1
 		row.number_of_samples = int(units)
+		# Default blank line currency from parent; keep multi-currency overrides
+		if not (row.get("currency") or "").strip():
+			row.currency = parent_currency
 		# Keep Sample Required print text in sync when blank / auto-generated
 		cur = (row.get("sample_requirement") or "").strip()
 		auto = (
@@ -159,9 +163,10 @@ def _calculate_cost_line_totals(doc):
 		row.amount = unit
 		if has_total:
 			row.total_amount = unit * qty
-		if has_currency and parent_currency:
+		# Default blank line currency from parent; keep explicit multi-currency overrides
+		if has_currency and parent_currency and not (row.get("currency") or "").strip():
 			row.currency = parent_currency
-		# Drop legacy hardcoded ₹ display so print uses quotation currency
+		# Drop legacy hardcoded ₹ display so print uses line / quotation currency
 		if has_display and row.get("charges_display"):
 			disp = str(row.charges_display).strip()
 			if disp.startswith("₹") or disp.startswith("Rs") or "/-" in disp:
