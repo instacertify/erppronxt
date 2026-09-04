@@ -89,6 +89,18 @@ class TestQuoteShowTotal(FrappeTestCase):
 		self.assertNotIn("Final Costing", html)
 		self.assertNotIn("Testing Total", html)
 
+	def test_do_not_sum_hides_final_costing(self):
+		"""Any Do Not Sum line removes Final Costing even if Show Total is on."""
+		doc = _dummy_quote(
+			ic_show_total=1,
+			ic_cost_items=[_cost_row(exclude_from_total=1, particulars="Optional A")],
+		)
+		self.assertFalse(quote_totals_on(doc))
+		html = _render(doc, "Instacertify Consulting Quotation")
+		self.assertIn("Optional A", html)
+		self.assertNotIn("Final Costing", html)
+		self.assertNotIn("Commercials Total", html)
+
 	def test_js_lists_show_total_field(self):
 		from pathlib import Path
 
@@ -97,3 +109,4 @@ class TestQuoteShowTotal(FrappeTestCase):
 		)
 		self.assertIn('"ic_show_total"', js)
 		self.assertIn("ic-show-total-opt", js)
+		self.assertIn("sync_show_total_from_do_not_sum", js)

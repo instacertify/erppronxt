@@ -128,6 +128,9 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 	},
 	exclude_from_total(frm) {
 		refresh_parent_cost_totals(frm);
+		if (frm && window.instacertify && typeof instacertify.sync_show_total_from_do_not_sum === "function") {
+			instacertify.sync_show_total_from_do_not_sum(frm);
+		}
 	},
 	currency(frm) {
 		if (frm && window.instacertify && instacertify.refresh_quote_line_currency) {
