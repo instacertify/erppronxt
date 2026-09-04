@@ -201,6 +201,7 @@ jinja = {
 		"instacertify.utils.qr.get_qr_code_data_uri",
 		"instacertify.accounting.banking.bank_for_document",
 		"instacertify.quotation.print_sections.quote_section_on",
+		"instacertify.quotation.print_sections.quote_totals_on",
 		"instacertify.quotation.print_sections.quote_section_order",
 		"instacertify.quotation.print_sections.quote_line_currency",
 		"instacertify.quotation.print_sections.quote_money",

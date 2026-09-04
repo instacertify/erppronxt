@@ -3329,8 +3329,10 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 		(map[showField] || []).forEach((f) => hideField(f, on));
 	});
 
-	// Final Costing strip: only when Commercials + Show Total are both on
-	const showTotals = isOn("ic_show_commercials") && isOn("ic_show_total");
+	// Final Costing strip: Commercials on + Show Total on + no Do Not Sum lines
+	const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) => cint(r.exclude_from_total));
+	const showTotals =
+		isOn("ic_show_commercials") && isOn("ic_show_total") && !hasDoNotSum;
 	[
 		"ic_section_cost_totals",
 		"ic_commercial_value",
@@ -3589,9 +3591,14 @@ instacertify.toggle_quotation_sections = function (frm) {
 		"ic_total_quoted_value",
 	].forEach((f) => {
 		if (frm.fields_dict[f]) {
+			const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) =>
+				cint(r.exclude_from_total)
+			);
 			frm.toggle_display(
 				f,
-				sectionOn("ic_show_commercials") && sectionOn("ic_show_total")
+				sectionOn("ic_show_commercials") &&
+					sectionOn("ic_show_total") &&
+					!hasDoNotSum
 			);
 		}
 	});
@@ -3984,8 +3991,40 @@ instacertify.recalc_test_row = function (frm, cdt, cdn) {
 };
 
 /** Live Final Costing strip: Test Lines + Commercials (respects Do Not Sum + per-currency). */
+instacertify.sync_show_total_from_do_not_sum = function (frm) {
+	if (!frm || !frm.doc) return;
+	const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) => cint(r.exclude_from_total));
+	if (hasDoNotSum && (frm.doc.ic_show_total == null || cint(frm.doc.ic_show_total) === 1)) {
+		frm.doc.ic_show_total = 0;
+		if (frm.fields_dict.ic_show_total) {
+			Promise.resolve(frm.set_value("ic_show_total", 0)).catch(() => {
+				frm.doc.ic_show_total = 0;
+			});
+		}
+		if (!frm.__ic_dns_total_alert) {
+			frm.__ic_dns_total_alert = true;
+			frappe.show_alert({
+				message: __(
+					"Do Not Sum ticked — Final Costing / Grand Total hidden on this quote (line prices still show)."
+				),
+				indicator: "orange",
+			});
+			setTimeout(() => {
+				frm.__ic_dns_total_alert = false;
+			}, 2500);
+		}
+	}
+	if (typeof instacertify.apply_quotation_section_visibility === "function") {
+		instacertify.apply_quotation_section_visibility(frm);
+	}
+	if (typeof instacertify.toggle_quotation_sections === "function") {
+		instacertify.toggle_quotation_sections(frm);
+	}
+};
+
 instacertify.refresh_quotation_cost_totals = function (frm) {
 	if (!frm || !frm.doc) return;
+	instacertify.sync_show_total_from_do_not_sum(frm);
 	const byCur = {};
 	const add = (cur, amt) => {
 		const c = (cur || frm.doc.currency || "INR").trim() || "INR";
@@ -7834,7 +7873,9 @@ instacertify.sync_quote_cost_currency = function (frm) {
 		costGrid.update_docfield_property(
 			"exclude_from_total",
 			"description",
-			__("Show on quote but do not add into Commercials Total / Final Costing.")
+			__(
+				"Tick for optional lines the customer may choose. Hides Final Costing / Grand Total on the quote (line price still prints)."
+			)
 		);
 	}
 	const testGrid = frm.fields_dict.ic_test_items && frm.fields_dict.ic_test_items.grid;
@@ -7847,7 +7888,7 @@ instacertify.sync_quote_cost_currency = function (frm) {
 			"ic_cost_items",
 			"description",
 			__(
-				"Fully customisable. Use Unit Price for numbers, or Custom Value for any text (At actuals / Included / letters). Tick Do Not Sum to exclude from Final Costing. Line Ref = A, B, C… Currency default {0}.",
+				"Fully customisable. Use Unit Price for numbers, or Custom Value for any text (At actuals / Included / letters). Tick Do Not Sum for optional choices — hides Final Costing on the quote. Line Ref = A, B, C… Currency default {0}.",
 				[cur]
 			)
 		);
