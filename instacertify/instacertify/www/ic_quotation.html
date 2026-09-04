@@ -97,7 +97,7 @@
       document.getElementById('remarks').value = '';
       document.getElementById('remarks-box').style.display = 'block';
     }
-    function costTable(rows, currency) {
+    function costTable(rows, currency, showTotals) {
       if (!rows || !rows.length) return { html: '', total: 0 };
       let grand = 0;
       const body = rows.map(r => {
@@ -112,17 +112,19 @@
           '<td>' + esc(qty) + '</td>' +
           '<td><b>' + esc(money(amount, currency)) + '</b></td></tr>';
       }).join('');
+      const totalRow = showTotals
+        ? ('<tr><td colspan="3" style="text-align:right;font-weight:700;">Commercials Total</td>' +
+          '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>')
+        : '';
       return {
         total: grand,
         html: '<h4 style="color:#0D47A1;margin:18px 0 6px;">Commercials / Cost Breakdown</h4>' +
           '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th></tr></thead><tbody>' +
-          body +
-          '<tr><td colspan="3" style="text-align:right;font-weight:700;">Commercials Total</td>' +
-          '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
+          body + totalRow +
           '</tbody></table>'
       };
     }
-    function testTable(rows, currency) {
+    function testTable(rows, currency, showTotals) {
       if (!rows || !rows.length) return { html: '', total: 0 };
       let grand = 0;
       const body = rows.map(r => {
@@ -139,15 +141,17 @@
           '<td><b>' + esc(money(amount, currency)) + '</b></td>' +
           '</tr>';
       }).join('');
+      const totalRow = showTotals
+        ? ('<tr><td colspan="5" style="text-align:right;font-weight:700;">Testing Total</td>' +
+          '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>')
+        : '';
       return {
         total: grand,
         html: '<h4 style="color:#0D47A1;margin:12px 0 6px;">Test Lines — Laboratory, Scope &amp; Charges</h4>' +
           '<table class="ic-portal-table"><thead><tr>' +
           '<th>Test Name</th><th>Standard</th><th>Description</th>' +
           '<th>No. of Samples</th><th>Price</th><th>Total Price</th>' +
-          '</tr></thead><tbody>' + body +
-          '<tr><td colspan="5" style="text-align:right;font-weight:700;">Testing Total</td>' +
-          '<td><b>' + esc(money(grand, currency)) + '</b></td></tr>' +
+          '</tr></thead><tbody>' + body + totalRow +
           '</tbody></table>'
       };
     }
@@ -178,11 +182,12 @@
           }
           const d = r.message;
           if (!d) { document.getElementById('content').innerHTML = 'Quotation not found.'; return; }
-          const tests = testTable(d.test_items, d.currency);
-          const costs = costTable(d.cost_items, d.currency);
+          const showTotals = d.ic_show_total != 0;
+          const tests = testTable(d.test_items, d.currency, showTotals);
+          const costs = costTable(d.cost_items, d.currency, showTotals);
           const combined = tests.total + costs.total;
           let commercials = tests.html + costs.html;
-          if (combined > 0) {
+          if (showTotals && combined > 0) {
             commercials += '<p style="margin-top:12px;font-weight:700;color:#0D47A1;">Final Costing (Testing + Other): ' +
               esc(money(combined, d.currency)) + '</p>';
           }

@@ -674,7 +674,7 @@ QUOTATION_FIELDS = [
 		"label": "Print Sections — Uncheck to Hide on PDF",
 		"insert_after": "ic_label_sample_handling",
 		"collapsible": 0,
-		"description": "Uncheck any box to hide that block on form + Print/PDF (e.g. Validity, Payment Terms, Estimated Timelines). Or use Print Sections → Arrange Sections…",
+		"description": "Uncheck any box to hide that block on form + Print/PDF (e.g. Validity, Payment Terms, Estimated Timelines). Uncheck Show Total when some lines are optional choices. Or use Print Sections → Arrange Sections…",
 	},
 	{
 		"fieldname": "ic_show_about",
@@ -747,11 +747,19 @@ QUOTATION_FIELDS = [
 		"insert_after": "ic_column_print_sections",
 	},
 	{
+		"fieldname": "ic_show_total",
+		"fieldtype": "Check",
+		"label": "Show Total / Final Costing",
+		"default": 1,
+		"insert_after": "ic_show_commercials",
+		"description": "Uncheck when some lines are optional choices — hides Testing Total, Commercials Total, and Final Costing on form + Print/PDF. Line prices still show.",
+	},
+	{
 		"fieldname": "ic_show_payment_terms",
 		"fieldtype": "Check",
 		"label": "Show Payment Terms",
 		"default": 1,
-		"insert_after": "ic_show_commercials",
+		"insert_after": "ic_show_total",
 		"description": "Uncheck to hide Payment Terms on form + Print/PDF.",
 	},
 	{
