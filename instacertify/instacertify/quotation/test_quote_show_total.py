@@ -100,6 +100,22 @@ class TestQuoteShowTotal(FrappeTestCase):
 		self.assertIn("Optional A", html)
 		self.assertNotIn("Final Costing", html)
 		self.assertNotIn("Commercials Total", html)
+		self.assertNotIn("Grand Total", html)
+		self.assertNotIn("not summed", html)
+		self.assertNotIn(">Total Cost", html)
+
+	def test_do_not_sum_print_has_no_total_section_words(self):
+		html = _render(
+			_dummy_quote(
+				ic_show_total=1,
+				ic_cost_items=[_cost_row(exclude_from_total=1, particulars="Choice Pack")],
+			),
+			"Instacertify Consulting Quotation",
+		)
+		lower = html.lower()
+		self.assertIn("choice pack", lower)
+		for banned in ("final costing", "grand total", "commercials total", "testing total"):
+			self.assertNotIn(banned, lower)
 
 	def test_template_cost_rows_copy_exclude_from_total(self):
 		from instacertify.quotation.events import _template_cost_rows

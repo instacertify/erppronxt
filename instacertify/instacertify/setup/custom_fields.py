@@ -752,7 +752,7 @@ QUOTATION_FIELDS = [
 		"label": "Show Total / Final Costing",
 		"default": 1,
 		"insert_after": "ic_show_commercials",
-		"description": "Uncheck when some lines are optional choices — hides Testing Total, Commercials Total, and Final Costing on form + Print/PDF. Line prices still show.",
+		"description": "Uncheck when some lines are optional choices — quote will not include Testing Total, Commercials Total, or Final Costing. Line prices still show.",
 	},
 	{
 		"fieldname": "ic_show_payment_terms",
