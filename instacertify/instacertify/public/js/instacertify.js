@@ -2994,6 +2994,7 @@ instacertify.QUOTE_PRINT_SECTION_FIELDS = [
 	"ic_show_timelines",
 	"ic_show_deliverables",
 	"ic_show_commercials",
+	"ic_show_total",
 	"ic_show_payment_terms",
 	"ic_show_banking",
 	"ic_show_cancellation",
@@ -3116,12 +3117,20 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 				fieldname: "help",
 				options: `<p class="text-muted" style="margin:0 0 10px;">${__(
 					"Uncheck <b>Include</b> to hide a section on this quote (form + Print/PDF). Example: untick Validity, Payment Terms, or Estimated Timelines. Use ↑ ↓ for print order."
-				)}</p><div class="ic-section-arrange-list" style="max-height:420px;overflow:auto;"></div>`,
+				)}</p>
+				<label style="display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 10px;border:1px solid var(--border-color,#d0d7de);border-radius:6px;background:#f8fafc;cursor:pointer;">
+					<input type="checkbox" class="ic-show-total-opt" ${frm.doc.ic_show_total == null || cint(frm.doc.ic_show_total) === 1 ? "checked" : ""}/>
+					<span><b>${__("Show Total / Final Costing")}</b> — ${__(
+						"Uncheck when lines are optional choices (hides Grand Total; line prices still show)."
+					)}</span>
+				</label>
+				<div class="ic-section-arrange-list" style="max-height:420px;overflow:auto;"></div>`,
 			},
 		],
 		primary_action_label: __("Apply"),
 		primary_action() {
 			const keys = state.map((r) => r.key);
+			const showTotal = d.$wrapper.find(".ic-show-total-opt").is(":checked") ? 1 : 0;
 			const chain = Promise.resolve();
 			let p = chain;
 			if (frm.fields_dict.ic_section_order) {
@@ -3132,6 +3141,15 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 				);
 			} else {
 				frm.doc.ic_section_order = keys.join(",");
+			}
+			if (frm.fields_dict.ic_show_total) {
+				p = p.then(() =>
+					Promise.resolve(frm.set_value("ic_show_total", showTotal)).catch(() => {
+						frm.doc.ic_show_total = showTotal;
+					})
+				);
+			} else {
+				frm.doc.ic_show_total = showTotal;
 			}
 			state.forEach((row) => {
 				if (!frm.fields_dict[row.show_field]) {
@@ -3165,6 +3183,18 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 				frm.doc[row.show_field] = val;
 			});
 		}
+		instacertify.apply_quotation_section_visibility(frm);
+	}
+
+	function applyShowTotalLive() {
+		const val = d.$wrapper.find(".ic-show-total-opt").is(":checked") ? 1 : 0;
+		frm.doc.ic_show_total = val;
+		if (frm.fields_dict.ic_show_total) {
+			Promise.resolve(frm.set_value("ic_show_total", val)).catch(() => {
+				frm.doc.ic_show_total = val;
+			});
+		}
+		instacertify.toggle_quotation_sections(frm);
 		instacertify.apply_quotation_section_visibility(frm);
 	}
 
@@ -3215,7 +3245,10 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 	}
 
 	d.show();
-	setTimeout(render, 50);
+	setTimeout(() => {
+		render();
+		d.$wrapper.find(".ic-show-total-opt").off("change.icTotal").on("change.icTotal", applyShowTotalLive);
+	}, 50);
 };
 
 /** Hide form fields for sections unchecked in Arrange / Print Sections. */
@@ -3251,10 +3284,6 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			"ic_test_items",
 			"ic_section_costing",
 			"ic_cost_items",
-			"ic_section_cost_totals",
-			"ic_commercial_value",
-			"ic_passthrough_value",
-			"ic_total_quoted_value",
 			"ic_commercials_notes",
 		],
 		ic_show_payment_terms: [
@@ -3299,6 +3328,15 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 		const on = isOn(showField);
 		(map[showField] || []).forEach((f) => hideField(f, on));
 	});
+
+	// Final Costing strip: only when Commercials + Show Total are both on
+	const showTotals = isOn("ic_show_commercials") && isOn("ic_show_total");
+	[
+		"ic_section_cost_totals",
+		"ic_commercial_value",
+		"ic_passthrough_value",
+		"ic_total_quoted_value",
+	].forEach((f) => hideField(f, showTotals));
 
 	// Scope section: visible if about OR deliverables still included
 	if (frm.fields_dict.ic_section_scope) {
@@ -3540,10 +3578,22 @@ instacertify.toggle_quotation_sections = function (frm) {
 	[
 		"ic_section_costing",
 		"ic_cost_items",
-		"ic_section_cost_totals",
 		"ic_commercials_notes",
 	].forEach((f) => {
 		if (frm.fields_dict[f]) frm.toggle_display(f, sectionOn("ic_show_commercials"));
+	});
+	[
+		"ic_section_cost_totals",
+		"ic_commercial_value",
+		"ic_passthrough_value",
+		"ic_total_quoted_value",
+	].forEach((f) => {
+		if (frm.fields_dict[f]) {
+			frm.toggle_display(
+				f,
+				sectionOn("ic_show_commercials") && sectionOn("ic_show_total")
+			);
+		}
 	});
 	// Do NOT force-show policies/terms/bank here — apply_quotation_section_visibility owns that
 	// (force-show was merging unchecked sections back into the form).
@@ -7607,6 +7657,11 @@ frappe.ui.form.on("Quotation", {
 	},
 	ic_show_commercials(frm) {
 		instacertify.apply_quotation_section_visibility(frm);
+		instacertify.toggle_quotation_sections(frm);
+	},
+	ic_show_total(frm) {
+		instacertify.apply_quotation_section_visibility(frm);
+		instacertify.toggle_quotation_sections(frm);
 	},
 	ic_show_payment_terms(frm) {
 		instacertify.apply_quotation_section_visibility(frm);

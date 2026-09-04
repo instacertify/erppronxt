@@ -162,6 +162,14 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "show_total",
+   "fieldtype": "Check",
+   "label": "Show Total / Final Costing",
+   "default": 1,
+   "description": "Uncheck when some commercial lines are optional for the customer to choose — hides Grand Total / Final Costing (line prices still print)."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "show_payment_terms",
    "fieldtype": "Check",
    "label": "Show Payment Terms",

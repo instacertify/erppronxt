@@ -193,6 +193,7 @@ const IC_TEMPLATE_SHOW_FIELDS = [
 	"show_timelines",
 	"show_deliverables",
 	"show_commercials",
+	"show_total",
 	"show_payment_terms",
 	"show_banking",
 	"show_cancellation",

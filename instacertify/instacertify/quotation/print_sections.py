@@ -18,6 +18,8 @@ QUOTE_PRINT_SECTIONS: list[tuple[str, str, str]] = [
 	("show_timelines", "ic_show_timelines", "Estimated Timelines"),
 	("show_deliverables", "ic_show_deliverables", "Deliverables"),
 	("show_commercials", "ic_show_commercials", "Commercials"),
+	# Sub-toggle under commercials (not a reorderable section key)
+	("show_total", "ic_show_total", "Total / Final Costing"),
 	("show_payment_terms", "ic_show_payment_terms", "Payment Terms"),
 	("show_banking", "ic_show_banking", "Banking Details"),
 	("show_cancellation", "ic_show_cancellation", "Cancellation & Refund"),
@@ -98,15 +100,12 @@ SECTION_META: dict[str, dict[str, Any]] = {
 	"commercials": {
 		"show_field": "ic_show_commercials",
 		"label": "Commercials / Test Lines",
+		# Line tables + notes only — Final Costing gated by ic_show_total
 		"form_fields": [
 			"ic_section_test_lines",
 			"ic_test_items",
 			"ic_section_costing",
 			"ic_cost_items",
-			"ic_section_cost_totals",
-			"ic_commercial_value",
-			"ic_passthrough_value",
-			"ic_total_quoted_value",
 			"ic_commercials_notes",
 		],
 	},
@@ -264,6 +263,15 @@ def quote_section_on(doc=None, fieldname: str = "") -> bool:
 	if val in (0, "0", False):
 		return False
 	return True
+
+
+def quote_totals_on(doc=None) -> bool:
+	"""Whether Final Costing / Testing Total / Commercials Total should print.
+
+	Uncheck Show Total when line items are optional choices for the customer —
+	line prices still show; aggregated totals stay hidden.
+	"""
+	return quote_section_on(doc, "ic_show_total")
 
 
 def template_show_defaults(tmpl=None) -> dict[str, Any]:

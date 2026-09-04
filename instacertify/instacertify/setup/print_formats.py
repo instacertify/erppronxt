@@ -351,7 +351,7 @@ QUOTATION_HTML = """
         </tr>
       {% endfor %}
       {% for t in _by %}
-        {% if t.testing %}
+        {% if t.testing and quote_section_on(doc, 'ic_show_total') %}
         <tr>
           <td colspan="6" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
           <td><b>{{ quote_money(t.testing, t.currency) }}</b></td>
@@ -382,7 +382,7 @@ QUOTATION_HTML = """
         </tr>
       {% endfor %}
       {% for t in _by %}
-        {% if t.cost %}
+        {% if t.cost and quote_section_on(doc, 'ic_show_total') %}
         <tr>
           <td colspan="6" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
           <td><b>{{ quote_money(t.cost, t.currency) }}</b></td>
@@ -392,6 +392,7 @@ QUOTATION_HTML = """
       </tbody>
     </table>
     {% endif %}
+    {% if quote_section_on(doc, 'ic_show_total') %}
     <div class="ic-grand-total" style="margin-top:10px;">
       {% if _by|length <= 1 %}
         {%- set _one = _by[0] if _by else {'currency': doc.currency or 'INR', 'total': 0} -%}
@@ -403,6 +404,7 @@ QUOTATION_HTML = """
         {% endfor %}
       {% endif %}
     </div>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -974,7 +976,7 @@ TESTING_QUOTATION_HTML = """
                   </tr>
                 {% endfor %}
                 {% for t in _by %}
-                  {% if t.testing %}
+                  {% if t.testing and quote_section_on(doc, 'ic_show_total') %}
                   <tr>
                     <td colspan="7" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
                     <td class="amt"><b>{{ inr(t.testing, t.currency) }}</b></td>
@@ -1012,7 +1014,7 @@ TESTING_QUOTATION_HTML = """
                   </tr>
                 {% endfor %}
                 {% for t in _by %}
-                  {% if t.cost %}
+                  {% if t.cost and quote_section_on(doc, 'ic_show_total') %}
                   <tr>
                     <td colspan="6" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
                     <td class="amt"><b>{{ inr(t.cost, t.currency) }}</b></td>
@@ -1022,6 +1024,7 @@ TESTING_QUOTATION_HTML = """
                 </tbody>
               </table>
               {% endif %}
+              {% if quote_section_on(doc, 'ic_show_total') %}
               <table class="tq-comm" style="margin-top:8px;">
                 <tbody>
                   {% if _by|length <= 1 %}
@@ -1040,6 +1043,7 @@ TESTING_QUOTATION_HTML = """
                   {% endif %}
                 </tbody>
               </table>
+              {% endif %}
             </td>
           </tr>
     </table>
@@ -1363,7 +1367,7 @@ CONSULTING_QUOTATION_HTML = """
             </tr>
           {% endfor %}
           {% for t in _by %}
-            {% if t.testing %}
+            {% if t.testing and quote_section_on(doc, 'ic_show_total') %}
             <tr>
               <td colspan="5" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
               <td class="amt"><b>{{ inr(t.testing, t.currency) }}</b></td>
@@ -1396,7 +1400,7 @@ CONSULTING_QUOTATION_HTML = """
             </tr>
           {% endfor %}
           {% for t in _by %}
-            {% if t.cost %}
+            {% if t.cost and quote_section_on(doc, 'ic_show_total') %}
             <tr>
               <td colspan="4" style="text-align:right;font-weight:700;">Commercials Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
               <td class="amt"><b>{{ inr(t.cost, t.currency) }}</b></td>
@@ -1406,7 +1410,7 @@ CONSULTING_QUOTATION_HTML = """
           </tbody>
         </table>
         {% endif %}
-        {% if (doc.ic_test_items or doc.ic_cost_items) %}
+        {% if quote_section_on(doc, 'ic_show_total') and (doc.ic_test_items or doc.ic_cost_items) %}
         <table class="cq-comm" style="margin-top:8px;">
           <tbody>
             {% if _by|length <= 1 %}
