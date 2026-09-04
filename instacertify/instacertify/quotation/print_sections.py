@@ -265,13 +265,38 @@ def quote_section_on(doc=None, fieldname: str = "") -> bool:
 	return True
 
 
+def quote_has_do_not_sum_lines(doc=None) -> bool:
+	"""True if any commercial line is marked Do Not Sum (optional / not summed)."""
+	if not doc:
+		return False
+	try:
+		rows = doc.get("ic_cost_items")
+	except Exception:
+		rows = getattr(doc, "ic_cost_items", None)
+	for row in rows or []:
+		try:
+			val = row.get("exclude_from_total")
+		except Exception:
+			val = getattr(row, "exclude_from_total", None)
+		if val in (1, "1", True):
+			return True
+	return False
+
+
 def quote_totals_on(doc=None) -> bool:
 	"""Whether Final Costing / Testing Total / Commercials Total should print.
 
-	Uncheck Show Total when line items are optional choices for the customer —
-	line prices still show; aggregated totals stay hidden.
+	Hidden when:
+	- Show Total is unchecked, or
+	- any commercial line has Do Not Sum (optional choices for the customer).
+
+	Line prices still print either way.
 	"""
-	return quote_section_on(doc, "ic_show_total")
+	if not quote_section_on(doc, "ic_show_total"):
+		return False
+	if quote_has_do_not_sum_lines(doc):
+		return False
+	return True
 
 
 def template_show_defaults(tmpl=None) -> dict[str, Any]:
@@ -303,6 +328,8 @@ def quote_show_flags(doc=None) -> dict[str, int]:
 	out = {}
 	for _tmpl_key, quote_key, _label in QUOTE_PRINT_SECTIONS:
 		out[quote_key] = 1 if quote_section_on(doc, quote_key) else 0
+	# Effective total visibility (also off when any Do Not Sum line exists)
+	out["ic_show_total"] = 1 if quote_totals_on(doc) else 0
 	return out
 
 

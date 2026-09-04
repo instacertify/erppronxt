@@ -351,7 +351,7 @@ QUOTATION_HTML = """
         </tr>
       {% endfor %}
       {% for t in _by %}
-        {% if t.testing and quote_section_on(doc, 'ic_show_total') %}
+        {% if t.testing and quote_totals_on(doc) %}
         <tr>
           <td colspan="6" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
           <td><b>{{ quote_money(t.testing, t.currency) }}</b></td>
@@ -382,7 +382,7 @@ QUOTATION_HTML = """
         </tr>
       {% endfor %}
       {% for t in _by %}
-        {% if t.cost and quote_section_on(doc, 'ic_show_total') %}
+        {% if t.cost and quote_totals_on(doc) %}
         <tr>
           <td colspan="6" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
           <td><b>{{ quote_money(t.cost, t.currency) }}</b></td>
@@ -392,7 +392,7 @@ QUOTATION_HTML = """
       </tbody>
     </table>
     {% endif %}
-    {% if quote_section_on(doc, 'ic_show_total') %}
+    {% if quote_totals_on(doc) %}
     <div class="ic-grand-total" style="margin-top:10px;">
       {% if _by|length <= 1 %}
         {%- set _one = _by[0] if _by else {'currency': doc.currency or 'INR', 'total': 0} -%}
@@ -976,7 +976,7 @@ TESTING_QUOTATION_HTML = """
                   </tr>
                 {% endfor %}
                 {% for t in _by %}
-                  {% if t.testing and quote_section_on(doc, 'ic_show_total') %}
+                  {% if t.testing and quote_totals_on(doc) %}
                   <tr>
                     <td colspan="7" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
                     <td class="amt"><b>{{ inr(t.testing, t.currency) }}</b></td>
@@ -1014,7 +1014,7 @@ TESTING_QUOTATION_HTML = """
                   </tr>
                 {% endfor %}
                 {% for t in _by %}
-                  {% if t.cost and quote_section_on(doc, 'ic_show_total') %}
+                  {% if t.cost and quote_totals_on(doc) %}
                   <tr>
                     <td colspan="6" style="text-align:right;font-weight:700;">Consulting / Other Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
                     <td class="amt"><b>{{ inr(t.cost, t.currency) }}</b></td>
@@ -1024,7 +1024,7 @@ TESTING_QUOTATION_HTML = """
                 </tbody>
               </table>
               {% endif %}
-              {% if quote_section_on(doc, 'ic_show_total') %}
+              {% if quote_totals_on(doc) %}
               <table class="tq-comm" style="margin-top:8px;">
                 <tbody>
                   {% if _by|length <= 1 %}
@@ -1367,7 +1367,7 @@ CONSULTING_QUOTATION_HTML = """
             </tr>
           {% endfor %}
           {% for t in _by %}
-            {% if t.testing and quote_section_on(doc, 'ic_show_total') %}
+            {% if t.testing and quote_totals_on(doc) %}
             <tr>
               <td colspan="5" style="text-align:right;font-weight:700;">Testing Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
               <td class="amt"><b>{{ inr(t.testing, t.currency) }}</b></td>
@@ -1400,7 +1400,7 @@ CONSULTING_QUOTATION_HTML = """
             </tr>
           {% endfor %}
           {% for t in _by %}
-            {% if t.cost and quote_section_on(doc, 'ic_show_total') %}
+            {% if t.cost and quote_totals_on(doc) %}
             <tr>
               <td colspan="4" style="text-align:right;font-weight:700;">Commercials Total{% if _by|length > 1 %} ({{ t.currency }}){% endif %}</td>
               <td class="amt"><b>{{ inr(t.cost, t.currency) }}</b></td>
@@ -1410,7 +1410,7 @@ CONSULTING_QUOTATION_HTML = """
           </tbody>
         </table>
         {% endif %}
-        {% if quote_section_on(doc, 'ic_show_total') and (doc.ic_test_items or doc.ic_cost_items) %}
+        {% if quote_totals_on(doc) and (doc.ic_test_items or doc.ic_cost_items) %}
         <table class="cq-comm" style="margin-top:8px;">
           <tbody>
             {% if _by|length <= 1 %}
