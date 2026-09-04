@@ -3121,7 +3121,7 @@ instacertify.open_arrange_quotation_sections_dialog = function (frm) {
 				<label style="display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 10px;border:1px solid var(--border-color,#d0d7de);border-radius:6px;background:#f8fafc;cursor:pointer;">
 					<input type="checkbox" class="ic-show-total-opt" ${frm.doc.ic_show_total == null || cint(frm.doc.ic_show_total) === 1 ? "checked" : ""}/>
 					<span><b>${__("Show Total / Final Costing")}</b> — ${__(
-						"Uncheck when lines are optional choices (hides Grand Total; line prices still show)."
+						"Leave unchecked for optional line choices. Quote will not include a Final Costing or Grand Total section."
 					)}</span>
 				</label>
 				<div class="ic-section-arrange-list" style="max-height:420px;overflow:auto;"></div>`,
@@ -3628,12 +3628,16 @@ instacertify.toggle_quotation_sections = function (frm) {
 		frm.set_df_property("ic_bank_account", "read_only", 0);
 	}
 	if (frm.fields_dict.ic_section_costing) {
+		const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) => cint(r.exclude_from_total));
+		const hideTotals = hasDoNotSum || !sectionOn("ic_show_total");
 		frm.set_df_property(
 			"ic_section_costing",
 			"label",
-			isTesting
-				? __("Commercials / Other Charges (with Test Lines → Final Costing)")
-				: __("Cost Breakdown / Commercials")
+			hideTotals
+				? __("Commercials / Other Charges")
+				: isTesting
+					? __("Commercials / Other Charges (with Test Lines → Final Costing)")
+					: __("Cost Breakdown / Commercials")
 		);
 	}
 	if (frm.fields_dict.ic_section_testing) {
@@ -3667,18 +3671,25 @@ instacertify.toggle_quotation_sections = function (frm) {
 		);
 	}
 	if (frm.fields_dict.ic_cost_items) {
+		const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) => cint(r.exclude_from_total));
+		const hideTotals = hasDoNotSum || !sectionOn("ic_show_total");
 		frm.set_df_property(
 			"ic_cost_items",
 			"description",
-			showTestLines
+			hideTotals
 				? __(
-						"Customisable commercials. Unit Price or Custom Value (text). Do Not Sum = skip Final Costing. Default currency {0}.",
+						"Optional / selectable lines — no grand total on this quote. Unit Price or Custom Value. Default currency {0}.",
 						[frm.doc.currency || "INR"]
 				  )
-				: __(
-						"Unit Price or Custom Value (text). Do Not Sum excludes from totals. Default currency {0}.",
-						[frm.doc.currency || "INR"]
-				  )
+				: showTestLines
+					? __(
+							"Customisable commercials. Unit Price or Custom Value (text). Do Not Sum = no grand total on quote. Default currency {0}.",
+							[frm.doc.currency || "INR"]
+					  )
+					: __(
+							"Unit Price or Custom Value (text). Do Not Sum = no grand total on quote. Default currency {0}.",
+							[frm.doc.currency || "INR"]
+					  )
 		);
 	}
 	instacertify.sync_quote_cost_currency(frm);
@@ -3990,7 +4001,7 @@ instacertify.recalc_test_row = function (frm, cdt, cdn) {
 	}
 };
 
-/** Live Final Costing strip: Test Lines + Commercials (respects Do Not Sum + per-currency). */
+/** When any Do Not Sum line exists, turn off Show Total and hide Final Costing UI. */
 instacertify.sync_show_total_from_do_not_sum = function (frm) {
 	if (!frm || !frm.doc) return;
 	const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) => cint(r.exclude_from_total));
@@ -4000,18 +4011,6 @@ instacertify.sync_show_total_from_do_not_sum = function (frm) {
 			Promise.resolve(frm.set_value("ic_show_total", 0)).catch(() => {
 				frm.doc.ic_show_total = 0;
 			});
-		}
-		if (!frm.__ic_dns_total_alert) {
-			frm.__ic_dns_total_alert = true;
-			frappe.show_alert({
-				message: __(
-					"Do Not Sum ticked — Final Costing / Grand Total hidden on this quote (line prices still show)."
-				),
-				indicator: "orange",
-			});
-			setTimeout(() => {
-				frm.__ic_dns_total_alert = false;
-			}, 2500);
 		}
 	}
 	if (typeof instacertify.apply_quotation_section_visibility === "function") {
@@ -7874,7 +7873,7 @@ instacertify.sync_quote_cost_currency = function (frm) {
 			"exclude_from_total",
 			"description",
 			__(
-				"Tick for optional lines the customer may choose. Hides Final Costing / Grand Total on the quote (line price still prints)."
+				"Tick for optional lines the customer may choose. Quote will not show a Final Costing / Grand Total section."
 			)
 		);
 	}
@@ -7888,7 +7887,7 @@ instacertify.sync_quote_cost_currency = function (frm) {
 			"ic_cost_items",
 			"description",
 			__(
-				"Fully customisable. Use Unit Price for numbers, or Custom Value for any text (At actuals / Included / letters). Tick Do Not Sum for optional choices — hides Final Costing on the quote. Line Ref = A, B, C… Currency default {0}.",
+				"Fully customisable. Use Unit Price for numbers, or Custom Value for any text (At actuals / Included / letters). Tick Do Not Sum for optional choices — quote will not show a Final Costing / Grand Total section. Line Ref = A, B, C… Currency default {0}.",
 				[cur]
 			)
 		);

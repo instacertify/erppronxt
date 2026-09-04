@@ -378,7 +378,7 @@ QUOTATION_HTML = """
           <td>{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
           <td>{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
           <td>{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
-          <td><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total %} <span style="color:#667;font-size:10px;">(not summed)</span>{% endif %}</td>
+          <td><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="color:#667;font-size:10px;">(not summed)</span>{% endif %}</td>
         </tr>
       {% endfor %}
       {% for t in _by %}
@@ -1010,7 +1010,7 @@ TESTING_QUOTATION_HTML = """
                     <td class="num">{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
                     <td class="amt">{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
                     <td class="num">{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
-                    <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
+                    <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
                   </tr>
                 {% endfor %}
                 {% for t in _by %}
@@ -1396,7 +1396,7 @@ CONSULTING_QUOTATION_HTML = """
               <td style="text-align:center;">{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
               <td class="amt">{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
               <td style="text-align:center;">{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
-              <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
+              <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
             </tr>
           {% endfor %}
           {% for t in _by %}
