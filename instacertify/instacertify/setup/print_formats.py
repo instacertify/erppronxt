@@ -471,7 +471,7 @@ QUOTATION_HTML = """
       {% if doc.ic_qr_code %}
         <img src="{{ doc.ic_qr_code }}" alt="QR"/>
       {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
       {% endif %}
       <div style="font-size:8px;">Scan to verify</div>
     </div>
@@ -1191,7 +1191,7 @@ TESTING_QUOTATION_HTML = """
       {% if doc.ic_qr_code %}
         <img src="{{ doc.ic_qr_code }}" alt="QR"/>
       {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
       {% endif %}
       <div class="cap">Scan to verify</div>
     </div>
@@ -1558,7 +1558,7 @@ CONSULTING_QUOTATION_HTML = """
       {% if doc.ic_qr_code %}
         <img src="{{ doc.ic_qr_code }}" alt="QR"/>
       {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + doc.name) }}" alt="QR"/>
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
       {% endif %}
       <div class="cap">Scan to verify</div>
     </div>
