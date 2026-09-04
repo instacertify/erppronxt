@@ -101,6 +101,31 @@ class TestQuoteShowTotal(FrappeTestCase):
 		self.assertNotIn("Final Costing", html)
 		self.assertNotIn("Commercials Total", html)
 
+	def test_template_cost_rows_copy_exclude_from_total(self):
+		from instacertify.quotation.events import _template_cost_rows
+
+		tmpl = frappe._dict(
+			cost_items=[
+				frappe._dict(
+					cost_component="Optional Pack",
+					particulars="Optional Pack",
+					description="",
+					amount=1000,
+					qty=1,
+					payment_destination="Payable to Instacertify",
+					revenue_treatment="Counted Revenue",
+					is_passthrough=0,
+					exclude_from_total=1,
+					line_label="A",
+					currency="INR",
+				)
+			]
+		)
+		rows = _template_cost_rows(tmpl)
+		self.assertEqual(len(rows), 1)
+		self.assertEqual(rows[0]["exclude_from_total"], 1)
+		self.assertEqual(rows[0]["line_label"], "A")
+
 	def test_js_lists_show_total_field(self):
 		from pathlib import Path
 
@@ -110,3 +135,9 @@ class TestQuoteShowTotal(FrappeTestCase):
 		self.assertIn('"ic_show_total"', js)
 		self.assertIn("ic-show-total-opt", js)
 		self.assertIn("sync_show_total_from_do_not_sum", js)
+
+		events = Path(frappe.get_app_path("instacertify", "quotation", "events.py")).read_text(
+			encoding="utf-8"
+		)
+		self.assertIn("exclude_from_total", events)
+		self.assertIn('row.get("exclude_from_total")', events)

@@ -156,6 +156,7 @@ def _calculate_cost_line_totals(doc):
 		has_exclude = meta.has_field("exclude_from_total")
 	except Exception:
 		pass
+	any_do_not_sum = False
 	for row in doc.get("ic_cost_items") or []:
 		qty = cint(row.get("qty") or 0) or 1
 		row.qty = qty
@@ -170,6 +171,11 @@ def _calculate_cost_line_totals(doc):
 		custom = (row.get("charges_display") or "").strip()
 		if has_exclude and custom and unit == 0 and row.get("exclude_from_total") in (None, ""):
 			row.exclude_from_total = 1
+		if has_exclude and cint(row.get("exclude_from_total")):
+			any_do_not_sum = True
+	# Optional / Do Not Sum lines → hide Final Costing on form + print + portal
+	if any_do_not_sum and doc.meta.has_field("ic_show_total"):
+		doc.ic_show_total = 0
 
 
 def _line_total(row) -> float:
@@ -473,6 +479,9 @@ def _template_cost_rows(tmpl) -> list[dict]:
 				"payment_destination": row.payment_destination,
 				"revenue_treatment": treatment,
 				"is_passthrough": 1 if is_pass else 0,
+				"exclude_from_total": 1 if cint(row.get("exclude_from_total")) else 0,
+				"line_label": row.get("line_label") or "",
+				"currency": row.get("currency") or "",
 			}
 		)
 	return rows
@@ -560,6 +569,10 @@ def apply_quotation_template(quotation: str, template: str):
 	qt.set("ic_test_items", [])
 	for row in payload.get("test_items") or []:
 		qt.append("ic_test_items", row)
+	# Optional lines (Do Not Sum) → hide Final Costing on the quote
+	if any(cint(r.get("exclude_from_total")) for r in (payload.get("cost_items") or [])):
+		if qt.meta.has_field("ic_show_total"):
+			qt.set("ic_show_total", 0)
 	qt.save(ignore_permissions=True)
 	return qt.as_dict()
 
@@ -834,6 +847,9 @@ def save_quotation_as_template(quotation: str, template_name: str | None = None,
 				"revenue_treatment": row.get("revenue_treatment")
 				or ("Do Not Count as Revenue" if is_pass else "Counted Revenue"),
 				"is_passthrough": 1 if is_pass else 0,
+				"exclude_from_total": 1 if cint(row.get("exclude_from_total")) else 0,
+				"line_label": row.get("line_label") or "",
+				"currency": row.get("currency") or "",
 			},
 		)
 	tmpl.set("test_items", [])
