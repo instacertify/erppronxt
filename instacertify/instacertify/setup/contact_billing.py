@@ -7,11 +7,16 @@ ERPNext party lookups need:
 - Address.is_your_company_address
 
 Missing columns raise MySQLdb.OperationalError 1054 when creating Quotation.
+
+PARTY_OVERRIDE_VERSION is printed by ping_party_override() — use after deploy to
+confirm this file (not a stale .pyc) is what the site loads.
 """
 
 from __future__ import annotations
 
 import frappe
+
+PARTY_OVERRIDE_VERSION = "2026-08-30-cmd-strip-v2"
 
 _ENSURED = False
 
@@ -117,7 +122,20 @@ def _ensure_missing_columns():
 def ensure_party_fields():
 	"""Desk can call this before get_party_details so quote create never 1054s."""
 	ensure_party_address_contact_fields()
-	return {"ok": 1, "ready": _all_columns_present()}
+	return {"ok": 1, "ready": _all_columns_present(), "version": PARTY_OVERRIDE_VERSION}
+
+
+@frappe.whitelist()
+def ping_party_override():
+	"""Deploy check: must return version 2026-08-30-cmd-strip-v2 (not missing)."""
+	import inspect
+
+	path = inspect.getfile(ensure_party_address_contact_fields)
+	return {
+		"version": PARTY_OVERRIDE_VERSION,
+		"file": path,
+		"has_allowlist": "_PARTY_DETAILS_KEYS" in open(path, encoding="utf-8").read(),
+	}
 
 
 # Exact ERPNext get_party_details params — never forward form_dict junk like `cmd`
@@ -178,6 +196,13 @@ def get_party_details(**kwargs):
 	Must not forward `cmd` from frappe.form_dict — that causes:
 	TypeError: get_party_details() got an unexpected keyword argument 'cmd'
 	"""
+	# Strip form junk FIRST (before any other work) — production safety
+	kwargs = dict(kwargs or {})
+	kwargs.pop("cmd", None)
+	kwargs.pop("_", None)
+	kwargs.pop("csrf_token", None)
+	kwargs.pop("args", None)
+
 	ensure_party_address_contact_fields()
 	from erpnext.accounts.party import get_party_details as _erpnext_get_party_details
 
