@@ -125,6 +125,14 @@ def get_quotation(token: str):
 	# Prefer customer-facing title over internal Quotation name
 	display_ref = doc.get("customer_name") or doc.get("party_name") or "Quotation"
 	token_safe = (token or "").strip()
+
+	from instacertify.quotation.print_sections import quote_show_flags
+
+	show = quote_show_flags(doc)
+	# Only expose bank/UPI when banking section is included
+	if not show.get("ic_show_banking"):
+		pay = {}
+
 	return {
 		"reference": display_ref,
 		"customer_name": _plain(doc.customer_name or doc.party_name),
@@ -134,21 +142,21 @@ def get_quotation(token: str):
 		"ic_service_name": _plain(doc.ic_service_name),
 		"ic_estimated_timeline": _plain(doc.ic_estimated_timeline),
 		"ic_scope_of_work": _plain(doc.ic_scope_of_work),
+		"ic_about_service": _plain(doc.get("ic_about_service") or doc.get("ic_about_testing")),
 		"ic_deliverables": _plain(doc.ic_deliverables),
 		"ic_payment_terms": _plain(doc.ic_payment_terms),
+		"ic_validity_text": _plain(doc.get("ic_validity_text")),
+		"ic_validity_days": doc.get("ic_validity_days"),
+		"ic_documents_required": _plain(doc.get("ic_documents_required")),
 		"ic_customer_remarks": _plain(doc.ic_customer_remarks),
-		"ic_show_about": 0 if doc.get("ic_show_about") in (0, "0", False) else 1,
-		"ic_show_deliverables": 0 if doc.get("ic_show_deliverables") in (0, "0", False) else 1,
-		"ic_show_commercials": 0 if doc.get("ic_show_commercials") in (0, "0", False) else 1,
-		"ic_show_payment_terms": 0 if doc.get("ic_show_payment_terms") in (0, "0", False) else 1,
-		"ic_show_sample_required": 0 if doc.get("ic_show_sample_required") in (0, "0", False) else 1,
-		"ic_show_timelines": 0 if doc.get("ic_show_timelines") in (0, "0", False) else 1,
+		# All Print Section flags from Quote Format / quote (0 = hidden for customer)
+		**show,
 		"ic_sample_required": _plain(doc.get("ic_sample_required")),
 		"currency": doc.currency,
 		"transaction_date": str(doc.transaction_date or ""),
 		"valid_till": str(doc.valid_till or ""),
-		"cost_items": cost_items,
-		"test_items": test_items,
+		"cost_items": cost_items if show.get("ic_show_commercials") else [],
+		"test_items": test_items if show.get("ic_show_commercials") else [],
 		"can_decide": 1 if can_decide else 0,
 		"is_final": 1 if status in ("Accepted", "Rejected / Lost") else 0,
 		"pdf_url": f"/api/method/instacertify.quotation.events.download_quotation_pdf?token={token_safe}",
