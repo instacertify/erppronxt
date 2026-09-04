@@ -124,7 +124,21 @@ def get_sample_dispatch_by_token(token: str):
 			"This link does not provide access to Instacertify ERP."
 		),
 		"allowed_types": "PDF, images (PNG/JPG/WEBP/GIF/TIFF), Excel/CSV, Word",
+		"pdf_url": f"/api/method/instacertify.sample_dispatch.api.download_dispatch_pdf?token={token}",
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def download_dispatch_pdf(token: str):
+	"""Customer downloads PDF of the Sample Dispatch sheet they filled."""
+	from instacertify.utils.collection_pdf import download_by_share_token
+
+	download_by_share_token(
+		"IC Sample Dispatch Collection",
+		token,
+		print_format="Instacertify Sample Dispatch Collection",
+		filename_prefix="Sample-Dispatch",
+	)
 
 
 @frappe.whitelist(allow_guest=True)
