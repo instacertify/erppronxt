@@ -56,6 +56,15 @@ html[data-theme="light"] {
   --border-radius: 8px;
   --border-radius-md: 10px;
   --border-radius-lg: 12px;
+  /* One spacing system for every desk page */
+  --ic-page-pad: 16px;
+  --ic-gap: 12px;
+  --ic-sidebar: 232px;
+  --ic-control-h: 34px;
+  --ic-home-side-pad: 16px;
+  --ic-tile-gap: 12px;
+  --ic-tile-min: 200px;
+  --ic-tile-cols: repeat(auto-fit, minmax(min(100%, var(--ic-tile-min)), 1fr));
 }
 
 html[data-theme="dark"],
@@ -565,5 +574,345 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   .ic-summary-card,
   .widget {
     animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Layout system — same gutters, wrapping cards, usable tables, visible search
+   Visual only. Does not change fields, prices, or workflows.
+   ========================================================================== */
+
+.navbar > .container,
+.page-head .container,
+.page-head {
+  width: 100% !important;
+  max-width: none !important;
+  padding-left: var(--ic-page-pad) !important;
+  padding-right: var(--ic-page-pad) !important;
+  box-sizing: border-box;
+}
+.layout-main-section,
+.layout-main-section-wrapper {
+  padding-left: var(--ic-page-pad) !important;
+  padding-right: var(--ic-page-pad) !important;
+  box-sizing: border-box;
+}
+.page-head .page-title,
+.page-head .title-area {
+  min-width: 0;
+}
+.page-head .page-actions,
+.page-head .standard-actions,
+.custom-actions,
+.inner-group-button {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Search sits in the header on every page */
+.navbar .form-inline,
+.navbar form[role="search"] {
+  flex: 1 1 280px;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.ic-global-search,
+.navbar .navbar-search-container {
+  position: relative;
+  flex: 1 1 320px;
+  max-width: 520px;
+  min-width: min(100%, 220px);
+}
+#navbar-search {
+  width: 100% !important;
+  height: var(--ic-control-h) !important;
+  min-height: var(--ic-control-h) !important;
+  border-radius: 999px !important;
+  padding-left: 36px !important;
+  padding-right: 72px !important;
+  background: var(--ic-surface) !important;
+  border: 1px solid var(--ic-border) !important;
+}
+.ic-global-search::after {
+  content: "Ctrl K";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ic-muted);
+  background: var(--fg-color);
+  border: 1px solid var(--ic-border);
+  border-radius: 6px;
+  padding: 1px 6px;
+  pointer-events: none;
+}
+.navbar .navbar-nav,
+.navbar .dropdown-navbar-user,
+.navbar .notifications-icon {
+  align-items: center;
+}
+
+/* Sidebar keeps one width and does not cover the page */
+@media (min-width: 992px) {
+  .layout-side-section,
+  .desk-sidebar,
+  .body-sidebar-container {
+    flex: 0 0 var(--ic-sidebar);
+    width: var(--ic-sidebar);
+    max-width: var(--ic-sidebar);
+  }
+}
+.layout-main,
+.layout-main-section-wrapper {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Cards and dashboard widgets wrap instead of holding a fixed width */
+.widget-group .grid-col-2,
+.widget-group .grid-col-3,
+.widget-group .grid-col-4 {
+  display: grid !important;
+  grid-template-columns: var(--ic-tile-cols) !important;
+  gap: var(--ic-gap) !important;
+  width: 100% !important;
+  align-items: stretch !important;
+}
+.widget.number-widget-box,
+.widget.shortcut-widget-box,
+.widget.links-widget-box,
+.widget.chart-widget-box,
+.widget.dashboard-widget-box,
+.widget.quick-list-widget-box,
+.widget.onboarding-widget-box,
+.number-card,
+.ic-summary-card,
+.ic-explore-card,
+.ic-project-tile {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  min-height: 96px;
+  box-sizing: border-box !important;
+}
+.widget.chart-widget-box,
+.widget.dashboard-widget-box,
+.widget.links-widget-box,
+.widget.quick-list-widget-box {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+.widget .widget-head,
+.widget .widget-title,
+.widget .widget-body,
+.number-card .number,
+.ic-summary-card .label,
+.ic-explore-card-title,
+.ic-explore-card-sub {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.chart-container,
+.widget-chart,
+.graph-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden;
+}
+
+/* Forms: two columns on a wide screen, one column when narrow */
+.form-section .section-body,
+.form-dashboard-section .section-body {
+  gap: 8px 16px;
+}
+.frappe-control {
+  margin-bottom: 10px;
+  min-width: 0;
+}
+.frappe-control .control-label,
+.control-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ic-muted);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+.form-control,
+.like-disabled-input,
+.awesomplete > input,
+.frappe-control .link-field {
+  width: 100%;
+  max-width: 100%;
+  min-height: var(--ic-control-h);
+  box-sizing: border-box;
+}
+.awesomplete {
+  width: 100%;
+}
+.awesomplete > ul {
+  max-height: min(320px, 50vh);
+  overflow: auto;
+  z-index: 1080;
+}
+
+/* Lists: filters wrap, actions stay visible, numbers line up */
+.page-form,
+.standard-filter-section,
+.filter-section {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  padding: 10px var(--ic-page-pad) !important;
+}
+.page-form .form-group,
+.standard-filter-section .form-group,
+.page-form .frappe-control {
+  flex: 1 1 180px;
+  min-width: min(100%, 160px);
+  max-width: 280px;
+  margin: 0 !important;
+}
+.list-row-container,
+.frappe-list .result {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  max-width: 100%;
+}
+.list-row,
+.list-row-head {
+  min-width: 640px;
+}
+.list-row .level-right,
+.list-row .list-row-right,
+.list-row .row-actions {
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+.list-row .level-left,
+.list-subject {
+  min-width: 0;
+}
+.dt-cell[data-fieldtype="Currency"],
+.dt-cell[data-fieldtype="Float"],
+.dt-cell[data-fieldtype="Int"],
+.dt-cell[data-fieldtype="Percent"],
+.text-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.list-paging-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px var(--ic-page-pad);
+}
+
+/* Dialogs stay inside the window */
+.modal-dialog {
+  max-width: min(960px, calc(100vw - 24px));
+  margin: 12px auto;
+}
+.modal-dialog.modal-lg {
+  max-width: min(1100px, calc(100vw - 24px));
+}
+.modal-dialog.modal-xl,
+.modal-dialog.modal-fullscreen {
+  max-width: min(1280px, calc(100vw - 16px));
+}
+.modal-content {
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+}
+.modal-body {
+  overflow: auto;
+  max-height: calc(100vh - 160px);
+}
+.dropdown-menu {
+  max-width: min(360px, calc(100vw - 24px));
+  max-height: min(360px, 70vh);
+  overflow: auto;
+}
+
+.kanban {
+  display: flex;
+  gap: var(--ic-gap);
+  overflow-x: auto;
+  align-items: flex-start;
+  padding-bottom: 8px;
+}
+.kanban-column {
+  flex: 1 0 260px;
+  max-width: 360px;
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --ic-tile-min: 180px;
+  }
+}
+@media (max-width: 992px) {
+  :root {
+    --ic-page-pad: 12px;
+    --ic-home-side-pad: 12px;
+    --ic-tile-min: 160px;
+  }
+  .widget.chart-widget-box,
+  .widget.dashboard-widget-box {
+    grid-column: auto;
+  }
+}
+@media (max-width: 768px) {
+  :root {
+    --ic-page-pad: 10px;
+    --ic-home-side-pad: 10px;
+    --ic-tile-min: 100%;
+    --ic-tile-cols: 1fr;
+  }
+  .form-layout .section-body,
+  .form-section .section-body,
+  .form-dashboard-section .section-body {
+    flex-direction: column !important;
+  }
+  .form-column,
+  .form-layout .form-column {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  .page-form .form-group,
+  .standard-filter-section .form-group,
+  .page-form .frappe-control {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .list-row,
+  .list-row-head {
+    min-width: 560px;
+  }
+  .ic-global-search::after {
+    display: none;
+  }
+  #navbar-search {
+    padding-right: 12px !important;
+  }
+  .modal-dialog,
+  .modal-dialog.modal-lg,
+  .modal-dialog.modal-xl {
+    max-width: calc(100vw - 16px);
+    margin: 8px auto;
   }
 }

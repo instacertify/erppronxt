@@ -464,6 +464,7 @@ instacertify.go_home = function () {
 $(document).on("app_ready", function () {
 	try {
 		instacertify.enable_full_width_desk();
+		instacertify.polish_desk_search();
 	} catch (e) {
 		/* ignore */
 	}
@@ -516,13 +517,9 @@ instacertify.enable_full_width_desk = function () {
 	} catch (e) {
 		/* ignore */
 	}
-	// Keep home content flush beside the desk sidebar (tiny pad only)
-	const pad = "4px";
 	$(".page-body.container, .container.page-body").css({
 		maxWidth: "100%",
 		width: "100%",
-		paddingLeft: 0,
-		paddingRight: 0,
 		marginLeft: 0,
 		marginRight: 0,
 	});
@@ -535,15 +532,34 @@ instacertify.enable_full_width_desk = function () {
 	$(".layout-main-section-wrapper, .layout-main-section").css({
 		maxWidth: "none",
 		width: "100%",
-		paddingLeft: pad,
-		paddingRight: pad,
 	});
 };
+
+/** Keep the desk search obvious on every page. Ctrl/Cmd+K focuses it. */
+instacertify.polish_desk_search = function () {
+	const input = document.querySelector("#navbar-search");
+	if (!input) return;
+	input.setAttribute("placeholder", "Search records, pages, reports");
+	input.setAttribute("aria-label", "Search records, pages, reports");
+	const box = input.closest(".navbar-search-container") || input.parentElement;
+	if (box) box.classList.add("ic-global-search");
+};
+
+$(document).on("keydown.icDeskSearch", function (e) {
+	const key = (e.key || "").toLowerCase();
+	if (!((e.ctrlKey || e.metaKey) && key === "k")) return;
+	const input = document.querySelector("#navbar-search");
+	if (!input) return;
+	e.preventDefault();
+	input.focus();
+	if (typeof input.select === "function") input.select();
+});
 
 /** Never leave users on the generic ERPNext Home workspace (wrong landing / empty). */
 $(document).on("page-change", function () {
 	try {
 		instacertify.enable_full_width_desk();
+		instacertify.polish_desk_search();
 		const route = frappe.get_route ? frappe.get_route() : [];
 		if (
 			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
