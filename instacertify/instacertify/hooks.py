@@ -19,6 +19,10 @@ doctype_list_js = {
 	"Lead": "public/js/lead_list.js",
 }
 
+doctype_js = {
+	"User": "public/js/user.js",
+}
+
 # Website / portal
 website_route_rules = [
 	{"from_route": "/ic-quotation/<path:name>", "to_route": "ic_quotation"},
@@ -226,6 +230,7 @@ override_doctype_dashboards = {
 
 override_doctype_class = {
 	"Lead": "instacertify.crm.lead.ICLead",
+	"User": "instacertify.overrides.user.ICUser",
 }
 
 # After migrate
