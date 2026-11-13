@@ -17,6 +17,10 @@
     .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
     .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
     .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
+    .ic-portal-prose { white-space:pre-wrap; line-height:1.55; margin:0; }
+    .ic-portal-total { margin-top:14px; padding:12px 14px; border:1px solid #d7e3ea; border-radius:8px; background:#f7fafc; display:flex; justify-content:space-between; gap:12px; font-weight:700; color:#16324f; }
+    .ic-portal-section { margin-top:18px; }
+    .ic-portal-section h4 { margin:0 0 8px; color:#16324f; font-size:1rem; letter-spacing:0.01em; }
     #msg { margin-top:12px; padding:10px 12px; border-radius:10px; display:none; }
     #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     #msg.err { display:block; background:#fdecea; color:#b42318; }
@@ -188,8 +192,8 @@
           const combined = tests.total + costs.total;
           let commercials = tests.html + costs.html;
           if (showTotals && combined > 0) {
-            commercials += '<p style="margin-top:12px;font-weight:700;color:#0D47A1;">Final Costing (Testing + Other): ' +
-              esc(money(combined, d.currency)) + '</p>';
+            commercials += '<div class="ic-portal-total"><span>Total</span><span>' +
+              esc(money(combined, d.currency)) + '</span></div>';
           }
           const aboutText = d.ic_about_service || d.ic_scope_of_work || '';
           document.getElementById('content').innerHTML =
@@ -216,11 +220,12 @@
             (d.ic_show_commercials != 0 ? ('<h4 style="color:#0D47A1;margin-bottom:4px;">Commercials (' + esc(d.currency || 'INR') + ')</h4>' +
             (commercials || '<p class="ic-portal-muted">No commercial lines yet.</p>')) : '') +
             (d.ic_show_payment_terms != 0
-              ? ('<h4 style="color:#0D47A1;">Payment Terms</h4>' +
+              ? ('<div class="ic-portal-section"><h4>Payment Terms</h4>' +
                 (d.ic_payment_terms
-                  ? ('<div style="white-space:pre-wrap;">' + esc(d.ic_payment_terms) + '</div>')
+                  ? ('<div class="ic-portal-prose">' + esc(d.ic_payment_terms) + '</div>')
                   : '<p class="ic-portal-muted">As agreed with Instacertify.</p>') +
-                paymentGstNote(d.currency))
+                (d.show_gst_note != 0 ? paymentGstNote(d.currency) : '') +
+                '</div>')
               : '') +
             (d.ic_customer_remarks ? ('<p class="ic-portal-muted"><b>Your earlier remarks:</b> ' + esc(d.ic_customer_remarks) + '</p>') : '');
           document.getElementById('btn-download').href = d.pdf_url || ('/api/method/instacertify.quotation.events.download_quotation_pdf?token=' + encodeURIComponent(token));

@@ -88,18 +88,23 @@ def get_customer_history(customer: str):
 		{"party_name": customer, "opportunity_from": "Customer"},
 		["name", "status", "opportunity_amount", "currency", "transaction_date", "title"],
 	)
+	q_fields = [
+		"name",
+		"status",
+		"ic_workflow_status",
+		"grand_total",
+		"currency",
+		"transaction_date",
+		"valid_till",
+	]
+	qmeta = frappe.get_meta("Quotation")
+	for extra in ("ic_share_token", "ic_service_name", "ic_certification_type", "ic_quotation_type"):
+		if qmeta.has_field(extra):
+			q_fields.append(extra)
 	quotations = list_docs(
 		"Quotation",
 		{"party_name": customer, "quotation_to": "Customer"},
-		[
-			"name",
-			"status",
-			"ic_workflow_status",
-			"grand_total",
-			"currency",
-			"transaction_date",
-			"valid_till",
-		],
+		q_fields,
 	)
 	projects = list_docs(
 		"Project",

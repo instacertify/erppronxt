@@ -939,6 +939,25 @@ def share_with_customer(quotation: str):
 	}
 
 
+@frappe.whitelist()
+def get_customer_view_url(quotation: str):
+	"""Open the customer share view without changing workflow or quote content.
+
+	Creates a token only when one is missing so older quotes stay as they are.
+	"""
+	name = _resolve_quotation_name(quotation)
+	_ensure_quotation_share_columns()
+	doc = frappe.get_doc("Quotation", name)
+	doc.check_permission("read")
+	token = (doc.get("ic_share_token") or "").strip()
+	if not token:
+		doc.check_permission("write")
+		token = secrets.token_urlsafe(24)
+		frappe.db.set_value("Quotation", doc.name, "ic_share_token", token, update_modified=False)
+		frappe.db.commit()
+	return {"url": _portal_url(token), "token": token, "quotation": doc.name}
+
+
 def _resolve_quotation_name(name_or_number: str) -> str:
 	"""Resolve Quotation by document name or Quote No (ic_quote_number)."""
 	key = (name_or_number or "").strip()

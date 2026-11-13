@@ -32,12 +32,15 @@ BANK_UPI_PAYMENT_HTML = """
 
 # GST note shown under Payment Terms (not under commercials).
 GST_PAYMENT_TERMS_NOTE_HTML = """
+{%- set _pay_body = quote_section_text(doc.ic_payment_terms, 'Payment Terms') -%}
+{%- if 'gst' not in (_pay_body|lower) -%}
 {%- set _curr = doc.currency or 'INR' -%}
 {%- set _gst_pay = doc.ic_gst_note or 'GST @ 18% shall be charged additionally on the quoted charges, as applicable under Indian GST (CGST+SGST / IGST).' -%}
 {%- if _curr != 'INR' and not doc.ic_gst_note -%}
 {%- set _gst_pay = 'Amounts are in ' ~ _curr ~ '. GST @ 18% shall be charged additionally on the quoted charges, as applicable under Indian GST (CGST+SGST / IGST).' -%}
 {%- endif -%}
 <div style="margin-top:8px;"><b>{{ _gst_pay }}</b></div>
+{%- endif -%}
 """
 
 # Instacertify Aptos Display / Aptos print typography (quotations + printable docs)
@@ -424,7 +427,7 @@ QUOTATION_HTML = """
   {% if _sk == 'payment_terms' and quote_section_on(doc, 'ic_show_payment_terms') %}
   <div class="ic-box">
     <h3>Payment Terms</h3>
-    {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
+    {% if doc.ic_payment_terms %}<div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_payment_terms, 'Payment Terms') }}</div>
     {% else %}<p>As agreed with Instacertify.</p>{% endif %}
 """ + GST_PAYMENT_TERMS_NOTE_HTML + """
   </div>
@@ -1086,7 +1089,7 @@ TESTING_QUOTATION_HTML = """
             <td class="tq-label">{{ doc.ic_label_payment_term or 'Payment Term' }}</td>
             <td class="tq-value">
               {% if doc.ic_payment_terms %}
-                {{ doc.ic_payment_terms | replace('\t', ' ') }}
+                <div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_payment_terms, 'Payment Terms') }}</div>
               {% else %}
                 <ul>
                   <li><b>100% Advance Payment</b> is required to initiate the testing process.</li>
@@ -1441,7 +1444,7 @@ CONSULTING_QUOTATION_HTML = """
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_payment_terms or ('PAYMENT TERMS FOR ' ~ short) }}</div>
       <div class="cq-body">
-        {% if doc.ic_payment_terms %}{{ doc.ic_payment_terms | replace('\t', ' ') }}
+        {% if doc.ic_payment_terms %}<div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_payment_terms, 'Payment Terms') }}</div>
         {% else %}
           <ul>
             <li>Professional Consultancy Charges shall be payable upon confirmation of the project and commencement of consultancy services.</li>

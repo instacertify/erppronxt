@@ -247,6 +247,51 @@ def quote_section_order(doc=None) -> list[str]:
 	return parse_section_order(raw, qtype)
 
 
+def clean_customer_text(value=None, heading: str = "") -> str:
+	"""Display-only cleanup for quote narrative copied from rich text.
+
+	Does not rewrite stored quotations. Turns HTML / &nbsp; into readable lines,
+	splits sentences that were glued when tags were stripped, and drops a
+	repeated section heading (e.g. body starting with "Payment Terms – …").
+	"""
+	import html as html_lib
+	import re
+
+	if value in (None, ""):
+		return ""
+	text = str(value)
+	text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+	text = re.sub(r"(?i)</(p|div|li|h[1-6]|tr|td)>", "\n", text)
+	text = re.sub(r"<[^>]+>", " ", text)
+	text = html_lib.unescape(text)
+	text = text.replace("\xa0", " ").replace("&nbsp;", " ")
+	# Sentences glued after tag strip: "Preparation100%", "(PI).18%", "norms.MSDS"
+	text = re.sub(r"([A-Za-z\)])(\d+%)", r"\1\n\2", text)
+	text = re.sub(r"([.%])(\d)", r"\1\n\2", text)
+	text = re.sub(r"([.!?])([A-Z])", r"\1\n\2", text)
+	text = re.sub(r"([a-z%)])([A-Z])", r"\1\n\2", text)
+	text = re.sub(r"[ \t]+\n", "\n", text)
+	text = re.sub(r"\n{3,}", "\n\n", text)
+	lines = [re.sub(r" {2,}", " ", ln).strip() for ln in text.splitlines()]
+	lines = [ln for ln in lines if ln]
+	head = (heading or "").strip()
+	if head and lines:
+		first = lines[0]
+		if first.lower() == head.lower():
+			lines = lines[1:]
+		else:
+			match = re.match(rf"^{re.escape(head)}\s*[–—\-:]\s*(.*)$", first, flags=re.I)
+			if match:
+				rest = (match.group(1) or "").strip()
+				lines = ([rest] if rest else []) + lines[1:]
+	return "\n".join(lines).strip()
+
+
+def quote_section_text(value=None, heading: str = "") -> str:
+	"""Jinja helper: cleaned section body for print and portal."""
+	return clean_customer_text(value, heading)
+
+
 def quote_section_on(doc=None, fieldname: str = "") -> bool:
 	"""True unless the section checkbox is explicitly unchecked (0).
 

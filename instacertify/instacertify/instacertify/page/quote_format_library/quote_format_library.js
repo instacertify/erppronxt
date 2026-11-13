@@ -56,6 +56,9 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 				<div class="ic-quote-lib-toolbar">
 					<input type="search" class="form-control ic-quote-lib-search" id="ic-qlib-search"
 						placeholder="${__("Search templates…")}" />
+					<select class="form-control ic-quote-lib-cert" id="ic-qlib-cert" aria-label="${__("Certification or testing")}">
+						<option value="">${__("All certifications / testing")}</option>
+					</select>
 					<label class="ic-quote-lib-active-only">
 						<input type="checkbox" id="ic-qlib-active" checked />
 						${__("Active only")}
@@ -95,6 +98,7 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			? frappe.route_options.quotation_type
 			: "",
 		tag: "",
+		certification: "",
 		search: "",
 		active_only: 1,
 		catalog: null,
@@ -145,6 +149,10 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 				const tags = (t.tags || []).map((x) => String(x).toLowerCase());
 				if (tags.indexOf(String(state.tag).toLowerCase()) < 0) return false;
 			}
+			if (state.certification) {
+				const cert = String(t.certification_type || t.service_family || "").trim();
+				if (cert !== state.certification) return false;
+			}
 			if (state.search) {
 				const q = state.search.toLowerCase();
 				const blob = [
@@ -152,6 +160,7 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 					t.template_name,
 					t.service_family,
 					t.service_name,
+					t.certification_type,
 					t.quotation_type,
 				]
 					.concat(t.tags || [])
@@ -743,6 +752,7 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 			freeze: true,
 			callback(r) {
 				state.catalog = r.message || { counts: {}, templates: [] };
+				render_cert_filter();
 				render_cats();
 				render_rail();
 				render_tag_bar();
@@ -797,6 +807,32 @@ frappe.pages["quote-format-library"].on_page_load = function (wrapper) {
 	});
 	$manageMenu.on("click", (e) => e.stopPropagation());
 	let timer = null;
+	function render_cert_filter() {
+		const $cert = page.main.find("#ic-qlib-cert");
+		const seen = {};
+		((state.catalog && state.catalog.templates) || []).forEach((t) => {
+			const label = String(t.certification_type || t.service_family || "").trim();
+			if (label) seen[label] = 1;
+		});
+		const current = state.certification || "";
+		const options = ['<option value="">' + __("All certifications / testing") + "</option>"]
+			.concat(
+				Object.keys(seen)
+					.sort((a, b) => a.localeCompare(b))
+					.map((label) => `<option value="${esc(label)}">${esc(label)}</option>`)
+			);
+		$cert.html(options.join(""));
+		if (current && seen[current]) $cert.val(current);
+		else {
+			state.certification = "";
+			$cert.val("");
+		}
+	}
+
+	page.main.find("#ic-qlib-cert").on("change", function () {
+		state.certification = ($(this).val() || "").trim();
+		render_templates();
+	});
 	page.main.find("#ic-qlib-search").on("input", function () {
 		state.search = ($(this).val() || "").trim();
 		clearTimeout(timer);
