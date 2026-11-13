@@ -2836,6 +2836,7 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 				(payload.cost_items || []).forEach((row) => {
 					frm.add_child("ic_cost_items", row);
 				});
+				// Full refresh required once so new child rows appear after format apply
 				frm.refresh_field("ic_cost_items");
 			}
 			if (frm.fields_dict.ic_test_items) {
@@ -2851,6 +2852,8 @@ instacertify.fill_quotation_from_format_payload = function (frm, payload) {
 				});
 				instacertify.refresh_quotation_cost_totals(frm);
 			}
+			// Force section visibility recompute after format apply
+			frm.__ic_totals_vis_sig = null;
 			instacertify.toggle_quotation_sections(frm);
 			instacertify.apply_quotation_section_visibility(frm);
 			instacertify.apply_quotation_naming_series(frm);
@@ -4005,14 +4008,27 @@ instacertify.recalc_test_row = function (frm, cdt, cdn) {
 instacertify.sync_show_total_from_do_not_sum = function (frm) {
 	if (!frm || !frm.doc) return;
 	const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) => cint(r.exclude_from_total));
-	if (hasDoNotSum && (frm.doc.ic_show_total == null || cint(frm.doc.ic_show_total) === 1)) {
+	const showTotalOn = frm.doc.ic_show_total == null || cint(frm.doc.ic_show_total) === 1;
+	let flippedOff = false;
+	if (hasDoNotSum && showTotalOn) {
 		frm.doc.ic_show_total = 0;
+		flippedOff = true;
 		if (frm.fields_dict.ic_show_total) {
 			Promise.resolve(frm.set_value("ic_show_total", 0)).catch(() => {
 				frm.doc.ic_show_total = 0;
 			});
 		}
 	}
+	// Only re-toggle section visibility when the totals mode actually changes —
+	// amount/qty edits were re-running toggle_quotation_sections every keystroke
+	// and making the commercials area fidget.
+	const sig = [
+		cint(frm.doc.ic_show_total),
+		hasDoNotSum ? 1 : 0,
+		cint(frm.doc.ic_show_commercials),
+	].join(":");
+	if (!flippedOff && frm.__ic_totals_vis_sig === sig) return;
+	frm.__ic_totals_vis_sig = sig;
 	if (typeof instacertify.apply_quotation_section_visibility === "function") {
 		instacertify.apply_quotation_section_visibility(frm);
 	}
@@ -4024,6 +4040,11 @@ instacertify.sync_show_total_from_do_not_sum = function (frm) {
 instacertify.refresh_quotation_cost_totals = function (frm) {
 	if (!frm || !frm.doc) return;
 	instacertify.sync_show_total_from_do_not_sum(frm);
+	const hasDoNotSum = (frm.doc.ic_cost_items || []).some((r) => cint(r.exclude_from_total));
+	const showTotals =
+		(frm.doc.ic_show_commercials == null || cint(frm.doc.ic_show_commercials) === 1) &&
+		(frm.doc.ic_show_total == null || cint(frm.doc.ic_show_total) === 1) &&
+		!hasDoNotSum;
 	const byCur = {};
 	const add = (cur, amt) => {
 		const c = (cur || frm.doc.currency || "INR").trim() || "INR";
@@ -4064,31 +4085,35 @@ instacertify.refresh_quotation_cost_totals = function (frm) {
 	(frm.doc.ic_test_items || []).forEach((row) => {
 		testing += flt(row.testing_charges);
 	});
+	// Keep doc values updated; only refresh_field when the Final Costing strip is visible
+	// (refreshing hidden fields still caused mild layout churn on every line edit).
 	if (frm.fields_dict.ic_commercial_value) {
 		frm.doc.ic_commercial_value = commercial + testing;
-		frm.refresh_field("ic_commercial_value");
+		if (showTotals) frm.refresh_field("ic_commercial_value");
 	}
 	if (frm.fields_dict.ic_passthrough_value) {
 		frm.doc.ic_passthrough_value = passthrough;
-		frm.refresh_field("ic_passthrough_value");
+		if (showTotals) frm.refresh_field("ic_passthrough_value");
 	}
 	if (frm.fields_dict.ic_total_quoted_value) {
 		frm.doc.ic_total_quoted_value = commercial + testing + passthrough;
-		frm.refresh_field("ic_total_quoted_value");
-		const keys = Object.keys(byCur);
-		if (keys.length > 1) {
-			const parts = keys.map((c) => `${c}: ${format_currency(byCur[c], c)}`);
-			frm.set_df_property(
-				"ic_total_quoted_value",
-				"description",
-				__("Mixed currencies — Print totals by currency: {0}", [parts.join(" · ")])
-			);
-		} else {
-			frm.set_df_property(
-				"ic_total_quoted_value",
-				"description",
-				__("Total Quoted Value (Final Costing). Do Not Sum / Custom text lines are excluded.")
-			);
+		if (showTotals) {
+			frm.refresh_field("ic_total_quoted_value");
+			const keys = Object.keys(byCur);
+			if (keys.length > 1) {
+				const parts = keys.map((c) => `${c}: ${format_currency(byCur[c], c)}`);
+				frm.set_df_property(
+					"ic_total_quoted_value",
+					"description",
+					__("Mixed currencies — Print totals by currency: {0}", [parts.join(" · ")])
+				);
+			} else {
+				frm.set_df_property(
+					"ic_total_quoted_value",
+					"description",
+					__("Total Quoted Value (Final Costing). Do Not Sum / Custom text lines are excluded.")
+				);
+			}
 		}
 	}
 };
