@@ -154,16 +154,17 @@ def _apply_row(doc, row: dict, *, creating: bool) -> bool:
 		doc.mobile_no = str(row.get("phone")).strip()[:20]
 		changed = True
 	country = row.get("country")
-	if isinstance(country, str) and country and frappe.db.exists("Country", country) and (creating or not doc.country):
+	if (
+		isinstance(country, str)
+		and country
+		and _named_doc_exists("Country", country)
+		and (creating or not doc.country)
+	):
 		doc.country = country
 		changed = True
 
 	text = enquiry_text(row)
-	if creating or not (doc.get("ic_remarks") or "").strip():
-		doc.ic_remarks = text
-		changed = True
-	if creating or not (doc.notes or "").strip():
-		doc.notes = text
+	if _write_enquiry(doc, text, creating=creating):
 		changed = True
 
 	category = request_category(row)
@@ -184,10 +185,14 @@ def _apply_row(doc, row: dict, *, creating: bool) -> bool:
 		except Exception:
 			pass
 
-	if frappe.db.exists("Lead Source", "Website") and (creating or not doc.source):
+	if (
+		doc.meta.has_field("source")
+		and _named_doc_exists("Lead Source", "Website")
+		and (creating or not doc.source)
+	):
 		doc.source = "Website"
 		changed = True
-	if frappe.db.exists("IC Lead Source", "Website") and (creating or not doc.get("ic_lead_source_detail")):
+	if _ensure_website_lead_source() and (creating or not doc.get("ic_lead_source_detail")):
 		doc.ic_lead_source_detail = "Website"
 		changed = True
 
@@ -200,6 +205,66 @@ def _apply_row(doc, row: dict, *, creating: bool) -> bool:
 
 	doc.ic_website_lead_id = str(row.get("id") or "")[:140]
 	return changed
+
+
+def _write_enquiry(doc, text: str, *, creating: bool) -> bool:
+	"""Store the enquiry on remarks and, when Notes is a child table, as one CRM note.
+
+	Lead.notes is a Table in ERPNext 16. Assigning a string makes insert iterate
+	characters and crash with ``'str' object has no attribute 'modified'``.
+	"""
+	changed = False
+	if creating or not (doc.get("ic_remarks") or "").strip():
+		doc.ic_remarks = text
+		changed = True
+
+	notes_df = doc.meta.get_field("notes")
+	if notes_df and notes_df.fieldtype == "Table":
+		if creating or not (doc.get("notes") or []):
+			child = {"note": text}
+			child_meta = frappe.get_meta(notes_df.options) if notes_df.options else None
+			if child_meta and child_meta.has_field("added_by"):
+				child["added_by"] = frappe.session.user
+			if child_meta and child_meta.has_field("added_on"):
+				child["added_on"] = frappe.utils.now()
+			doc.append("notes", child)
+			changed = True
+		return changed
+
+	current = doc.get("notes")
+	if isinstance(current, str) and (creating or not current.strip()):
+		doc.notes = text
+		changed = True
+	return changed
+
+
+def _named_doc_exists(doctype: str, name: str) -> bool:
+	if not name or not frappe.db.exists("DocType", doctype):
+		return False
+	try:
+		return bool(frappe.db.get_value(doctype, name, "name", ignore=True))
+	except Exception:
+		return False
+
+
+def _ensure_website_lead_source() -> bool:
+	if not frappe.db.exists("DocType", "IC Lead Source"):
+		return False
+	if _named_doc_exists("IC Lead Source", "Website"):
+		return True
+	try:
+		frappe.get_doc(
+			{
+				"doctype": "IC Lead Source",
+				"source_name": "Website",
+				"is_active": 1,
+				"sort_order": 5,
+			}
+		).insert(ignore_permissions=True)
+		return True
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Website lead source")
+		return _named_doc_exists("IC Lead Source", "Website")
 
 
 def _upsert(row: dict) -> str:
@@ -264,7 +329,14 @@ def sync_website_leads(full: int | str = 0):
 			if not isinstance(row, dict):
 				skipped += 1
 				continue
-			result = _upsert(row)
+			frappe.db.savepoint("website_lead_row")
+			try:
+				result = _upsert(row)
+			except Exception:
+				frappe.db.rollback(save_point="website_lead_row")
+				skipped += 1
+				frappe.log_error(frappe.get_traceback(), "Website lead import row")
+				continue
 			if result == "created":
 				created += 1
 			elif result == "updated":

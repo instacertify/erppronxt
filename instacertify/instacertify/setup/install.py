@@ -1541,6 +1541,7 @@ def _ensure_company_invoice_defaults(company_name: str):
 def setup_lead_sources():
 	"""Seed editable IC Lead Source masters (admin can add/remove later)."""
 	sources = [
+		("Website", 5),
 		("Google Search", 10),
 		("Google Ads", 20),
 		("IndiaMART", 30),
