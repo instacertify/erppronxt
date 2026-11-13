@@ -261,6 +261,41 @@
    "fieldtype": "Data",
    "label": "Portal Base URL",
    "description": "Leave blank to use site URL"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "section_website_leads",
+   "fieldtype": "Section Break",
+   "label": "Website lead API",
+   "description": "Read-only import from cms.instacertify.com. Paste the Bearer key here. It is not stored in git."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "website_lead_sync_enabled",
+   "fieldtype": "Check",
+   "label": "Import website leads",
+   "default": "1"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "website_lead_api_url",
+   "fieldtype": "Data",
+   "label": "Leads API URL",
+   "default": "https://cms.instacertify.com/api/v1/integrations/leads"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "website_lead_api_key",
+   "fieldtype": "Password",
+   "label": "API key",
+   "description": "Sent as Authorization: Bearer. Leave blank to use site config ic_website_lead_api_key."
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "website_lead_last_sync",
+   "fieldtype": "Datetime",
+   "label": "Last website lead sync",
+   "read_only": 1
   }
  ],
  "permissions": [

@@ -94,6 +94,16 @@ LEAD_FIELDS = [
 		"description": "Editable master — Lead Source (Google Search, Ads, IndiaMART, Reference, Consultant, …)",
 	},
 	{
+		"fieldname": "ic_website_lead_id",
+		"fieldtype": "Data",
+		"label": "Website Lead ID",
+		"read_only": 1,
+		"unique": 1,
+		"insert_after": "ic_lead_source_detail",
+		"in_standard_filter": 1,
+		"description": "ID from the website CMS. Stops the same enquiry being imported twice.",
+	},
+	{
 		"fieldname": "ic_consultant_referral",
 		"fieldtype": "Link",
 		"label": "Consultant / Referral Person",

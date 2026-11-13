@@ -124,6 +124,7 @@ scheduler_events = {
 		# Every 15 minutes — 30-min prior calendar session alerts
 		"*/15 * * * *": [
 			"instacertify.notifications.tasks.event_start_reminders",
+			"instacertify.crm.website_leads.sync_website_leads_scheduled",
 		],
 	},
 }
