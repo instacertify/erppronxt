@@ -979,10 +979,10 @@ def _upsert_html_block(name, html, script, style=None):
 
 # Injected into each Custom HTML Block shadow root (global app CSS does not pierce shadow DOM).
 _SHADOW_THEME_CSS = """
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import url("/assets/instacertify/css/instacertify.css");
 :host, * {
-  font-family: "Poppins", "Segoe UI", sans-serif !important;
+  font-family: "Inter", "Segoe UI", sans-serif !important;
   box-sizing: border-box;
 }
 #ic-home-root {
@@ -999,12 +999,13 @@ _SHADOW_THEME_CSS = """
   width: 100% !important;
   max-width: none !important;
   box-sizing: border-box;
-  background: linear-gradient(125deg, #0A3380 0%, #0D47A1 42%, #1565C0 78%, #ec691f 145%);
-  color: #fff;
-  border-radius: 14px;
-  padding: 28px 28px 26px;
-  margin-bottom: 20px;
-  box-shadow: 0 10px 28px rgba(13, 71, 161, 0.07);
+  background: #ffffff;
+  color: #21263c;
+  border: 1px solid #e3e6ef;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(33, 38, 60, 0.05), 0 8px 24px rgba(33, 38, 60, 0.04);
 }
 .ic-greeting-brand {
   display: flex;
@@ -1014,10 +1015,10 @@ _SHADOW_THEME_CSS = """
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.05;
-  color: #EC691F;
+  color: #21263c;
   margin: 0 0 8px;
-  font-family: "Poppins", sans-serif !important;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+  font-family: "Inter", sans-serif !important;
+  text-shadow: none;
 }
 .ic-home-brand-icon {
   width: 48px;
@@ -1030,15 +1031,15 @@ _SHADOW_THEME_CSS = """
 }
 .ic-greeting-brand-text,
 .ic-greeting-brand-text span,
-.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #EC691F !important; }
+.ic-greeting-brand > span:not(.ic-greeting-brand-text) { color: #21263c !important; }
 .ic-greeting h2 {
   margin: 0 0 6px;
   font-weight: 500;
   font-size: 1.05rem;
-  color: rgba(255,255,255,0.92) !important;
-  font-family: "Poppins", sans-serif !important;
+  color: #21263c !important;
+  font-family: "Inter", sans-serif !important;
 }
-.ic-greeting .ic-datetime { opacity: 0.88; font-size: 0.88rem; color: #fff; }
+.ic-greeting .ic-datetime { opacity: 1; font-size: 0.88rem; color: #6c718a; }
 
 /* Colorful prompts inside shadow (critical path; full CSS also imported) */
 .ic-lead-prompt-title, .ic-workdesk-title {
@@ -1080,17 +1081,19 @@ _SHADOW_THEME_CSS = """
 .ic-summary-card .value { font-family: "Poppins", sans-serif !important; font-weight: 800 !important; }
 .ic-summary-grid, .ic-explore-grid, .ic-project-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)) !important;
   gap: 12px !important;
   width: 100% !important;
+  align-items: stretch !important;
 }
 .ic-explore-card, .ic-summary-card {
-  aspect-ratio: 1 / 1 !important;
+  aspect-ratio: auto !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   border-radius: 12px !important;
-  min-height: 0 !important;
+  min-height: 112px !important;
+  height: auto !important;
 }
 .ic-summary-card {
   justify-content: space-between !important;
@@ -1155,26 +1158,44 @@ _SHADOW_THEME_CSS = """
 .ic-explore-card-sub { color: #5a6f7a; font-size: 0.74rem; margin-top: auto; padding-top: 8px; line-height: 1.3;
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ic-project-tile {
-  aspect-ratio: 1 / 1 !important;
-  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  min-height: 112px !important;
+  height: auto !important;
   padding: 12px !important;
   border-radius: 12px !important;
 }
 .ic-lead-prompt-list {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr)) !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
   gap: 12px !important;
   width: 100% !important;
+  align-items: stretch !important;
 }
 .ic-lead-prompt, .ic-lead-hub-card {
-  aspect-ratio: 1 / 1 !important;
+  aspect-ratio: auto !important;
+  min-height: 120px !important;
+  height: auto !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
 }
 .ic-workdesk-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)) !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
   gap: 12px !important;
   width: 100% !important;
+  align-items: stretch !important;
+}
+@media (max-width: 900px) {
+  .ic-summary-grid, .ic-explore-grid, .ic-project-grid, .ic-lead-prompt-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 560px) {
+  .ic-summary-grid, .ic-explore-grid, .ic-project-grid, .ic-lead-prompt-list, .ic-workdesk-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .ic-greeting { padding: 16px !important; }
 }
 """
 
