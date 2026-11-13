@@ -6898,6 +6898,17 @@ body,
 /* ==========================================================================
    Stable page toolbar — no fidget / jump when selecting or clicking
    ========================================================================== */
+.page-head .page-icon-group,
+.page-icon-group {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.page-icon-group .icon-btn,
+.page-icon-group button {
+  margin-left: 2px !important;
+  margin-right: 2px !important;
+}
 .page-head .btn,
 .page-head .btn:hover,
 .page-head .btn:active,

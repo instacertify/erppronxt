@@ -527,8 +527,11 @@ def get_quote_library_catalog():
 		"template_notes",
 		"modified",
 	]
-	if frappe.get_meta("IC Quotation Template").has_field("display_name"):
+	meta = frappe.get_meta("IC Quotation Template")
+	if meta.has_field("display_name"):
 		fields.append("display_name")
+	if meta.has_field("certification_type"):
+		fields.append("certification_type")
 	rows = frappe.get_all(
 		"IC Quotation Template",
 		fields=fields,

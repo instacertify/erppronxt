@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import frappe
 from frappe import _
-from frappe.utils import flt, strip_html
+from frappe.utils import flt
 
 
 no_cache = 1
@@ -35,10 +35,13 @@ def get_context(context):
 	context.no_footer = 1
 
 
-def _plain(value) -> str:
+def _plain(value, heading: str = "") -> str:
+	"""Guest-safe text. Cleans HTML/nbsp for display; does not change stored quotes."""
+	from instacertify.quotation.print_sections import clean_customer_text
+
 	if value in (None, ""):
 		return ""
-	return strip_html(str(value)).strip()
+	return clean_customer_text(value, heading)
 
 
 @frappe.whitelist(allow_guest=True)
@@ -144,7 +147,8 @@ def get_quotation(token: str):
 		"ic_scope_of_work": _plain(doc.ic_scope_of_work),
 		"ic_about_service": _plain(doc.get("ic_about_service") or doc.get("ic_about_testing")),
 		"ic_deliverables": _plain(doc.ic_deliverables),
-		"ic_payment_terms": _plain(doc.ic_payment_terms),
+		"ic_payment_terms": _plain(doc.ic_payment_terms, "Payment Terms"),
+		"show_gst_note": 0 if "gst" in _plain(doc.ic_payment_terms, "Payment Terms").lower() else 1,
 		"ic_validity_text": _plain(doc.get("ic_validity_text")),
 		"ic_validity_days": doc.get("ic_validity_days"),
 		"ic_documents_required": _plain(doc.get("ic_documents_required")),

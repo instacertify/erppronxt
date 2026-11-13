@@ -2321,6 +2321,24 @@ frappe.ui.form.on("Quotation", {
 					runShare();
 				}
 			}, __("Actions"));
+			frm.add_custom_button(__("View quote"), () => {
+				if (frm.is_new()) {
+					frappe.msgprint(__("Save the quotation before opening the customer view."));
+					return;
+				}
+				frappe.call({
+					method: "instacertify.quotation.events.get_customer_view_url",
+					args: { quotation: frm.doc.name },
+					callback(r) {
+						const url = ((r && r.message) || {}).url;
+						if (!url) {
+							frappe.msgprint(__("Could not open the customer view."));
+							return;
+						}
+						window.open(url, "_blank", "noopener");
+					},
+				});
+			}, __("Actions"));
 
 			frm.add_custom_button(__("Print / PDF Options"), () => {
 				// Opens Frappe print view: format picker, letter head, page options, PDF
@@ -5600,12 +5618,24 @@ function ic_render_customer_related(d) {
 		<p class="ic-related-hint text-muted">${__("All quotations, projects, invoices, payments, and Instacertify records for this customer. Open a row or use Connections for filtered lists.")}</p>
 	`;
 
-	const quote_rows = (d.quotations || []).map((q) => [
-		ic_doc_link("Quotation", q.name),
-		ic_status_pill(q.ic_workflow_status || q.status),
-		ic_fmt_money(q.grand_total, q.currency),
-		ic_esc(q.transaction_date || "—"),
-	]);
+	const quote_rows = (d.quotations || []).map((q) => {
+		const view = q.ic_share_token
+			? `<a class="btn btn-xs btn-default" target="_blank" rel="noopener" href="/ic-quotation/${encodeURIComponent(
+					q.ic_share_token
+			  )}">${__("View quote")}</a>`
+			: `<span class="text-muted">${__("Not shared")}</span>`;
+		const what = [q.ic_certification_type, q.ic_service_name, q.ic_quotation_type]
+			.filter(Boolean)
+			.join(" · ");
+		return [
+			ic_doc_link("Quotation", q.name),
+			ic_esc(what || "—"),
+			ic_status_pill(q.ic_workflow_status || q.status),
+			ic_fmt_money(q.grand_total, q.currency),
+			ic_esc(q.transaction_date || "—"),
+			view,
+		];
+	});
 	const project_rows = (d.projects || []).map((p) => [
 		ic_doc_link("Project", p.name, p.project_name || p.name),
 		ic_status_pill(p.status),
@@ -5735,7 +5765,10 @@ function ic_render_customer_related(d) {
 			${cards}
 			${ic_related_section(
 				__("Quotations Shared"),
-				ic_table([__("Quotation"), __("Status"), __("Amount"), __("Date")], quote_rows),
+				ic_table(
+					[__("Quotation"), __("Quoted for"), __("Status"), __("Amount"), __("Date"), __("Customer view")],
+					quote_rows
+				),
 				__("No quotations for this customer"),
 				customer
 					? ic_list_link("Quotation", customer, null, {
