@@ -1,6 +1,84 @@
 /*! Instacertify Desk JS */
 frappe.provide("instacertify");
 
+instacertify.open_smtp_setup = function () {
+	frappe.call({
+		method: "instacertify.setup.email_smtp.get_outgoing_email",
+		callback(r) {
+			const cur = r.message || {};
+			const d = new frappe.ui.Dialog({
+				title: __("Outgoing email (SMTP)"),
+				fields: [
+					{
+						fieldname: "help",
+						fieldtype: "HTML",
+						options: `<p class="text-muted" style="margin:0 0 8px;">${__(
+							"Used for password reset and other messages. The password is saved on the Email Account, not in the browser."
+						)}</p>`,
+					},
+					{
+						fieldname: "email_id",
+						fieldtype: "Data",
+						label: __("From email"),
+						reqd: 1,
+						default: cur.email_id || "",
+						description: __("Example: accounts@instacertify.com"),
+					},
+					{
+						fieldname: "smtp_server",
+						fieldtype: "Data",
+						label: __("SMTP server"),
+						reqd: 1,
+						default: cur.smtp_server || "",
+						description: __("Example: smtp.gmail.com"),
+					},
+					{
+						fieldname: "smtp_port",
+						fieldtype: "Int",
+						label: __("Port"),
+						reqd: 1,
+						default: cur.smtp_port || 587,
+						description: __("587 for TLS, 465 for SSL"),
+					},
+					{
+						fieldname: "password",
+						fieldtype: "Password",
+						label: __("Mailbox password"),
+						description: cur.configured
+							? __("Leave blank to keep the saved password.")
+							: __("App password if the provider requires it."),
+					},
+					{
+						fieldname: "send_test",
+						fieldtype: "Check",
+						label: __("Send a test email to this address"),
+						default: 0,
+					},
+				],
+				primary_action_label: __("Save"),
+				primary_action(values) {
+					frappe.call({
+						method: "instacertify.setup.email_smtp.save_outgoing_email",
+						args: values,
+						freeze: true,
+						freeze_message: __("Saving outgoing email…"),
+						callback() {
+							d.hide();
+							frappe.show_alert({
+								message: values.send_test
+									? __("SMTP saved and test email sent.")
+									: __("SMTP saved. Password reset can be emailed."),
+								indicator: "green",
+							});
+						},
+					});
+				},
+			});
+			d.show();
+		},
+	});
+};
+
 instacertify.brand = {
 	primary: "#0D47A1",
 	accent: "#EC691F",

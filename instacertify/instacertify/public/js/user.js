@@ -35,6 +35,33 @@ frappe.ui.form.on("User", {
 		frm.remove_custom_button(__("Reset Password"), __("Password"));
 		frm.remove_custom_button(__("Change Password"), __("Password"));
 		frm.add_custom_button(__("Set Password"), () => ic_set_password_dialog(frm), __("Password"));
+		frm.add_custom_button(
+			__("Email reset link"),
+			() => {
+				frappe.call({
+					method: "instacertify.setup.email_smtp.outgoing_email_ready",
+					callback(r) {
+						if (!(r.message || {}).configured) {
+							frappe.msgprint(
+								__("Configure outgoing email first. Open IC Settings and choose Configure SMTP.")
+							);
+							if (
+								(frappe.user.has_role("System Manager") || frappe.user.has_role("IC Admin")) &&
+								instacertify.open_smtp_setup
+							) {
+								instacertify.open_smtp_setup();
+							}
+							return;
+						}
+						frappe.call({
+							method: "frappe.core.doctype.user.user.reset_password",
+							args: { user: frm.doc.name },
+						});
+					},
+				});
+			},
+			__("Password")
+		);
 	},
 
 	new_password(frm) {
