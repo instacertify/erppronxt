@@ -10,7 +10,10 @@ app_version = "1.0.0"
 required_apps = ["erpnext", "india_compliance", "hrms"]
 
 # Includes in <head>
-app_include_css = "/assets/instacertify/css/instacertify.css"
+app_include_css = [
+	"/assets/instacertify/css/instacertify.css",
+	"/assets/instacertify/css/desk_saas.css",
+]
 app_include_js = "/assets/instacertify/js/instacertify.js"
 web_include_css = "/assets/instacertify/css/instacertify.css"
 website_include_css = "/assets/instacertify/css/instacertify.css"
