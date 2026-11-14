@@ -371,20 +371,22 @@ def ensure_dashboard_charts():
 				"timeseries": chart.get("timeseries", 0),
 				"is_public": 1,
 				"module": "Instacertify",
-				"color": "#065175",
+				"color": "#0073ea",
+				# Counts are not money. A currency here prints "₹ 62.00" on a count of 62.
+				"currency": "",
 			}
 			if chart["type"] in ("Donut", "Pie", "Bar"):
 				values["custom_options"] = json.dumps(
 					{
 						"colors": [
-							"#065175",
-							"#033447",
-							"#0f766e",
-							"#1e4d6b",
-							"#4a7c8c",
-							"#64748b",
-							"#0b3a4a",
-							"#94a3b8",
+							"#579bfc",
+							"#00c875",
+							"#fdab3d",
+							"#a25ddc",
+							"#ff642e",
+							"#0073ea",
+							"#e2445c",
+							"#9cd326",
 						]
 					}
 				)

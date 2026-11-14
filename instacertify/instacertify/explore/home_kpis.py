@@ -61,7 +61,6 @@ def get_home_kpis() -> dict:
 	d30 = add_days(today, -29)
 	prev_from = add_days(today, -59)
 	prev_to = add_days(today, -30)
-	period = _("last 30 days")
 	versus = _("vs previous 30 days")
 
 	cards: list[dict] = []
@@ -96,7 +95,7 @@ def get_home_kpis() -> dict:
 				"label": _("Total leads"),
 				"icon": "users",
 				"value": total,
-				"sub": _("{0} added in the {1}").format(new_now, period),
+				"sub": _("all leads on file"),
 				"doctype": "Lead",
 				"filters": [],
 			}

@@ -672,6 +672,25 @@ frappe.provide("instacertify.ux");
 		const Chart = frappe.widget && frappe.widget.widget_factory && frappe.widget.widget_factory.chart;
 		if (!Chart || Chart.prototype.__ic_click) return;
 		Chart.prototype.__ic_click = true;
+		const chartArgs = Chart.prototype.get_chart_args;
+		if (chartArgs) {
+			Chart.prototype.get_chart_args = function () {
+				const args = chartArgs.apply(this, arguments);
+				const doc = this.chart_doc || {};
+				const counting =
+					doc.chart_type === "Count" ||
+					(doc.chart_type === "Group By" && (doc.group_by_type || "Count") === "Count");
+				if (counting && args) {
+					args.tooltipOptions = Object.assign({}, args.tooltipOptions, {
+						formatTooltipY: (value) => {
+							const n = Number(value);
+							return Number.isFinite(n) ? String(Math.round(n)) : String(value == null ? "" : value);
+						},
+					});
+				}
+				return args;
+			};
+		}
 		const render = Chart.prototype.render;
 		Chart.prototype.render = function () {
 			const result = render.apply(this, arguments);
