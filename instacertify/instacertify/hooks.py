@@ -272,6 +272,9 @@ override_doctype_class = {
 	"User": "instacertify.overrides.user.ICUser",
 }
 
+# Quotation print page: allow a draft quote and do not die on a bad template.
+before_request = ["instacertify.utils.print_page.install_printview_guard"]
+
 # After migrate
 after_migrate = [
 	"instacertify.setup.install.after_migrate",
