@@ -412,7 +412,7 @@ def _ensure_home_html_block():
     </section>
   </div>
 
-  <div class="ic-section-label">At a glance</div>
+  <div class="ic-section-label" id="ic-glance-label">At a glance</div>
   <div class="ic-summary-grid" id="ic-summary-grid"></div>
 
   <div class="ic-explore-panel" id="ic-explore-panel">
@@ -619,13 +619,17 @@ def _ensure_home_html_block():
       const arrow = n > 0 ? "▲" : (n < 0 ? "▼" : "•");
       return `<span class="ic-kpi-trend ${cls}" title="${esc(c.change_label || "")}">${arrow} ${Math.abs(n)}%</span>`;
     }
+    const CARD_COLOR = {
+      total_leads: "blue", new_leads: "green", converted_leads: "teal", active_projects: "purple",
+      quotations_pending: "orange", revenue: "navy", pending_followups: "yellow", overdue_tasks: "red"
+    };
     function draw() {
       const off = hidden();
       const shown = cards.filter((c) => off.indexOf(c.id) < 0);
       kpiCovered = {};
       shown.forEach((c) => { if (SAME_AS[c.id]) kpiCovered[SAME_AS[c.id]] = 1; });
       grid.innerHTML = shown.length ? shown.map((c) =>
-        `<button type="button" class="ic-kpi-card ${c.tone ? "tone-" + esc(c.tone) : ""}" data-id="${esc(c.id)}" title="Open these records">
+        `<button type="button" class="ic-kpi-card c-${CARD_COLOR[c.id] || "blue"} ${c.tone ? "tone-" + esc(c.tone) : ""}" data-id="${esc(c.id)}" title="Open these records">
           <span class="ic-kpi-top"><span class="ic-kpi-label">${esc(c.label)}</span><span class="ic-kpi-icon" aria-hidden="true">${icInlineIcon(String(c.icon || "file").replace(/[^a-z0-9\-]/gi, ""))}</span></span>
           <span class="ic-kpi-main"><span class="ic-kpi-value">${esc(valueText(c))}</span>${trend(c)}</span>
           <span class="ic-kpi-sub">${esc([c.sub, c.change != null ? c.change_label : ""].filter(Boolean).join(" · "))}</span>
@@ -834,7 +838,7 @@ def _ensure_home_html_block():
         ["Quotations Sent", data.quotations_sent, "sales", "info", "quotation awaiting the customer", "quotations awaiting the customer"],
         ["Quotations Accepted", data.quotations_accepted, "sales", "ok", "accepted quotation to start", "accepted quotations to start"],
         ["Testing Requests", data.testing_requests, "delivery", "info", "testing request in progress", "testing requests in progress"],
-        ["New Leads", data.new_leads, "sales", "", "", ""],
+        ["New Leads", data.new_leads, "sales", "", "", "", "Not started"],
         ["Active Leads", data.active_leads, "sales", "", "", ""],
         ["Active Projects", data.active_projects, "delivery", "", "", ""],
       ];
@@ -851,9 +855,11 @@ def _ensure_home_html_block():
       const severity = { danger: 0, warn: 1, info: 2, ok: 3, "": 4 };
 
       const today = root_element.getElementById("ic-today-list");
+      // These counts are already a Business overview card, so they are not listed again here.
+      const alreadyOnOverview = { "Quotations Sent": 1, "Leads to Contact": 1, "Active Projects": 1 };
       if (today) {
         const due = items
-          .filter((i) => i[3] && (i[1] || 0) > 0 && canRead(record_type[i[0]]))
+          .filter((i) => i[3] && (i[1] || 0) > 0 && canRead(record_type[i[0]]) && !alreadyOnOverview[i[0]])
           .sort((a, b) => mine(a[2]) - mine(b[2]) || severity[a[3]] - severity[b[3]])
           .slice(0, 6);
         today.innerHTML = due.length
@@ -875,10 +881,14 @@ def _ensure_home_html_block():
       const grid = root_element.getElementById("ic-summary-grid");
       if (!grid) return;
       redrawGlance = function () {
-        grid.innerHTML = cards.filter((i) => canRead(record_type[i[0]]) && !kpiCovered[i[0]]).map((i) => {
+        const glanceLabel = root_element.getElementById("ic-glance-label");
+        const glance = cards.filter((i) => canRead(record_type[i[0]]) && !kpiCovered[i[0]] && !i[3]);
+        if (glanceLabel) glanceLabel.style.display = glance.length ? "" : "none";
+        grid.innerHTML = glance.map((i) => {
           const value = i[1] || 0;
-          const cls = !value ? "is-zero" : (i[3] === "danger" || i[3] === "warn" ? "tone-" + i[3] : "");
-          return `<div class="ic-summary-card is-clickable ${cls}" data-kpi="${frappe.utils.escape_html(i[0])}" role="button" tabindex="0" title="Click to open the list"><div class="label">${frappe.utils.escape_html(i[0])}</div><div class="value">${value}</div></div>`;
+          const cls = !value ? "is-zero" : "";
+          const label = i[6] || i[0];
+          return `<div class="ic-summary-card is-clickable ${cls}" data-kpi="${frappe.utils.escape_html(i[0])}" role="button" tabindex="0" title="Click to open the list"><div class="label">${frappe.utils.escape_html(label)}</div><div class="value">${value}</div></div>`;
         }).join("");
         bindKpiClicks(grid);
         grid.querySelectorAll(".ic-summary-card").forEach((el) => {
@@ -900,11 +910,16 @@ def _ensure_home_html_block():
       const calEl = root_element.getElementById("ic-my-calendar");
       const leadsEl = root_element.getElementById("ic-my-leads");
       if (tasksEl) {
-        const rows = d.tasks || [];
+        const seenTask = {};
+        const rows = (d.tasks || []).filter((t) => {
+          if (!t || !t.name || seenTask[t.name]) return false;
+          seenTask[t.name] = 1;
+          return true;
+        });
         tasksEl.innerHTML = rows.length ? rows.map(t =>
           `<div class="ic-workdesk-row ${esc(t.urgency)}" role="link" tabindex="0" data-status="${esc(t.status || "")}">
             <div class="ic-workdesk-row-main">${esc(t.subject || t.name)}</div>
-            <div class="ic-workdesk-row-meta"><span>${esc(t.status||"")}</span><span class="ic-lead-prompt-when ${esc(t.urgency)}">${esc(t.due_label)}</span><button type="button" class="ic-workdesk-open" data-name="${esc(t.name)}">Open</button></div>
+            <div class="ic-workdesk-row-meta"><span class="ic-status-pill">${esc(t.status||"")}</span>${t.project ? `<span class="ic-task-project">${esc(t.project)}</span>` : ""}<span class="ic-lead-prompt-when ${esc(t.urgency)}">${esc(t.due_label)}</span><button type="button" class="ic-workdesk-open" data-name="${esc(t.name)}">Open</button></div>
           </div>`
         ).join("") : empty("No open tasks for you.");
         const openTaskList = (status) => {
@@ -1750,6 +1765,70 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 
 /* Charts in the lead tracker open the leads they count */
 .ic-chart-opens-list .bar, .ic-chart-opens-list .pie-path, .ic-chart-opens-list .donut-path, .ic-chart-opens-list .chart-legend g { cursor: pointer; }
+
+/* Monday.com color: a white board, one bright color per card, words that stay inside the card. */
+.ic-greeting.ic-hero {
+  position: relative; overflow: hidden;
+  background: #fff !important; color: #323338 !important;
+  border: 1px solid #e6e9ef !important; box-shadow: none !important;
+}
+.ic-greeting.ic-hero::before {
+  content: ""; display: block !important; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+  background: linear-gradient(90deg, #579bfc 0%, #00c875 22%, #fdab3d 44%, #a25ddc 66%, #ff642e 84%, #e2445c 100%);
+}
+.ic-greeting.ic-hero h2 { color: #323338 !important; }
+.ic-greeting.ic-hero .ic-datetime { color: #676879 !important; }
+.ic-hero-btn { background: #fff; color: #323338; border: 1px solid #d0d4e4; }
+.ic-hero-btn:hover { background: #f5f6f8; }
+.ic-hero-btn.primary { background: #0073ea; border-color: #0073ea; color: #fff; }
+.ic-hero-btn.primary:hover { background: #0060c2; }
+.ic-kpi-card.c-blue { --c: #579bfc; --c-ink: #2259a8; --c-bg: #e8f3ff; }
+.ic-kpi-card.c-green { --c: #00c875; --c-ink: #037f4c; --c-bg: #e6f9ef; }
+.ic-kpi-card.c-teal { --c: #00a9a5; --c-ink: #0b6e6b; --c-bg: #e5f7f6; }
+.ic-kpi-card.c-purple { --c: #a25ddc; --c-ink: #6b3fa0; --c-bg: #f4eafb; }
+.ic-kpi-card.c-orange { --c: #ff642e; --c-ink: #c43e0c; --c-bg: #ffeee8; }
+.ic-kpi-card.c-navy { --c: #0073ea; --c-ink: #0055b3; --c-bg: #e8f2fd; }
+.ic-kpi-card.c-yellow { --c: #e5a000; --c-ink: #7a4d00; --c-bg: #fff6de; }
+.ic-kpi-card.c-red { --c: #e2445c; --c-ink: #b3253d; --c-bg: #fde8ec; }
+.ic-kpi-card.c-blue, .ic-kpi-card.c-green, .ic-kpi-card.c-teal, .ic-kpi-card.c-purple,
+.ic-kpi-card.c-orange, .ic-kpi-card.c-navy, .ic-kpi-card.c-yellow, .ic-kpi-card.c-red {
+  background: #fff; border-color: #e6e9ef; border-left: 4px solid var(--c);
+}
+.ic-kpi-card.c-blue .ic-kpi-icon, .ic-kpi-card.c-green .ic-kpi-icon, .ic-kpi-card.c-teal .ic-kpi-icon,
+.ic-kpi-card.c-purple .ic-kpi-icon, .ic-kpi-card.c-orange .ic-kpi-icon, .ic-kpi-card.c-navy .ic-kpi-icon,
+.ic-kpi-card.c-yellow .ic-kpi-icon, .ic-kpi-card.c-red .ic-kpi-icon { background: var(--c); color: #fff; }
+.ic-kpi-card.c-blue .ic-kpi-value, .ic-kpi-card.c-green .ic-kpi-value, .ic-kpi-card.c-teal .ic-kpi-value,
+.ic-kpi-card.c-purple .ic-kpi-value, .ic-kpi-card.c-orange .ic-kpi-value, .ic-kpi-card.c-navy .ic-kpi-value,
+.ic-kpi-card.c-yellow .ic-kpi-value, .ic-kpi-card.c-red .ic-kpi-value { color: var(--c-ink); }
+.ic-kpi-card .ic-kpi-label, .ic-kpi-card .ic-kpi-sub { display: block; overflow: hidden; }
+.ic-kpi-main { min-width: 0; }
+.ic-today-item.tone-danger { --tone: #e2445c; --tone-bg: #fde8ec; }
+.ic-today-item.tone-warn { --tone: #e5a000; --tone-bg: #fff6de; }
+.ic-today-item.tone-info { --tone: #579bfc; --tone-bg: #e8f3ff; }
+.ic-today-item.tone-ok { --tone: #00c875; --tone-bg: #e6f9ef; }
+.ic-today-text { overflow-wrap: anywhere; }
+.ic-wd-tasks { box-shadow: inset 0 3px 0 #fdab3d !important; }
+.ic-wd-calendar { box-shadow: inset 0 3px 0 #579bfc !important; }
+.ic-wd-leads { box-shadow: inset 0 3px 0 #00c875 !important; }
+.ic-workdesk-row-main { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ic-workdesk-row-meta { flex-wrap: wrap; align-items: center; }
+.ic-workdesk-row-meta > span, .ic-status-pill, .ic-task-project { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.ic-status-pill { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; background: #e8f3ff; color: #0073ea; font-weight: 600; }
+.ic-summary-card.c-blue { border-left: 4px solid #579bfc !important; }
+.ic-summary-card.c-purple { border-left: 4px solid #a25ddc !important; }
+.ic-summary-card.c-green { border-left: 4px solid #00c875 !important; }
+.ic-summary-card.c-yellow { border-left: 4px solid #fdab3d !important; }
+.ic-crm-tracker .ic-summary-card .value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; }
+.ic-crm-chart-card { min-height: 0 !important; overflow: hidden; background: #fff !important; border: 1px solid #e6e9ef !important; border-radius: 12px !important; }
+.ic-crm-chart-label { text-transform: none !important; letter-spacing: 0 !important; font-size: 14px !important; font-weight: 600 !important; color: #323338 !important; }
+.ic-crm-charts { align-items: start; }
+.ic-explore-card:nth-child(6n+1) .ic-explore-icon { background: #e8f3ff !important; color: #0073ea !important; }
+.ic-explore-card:nth-child(6n+2) .ic-explore-icon { background: #e6f9ef !important; color: #037f4c !important; }
+.ic-explore-card:nth-child(6n+3) .ic-explore-icon { background: #fff6de !important; color: #7a4d00 !important; }
+.ic-explore-card:nth-child(6n+4) .ic-explore-icon { background: #f4eafb !important; color: #6b3fa0 !important; }
+.ic-explore-card:nth-child(6n+5) .ic-explore-icon { background: #ffeee8 !important; color: #c43e0c !important; }
+.ic-explore-card:nth-child(6n+6) .ic-explore-icon { background: #fde8ec !important; color: #b3253d !important; }
+.ic-explore-card-title, .ic-lead-prompt-name, .ic-project-tile-title { overflow: hidden; text-overflow: ellipsis; }
 """
 
 
@@ -1760,27 +1839,16 @@ def _ensure_crm_lead_tracker_block():
   <div class="ic-crm-tracker-title">CRM Lead Tracker</div>
   <div class="ic-summary-grid" id="ic-crm-kpi"></div>
   <div class="ic-crm-charts">
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">This Week vs Last Week</div><div id="ic-crm-week-bar"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">This Month vs Last Month</div><div id="ic-crm-month-bar"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 7 Days by Source</div><div id="ic-crm-source-7"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Project Type</div><div id="ic-crm-ptype-30"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Source</div><div id="ic-crm-source-30"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 Days by Status</div><div id="ic-crm-status-30"></div></div>
+    <div class="ic-crm-chart-card" id="ic-crm-source-7-card"><div class="ic-crm-chart-label">Last 7 days by source</div><div id="ic-crm-source-7"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by source</div><div id="ic-crm-source-30"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by project type</div><div id="ic-crm-ptype-30"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by status</div><div id="ic-crm-status-30"></div></div>
   </div>
-  <div class="ic-crm-chart-card" style="margin-top:12px;min-height:auto;">
-    <div class="ic-crm-chart-label">Lead reminder hub · Whom to call · Connect with · Customer remarks</div>
-    <div id="ic-crm-leads-contact"></div>
-  </div>
-  <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC Renewals Due (31 days)</div><div id="ic-crm-amc-due"></div></div>
+  <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC renewals due (31 days)</div><div id="ic-crm-amc-due"></div></div>
 </div>
 """
 	script = """
 (function() {
-  function pctLabel(v) {
-    const n = Number(v || 0);
-    const arrow = n > 0 ? "▲" : (n < 0 ? "▼" : "•");
-    return arrow + " " + Math.abs(n) + "%";
-  }
   function makeChart(el, type, labels, values, colors, opens) {
     if (!el) return;
     el.innerHTML = "";
@@ -1799,7 +1867,7 @@ def _ensure_crm_lead_tracker_block():
         labels: labels,
         datasets: [{ name: "Leads", values: values }]
       },
-      colors: colors || ["#315CF5", "#635BDB", "#16A36A", "#E9A23B", "#3285D8", "#94A3B8"]
+      colors: colors || ["#579bfc", "#00c875", "#fdab3d", "#a25ddc", "#ff642e", "#0073ea", "#e2445c", "#9cd326"]
     });
     // A bar, slice or name opens the leads it counts.
     if (opens && window.instacertify && instacertify.ux && instacertify.ux.bind_block_chart) {
@@ -1812,23 +1880,26 @@ def _ensure_crm_lead_tracker_block():
       const d = r.message || {};
       const kpi = root_element.getElementById("ic-crm-kpi");
       if (kpi) {
-        const weekCls = (d.week_change_pct || 0) >= 0 ? "up" : "down";
-        const monthCls = (d.month_change_pct || 0) >= 0 ? "up" : "down";
-        kpi.innerHTML = [
-          ["This Week", d.this_week],
-          ["Last Week", d.last_week],
-          ["Week Change", pctLabel(d.week_change_pct), weekCls],
-          ["This Month", d.this_month],
-          ["Last Month", d.last_month],
-          ["Month Change", pctLabel(d.month_change_pct), monthCls],
-          ["Last 7 Days", d.last_7_days],
-          ["Last 30 Days", d.last_30_days, true],
-        ].map(([label, value, extra]) => {
-          const accent = extra === true ? "accent" : "";
-          const trend = (extra === "up" || extra === "down") ? extra : "";
-          const clickable = ["This Week", "This Month", "Last 7 Days", "Last 30 Days"].includes(label) ? "is-clickable" : "";
-          const kpi = clickable ? ` data-kpi="${frappe.utils.escape_html(label)}" title="Click to open leads"` : "";
-          return `<div class="ic-summary-card ${accent} ${trend} ${clickable}"${kpi}><div class="label">${label}</div><div class="value" style="font-size:${typeof value==='string'?'1.15rem':'1.6rem'}">${value ?? 0}</div></div>`;
+        // "From nothing to something" is not a 100% change, and a figure already
+        // on Business overview (the rolling 30 days) is not repeated here.
+        function changeText(current, previous) {
+          const now = Number(current || 0);
+          const then = Number(previous || 0);
+          if (!then && !now) return ["No change", "flat"];
+          if (!then) return ["New", "up"];
+          const n = Math.round(((now - then) / then) * 1000) / 10;
+          if (!n) return ["No change", "flat"];
+          return [(n > 0 ? "▲ " : "▼ ") + Math.abs(n) + "%", n > 0 ? "up" : "down"];
+        }
+        const rows = [
+          ["This week", d.this_week, "This Week", "blue", changeText(d.this_week, d.last_week)],
+          ["Previous week", d.last_week, "Last Week", "purple", null],
+          ["This month", d.this_month, "This Month", "green", changeText(d.this_month, d.last_month)],
+          ["Previous month", d.last_month, "Last Month", "yellow", null],
+        ];
+        kpi.innerHTML = rows.map(([label, value, key, color, change]) => {
+          const pill = change ? `<span class="ic-kpi-trend ${change[1]}">${frappe.utils.escape_html(change[0])}</span>` : "";
+          return `<div class="ic-summary-card is-clickable c-${color}" data-kpi="${frappe.utils.escape_html(key)}" title="Click to open leads"><div class="label">${label}</div><div class="value"><span>${value ?? 0}</span>${pill}</div></div>`;
         }).join("");
         if (window.instacertify && instacertify.bind_summary_card_clicks) {
           instacertify.bind_summary_card_clicks(kpi);
@@ -1843,18 +1914,17 @@ def _ensure_crm_lead_tracker_block():
       }
       const ranges = d.ranges || {};
       const since = (label) => (ranges[label] ? [["Lead", "creation", ">=", ranges[label][0]]] : []);
-      const week = d.week_compare || [];
-      makeChart(root_element.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#315CF5"], {doctype: "Lead", ranges: ranges});
-      const month = d.month_compare || [];
-      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#635BDB"], {doctype: "Lead", ranges: ranges});
       const s7 = d.by_source_7d || [];
-      makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 7 Days")});
+      const s30 = d.by_source_30d || [];
+      const sameSeries = (a, b) => a.length === b.length && a.every((row, i) => row.label === b[i].label && Number(row.count) === Number(b[i].count));
+      const source7 = root_element.getElementById("ic-crm-source-7-card");
+      if (source7 && (!s7.length || sameSeries(s7, s30))) source7.style.display = "none";
+      else makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 7 Days")});
       const p30 = d.by_project_type_30d || [];
       makeChart(root_element.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count), null, {doctype: "Lead", field: "ic_project_type", base: since("Last 30 Days")});
-      const s30 = d.by_source_30d || [];
       makeChart(root_element.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 30 Days")});
       const st30 = d.by_status_30d || [];
-      makeChart(root_element.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count), ["#315CF5"], {doctype: "Lead", field: "status", base: since("Last 30 Days")});
+      makeChart(root_element.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count), ["#0073ea"], {doctype: "Lead", field: "status", base: since("Last 30 Days")});
       (function renderFollowups(){
         const el = root_element.getElementById("ic-crm-leads-contact");
         const rows = d.leads_to_contact || [];

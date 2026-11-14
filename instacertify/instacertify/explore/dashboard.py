@@ -107,8 +107,8 @@ def get_explore_prompts() -> dict:
 	# Universal — everyone with desk access
 	add(
 		"leads",
-		_("Leads"),
-		_("Capture & follow up prospects"),
+		_("Open leads"),
+		_("Leads still being worked, not the full total"),
 		["List", "Lead"],
 		doctype="Lead",
 		count_filters={"status": ["not in", ["Converted", "Do Not Contact"]]},
