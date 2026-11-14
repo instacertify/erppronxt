@@ -727,8 +727,89 @@ frappe.provide("instacertify.ux");
 		};
 	};
 
+	/** Field notes stay behind an "i". Click it to read them. */
+	ux.fold_field_help = function (root) {
+		const scope = root && root.querySelectorAll ? root : document;
+		scope.querySelectorAll(".help-box, .form-section-description").forEach((box) => {
+			const text = (box.textContent || "").replace(/\s+/g, " ").trim();
+			if (!text) return;
+			const host = box.closest(".frappe-control, .form-section, .form-dashboard-section");
+			const label =
+				host &&
+				host.querySelector(".control-label, .section-head, .form-section-heading, .label-area");
+			if (!label) return;
+			let button = label.querySelector(".ic-field-info");
+			if (!button) {
+				button = document.createElement("button");
+				button.type = "button";
+				button.className = "ic-field-info";
+				button.setAttribute("aria-label", __("About this field"));
+				button.textContent = "i";
+				button.addEventListener("click", function (event) {
+					event.preventDefault();
+					event.stopPropagation();
+					ux.show_help_pop(button, button.getAttribute("data-help") || "");
+				});
+				label.appendChild(button);
+			}
+			button.setAttribute("data-help", text);
+			box.classList.add("ic-help-folded");
+		});
+	};
+
+	ux.show_help_pop = function (button, text) {
+		const open = document.querySelector(".ic-help-pop");
+		if (open) open.remove();
+		if (!text) return;
+		if (button._ic_pop_open) {
+			button._ic_pop_open = false;
+			return;
+		}
+		const pop = document.createElement("div");
+		pop.className = "ic-help-pop";
+		pop.textContent = text;
+		document.body.appendChild(pop);
+		const rect = button.getBoundingClientRect();
+		const width = Math.min(280, window.innerWidth - 24);
+		let left = rect.left;
+		if (left + width > window.innerWidth - 12) left = window.innerWidth - width - 12;
+		pop.style.width = width + "px";
+		pop.style.left = Math.max(12, left) + "px";
+		pop.style.top = rect.bottom + 8 + "px";
+		button._ic_pop_open = true;
+		setTimeout(() => {
+			const close = function (event) {
+				if (pop.contains(event.target) || event.target === button) return;
+				pop.remove();
+				button._ic_pop_open = false;
+				document.removeEventListener("click", close, true);
+			};
+			document.addEventListener("click", close, true);
+		}, 0);
+	};
+
+	ux.watch_field_help = function () {
+		if (ux._help_watch) return;
+		ux._help_watch = true;
+		const run = () => {
+			try {
+				ux.fold_field_help(document);
+			} catch (e) {
+				/* the form still works; the note stays where it was */
+			}
+		};
+		run();
+		ux._help_timer = null;
+		const observer = new MutationObserver(() => {
+			clearTimeout(ux._help_timer);
+			ux._help_timer = setTimeout(run, 80);
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+	};
+
 	ux.on_page = function () {
 		ux.keep_block_links_in_app();
+		ux.watch_field_help();
 		ux.patch_charts();
 		ux.patch_indicator();
 		ux.patch_lists();

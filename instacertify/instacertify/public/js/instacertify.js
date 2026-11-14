@@ -7881,7 +7881,9 @@ instacertify.apply_billing_currency = function (frm, customer, opts) {
 					instacertify._auto_setting_currency = false;
 				});
 				frappe.show_alert({
-					message: __("Currency set to {0}, this customer's currency.", [d.currency]),
+					message: d.is_export
+						? __("Overseas customer — currency set to USD.")
+						: __("India customer — currency set to {0}.", [d.currency]),
 					indicator: "blue",
 				});
 			}
@@ -8083,7 +8085,17 @@ frappe.ui.form.on("Quotation", {
 			instacertify.render_customer_currency_banner(frm);
 			return;
 		}
-		instacertify.apply_billing_currency(frm, frm.doc.party_name);
+		// ERPNext also writes the customer's saved currency a moment later.
+		// Keep this window open so that write is not treated as a hand edit,
+		// then set USD for an overseas customer (INR for India).
+		frm._ic_party_currency = true;
+		if (frm.doc.ic_currency_manual) frm.doc.ic_currency_manual = 0;
+		const apply = () => instacertify.apply_billing_currency(frm, frm.doc.party_name);
+		apply();
+		setTimeout(apply, 600);
+		setTimeout(() => {
+			frm._ic_party_currency = false;
+		}, 1200);
 		instacertify.render_customer_currency_banner(frm);
 	},
 	currency(frm) {
@@ -8091,7 +8103,11 @@ frappe.ui.form.on("Quotation", {
 			instacertify.render_customer_currency_banner(frm);
 			return;
 		}
-		if (!instacertify._auto_setting_currency && !frm.doc.ic_currency_manual) {
+		if (
+			!instacertify._auto_setting_currency &&
+			!frm._ic_party_currency &&
+			!frm.doc.ic_currency_manual
+		) {
 			frm.set_value("ic_currency_manual", 1);
 		}
 		instacertify.sync_quote_cost_currency(frm);
