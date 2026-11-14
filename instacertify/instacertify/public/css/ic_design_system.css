@@ -874,22 +874,35 @@ body[data-route="Workspaces/Instacertify Home"] .widget.dashboard-widget-box,
 body[data-route="Workspaces/Instacertify Home"] .widget.chart-widget {
   min-width: 0 !important;
   max-width: 100% !important;
-  overflow: hidden !important;
+  height: auto !important;
+  overflow: visible !important;
   border: 1px solid #e6e9ef !important;
   border-radius: 12px !important;
   background: #fff !important;
   box-shadow: none !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .widget.dashboard-widget-box .widget-body,
+body[data-route="Workspaces/Instacertify Home"] .widget.dashboard-widget-box .chart-container {
+  height: auto !important;
+  overflow: visible !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .ce-block:has(.dashboard-widget-box) {
+  height: auto !important;
+  overflow: visible !important;
 }
 body[data-route="Workspaces/Instacertify Home"] .widget.dashboard-widget-box .widget-head,
 body[data-route="Workspaces/Instacertify Home"] .chart-legend {
   min-width: 0;
   max-width: 100%;
 }
-body[data-route="Workspaces/Instacertify Home"] .legend-dataset-label,
 body[data-route="Workspaces/Instacertify Home"] .widget-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+body[data-route="Workspaces/Instacertify Home"] .legend-dataset-label {
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 @media (max-width: 700px) {
   body[data-route="Workspaces/Instacertify Home"] .ce-block:has(.number-widget-box),

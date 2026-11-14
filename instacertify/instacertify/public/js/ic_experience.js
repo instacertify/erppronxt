@@ -668,6 +668,116 @@ frappe.provide("instacertify.ux");
 		return filters;
 	};
 
+	/** Pie and donut legends are drawn in fixed 150px slots, so a long name
+	 *  such as "Shared with Customer" paints over the next name. Each name
+	 *  gets its own row, and the chart grows to fit. */
+	ux.stack_home_legends = function (root) {
+		const visit = (node) => {
+			if (!node || !node.querySelectorAll) return;
+			node.querySelectorAll(".chart-legend").forEach(ux._stack_one_legend);
+			node.querySelectorAll("*").forEach((el) => {
+				if (el.shadowRoot) visit(el.shadowRoot);
+			});
+		};
+		visit(root && root.querySelectorAll ? root : document);
+	};
+
+	ux._stack_one_legend = function (legend) {
+		const items = [...legend.children].filter((el) => (el.tagName || "").toLowerCase() === "g");
+		if (items.length < 2) return;
+		const svg = legend.ownerSVGElement;
+		if (!svg) return;
+		const placed = legend.getAttribute("transform") || "";
+		const pos = /translate\(\s*([-\d.]+)[,\s]+([-\d.]+)\s*\)/.exec(placed);
+		const left = pos ? parseFloat(pos[1]) : 0;
+		const top = pos ? parseFloat(pos[2]) : 0;
+		const svgW = parseFloat(svg.getAttribute("width")) || svg.getBoundingClientRect().width || 320;
+		const maxLabel = Math.max(120, svgW - left - 28);
+		items.forEach((g) => {
+			const label = g.querySelector(".legend-dataset-label");
+			if (!label || label.getAttribute("data-ic-wrapped")) return;
+			const words = (label.textContent || "").trim().split(/\s+/);
+			if (words.length > 1) {
+				let wide = false;
+				try {
+					wide = label.getBBox().width > maxLabel;
+				} catch (e) {
+					wide = false;
+				}
+				if (wide) {
+					const x = label.getAttribute("x") || "0";
+					const dx = label.getAttribute("dx") || "0";
+					const lines = [];
+					let line = [];
+					words.forEach((word) => {
+						const trial = line.concat(word).join(" ");
+						label.textContent = trial;
+						let w = 0;
+						try {
+							w = label.getBBox().width;
+						} catch (e) {
+							w = 0;
+						}
+						if (line.length && w > maxLabel) {
+							lines.push(line.join(" "));
+							line = [word];
+						} else {
+							line.push(word);
+						}
+					});
+					if (line.length) lines.push(line.join(" "));
+					label.textContent = "";
+					lines.forEach((content, i) => {
+						const span = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+						span.setAttribute("x", x);
+						span.setAttribute("dx", dx);
+						span.setAttribute("dy", i === 0 ? "0" : "1.2em");
+						span.textContent = content;
+						label.appendChild(span);
+					});
+				}
+			}
+			label.setAttribute("data-ic-wrapped", "1");
+			const value = g.querySelector(".legend-dataset-value");
+			if (value) {
+				let bottom = 18;
+				try {
+					const box = label.getBBox();
+					bottom = box.y + box.height + 6;
+				} catch (e) {
+					/* keep the original value position */
+				}
+				value.setAttribute("y", String(Math.round(bottom)));
+			}
+		});
+		let y = 0;
+		items.forEach((g) => {
+			g.setAttribute("transform", "translate(0, " + y + ")");
+			let h = 42;
+			try {
+				h = Math.max(36, Math.ceil(g.getBBox().height) + 12);
+			} catch (e) {
+				/* a fixed step still separates the names */
+			}
+			y += h;
+		});
+		const needed = Math.ceil(top + y + 8);
+		const current = parseFloat(svg.getAttribute("height")) || 0;
+		if (needed > current) {
+			svg.setAttribute("height", String(needed));
+			svg.style.height = needed + "px";
+			svg.style.overflow = "visible";
+		}
+		let box = svg.parentElement;
+		while (box && !box.classList.contains("layout-main")) {
+			if (box.classList.contains("widget") || box.classList.contains("widget-body") || box.classList.contains("chart-container")) {
+				box.style.height = "auto";
+				box.style.overflow = "visible";
+			}
+			box = box.parentElement;
+		}
+	};
+
 	ux.patch_charts = function () {
 		const Chart = frappe.widget && frappe.widget.widget_factory && frappe.widget.widget_factory.chart;
 		if (!Chart || Chart.prototype.__ic_click) return;
@@ -694,8 +804,8 @@ frappe.provide("instacertify.ux");
 		const render = Chart.prototype.render;
 		Chart.prototype.render = function () {
 			const result = render.apply(this, arguments);
+			const widget = this;
 			try {
-				const widget = this;
 				const doc = widget.chart_doc || {};
 				const from_records = ["Group By", "Count", "Sum", "Average"].includes(doc.chart_type);
 				if (from_records && widget.chart_wrapper && !widget.__ic_bound) {
@@ -712,6 +822,15 @@ frappe.provide("instacertify.ux");
 			} catch (e) {
 				/* the chart still shows; it just does not open a list */
 			}
+			const fix = () => {
+				try {
+					ux.stack_home_legends(widget.chart_wrapper && widget.chart_wrapper[0]);
+				} catch (e) {
+					/* the chart still shows with its original legend */
+				}
+			};
+			if (result && typeof result.then === "function") result.then(fix);
+			[80, 400, 1000, 1800].forEach((ms) => setTimeout(fix, ms));
 			return result;
 		};
 	};
@@ -807,6 +926,26 @@ frappe.provide("instacertify.ux");
 		}, 0);
 	};
 
+	ux.watch_chart_legends = function () {
+		if (ux._legend_watch) return;
+		ux._legend_watch = true;
+		const run = () => {
+			const route = (document.body.getAttribute("data-route") || "");
+			if (route.indexOf("Instacertify Home") === -1 && route.indexOf("Workspaces") === -1) return;
+			try {
+				ux.stack_home_legends(document);
+			} catch (e) {
+				/* leave the legend as drawn */
+			}
+		};
+		const observer = new MutationObserver(() => {
+			clearTimeout(ux._legend_timer);
+			ux._legend_timer = setTimeout(run, 60);
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+		run();
+	};
+
 	ux.watch_field_help = function () {
 		if (ux._help_watch) return;
 		ux._help_watch = true;
@@ -830,13 +969,17 @@ frappe.provide("instacertify.ux");
 		ux.keep_block_links_in_app();
 		ux.watch_field_help();
 		ux.patch_charts();
+		ux.watch_chart_legends();
 		ux.patch_indicator();
 		ux.patch_lists();
 		ux.watch_headers();
 		ux.rail_on_tablet();
 		const route = (frappe.get_route && frappe.get_route()) || [];
 		if (route[0] === "Workspaces" || route[0] === "instacertify-home" || route.length === 0) {
-			[400, 1500, 3500].forEach((ms) => setTimeout(ux.hide_empty_headings, ms));
+			[400, 1500, 3500].forEach((ms) => {
+				setTimeout(ux.hide_empty_headings, ms);
+				setTimeout(() => ux.stack_home_legends(document), ms);
+			});
 		}
 	};
 
