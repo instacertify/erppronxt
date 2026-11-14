@@ -1626,8 +1626,17 @@ def setup_project_types():
 
 
 def setup_lead_capture_properties():
-	"""Phone/email optional; clarify country dropdown."""
+	"""Phone/email optional; source and product/service stay on the lead list filters."""
 	from instacertify.setup.pos import _make_setter
+
+	for fieldname, updates in (
+		("ic_lead_source_detail", {"label": "Source", "in_list_view": 1, "in_standard_filter": 1}),
+		("ic_project_type", {"label": "Product / service", "in_list_view": 1, "in_standard_filter": 1}),
+		("ic_request_category", {"in_standard_filter": 1, "in_list_view": 1}),
+	):
+		name = f"Lead-{fieldname}"
+		if frappe.db.exists("Custom Field", name):
+			frappe.db.set_value("Custom Field", name, updates, update_modified=False)
 
 	for field in ("email_id", "mobile_no", "phone"):
 		try:

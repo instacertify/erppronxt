@@ -12,6 +12,45 @@ def before_validate_lead(doc, method=None):
 	_sync_party_name(doc)
 
 
+@frappe.whitelist()
+def create_quick_lead(
+	party_name: str,
+	mobile_no: str | None = None,
+	email_id: str | None = None,
+	source: str | None = None,
+	project_type: str | None = None,
+	remarks: str | None = None,
+):
+	"""Create a Lead from the short capture card. Name is the only required value."""
+	frappe.has_permission("Lead", "create", throw=True)
+	party = (party_name or "").strip()
+	if not party:
+		frappe.throw(_("Name is required"))
+	source = (source or "").strip()
+	project_type = (project_type or "").strip()
+	if source and not frappe.db.exists("IC Lead Source", source):
+		source = ""
+	if project_type and not frappe.db.exists("IC Project Type", project_type):
+		project_type = ""
+	doc = frappe.get_doc(
+		{
+			"doctype": "Lead",
+			"ic_party_name": party[:140],
+			"company_name": party[:140],
+			"first_name": party.split()[0][:140],
+			"mobile_no": (mobile_no or "").strip()[:20] or None,
+			"email_id": (email_id or "").strip()[:140] or None,
+			"ic_lead_source_detail": source or None,
+			"ic_project_type": project_type or None,
+			"ic_call_remarks": (remarks or "").strip() or None,
+			"status": "Lead",
+			"ic_pipeline_stage": "Lead",
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return {"name": doc.name}
+
+
 def validate_lead(doc, method=None):
 	_sync_party_name(doc)
 	_ensure_mandatory_name(doc)
