@@ -151,6 +151,7 @@ class TestQuoteShowTotal(FrappeTestCase):
 		self.assertIn('"ic_show_total"', js)
 		self.assertIn("ic-show-total-opt", js)
 		self.assertIn("sync_show_total_from_do_not_sum", js)
+		self.assertIn("__ic_totals_vis_sig", js)
 
 		events = Path(frappe.get_app_path("instacertify", "quotation", "events.py")).read_text(
 			encoding="utf-8"
