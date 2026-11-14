@@ -806,6 +806,9 @@ body[data-route="Workspaces/Instacertify Home"] .widget-group {
   min-width: 0 !important;
   box-sizing: border-box !important;
 }
+body[data-route="Workspaces/Instacertify Home"] .layout-main-section {
+  padding-bottom: 88px !important;
+}
 body[data-route="Workspaces/Instacertify Home"] .ce-block__content > .h5,
 body[data-route="Workspaces/Instacertify Home"] .ce-block__content .h5,
 body[data-route="Workspaces/Instacertify Home"] .ce-header {
