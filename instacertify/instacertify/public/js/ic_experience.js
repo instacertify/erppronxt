@@ -580,6 +580,33 @@ frappe.provide("instacertify.ux");
 		);
 	};
 
+	/**
+	 * The app already keeps one side menu on every page, but it switched that on
+	 * only after the desk had started. Reloading a record, or opening one from a
+	 * link, therefore showed another module's menu for a moment (and that
+	 * module's "Getting Started" panel) before the usual menu came back. The same
+	 * rule is applied here before the first page is drawn.
+	 */
+	ux.pin_menu_early = function () {
+		try {
+			const Sidebar = frappe.ui && frappe.ui.Sidebar;
+			if (!Sidebar || Sidebar.prototype.__ic_early || !frappe.boot) return;
+			const home = (frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+			const known = frappe.boot.workspace_sidebar_item || {};
+			if (!known[home.toLowerCase()]) return;
+			Sidebar.prototype.__ic_early = true;
+			Sidebar.prototype.resolve_sidebar = function () {
+				return this.sidebar_title || home;
+			};
+			Sidebar.prototype.show_sidebar_for_module = function () {
+				this.set_active_workspace_item();
+			};
+		} catch (e) {
+			/* the menu is still pinned once the desk has started */
+		}
+	};
+	ux.pin_menu_early();
+
 	$(document).on("app_ready", function () {
 		ux.on_page();
 		ux.rail_on_tablet();
