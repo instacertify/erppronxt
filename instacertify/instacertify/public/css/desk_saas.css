@@ -392,7 +392,7 @@ html[data-theme="dark"] .indicator-pill.red span {
   border-radius: 12px !important;
   box-shadow: var(--ic-shadow);
   margin-bottom: 12px !important;
-  padding: 8px 4px 12px !important;
+  padding: 16px 18px 18px !important;
 }
 .section-head {
   color: var(--ic-primary) !important;
@@ -1224,7 +1224,7 @@ body .page-head .container {
 #page-Quotation .form-section,
 #page-Quotation .form-dashboard-section {
   margin-bottom: 10px !important;
-  padding: 6px 4px 8px !important;
+  padding: 14px 16px 16px !important;
 }
 #page-Quotation .frappe-control {
   margin-bottom: 8px;
@@ -1631,6 +1631,29 @@ body input[type="checkbox"][type="checkbox"][type="checkbox"]:not([disabled]):fo
 @media (max-width: 767px) {
   .ic-lead-filter-chip {
     min-height: 36px;
+  }
+}
+
+/* Titles, subtitles and the words in a box sit clear of the edge and of each other. */
+.section-head,
+.form-section > .section-head,
+.widget-head,
+.widget-title {
+  line-height: 1.4 !important;
+  margin-bottom: 8px !important;
+}
+.form-section .section-body,
+.form-dashboard-section .section-body {
+  padding-top: 4px;
+}
+.list-row-head {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+@media (min-width: 1200px) {
+  :root {
+    --ic-home-side-pad: 20px;
+    --ic-page-pad: 20px;
   }
 }
 
