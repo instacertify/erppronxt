@@ -231,6 +231,60 @@ mark, .highlight, .search-highlight, .frappe-list .highlight, .ql-editor mark, s
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
+/* Plus and other glyphs inside a filled button match the white label.
+   The painted shape is the <use>, and an earlier rule was leaving that dark. */
+.btn-primary svg.icon:not(.es-icon) use,
+.btn.btn-primary svg.icon:not(.es-icon) use,
+.btn-warning svg.icon:not(.es-icon) use,
+.btn-danger svg.icon:not(.es-icon) use,
+.btn-success svg.icon:not(.es-icon) use,
+.btn-info svg.icon:not(.es-icon) use,
+.btn-accent svg.icon:not(.es-icon) use,
+.primary-action svg.icon:not(.es-icon) use,
+.ic-btn-primary svg.icon:not(.es-icon) use,
+.modal .btn-primary svg.icon:not(.es-icon) use,
+.page-actions .btn-primary svg.icon:not(.es-icon) use,
+.standard-actions .btn-primary svg.icon:not(.es-icon) use {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+  fill: none !important;
+  --icon-stroke: #ffffff !important;
+}
+.btn-primary svg.es-icon use,
+.btn.btn-primary svg.es-icon use,
+.btn-warning svg.es-icon use,
+.btn-danger svg.es-icon use,
+.btn-success svg.es-icon use,
+.btn-info svg.es-icon use,
+.primary-action svg.es-icon use,
+.ic-btn-primary svg.es-icon use,
+.modal .btn-primary svg.es-icon use,
+.page-actions .btn-primary svg.es-icon use {
+  fill: #ffffff !important;
+  stroke: none !important;
+  color: #ffffff !important;
+  --icon-stroke: #ffffff !important;
+}
+.ic-list-cat-btn.btn-primary svg.icon:not(.es-icon) use {
+  stroke: #033447 !important;
+  color: #033447 !important;
+  fill: none !important;
+  --icon-stroke: #033447 !important;
+}
+.ic-list-cat-btn.btn-primary svg.es-icon use {
+  fill: #033447 !important;
+  stroke: none !important;
+  color: #033447 !important;
+}
+.ic-hero-btn span {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+.ic-hero-btn.primary,
+.ic-hero-btn.primary span {
+  color: #172554 !important;
+  -webkit-text-fill-color: #172554 !important;
+}
 `;
 };
 

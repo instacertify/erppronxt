@@ -1671,8 +1671,10 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
   color: #fff; font-family: inherit; font-size: 13px; font-weight: 500; line-height: 1; cursor: pointer;
   transition: background 0.12s ease, border-color 0.12s ease;
 }
+.ic-hero-btn span { color: #fff; -webkit-text-fill-color: #fff; }
 .ic-hero-btn:hover { background: rgba(255, 255, 255, 0.2); }
 .ic-hero-btn.primary { background: #fff; border-color: #fff; color: var(--ic-navy, #172554); font-weight: 600; }
+.ic-hero-btn.primary span { color: var(--ic-navy, #172554); -webkit-text-fill-color: var(--ic-navy, #172554); }
 .ic-hero-btn.primary:hover { background: var(--ic-brand-soft, #EEF3FF); }
 .ic-hero-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
