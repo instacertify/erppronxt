@@ -241,6 +241,15 @@ def download_pdf(
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Login required to download this PDF"), frappe.PermissionError)
 
+	from instacertify.utils.print_page import clean_param
+
+	format = clean_param(format)
+	letterhead = clean_param(letterhead)
+	language = clean_param(language)
+	pdf_generator = clean_param(pdf_generator)
+	if str(no_letterhead).strip().lower() in {"", "none", "null", "undefined"}:
+		no_letterhead = 0
+
 	# Non-quotation: keep core behaviour
 	if doctype != "Quotation":
 		from frappe.utils.print_format import download_pdf as core_download_pdf
