@@ -12,16 +12,24 @@
 		["ic_next_contact_date", __("Next contact")],
 	];
 
-	/* Click a pill to filter the list by it (native .filterable handling). */
+	/* Click a pill to show only leads with that source / product. */
 	function pill(fieldname, value, kind, empty) {
 		if (!value) {
 			return `<span class="ic-lead-pill ic-lead-pill-empty">${empty}</span>`;
 		}
 		const safe = frappe.utils.escape_html(value);
-		return `<span class="ic-lead-pill ic-lead-pill-${kind} filterable" data-filter="${fieldname},=,${safe}" title="${__(
+		return `<span class="ic-lead-pill ic-lead-pill-${kind} ic-lead-pill-pick" data-ic-field="${fieldname}" data-ic-value="${safe}" title="${__(
 			"Show only {0}",
 			[safe]
 		)}">${safe}</span>`;
+	}
+
+	/* Frappe's own ".filterable" click removes the filter and adds it again; when the list
+	   was already filtered by that value the two steps raced and the filter was lost. */
+	function pick(listview, fieldname, value) {
+		const control = listview.page.fields_dict && listview.page.fields_dict[fieldname];
+		if (control && control.get_value && control.get_value() === value) return;
+		listview.filter_area.add([[listview.doctype, fieldname, "=", value]]);
 	}
 
 	function lead_columns(listview) {
@@ -84,6 +92,17 @@
 				};
 				listview.columns = lead_columns(listview);
 				if (listview.render_header) listview.render_header(true);
+			}
+
+			if (!listview._ic_lead_pick) {
+				listview._ic_lead_pick = 1;
+				listview.$result.on("click", ".ic-lead-pill-pick", (e) => {
+					if (e.metaKey || e.ctrlKey) return;
+					e.preventDefault();
+					e.stopPropagation();
+					const el = e.currentTarget;
+					pick(listview, el.getAttribute("data-ic-field"), el.getAttribute("data-ic-value"));
+				});
 			}
 
 			listview.page.add_inner_button(__("Full form"), () => frappe.new_doc("Lead"));
