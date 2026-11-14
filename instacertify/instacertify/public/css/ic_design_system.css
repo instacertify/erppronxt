@@ -655,8 +655,8 @@ body .ic-lr-hero .ic-lr-counts {
    own names short. They are now as tall as their content and show the full name. */
 body [data-page-route="Workspaces"] .widget.shortcut-widget-box,
 body [data-page-route="Workspaces"] .widget.number-widget-box,
-body [data-page-route="instacertify-home"] .widget.shortcut-widget-box,
-body [data-page-route="instacertify-home"] .widget.number-widget-box,
+body body[data-route="Workspaces/Instacertify Home"] .widget.shortcut-widget-box,
+body body[data-route="Workspaces/Instacertify Home"] .widget.number-widget-box,
 body.full-width .widget.shortcut-widget-box,
 body.full-width .widget.number-widget-box {
   aspect-ratio: auto !important;
@@ -791,5 +791,100 @@ body .widget.number-widget-box .widget-body .widget-content .number {
 @media (prefers-reduced-motion: reduce) {
   .ic-stat {
     transition: none;
+  }
+}
+
+/* Home: Sample Custody, Insights and the blocks under the main board
+   use the same cards, and stay inside the page. */
+body[data-route="Workspaces/Instacertify Home"] .layout-main,
+body[data-route="Workspaces/Instacertify Home"] .layout-main-section,
+body[data-route="Workspaces/Instacertify Home"] .codex-editor,
+body[data-route="Workspaces/Instacertify Home"] .ce-block,
+body[data-route="Workspaces/Instacertify Home"] .ce-block__content,
+body[data-route="Workspaces/Instacertify Home"] .widget-group {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .layout-main-section {
+  padding-bottom: 88px !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .ce-block__content > .h5,
+body[data-route="Workspaces/Instacertify Home"] .ce-block__content .h5,
+body[data-route="Workspaces/Instacertify Home"] .ce-header {
+  margin: 18px 0 12px !important;
+  padding: 0 26px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  color: #21263c !important;
+  text-transform: none !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .ce-block:has(.number-widget-box),
+body[data-route="Workspaces/Instacertify Home"] .ce-block:has(.dashboard-widget-box) {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .codex-editor__redactor {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  row-gap: 12px !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .ce-block {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .widget.number-widget-box {
+  aspect-ratio: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 118px !important;
+  padding: 18px 20px !important;
+  border: 1px solid #e3e6ef !important;
+  border-left: 1px solid #e3e6ef !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .widget.number-widget-box .widget-title,
+body[data-route="Workspaces/Instacertify Home"] .widget.number-widget-box .number-widget-title,
+body[data-route="Workspaces/Instacertify Home"] .widget.number-widget-box .widget-title .ellipsis {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  white-space: normal !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .widget.number-widget-box .widget-body .widget-content .number,
+body[data-route="Workspaces/Instacertify Home"] .widget.number-widget-box:nth-child(even) .widget-body .widget-content .number {
+  color: #21263c !important;
+  font-size: 28px !important;
+  font-weight: 600 !important;
+}
+body[data-route="Workspaces/Instacertify Home"] .widget.dashboard-widget-box,
+body[data-route="Workspaces/Instacertify Home"] .widget.chart-widget {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  border: 1px solid #e3e6ef !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: none !important;
+}
+@media (max-width: 700px) {
+  body[data-route="Workspaces/Instacertify Home"] .ce-block:has(.number-widget-box),
+  body[data-route="Workspaces/Instacertify Home"] .ce-block:has(.dashboard-widget-box) {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }

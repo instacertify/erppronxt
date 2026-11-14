@@ -1894,51 +1894,21 @@ def _ensure_home_workspace():
 	name = "Instacertify Home"
 	content = [
 		{"id": "ic_home_block", "type": "custom_block", "data": {"custom_block_name": "Home Dashboard", "col": 12}},
-		{"id": "ic_header", "type": "header", "data": {"text": "<span class=\"h4\"><b>Instacertify Home</b></span>", "col": 12}},
-		{"id": "ic_spacer1", "type": "spacer", "data": {"col": 12}},
-		{"id": "ic_crm_header", "type": "header", "data": {"text": "<span class=\"h5\">CRM Lead Tracker</span>", "col": 12}},
 		{"id": "ic_crm_block", "type": "custom_block", "data": {"custom_block_name": "CRM Lead Tracker", "col": 12}},
-		# The lead and operations figures are shown once, in the Home block above
-		# (Business overview and At a glance), not a second time as number cards.
+		# Sample location counts are not in the home block above.
 		{"id": "ic_samples_header", "type": "header", "data": {"text": "<span class=\"h5\">Sample Custody</span>", "col": 12}},
-		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "Samples Transit to Office", "col": 2}},
-		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "Samples At Office", "col": 2}},
-		{"id": "nc_smp_transit_lab", "type": "number_card", "data": {"number_card_name": "Samples Transit to Lab", "col": 2}},
-		{"id": "nc_smp_lab", "type": "number_card", "data": {"number_card_name": "Samples At Laboratory", "col": 2}},
-		{"id": "nc_smp_storage", "type": "number_card", "data": {"number_card_name": "Samples In Storage", "col": 2}},
-		{"id": "nc_smp_discarded", "type": "number_card", "data": {"number_card_name": "Samples Discarded", "col": 2}},
+		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "Samples Transit to Office", "col": 4}},
+		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "Samples At Office", "col": 4}},
+		{"id": "nc_smp_transit_lab", "type": "number_card", "data": {"number_card_name": "Samples Transit to Lab", "col": 4}},
+		{"id": "nc_smp_lab", "type": "number_card", "data": {"number_card_name": "Samples At Laboratory", "col": 4}},
+		{"id": "nc_smp_storage", "type": "number_card", "data": {"number_card_name": "Samples In Storage", "col": 4}},
+		{"id": "nc_smp_discarded", "type": "number_card", "data": {"number_card_name": "Samples Discarded", "col": 4}},
 		{"id": "ic_charts_header", "type": "header", "data": {"text": "<span class=\"h5\">Insights</span>", "col": 12}},
-		# Leads by source, project type and status are in the CRM Lead Tracker above.
-		{"id": "chart_lead_trend", "type": "chart", "data": {"chart_name": "Lead Trend Weekly", "col": 12}},
+		# Lead charts already live in CRM Lead Tracker. These are the other counts.
 		{"id": "chart_quotes_status", "type": "chart", "data": {"chart_name": "Quotations by Status", "col": 6}},
 		{"id": "chart_projects_status", "type": "chart", "data": {"chart_name": "Projects by Status", "col": 6}},
 		{"id": "chart_projects_priority", "type": "chart", "data": {"chart_name": "Projects by Priority", "col": 6}},
 		{"id": "chart_samples_location", "type": "chart", "data": {"chart_name": "Samples by Location", "col": 6}},
-		{"id": "ic_shortcuts_header", "type": "header", "data": {"text": "<span class=\"h5\">Quick Links</span>", "col": 12}},
-		{"id": "sc_leads", "type": "shortcut", "data": {"shortcut_name": "Leads", "col": 2}},
-		{"id": "sc_customers", "type": "shortcut", "data": {"shortcut_name": "Customers", "col": 2}},
-		{"id": "sc_quotations", "type": "shortcut", "data": {"shortcut_name": "Quotations", "col": 2}},
-		{"id": "sc_projects", "type": "shortcut", "data": {"shortcut_name": "Projects", "col": 2}},
-		{"id": "sc_project_board", "type": "shortcut", "data": {"shortcut_name": "Project Board", "col": 2}},
-		{"id": "sc_collab", "type": "shortcut", "data": {"shortcut_name": "Team Collaboration", "col": 2}},
-		{"id": "sc_calendar", "type": "shortcut", "data": {"shortcut_name": "Team Calendar", "col": 2}},
-		{"id": "sc_testing", "type": "shortcut", "data": {"shortcut_name": "Testing & Samples", "col": 2}},
-		{"id": "sc_labs", "type": "shortcut", "data": {"shortcut_name": "Laboratories", "col": 2}},
-		{"id": "sc_quote_templates", "type": "shortcut", "data": {"shortcut_name": "Quote Format Library", "col": 2}},
-		{"id": "sc_docs", "type": "shortcut", "data": {"shortcut_name": "Documents Collection Sheets", "col": 2}},
-		{"id": "sc_doc_lib", "type": "shortcut", "data": {"shortcut_name": "Document Collection Library", "col": 2}},
-		{"id": "sc_dispatch", "type": "shortcut", "data": {"shortcut_name": "Sample Dispatch Sheets", "col": 2}},
-		{"id": "sc_helpdesk", "type": "shortcut", "data": {"shortcut_name": "Helpdesk", "col": 2}},
-		{"id": "sc_sales_invoice", "type": "shortcut", "data": {"shortcut_name": "Sales Invoice", "col": 2}},
-		{"id": "sc_purchase_invoice", "type": "shortcut", "data": {"shortcut_name": "Purchase Invoice", "col": 2}},
-		{"id": "sc_asset", "type": "shortcut", "data": {"shortcut_name": "Asset", "col": 2}},
-		{"id": "sc_gstr1", "type": "shortcut", "data": {"shortcut_name": "GSTR-1", "col": 2}},
-		{"id": "sc_gstr3b", "type": "shortcut", "data": {"shortcut_name": "GSTR-3B", "col": 2}},
-		{"id": "sc_gst_settings", "type": "shortcut", "data": {"shortcut_name": "GST Settings", "col": 2}},
-		# Expenses & HRMS — always last (square tiles)
-		{"id": "sc_hrms", "type": "shortcut", "data": {"shortcut_name": "HRMS Lifecycle", "col": 2}},
-		{"id": "sc_expenses", "type": "shortcut", "data": {"shortcut_name": "File Expense", "col": 2}},
-
 	]
 
 
