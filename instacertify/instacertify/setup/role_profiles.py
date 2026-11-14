@@ -384,6 +384,26 @@ def _apply_permissions():
 			force_export=True,
 		)
 
+	# A sales role can raise a draft invoice from an accepted quotation and open it.
+	# Submit, cancel and export stay with Finance. No new profile is created.
+	if frappe.db.exists("DocType", "Sales Invoice"):
+		for role in ("IC Sales Manager", "IC Sales Executive", "IC Sales Person"):
+			_set_perm(
+				"Sales Invoice",
+				role,
+				read=1,
+				write=1,
+				create=1,
+				delete=0,
+				submit=0,
+				cancel=0,
+				report=1,
+				export=0,
+				print=1,
+				select=1,
+				force_export=True,
+			)
+
 	# —— Sales Manager / Executive ——
 	for dt in _existing(SALES_WRITE_DOCTYPES):
 		_set_perm(

@@ -125,16 +125,16 @@ def assert_can_read_customer_data(customer: str, user: str | None = None):
 
 
 def has_permission(doc, ptype=None, user=None, debug=False):
-	"""Grant read (and report) to assigned team members."""
+	"""Let the role decide. This hook can only refuse, and a refusal here
+	blocked every sales person from opening a customer.
+
+	Someone on the customer team can still open it through the share that
+	`apply_customer_team_access` keeps, even when their role has no Customer access.
+	"""
 	user = user or frappe.session.user
-	if ptype not in (None, "read", "report", "print", "email", "share"):
-		return None
-	if user_has_full_customer_access(user):
-		return True
-	name = doc if isinstance(doc, str) else getattr(doc, "name", None)
-	if name and is_user_assigned_to_customer(name, user):
-		return True
-	return None
+	if not user or user == "Guest":
+		return False
+	return True
 
 
 def get_permission_query_conditions(user: str | None = None) -> str:

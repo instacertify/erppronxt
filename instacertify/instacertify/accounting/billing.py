@@ -51,28 +51,35 @@ def is_export_customer(country: str | None) -> bool:
 	return bool(country and country != INDIA)
 
 
-def apply_customer_billing_defaults(doc, force: bool = False):
-	"""On Customer: set billing currency from country unless manually overridden.
+def customer_saved_currency(customer: str | None = None, customer_doc=None) -> str:
+	"""The currency this customer bills in: their saved choice, else India → INR and every other country → USD."""
+	doc = customer_doc or (frappe.get_cached_doc("Customer", customer) if customer else None)
+	if not doc:
+		return DOMESTIC_CURRENCY
+	saved = (getattr(doc, "ic_primary_currency", None) or doc.get("default_currency") or "").strip()
+	if saved:
+		return saved
+	return default_currency_for_country(get_customer_country(customer_doc=doc))
 
-	- India → INR, gst_category Registered / Unregistered based on GSTIN
-	- Other country → USD, gst_category Overseas
-	User can still change default_currency / ic_primary_currency freely;
-	set ic_currency_manual=1 to stop auto-overwrite on next country change.
+
+def apply_customer_billing_defaults(doc, force: bool = False):
+	"""On Customer: India → INR, any other country → USD, unless a currency was chosen by hand.
+
+	A chosen currency (EUR, AED, or USD on an Indian customer) is left as it is
+	when the name or address is edited. Changing the country updates the
+	currency only when it still holds the previous country's automatic value.
+	Quotations and invoices are not touched here.
 	"""
 	country = get_customer_country(customer_doc=doc)
 	suggested = default_currency_for_country(country)
 
 	manual = cint_flag(getattr(doc, "ic_currency_manual", 0))
 	if force or not manual:
-		if not doc.default_currency or force or _currency_follows_country(doc, country):
-			doc.default_currency = suggested
-		if hasattr(doc, "ic_primary_currency"):
-			if (
-				not doc.ic_primary_currency
-				or force
-				or _currency_follows_country(doc, country, field="ic_primary_currency")
-			):
-				doc.ic_primary_currency = suggested
+		_apply_country_currency(doc, "default_currency", suggested, force)
+		if doc.meta.has_field("ic_primary_currency"):
+			_apply_country_currency(doc, "ic_primary_currency", suggested, force)
+			if not doc.ic_primary_currency:
+				doc.ic_primary_currency = doc.default_currency or suggested
 
 	# GST category / GSTIN sync for india_compliance
 	gstin = (getattr(doc, "gstin", None) or getattr(doc, "ic_gst_number", None) or "").strip().upper()
@@ -186,15 +193,19 @@ def apply_transaction_billing_defaults(doc, customer_field: str = "customer"):
 		return
 
 	country = get_customer_country(customer)
-	suggested = default_currency_for_country(country)
+	# The customer's own currency, not a fresh guess that would undo a choice of EUR or AED.
+	customer_currency = customer_saved_currency(customer)
 	manual = cint_flag(getattr(doc, "ic_currency_manual", 0))
+	party_changed = bool(
+		doc.has_value_changed(customer_field)
+		or (doc.doctype == "Quotation" and doc.has_value_changed("party_name"))
+	)
 
-	if not manual:
-		# Only auto-set when empty or still on the previous default for that country pattern
-		if not doc.currency or doc.currency in (DOMESTIC_CURRENCY, EXPORT_CURRENCY):
-			if doc.currency != suggested:
-				doc.currency = suggested
-				_set_conversion_rate(doc)
+	# A submitted quotation or invoice keeps the currency it was posted with.
+	if cint_flag(getattr(doc, "docstatus", 0)) == 0 and not manual:
+		if customer_currency and (not doc.currency or party_changed) and doc.currency != customer_currency:
+			doc.currency = customer_currency
+			_set_conversion_rate(doc)
 
 	_apply_gst_tax_template(doc, customer, country)
 
@@ -353,12 +364,31 @@ def cint_flag(value) -> int:
 		return 0
 
 
-def _currency_follows_country(doc, country, field: str = "default_currency") -> bool:
-	"""True if current currency still matches previous auto rule (safe to overwrite)."""
-	current = getattr(doc, field, None)
-	if not current:
-		return True
-	return current in (DOMESTIC_CURRENCY, EXPORT_CURRENCY)
+def _apply_country_currency(doc, field: str, suggested: str, force: bool = False):
+	"""Fill an empty currency, or replace it when the country change made the old automatic value stale."""
+	current = (getattr(doc, field, None) or "").strip()
+	if force or not current:
+		setattr(doc, field, suggested)
+		return
+	before = doc.get_doc_before_save()
+	if not before:
+		return
+	old_country = (getattr(before, "ic_country", None) or "").strip() or None
+	new_country = (getattr(doc, "ic_country", None) or "").strip() or None
+	if old_country == new_country:
+		return
+	if current == default_currency_for_country(old_country):
+		setattr(doc, field, suggested)
+	elif current != suggested and not doc.flags.get("ic_currency_suggested"):
+		# Tell the person once. Do not change the currency, and do not touch quotations or invoices.
+		doc.flags.ic_currency_suggested = True
+		frappe.msgprint(
+			_("Suggested currency for {0} is {1}. {2} was left unchanged.").format(
+				new_country or _("this country"), suggested, current
+			),
+			indicator="blue",
+			alert=True,
+		)
 
 
 def _set_conversion_rate(doc):
@@ -500,11 +530,12 @@ def get_billing_defaults(customer: str) -> dict:
 	if not customer:
 		return {}
 	country = get_customer_country(customer)
-	currency = default_currency_for_country(country)
+	suggested = default_currency_for_country(country)
 	cust = frappe.get_cached_doc("Customer", customer)
 	return {
 		"country": country,
-		"currency": currency,
+		"currency": customer_saved_currency(customer_doc=cust),
+		"suggested": suggested,
 		"is_export": is_export_customer(country),
 		"gst_category": getattr(cust, "gst_category", None),
 		"gstin": getattr(cust, "gstin", None) or getattr(cust, "ic_gst_number", None),
