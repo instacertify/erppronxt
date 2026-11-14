@@ -1002,11 +1002,19 @@ def _ensure_home_html_block():
       if (joining) joining.innerHTML = docList(d.joining_letters, "No joining letter on file.", "IC Joining Letter");
       if (slips) slips.innerHTML = docList(d.salary_slips, "No salary slips uploaded yet.", "IC Employee Document");
       if (docs) docs.innerHTML = docList(d.documents, "No other employment documents.", "IC Employee Document");
+      // Show only the HR links this person is allowed to open; the others ended
+      // in a "Not permitted" pop-up.
+      const canOpen = (route) => {
+        const slug = String(route || "").split("?")[0].split("/").filter(Boolean)[1];
+        return !!(slug && frappe.router && frappe.router.routes && frappe.router.routes[slug]);
+      };
       if (links) {
-        links.innerHTML = (d.links || []).map(l =>
+        links.innerHTML = (d.links || []).filter(l => canOpen(l.route)).map(l =>
           `<a class="ic-hr-link" href="${esc(l.route)}">${esc(l.label)}</a>`
         ).join("");
       }
+      const hrAll = root_element.querySelector(".ic-hr-panel .ic-workdesk-head .ic-view-all");
+      if (hrAll && !canOpen(hrAll.getAttribute("href"))) hrAll.style.setProperty("display", "none", "important");
     }
   });
 
