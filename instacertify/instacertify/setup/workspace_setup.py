@@ -1505,7 +1505,7 @@ _SHADOW_THEME_CSS = """
   color: var(--ic-ink, #21263c) !important;
   margin: 0 !important;
 }
-.ic-section-label { margin: 16px 0 8px !important; }
+.ic-section-label { margin: 16px 0 8px !important; padding-left: 20px !important; padding-right: 20px !important; }
 .ic-today-sub, .ic-workdesk-sub, .ic-lead-prompt-sub, .ic-explore-sub { font-size: 12px !important; color: var(--ic-muted, #6c718a) !important; }
 .ic-today-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px; }
 .ic-today-item {
@@ -1600,7 +1600,7 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 
 /* Shortcuts: one compact row per tile; the description shows on hover */
 .ic-explore-panel { margin-bottom: 16px !important; }
-.ic-explore-head { margin-bottom: 8px; }
+.ic-explore-head { margin-bottom: 8px; padding: 0 20px; }
 .ic-explore-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)) !important; gap: 8px !important; }
 .ic-explore-card {
   flex-direction: row !important; align-items: center !important; gap: 10px;
@@ -1647,7 +1647,7 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 .ic-hr-col-title { font-size: 11px !important; font-weight: 600 !important; letter-spacing: 0.04em; color: var(--ic-muted, #6c718a) !important; }
 .ic-hr-links { margin-top: 10px !important; }
 .ic-hr-link { min-height: 30px; font-size: 12px !important; }
-.ic-project-section-head { margin: 4px 0 8px !important; align-items: center; }
+.ic-project-section-head { margin: 4px 0 8px !important; align-items: center; padding: 0 20px; }
 .ic-project-empty { padding: 12px 16px !important; min-height: 0 !important; font-size: 13px; color: var(--ic-muted, #6c718a); text-align: left !important; border-radius: 10px !important; }
 .ic-crm-tracker-title { margin: 0 0 12px !important; line-height: 1.4 !important; }
 
@@ -1684,8 +1684,8 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 .ic-hero-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* ——— Business overview: headline figures ——— */
-.ic-kpi { margin: 8px 0 20px; padding: 4px 2px 0; }
-.ic-kpi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 20px; margin: 0 0 16px; }
+.ic-kpi { margin: 8px 0 20px; padding: 4px 0 0; }
+.ic-kpi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 20px; margin: 0 0 16px; padding: 0 20px; }
 .ic-kpi-title { font-size: 17px; font-weight: 600; line-height: 1.3; color: var(--ic-ink, #202938); }
 .ic-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .ic-kpi-card {
