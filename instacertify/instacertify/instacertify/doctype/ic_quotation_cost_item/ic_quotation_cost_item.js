@@ -33,16 +33,29 @@ function sync_from_destination(cdt, cdn) {
 	}
 }
 
-function recalc_cost_line_total(cdt, cdn) {
+function recalc_cost_line_total(frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
-	if (!row) return;
-	let qty = cint(row.qty);
-	if (!qty || qty < 1) {
-		qty = 1;
-		frappe.model.set_value(cdt, cdn, "qty", 1);
+	if (!row || row._ic_cost_sync) return;
+	row._ic_cost_sync = 1;
+	try {
+		let qty = cint(row.qty);
+		if (!qty || qty < 1) qty = 1;
+		const total = flt(row.amount) * qty;
+		row.qty = qty;
+		row.total_amount = total;
+		if (frm && window.instacertify && instacertify.refresh_grid_row_soft) {
+			instacertify.refresh_grid_row_soft(frm, "ic_cost_items", cdn, ["qty", "amount", "total_amount"]);
+		}
+		refresh_parent_cost_totals(frm);
+		if (cint(locals[cdt][cdn].qty) !== qty) {
+			frappe.model.set_value(cdt, cdn, "qty", qty);
+		}
+		if (flt(locals[cdt][cdn].total_amount) !== total) {
+			frappe.model.set_value(cdt, cdn, "total_amount", total);
+		}
+	} finally {
+		row._ic_cost_sync = 0;
 	}
-	const unit = flt(row.amount);
-	frappe.model.set_value(cdt, cdn, "total_amount", unit * qty);
 }
 
 function maybe_default_exclude_for_custom(cdt, cdn) {
@@ -85,7 +98,7 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 		if (row && !(row.currency || "").trim() && frm.doc.currency) {
 			frappe.model.set_value(cdt, cdn, "currency", frm.doc.currency);
 		}
-		recalc_cost_line_total(cdt, cdn);
+		recalc_cost_line_total(frm, cdt, cdn);
 		const grid_row = frm.open_grid_row && frm.open_grid_row();
 		if (!grid_row) return;
 		const field = grid_row.get_field("cost_component");
@@ -115,12 +128,10 @@ frappe.ui.form.on("IC Quotation Cost Item", {
 		}
 	},
 	amount(frm, cdt, cdn) {
-		recalc_cost_line_total(cdt, cdn);
-		refresh_parent_cost_totals(frm);
+		recalc_cost_line_total(frm, cdt, cdn);
 	},
 	qty(frm, cdt, cdn) {
-		recalc_cost_line_total(cdt, cdn);
-		refresh_parent_cost_totals(frm);
+		recalc_cost_line_total(frm, cdt, cdn);
 	},
 	charges_display(frm, cdt, cdn) {
 		maybe_default_exclude_for_custom(cdt, cdn);

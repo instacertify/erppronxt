@@ -7224,3 +7224,93 @@ body,
   min-height: 58px;
   box-sizing: border-box;
 }
+
+/* Login — one calm card, bold type, easy on a phone */
+body.for-login,
+.for-login {
+  background: #f5f6fa !important;
+  background-image: none !important;
+  min-height: 100vh;
+}
+.for-login .page-card,
+.login-content .page-card {
+  width: min(420px, calc(100vw - 32px)) !important;
+  max-width: 420px !important;
+  margin: 10vh auto 32px !important;
+  border-radius: 16px !important;
+  border: 1px solid #e3e6ef !important;
+  box-shadow: 0 16px 40px rgba(33, 38, 60, 0.08) !important;
+  overflow: hidden;
+  background: #fff !important;
+}
+.for-login .page-card-head,
+.login-content .page-card-head {
+  background: #21263c !important;
+  color: #fff !important;
+  padding: 28px 24px 22px !important;
+  text-align: center;
+}
+.for-login .page-card-head h4,
+.login-content .page-card-head h4 {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  font-family: "Inter", "Segoe UI", sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1.45rem !important;
+  letter-spacing: -0.03em !important;
+  margin: 8px 0 0 !important;
+}
+.for-login .page-card-head img,
+.login-content .page-card-head img {
+  max-height: 52px !important;
+  margin: 0 auto;
+}
+.for-login .page-card-body,
+.login-content .page-card-body {
+  padding: 22px 24px 26px !important;
+}
+.for-login .form-control,
+.login-content .form-control {
+  min-height: 44px !important;
+  border-radius: 10px !important;
+  border: 1px solid #d5d9e6 !important;
+  font-size: 15px !important;
+}
+.for-login .btn-primary,
+.for-login .btn-login,
+.for-login button[type="submit"],
+.login-content .btn-primary,
+.login-content button[type="submit"],
+.page-card .btn-primary {
+  width: 100%;
+  min-height: 46px !important;
+  border-radius: 10px !important;
+  background: #408dfb !important;
+  border-color: #408dfb !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  letter-spacing: -0.01em;
+}
+.for-login .btn-primary:hover,
+.for-login button[type="submit"]:hover,
+.login-content .btn-primary:hover {
+  background: #1b6ec2 !important;
+  border-color: #1b6ec2 !important;
+}
+@media (max-width: 640px) {
+  .for-login .page-card,
+  .login-content .page-card {
+    width: calc(100vw - 24px) !important;
+    margin: 16px auto !important;
+  }
+  .for-login .page-card-head,
+  .login-content .page-card-head {
+    padding: 22px 16px 16px !important;
+  }
+  .for-login .page-card-body,
+  .login-content .page-card-body {
+    padding: 16px !important;
+  }
+}
