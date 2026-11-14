@@ -12,6 +12,11 @@ frappe.pages["team-collaboration"].on_page_load = function (wrapper) {
 
 	page.set_title(__("Team Collaboration"));
 	page.main.addClass("ic-collab-page");
+	if (frappe.boot && frappe.boot.versions && frappe.boot.versions.raven) {
+		page.set_primary_action(__("Open chat"), () => {
+			window.location.assign("/raven");
+		});
+	}
 
 	const state = {
 		project: frappe.route_options && frappe.route_options.project,

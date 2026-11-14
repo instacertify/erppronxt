@@ -147,11 +147,11 @@ def _ensure_instacertify_home_sidebar():
 	if not frappe.db.exists("Workspace", "Instacertify Home"):
 		return
 
-	gameplan = False
+	installed = []
 	try:
-		gameplan = "gameplan" in frappe.get_installed_apps()
+		installed = frappe.get_installed_apps()
 	except Exception:
-		pass
+		installed = []
 
 	items = [
 		_sidebar_link(
@@ -161,7 +161,9 @@ def _ensure_instacertify_home_sidebar():
 			icon="layout-dashboard",
 		),
 	]
-	if gameplan:
+	if "raven" in installed:
+		items.append(_sidebar_link("Chat", link_type="URL", url="/raven", icon="message-circle"))
+	elif "gameplan" in installed:
 		items.append(
 			_sidebar_link("Gameplan", link_type="URL", url="/g", icon="message-circle")
 		)
@@ -1188,6 +1190,11 @@ def _ensure_home_html_block():
   });
 })();
 """
+	chat_href = "/raven" if "raven" in frappe.get_installed_apps() else "/app/team-collaboration"
+	html = html.replace(
+		'href="/app/team-collaboration">Open all chats',
+		f'href="{chat_href}">Open chat',
+	)
 	_upsert_html_block(name, html, script)
 	_ensure_crm_lead_tracker_block()
 
