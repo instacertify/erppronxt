@@ -560,9 +560,30 @@ frappe.provide("instacertify.ux");
 		}
 	};
 
+	/**
+	 * When the first page fails to open (a link to a record this person may not
+	 * see), Frappe never announces a page change, so the usual side menu was not
+	 * put in place and a different module's menu stayed. Try again shortly after.
+	 */
+	ux.keep_home_menu = function () {
+		[600, 2000].forEach((ms) =>
+			setTimeout(() => {
+				try {
+					const sidebar = frappe.app && frappe.app.sidebar;
+					if (sidebar && !sidebar.__ic_pinned && window.instacertify && instacertify.pin_home_sidebar) {
+						instacertify.pin_home_sidebar();
+					}
+				} catch (e) {
+					/* keep whatever menu is showing */
+				}
+			}, ms)
+		);
+	};
+
 	$(document).on("app_ready", function () {
 		ux.on_page();
 		ux.rail_on_tablet();
+		ux.keep_home_menu();
 	});
 	$(document).on("page-change", function () {
 		ux.on_page();
