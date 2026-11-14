@@ -91,6 +91,19 @@ GIT_SHA="$(git rev-parse --short HEAD)"
 cd "${BENCH_ROOT}"
 echo "==> Deploying SHA ${GIT_SHA}"
 
+# Prove party-details cmd fix is on disk (stale clones caused TypeError: unexpected keyword 'cmd')
+PARTY_PY="${APP_PATH}/instacertify/setup/contact_billing.py"
+if grep -q '_PARTY_DETAILS_KEYS' "${PARTY_PY}" 2>/dev/null && ! grep -q 'return _erpnext_get_party_details(\*args, \*\*kwargs)' "${PARTY_PY}" 2>/dev/null; then
+	echo "==> party override OK (${PARTY_PY})"
+else
+	echo "ERROR: ${PARTY_PY} is still the OLD get_party_details (forwards cmd)."
+	echo "Expected _PARTY_DETAILS_KEYS in that file after pull. Check git remote/branch."
+	exit 1
+fi
+# Drop stale bytecode so gunicorn cannot keep the old function
+find "${APP_PATH}" -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+find "${APP_PATH}" -name '*.pyc' -delete 2>/dev/null || true
+
 echo "==> migrate"
 bench --site "${SITE}" migrate
 
@@ -102,6 +115,11 @@ fi
 echo "==> clear-cache + ensure_workspaces"
 bench --site "${SITE}" clear-cache
 bench --site "${SITE}" execute instacertify.setup.workspace_setup.ensure_workspaces
+
+echo "==> verify party override loaded"
+bench --site "${SITE}" execute instacertify.setup.contact_billing.ping_party_override || {
+	echo "WARN: ping_party_override failed — clear-cache/restart may still be needed"
+}
 
 echo "==> smoke check"
 bench --site "${SITE}" execute instacertify.setup.deploy_smoke.run || {
@@ -119,4 +137,5 @@ fi
 
 echo ""
 echo "OK — Instacertify ${GIT_SHA} deployed to ${SITE}"
+echo "Verify party fix: bench --site ${SITE} execute instacertify.setup.contact_billing.ping_party_override"
 echo "Open the site, hard-refresh the browser (Ctrl+Shift+R), and verify Home + Testing & Samples."
