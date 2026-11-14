@@ -33,6 +33,7 @@ app_include_css = [
 ]
 app_include_js = [
 	_asset("js/instacertify.js"),
+	_asset("js/ic_experience.js"),
 ]
 web_include_css = _asset("css/instacertify.css")
 website_include_css = _asset("css/instacertify.css")
