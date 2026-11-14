@@ -2944,6 +2944,7 @@ frappe.ui.form.on("Quotation", {
 
 		instacertify.setup_quotation_lab_queries(frm);
 		instacertify.render_quotation_entry_guide(frm);
+		instacertify.compact_new_quotation(frm);
 		instacertify.render_customer_currency_banner(frm);
 		if (frm.doc.ic_quotation_type) {
 			instacertify.toggle_quotation_sections(frm);
@@ -3349,11 +3350,42 @@ instacertify.QUOTATION_TYPE_HELP = {
 	},
 };
 
+/** On a new quote, hide the document bookkeeping that is filled in after save. */
+instacertify.compact_new_quotation = function (frm) {
+	if (!frm || !frm.$wrapper) return;
+	const creating = !!(frm.is_new && frm.is_new());
+	[frm.$wrapper, frm.page && frm.page.wrapper].forEach((el) => {
+		if (!el) return;
+		(el.jquery ? el : $(el)).toggleClass("ic-quote-creating", creating);
+	});
+	["naming_series", "ic_quote_number", "ic_revision_number", "ic_post_accept_action"].forEach((name) => {
+		if (frm.fields_dict[name]) frm.set_df_property(name, "hidden", creating ? 1 : 0);
+	});
+	["ic_quotation_type", "ic_quotation_template", "ic_service_family", "ic_workflow_status"].forEach((name) => {
+		if (frm.fields_dict[name]) frm.set_df_property(name, "description", "");
+	});
+	if (!creating) return;
+	instacertify.apply_quotation_naming_series(frm);
+	const section = frm.layout && (frm.layout.sections || []).find((s) => s.df && s.df.fieldname === "ic_section_identity");
+	if (section && section.collapse && !section.is_collapsed()) {
+		if (!section.df.collapsible && section.head) {
+			section.df.collapsible = 1;
+			section.head.addClass("collapsible");
+			if (section.indicator) section.indicator.show();
+			section.head.attr("tabindex", 0);
+			if (!section._ic_collapse_bound) {
+				section._ic_collapse_bound = true;
+				section.head.on("click", () => section.collapse());
+			}
+		}
+		section.collapse(true);
+	}
+};
+
 instacertify.render_quotation_entry_guide = function (frm) {
 	const wrap = frm.fields_dict.ic_entry_guide && frm.fields_dict.ic_entry_guide.$wrapper;
 	if (!wrap || !wrap.length) return;
 	const t = frm.doc.ic_quotation_type;
-	const help = instacertify.QUOTATION_TYPE_HELP[t];
 	const type_chips = [
 		["Consulting", "Certification / consulting quote"],
 		["Testing", "Lab tests & commercials"],
@@ -3371,29 +3403,7 @@ instacertify.render_quotation_entry_guide = function (frm) {
 		})
 		.join("");
 
-	const steps = help
-		? `<ol class="ic-quote-steps">${help.steps
-				.map((s) => `<li>${frappe.utils.escape_html(s)}</li>`)
-				.join("")}</ol>`
-		: `<p class="ic-quote-guide-empty">${__("Select a Quotation Type to see the entry steps.")}</p>`;
-
-	wrap.html(`
-		<div class="ic-quote-entry">
-			<div class="ic-quote-entry-head">
-				<div>
-					<div class="ic-quote-entry-kicker">${__("Data entry")}</div>
-					<div class="ic-quote-entry-title">${
-						help ? frappe.utils.escape_html(help.title) : __("Choose quotation type")
-					}</div>
-					<div class="ic-quote-entry-sub">${__(
-						"Only Customer is required. Type, format, products, and services are optional free text (no inventory)."
-					)}</div>
-				</div>
-			</div>
-			<div class="ic-quote-type-grid">${type_chips}</div>
-			${steps}
-		</div>
-	`);
+	wrap.html(`<div class="ic-quote-entry ic-quote-entry-compact"><div class="ic-quote-type-grid">${type_chips}</div></div>`);
 
 	wrap.find(".ic-quote-type-chip").on("click", function () {
 		const type = $(this).data("type");
@@ -5120,31 +5130,13 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 		static: false,
 		fields: [
 			{
-				fieldtype: "HTML",
-				fieldname: "help",
-				options: `<div class="ic-quote-dialog-help">
-					<div class="ic-quote-dialog-step"><strong>${__("Optional.")}</strong> ${__(
-						"Only Customer is required to save a quote. Type, format, and product lines are optional."
-					)}</div>
-					<div class="ic-quote-dialog-step"><strong>${__("1.")}</strong> ${__(
-						"Select major category: Consulting, Testing, Renewal, or Other (optional)"
-					)}</div>
-					<div class="ic-quote-dialog-step"><strong>${__("2.")}</strong> ${__(
-						"Choose a template from the library, or continue blank"
-					)}</div>
-					<div class="ic-quote-dialog-step text-muted">${__(
-						"Products and services are free-text (no inventory Item required)."
-					)}</div>
-				</div>`,
-			},
-			{
 				fieldname: "ic_quotation_type",
 				fieldtype: "Select",
 				label: __("Major Category"),
 				options: TYPE_OPTIONS.map((t) => t.value).join("\n"),
 				reqd: 0,
 				default: "Consulting",
-				description: __("Optional — loads templates from the Quote Format Library"),
+				hidden: 1,
 			},
 			{
 				fieldtype: "HTML",
@@ -5173,9 +5165,6 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				label: __("Template (from library)"),
 				options: "",
 				reqd: 0,
-				description: __(
-					"Optional. Admins / Ops can add more via Quote Format Library upload."
-				),
 			},
 			{
 				fieldtype: "HTML",
@@ -5293,6 +5282,7 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 				const $sel = d.fields_dict.ic_quotation_template.$input;
 				if ($sel && $sel.length) {
 					$sel.empty();
+					$hint.empty();
 					if (formats.length) {
 						$sel.append(`<option value="">${__("— Select a format —")}</option>`);
 						formats.forEach((f) => {
@@ -5302,19 +5292,8 @@ instacertify.open_new_quotation_type_format_dialog = function (frm) {
 								)}</option>`
 							);
 						});
-						$hint.html(
-							__(
-								"{0} format(s) in library for this type. Select one to prefill headings — you can edit everything after.",
-								[`<strong>${formats.length}</strong>`]
-							)
-						);
 					} else {
 						$sel.append(`<option value="">${__("No formats for this type")}</option>`);
-						$hint.html(
-							__(
-								"No active formats for this type yet. Open Quote Format Library to add one, or continue without a format."
-							)
-						);
 					}
 				}
 				d.set_value("ic_quotation_template", "");
@@ -8206,27 +8185,18 @@ instacertify.render_customer_currency_banner = function (frm) {
 			border:1px solid var(--ic-line,#E7EBF2);
 			background:var(--ic-card,#fff);
 			border-radius:12px;font-size:13px;line-height:1.4;
-			min-height:58px;box-sizing:border-box;">
+			min-height:0;box-sizing:border-box;">
 			<div><span style="color:var(--ic-text-2,#64748B);font-size:12px;">${__("Customer")}</span><br/>
 				<b style="font-size:15px;color:var(--ic-text,#202938);">${frappe.utils.escape_html(party)}</b></div>
 			<div><span style="color:var(--ic-text-2,#64748B);font-size:12px;">${__("Primary currency")}</span><br/>
-				<b style="font-size:15px;color:var(--ic-text,#202938);font-variant-numeric:tabular-nums;">${frappe.utils.escape_html(symbol)} ${frappe.utils.escape_html(cur)}</b>
-				<span class="text-muted" style="margin-left:8px;font-size:12px;">${
+				<b style="font-size:15px;color:var(--ic-text,#202938);font-variant-numeric:tabular-nums;">${frappe.utils.escape_html(symbol)} ${frappe.utils.escape_html(cur)}</b>${
 					mixed
-						? __("Multi-currency quote — each Test Line / Commercial has its own Currency")
-						: __("Default for new lines; change Currency on any line for multi-currency quotes")
-				}</span></div>
+						? `<span class="text-muted" style="margin-left:8px;font-size:12px;">${__("Each line can use its own currency")}</span>`
+						: ""
+				}</div>
 		</div>
 	`);
-	if (frm.fields_dict.currency) {
-		frm.set_df_property(
-			"currency",
-			"description",
-			__(
-				"Primary / default currency for this quote. Set Currency on individual Test Lines or Commercials to quote in multiple currencies."
-			)
-		);
-	}
+	if (frm.fields_dict.currency) frm.set_df_property("currency", "description", "");
 };
 
 instacertify.quote_has_mixed_currencies = function (frm) {

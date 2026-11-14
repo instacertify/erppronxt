@@ -2793,7 +2793,27 @@ select.input-with-feedback {
   margin: 4px 0 8px;
   font-size: 12.5px;
   line-height: 1.45;
-  min-height: 1.2em;
+}
+.ic-new-quote-format-hint:empty {
+  display: none;
+  margin: 0;
+}
+.ic-quote-entry-compact {
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ic-quotation-form.ic-quote-creating .layout-side-section,
+.ic-quote-creating .layout-side-section {
+  display: none !important;
+}
+.ic-quote-creating [data-fieldname="naming_series"],
+.ic-quote-creating [data-fieldname="ic_quote_number"],
+.ic-quote-creating [data-fieldname="ic_revision_number"],
+.ic-quote-creating [data-fieldname="ic_post_accept_action"],
+.ic-quote-creating [data-fieldname="order_type"] {
+  display: none !important;
 }
 @media (max-width: 640px) {
   .ic-new-quote-type-chips {
