@@ -539,15 +539,7 @@ INVOICE_HTML = """
 """
 
 SAMPLE_HTML = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set phone = s.phone or '+91 9999118039' -%}
-{%- set email = s.email or 'contact@instacertify.com' -%}
-{%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 {%- set trk = doc.tracking_number or doc.name -%}
 {%- set qr_payload = trk + '\\n' + (frappe.utils.get_url()|string).rstrip('/') + '/ic-verify/sample/' + trk -%}
 <style>
@@ -570,15 +562,7 @@ SAMPLE_HTML = """
   }
 </style>
 <div class="ic">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div class="ic-lh-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>{{ phone }} · {{ email }}</div>
-      <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
-    </div>
-  </div>
+""" + LETTERHEAD_BLOCK_HTML + """
   <h2 style="margin:0 0 10px; color:#065175;">Sample Tracking Label</h2>
   <p><b>Sample Tracking No:</b> <span style="font-family:monospace;font-size:13px;">{{ trk }}</span></p>
   <p><b>Customer:</b> {{ doc.customer }}</p>
@@ -692,15 +676,7 @@ SAMPLE_STICKER_50X25_HTML = """
 SAMPLE_STICKER_8MM_HTML = SAMPLE_STICKER_50X25_HTML
 
 TESTING_HTML = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set phone = s.phone or '+91 9999118039' -%}
-{%- set email = s.email or 'contact@instacertify.com' -%}
-{%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
@@ -718,15 +694,7 @@ TESTING_HTML = """
   }
 </style>
 <div class="ic">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div class="ic-lh-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>☎ {{ phone }} · ✉ {{ email }}</div>
-      <div><b>CIN :</b> {{ cin }} · <b>GSTIN :</b> {{ gstin }}</div>
-    </div>
-  </div>
+""" + LETTERHEAD_BLOCK_HTML + """
   <h2 style="margin:0 0 10px; color:#065175;">Testing Request</h2>
   <p><b>{{ doc.name }}</b> — {{ doc.title }}</p>
   <p><b>Customer:</b> {{ doc.customer }} | <b>Project:</b> {{ doc.project or '' }}</p>
@@ -740,15 +708,7 @@ TESTING_HTML = """
 """
 
 JOINING_HTML = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set phone = s.phone or '+91 9999118039' -%}
-{%- set email = s.email or 'contact@instacertify.com' -%}
-{%- set website = s.website or 'www.instacertify.com' -%}
-{%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
-{%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
-{%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
@@ -768,18 +728,7 @@ JOINING_HTML = """
   }
 </style>
 <div class="ic">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div class="ic-lh-co">
-      <div class="name">{{ legal }}</div>
-      <div>{{ address }}</div>
-      <div>☎ {{ phone }}</div>
-      <div>✉ {{ email }}</div>
-      <div>{{ website }}</div>
-      <div><b>CIN :</b> {{ cin }}</div>
-      <div><b>GSTIN :</b> {{ gstin }}</div>
-    </div>
-  </div>
+""" + LETTERHEAD_BLOCK_HTML + """
   <h3 style="color:#065175;">Joining Letter</h3>
   <p>Date: {{ frappe.utils.formatdate(doc.joining_date) }}</p>
   <p>Dear <b>{{ doc.employee_name }}</b>,</p>
@@ -1581,9 +1530,7 @@ CONSULTING_QUOTATION_HTML = """
 
 
 DOCUMENTS_COLLECTION_HTML = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
@@ -1602,10 +1549,7 @@ DOCUMENTS_COLLECTION_HTML = """
   .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div style="text-align:right;font-size:10px;line-height:1.4;">{{ legal }}</div>
-  </div>
+""" + LETTERHEAD_BLOCK_HTML + """
   <div class="ic-title">Documents Collection Sheet</div>
   <div class="ic-sub">List of Documents + Data Collection Sheet</div>
   <div class="ic-meta">
@@ -1685,9 +1629,7 @@ DOCUMENTS_COLLECTION_HTML = """
 
 
 TRF_HTML = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 {%- set qr_src = doc.sample_qr_code or '' -%}
 {%- if not qr_src and doc.sample_tracking_number -%}
   {%- set qr_src = get_qr_code_data_uri((doc.sample_tracking_number or '') + '\n' + frappe.utils.get_url() + '/ic-verify/sample/' + (doc.sample_tracking_number or ''), 6, 1) -%}
@@ -1712,10 +1654,7 @@ TRF_HTML = """
   .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div style="text-align:right;font-size:10px;line-height:1.4;">{{ legal }}</div>
-  </div>
+""" + LETTERHEAD_BLOCK_HTML + """
   <div class="ic-title">Test Request Form (TRF)</div>
   <div class="ic-sub">Filled sheet for lab / records · match sample QR on intake</div>
   <div class="ic-meta">
@@ -1769,9 +1708,7 @@ TRF_HTML = """
 
 
 SAMPLE_DISPATCH_COLLECTION_HTML = """
-{%- set s = frappe.get_cached_doc('IC Settings') -%}
-{%- set legal = s.legal_name or 'Instacertify Labs Private Limited' -%}
-{%- set logo = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+""" + LETTERHEAD_CONTEXT_JINJA + """
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
@@ -1790,10 +1727,7 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
   .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
-  <div class="ic-lh">
-    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify"/></div>
-    <div style="text-align:right;font-size:10px;line-height:1.4;">{{ legal }}</div>
-  </div>
+""" + LETTERHEAD_BLOCK_HTML + """
   <div class="ic-title">Sample Dispatch Data Collection Sheet</div>
   <div class="ic-sub">Customer courier / AWB / POD collection</div>
   <div class="ic-meta">
@@ -1865,14 +1799,12 @@ def _ensure_aptos_fonts():
 		frappe.log_error(frappe.get_traceback(), "Aptos font install")
 
 
-def _ensure_instacertify_letter_head():
-	"""Create/update Letter Head so Print / PDF Options shows Instacertify branding.
+def letterhead_html() -> str:
+	"""The quotation letterhead, already filled from IC Settings.
 
-	Instacertify Quotation / Invoice Jinja formats embed the letterhead in the
-	print body (logo + company details from IC Settings). The Letter Head record
-	is still kept as default for other DocTypes / print dialog selection.
+	Same block on quotations, invoices, salary slips, offer letters,
+	purchase orders, and any other print that does not draw it itself.
 	"""
-	name = "Instacertify"
 	try:
 		s = frappe.get_cached_doc("IC Settings")
 	except Exception:
@@ -1884,21 +1816,23 @@ def _ensure_instacertify_letter_head():
 	)
 	if logo and not str(logo).startswith(("http://", "https://", "data:")):
 		logo = frappe.utils.get_url(logo)
-	legal = (getattr(s, "legal_name", None) if s else None) or "Instacertify Labs Private Limited"
+	legal = frappe.utils.escape_html(
+		(getattr(s, "legal_name", None) if s else None) or "Instacertify Labs Private Limited"
+	)
 	address = (getattr(s, "address_line", None) if s else None) or (
 		"PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA"
 	)
-	phone = (getattr(s, "phone", None) if s else None) or "+91 9999118039"
-	email = (getattr(s, "email", None) if s else None) or "contact@instacertify.com"
-	website = (getattr(s, "website", None) if s else None) or "www.instacertify.com"
-	cin = (getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291"
-	gstin = (getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7"
-	addr_html = (address or "").replace("\n", "<br>")
-	content = f"""
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 8px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;">
-  <div><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-  <div style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
-    <div style="font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{legal}</div>
+	phone = frappe.utils.escape_html((getattr(s, "phone", None) if s else None) or "+91 9999118039")
+	email = frappe.utils.escape_html((getattr(s, "email", None) if s else None) or "contact@instacertify.com")
+	website = frappe.utils.escape_html((getattr(s, "website", None) if s else None) or "www.instacertify.com")
+	cin = frappe.utils.escape_html((getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291")
+	gstin = frappe.utils.escape_html((getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7")
+	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
+	return f"""
+<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
+  <div class="ic-lh-logo"><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
+  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
+    <div class="name" style="font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{legal}</div>
     <div>{addr_html}</div>
     <div>Phone: {phone}</div>
     <div>Email: {email}</div>
@@ -1908,6 +1842,12 @@ def _ensure_instacertify_letter_head():
   </div>
 </div>
 """
+
+
+def _ensure_instacertify_letter_head():
+	"""Create/update Letter Head so every print can use the quotation header."""
+	name = "Instacertify"
+	content = letterhead_html()
 	try:
 		if frappe.db.exists("Letter Head", name):
 			doc = frappe.get_doc("Letter Head", name)
@@ -1929,6 +1869,21 @@ def _ensure_instacertify_letter_head():
 			).insert(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Instacertify Letter Head")
+
+	# New purchase orders, invoices and offer letters pick this letterhead.
+	try:
+		if frappe.db.exists("DocType", "Company") and frappe.get_meta("Company").has_field("default_letter_head"):
+			for company in frappe.get_all("Company", pluck="name"):
+				current = frappe.db.get_value("Company", company, "default_letter_head")
+				if current != name:
+					frappe.db.set_value("Company", company, "default_letter_head", name, update_modified=False)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Company default letter head")
+	try:
+		if frappe.get_meta("Print Settings").has_field("with_letterhead"):
+			frappe.db.set_single_value("Print Settings", "with_letterhead", 1)
+	except Exception:
+		pass
 
 
 def ensure_print_formats():

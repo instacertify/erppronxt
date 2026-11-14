@@ -35,6 +35,7 @@ def install_printview_guard():
 
 	def get_context(context):
 		_select_quotation_format()
+		_use_quotation_letterhead()
 		try:
 			result = original(context)
 		except Exception as exc:
@@ -45,7 +46,7 @@ def install_printview_guard():
 				result = _render_quotation(printview)
 			except Exception:
 				raise exc
-		return _clean_context(result)
+		return _apply_letterhead(_clean_context(result))
 
 	get_context._ic_guard = True
 	printview.get_context = get_context
@@ -116,6 +117,48 @@ def _context(printview, doc, body, print_format):
 		"no_letterhead": clean_param(frappe.form_dict.get("no_letterhead")) or 0,
 		"pdf_generator": frappe.form_dict.get("pdf_generator") or pdf_generator,
 	}
+
+
+def _use_quotation_letterhead():
+	"""Print every full document with the Instacertify quotation letterhead."""
+	fmt = str(frappe.form_dict.get("format") or "")
+	if "sticker" in fmt.lower():
+		return
+	if str(frappe.form_dict.get("no_letterhead") or "").strip() in {"1", "true"}:
+		return
+	if not clean_param(frappe.form_dict.get("letterhead")):
+		if frappe.db.exists("Letter Head", "Instacertify"):
+			frappe.form_dict.letterhead = "Instacertify"
+	frappe.form_dict.no_letterhead = 0
+
+
+def _apply_letterhead(result):
+	"""Put the quotation letterhead on prints that do not already draw it.
+
+	Salary slips, purchase orders, offer letters and the standard invoice
+	layout do not embed the quote header. Formats that already include
+	`ic-lh` are left as they are. Sample stickers stay small.
+	"""
+	if not isinstance(result, dict):
+		return result
+	fmt = str(result.get("print_format") or frappe.form_dict.get("format") or "")
+	if "sticker" in fmt.lower():
+		return result
+	body = result.get("body") or ""
+	if "ic-lh" in body or 'alt="Instacertify"' in body:
+		return result
+	try:
+		from instacertify.setup.print_formats import letterhead_html
+
+		header = letterhead_html()
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Quotation letterhead on print")
+		return result
+	if header:
+		result["body"] = header + body
+		result["letterhead"] = "Instacertify"
+		result["no_letterhead"] = 0
+	return result
 
 
 def _clean_context(result):
