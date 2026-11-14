@@ -1311,7 +1311,7 @@ _SHADOW_THEME_CSS = """
    Uses the desk design tokens (they inherit into this block).
    ========================================================================== */
 #ic-home-root { color: var(--ic-ink, #21263c); }
-#ic-home-root * { font-family: "Inter", "Segoe UI", sans-serif !important; }
+#ic-home-root *, #ic-crm-tracker * { font-family: "Inter", "Segoe UI", sans-serif !important; }
 
 .ic-greeting {
   display: flex !important;
