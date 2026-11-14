@@ -266,11 +266,24 @@ body .page-form .sort-selector .btn {
   container-type: inline-size;
   container-name: iclist;
 }
+/* A row is as wide as the list, not as wide as its columns would like to be, so
+   the columns give way to each other down to a readable minimum; on narrow
+   screens the last columns are dropped (see the container rules below). */
+.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .list-row-container {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .list-row-container .level-left {
+  min-width: 0 !important;
+}
 .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col {
   flex-shrink: 1 !important;
-  min-width: 56px !important;
+  /* wide enough for a full date or a short amount */
+  min-width: 84px !important;
 }
+/* the name of the record is the last thing to be shortened */
 .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col.list-subject {
+  flex-shrink: 0.15 !important;
   min-width: 140px !important;
 }
 /* a status is never cut short */
@@ -278,6 +291,19 @@ body .page-form .sort-selector .btn {
 .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col:has(> span > .indicator-pill) {
   flex-shrink: 0 !important;
   min-width: 96px !important;
+}
+/* Too many columns for the width: drop the last ones rather than squeeze every
+   value into "11-11-…". The record still opens with all its fields, and the
+   columns return on a wider window or with the side menu folded. */
+@container iclist (max-width: 1280px) {
+  .result .level-left > .list-row-col:nth-child(n + 10) {
+    display: none !important;
+  }
+}
+@container iclist (max-width: 1100px) {
+  .result .level-left > .list-row-col:nth-child(n + 9) {
+    display: none !important;
+  }
 }
 @container iclist (max-width: 900px) {
   .result .level-left > .list-row-col:nth-child(n + 8) {
