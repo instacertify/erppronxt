@@ -1494,7 +1494,7 @@ _SHADOW_THEME_CSS = """
   background: var(--fg-color, #fff);
   border: 1px solid var(--ic-border, #e3e6ef);
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 20px;
   margin-bottom: 16px;
 }
 .ic-today-head { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 16px; }
@@ -1507,10 +1507,10 @@ _SHADOW_THEME_CSS = """
 }
 .ic-section-label { margin: 16px 0 8px !important; padding-left: 20px !important; padding-right: 20px !important; }
 .ic-today-sub, .ic-workdesk-sub, .ic-lead-prompt-sub, .ic-explore-sub { font-size: 12px !important; color: var(--ic-muted, #6c718a) !important; }
-.ic-today-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px; }
+.ic-today-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .ic-today-item {
-  display: flex; align-items: center; gap: 10px;
-  min-height: 48px; padding: 8px 12px;
+  display: flex; align-items: center; gap: 12px;
+  min-height: 64px; padding: 12px 16px;
   text-align: left; cursor: pointer;
   background: var(--tone-bg);
   border: 1px solid transparent; border-left: 3px solid var(--tone);
@@ -1522,7 +1522,7 @@ _SHADOW_THEME_CSS = """
   outline: 2px solid var(--ic-accent, #408dfb); outline-offset: 2px;
 }
 .ic-today-count { flex: 0 0 auto; min-width: 28px; font-size: 20px; font-weight: 700; line-height: 1; color: var(--tone); font-variant-numeric: tabular-nums; }
-.ic-today-text { flex: 1 1 auto; font-size: 13px; font-weight: 500; line-height: 1.3; }
+.ic-today-text { flex: 1 1 auto; min-width: 0; font-size: 13px; font-weight: 500; line-height: 1.4; }
 .ic-today-go { flex: 0 0 auto; font-size: 12px; font-weight: 600; color: var(--tone); }
 .ic-today-item.tone-danger { --tone: var(--ic-danger, #c02626); --tone-bg: var(--ic-danger-bg, #fdecec); }
 .ic-today-item.tone-warn { --tone: var(--ic-warn, #955700); --tone-bg: var(--ic-warn-bg, #fff4e5); }
@@ -1532,7 +1532,7 @@ _SHADOW_THEME_CSS = """
 .ic-today-clear { color: var(--ic-ok, #0b7a4a); font-weight: 500; }
 
 /* My work: three panels that are only as tall as what is in them */
-.ic-workdesk-grid { margin-bottom: 4px; align-items: start !important; }
+.ic-workdesk-grid { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px !important; margin: 0 0 16px !important; align-items: stretch !important; }
 .ic-workdesk-panel, .ic-hr-panel, .ic-lead-prompt-panel {
   background: var(--fg-color, #fff) !important;
   background-image: none !important;
@@ -1540,7 +1540,7 @@ _SHADOW_THEME_CSS = """
   border-left: 1px solid var(--ic-border, #e3e6ef) !important;
   border-radius: 12px !important;
   box-shadow: none !important;
-  padding: 18px 20px !important;
+  padding: 20px !important;
   min-height: 0 !important;
   height: auto !important;
   margin: 0 0 12px !important;
@@ -1571,10 +1571,10 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 .ic-focus-sales .ic-wd-leads, .ic-focus-delivery .ic-wd-tasks { order: -1; }
 
 /* Numbers: quiet when zero, amber or red only when something is waiting */
-.ic-summary-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)) !important; gap: 8px !important; margin-bottom: 16px; }
+.ic-summary-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)) !important; gap: 12px !important; margin-bottom: 16px; }
 .ic-summary-card {
   min-height: 0 !important;
-  padding: 16px 18px !important;
+  padding: 16px 20px !important;
   background: var(--fg-color, #fff) !important;
   background-image: none !important;
   border: 1px solid var(--ic-border, #e3e6ef) !important;
@@ -1604,7 +1604,7 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 .ic-explore-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)) !important; gap: 8px !important; }
 .ic-explore-card {
   flex-direction: row !important; align-items: center !important; gap: 10px;
-  min-height: 52px !important; padding: 12px 16px !important;
+  min-height: 56px !important; padding: 14px 20px !important;
   background: var(--fg-color, #fff) !important; background-image: none !important;
   border: 1px solid var(--ic-border, #e3e6ef) !important;
   border-top: 1px solid var(--ic-border, #e3e6ef) !important;
@@ -1661,7 +1661,7 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 /* ——— Hero: greeting and the "new" actions used most ——— */
 .ic-greeting.ic-hero {
   display: flex !important; flex-wrap: wrap; align-items: center; gap: 12px 24px;
-  padding: 20px 24px !important; margin: 0 0 16px !important;
+  padding: 20px !important; margin: 0 0 16px !important;
   background: linear-gradient(115deg, var(--ic-navy, #172554) 0%, #233a9e 58%, var(--ic-brand, #315CF5) 100%) !important;
   border: 0 !important; border-radius: 14px !important; box-shadow: none !important; color: #fff !important;
 }
@@ -1684,7 +1684,7 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 .ic-hero-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* ——— Business overview: headline figures ——— */
-.ic-kpi { margin: 8px 0 20px; padding: 4px 0 0; }
+.ic-kpi { margin: 0 0 16px; padding: 4px 0 0; }
 .ic-kpi-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 20px; margin: 0 0 16px; padding: 0 20px; }
 .ic-kpi-title { font-size: 17px; font-weight: 600; line-height: 1.3; color: var(--ic-ink, #202938); }
 .ic-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
@@ -1718,7 +1718,25 @@ button.ic-view-all { cursor: pointer; font-family: inherit; }
 @keyframes ic-kpi-wait { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .ic-kpi-wait { animation: none; } }
 .ic-kpi-none { grid-column: 1 / -1; padding: 16px; font-size: 13px; color: var(--ic-muted, #64748B); border: 1px dashed var(--ic-border, #E7EBF2); border-radius: 12px; }
-@media (max-width: 1100px) { .ic-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ic-kpi-label, .ic-kpi-sub, .ic-today-text, .ic-workdesk-sub, .ic-lead-prompt-sub, .ic-explore-card-title {
+  overflow-wrap: break-word;
+}
+.ic-crm-tracker {
+  padding: 4px 0 8px !important;
+  margin: 0 0 16px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.ic-crm-tracker-title { padding: 0 20px; box-sizing: border-box; }
+.ic-crm-chart-card { padding: 16px 20px 14px !important; }
+@media (max-width: 1100px) {
+  .ic-kpi-grid, .ic-today-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ic-workdesk-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 640px) {
+  .ic-today-list { grid-template-columns: 1fr; }
+}
 @media (max-width: 560px) {
   .ic-greeting.ic-hero { padding: 16px !important; }
   .ic-greeting.ic-hero h2 { font-size: 20px !important; }
