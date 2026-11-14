@@ -508,7 +508,45 @@ frappe.provide("instacertify.ux");
 		close();
 	};
 
+	/**
+	 * Two kinds of desk link reloaded the whole desk on every click, because
+	 * Frappe's own link handler does not pick them up:
+	 *   - links inside the Home blocks (they sit in a shadow root), and
+	 *   - links written with the older "/app/..." address, which the server
+	 *     redirects to "/desk/...".
+	 * Both are handed to the router here, the same way Frappe treats its own links.
+	 */
+	ux.keep_block_links_in_app = function () {
+		if (ux.__block_links) return;
+		ux.__block_links = true;
+		document.addEventListener("click", function (e) {
+			if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+			const path = (e.composedPath && e.composedPath()) || [];
+			const link = path.find((node) => node && node.tagName === "A" && node.getAttribute("href"));
+			if (!link || !(frappe.router && frappe.router.is_app_route)) return;
+			if (link.getAttribute("target") === "_blank" || link.getAttribute("onclick")) return;
+			if (link.hasAttribute("download") || link.getAttribute("href") === "#") return;
+			if (link.hostname !== window.location.hostname) return;
+			const old_style = /^\/app(\/|$)/.test(link.pathname);
+			const in_block = link.getRootNode() instanceof ShadowRoot;
+			const desk_path = old_style ? link.pathname.replace(/^\/app/, "/desk") : link.pathname;
+			// An ordinary "/desk/..." link is already handled by Frappe.
+			if (!old_style && !in_block) return;
+			if (!frappe.router.is_app_route(desk_path)) return;
+			e.preventDefault();
+			if (link.search) {
+				frappe.route_options = {};
+				new URLSearchParams(link.search).forEach((value, key) => {
+					frappe.route_options[key] = value;
+				});
+			}
+			if (link.hash) frappe.route_hash = link.hash;
+			frappe.set_route(desk_path);
+		});
+	};
+
 	ux.on_page = function () {
+		ux.keep_block_links_in_app();
 		ux.patch_indicator();
 		ux.patch_lists();
 		ux.watch_headers();
