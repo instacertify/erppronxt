@@ -10,13 +10,28 @@ app_version = "1.0.0"
 required_apps = ["erpnext", "india_compliance", "hrms"]
 
 # Includes in <head>
+# The web server tells browsers to keep /assets files for a year. Without a version in
+# the address, a browser that has opened the desk once keeps showing the old CSS / JS
+# after every deploy. The file's own modified time is used so it changes by itself.
+import os as _os
+
+
+def _asset(path):
+	full = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "public", path)
+	try:
+		version = int(_os.path.getmtime(full))
+	except OSError:
+		version = app_version
+	return f"/assets/instacertify/{path}?v={version}"
+
+
 app_include_css = [
-	"/assets/instacertify/css/instacertify.css",
-	"/assets/instacertify/css/desk_saas.css",
+	_asset("css/instacertify.css"),
+	_asset("css/desk_saas.css"),
 ]
-app_include_js = "/assets/instacertify/js/instacertify.js"
-web_include_css = "/assets/instacertify/css/instacertify.css"
-website_include_css = "/assets/instacertify/css/instacertify.css"
+app_include_js = _asset("js/instacertify.js")
+web_include_css = _asset("css/instacertify.css")
+website_include_css = _asset("css/instacertify.css")
 
 doctype_list_js = {
 	"Lead": "public/js/lead_list.js",
