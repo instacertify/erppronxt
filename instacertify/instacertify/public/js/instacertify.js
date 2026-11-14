@@ -8319,6 +8319,116 @@ $(document).ready(function () {
 	setTimeout(tryInject, 2000);
 });
 
+// --- Short lead capture: name, phone, source chips, product/service chips ---
+instacertify.open_quick_lead = function (opts) {
+	opts = opts || {};
+	const sources = ["Website", "Google Search", "Google Ads", "IndiaMART", "Direct Call", "Reference", "Consultant", "Other"];
+	const services = ["BIS", "Testing", "Certification", "Consulting", "EPR", "MSDS Authoring", "LMPC", "SABER", "GMARK"];
+	const d = new frappe.ui.Dialog({
+		title: __("New lead"),
+		size: "large",
+		fields: [
+			{ fieldname: "intro", fieldtype: "HTML" },
+			{
+				fieldname: "ic_party_name",
+				fieldtype: "Data",
+				label: __("Name"),
+				reqd: 1,
+				description: __("Person or company. This is enough to save."),
+			},
+			{ fieldtype: "Column Break" },
+			{ fieldname: "mobile_no", fieldtype: "Data", label: __("Phone") },
+			{ fieldtype: "Section Break" },
+			{ fieldname: "email_id", fieldtype: "Data", label: __("Email"), options: "Email" },
+			{ fieldtype: "Column Break" },
+			{ fieldname: "chips", fieldtype: "HTML" },
+			{ fieldtype: "Section Break" },
+			{
+				fieldname: "ic_call_remarks",
+				fieldtype: "Small Text",
+				label: __("What do they need?"),
+			},
+		],
+		primary_action_label: __("Save lead"),
+		primary_action(values) {
+			const name = (values.ic_party_name || "").trim();
+			if (!name) {
+				frappe.msgprint(__("Add a name first."));
+				return;
+			}
+			const picked = d.$wrapper.data("ic-capture") || {};
+			frappe.call({
+				method: "instacertify.crm.events.create_quick_lead",
+				args: {
+					party_name: name,
+					mobile_no: values.mobile_no || "",
+					email_id: values.email_id || "",
+					source: picked.source || "",
+					project_type: picked.service || "",
+					remarks: values.ic_call_remarks || "",
+				},
+				freeze: true,
+				freeze_message: __("Saving lead…"),
+				callback(r) {
+					if (!r.message || !r.message.name) return;
+					d.hide();
+					frappe.show_alert({
+						message: __("Lead {0} saved", [r.message.name]),
+						indicator: "green",
+					});
+					if (opts.on_done) opts.on_done(r.message);
+				},
+			});
+		},
+	});
+	d.$wrapper.addClass("ic-capture-dialog");
+	d.$wrapper.data("ic-capture", { source: "", service: "" });
+	d.show();
+	const intro = d.fields_dict.intro.$wrapper;
+	intro.html(
+		`<div class="ic-capture-intro"><b>${__("Who is this?")}</b><span>${__(
+			"Tap where they came from and what they want. You can fill the rest later."
+		)}</span></div>`
+	);
+
+	function chips(title, key, values) {
+		const wrap = document.createElement("div");
+		wrap.className = "ic-capture-group";
+		wrap.innerHTML = `<div class="ic-capture-label">${title}</div>`;
+		const row = document.createElement("div");
+		row.className = "ic-capture-chips";
+		values.forEach((value) => {
+			const btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = "ic-lead-filter-chip";
+			btn.textContent = value;
+			btn.addEventListener("click", () => {
+				const state = d.$wrapper.data("ic-capture") || {};
+				const on = !btn.classList.contains("is-on");
+				row.querySelectorAll(".ic-lead-filter-chip").forEach((el) => el.classList.remove("is-on"));
+				if (on) {
+					btn.classList.add("is-on");
+					state[key] = value;
+				} else {
+					state[key] = "";
+				}
+				d.$wrapper.data("ic-capture", state);
+			});
+			row.appendChild(btn);
+		});
+		wrap.appendChild(row);
+		return wrap;
+	}
+	const box = d.fields_dict.chips.$wrapper;
+	box.empty();
+	box.append(chips(__("Where did they come from?"), "source", sources));
+	box.append(chips(__("What is it for?"), "service", services));
+	setTimeout(() => {
+		const input = d.get_field("ic_party_name") && d.get_field("ic_party_name").$input;
+		if (input && input.length) input.trigger("focus");
+	}, 200);
+};
+
 // --- Lead capture: mandatory name, India-first country, editable source/type ---
 frappe.ui.form.on("Lead", {
 	setup(frm) {
@@ -8341,6 +8451,12 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("mobile_no", "reqd", 0);
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
+		if (frm.is_new()) {
+			frm.set_intro(
+				__("Start with the name, phone, source, and product or service. Everything else can wait."),
+				"blue"
+			);
+		}
 		if (!frm.doc.country && frm.is_new()) {
 			frm.set_value("country", "India");
 		}

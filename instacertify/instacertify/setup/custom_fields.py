@@ -71,11 +71,12 @@ LEAD_FIELDS = [
 	{
 		"fieldname": "ic_project_type",
 		"fieldtype": "Link",
-		"label": "Project Type",
+		"label": "Product / service",
 		"options": "IC Project Type",
 		"insert_after": "ic_section_request",
 		"in_list_view": 1,
-		"description": "BIS, Testing, EPR, LMPC, SABER, GMARK, MSDS Authoring — editable in Project Type",
+		"in_standard_filter": 1,
+		"description": "What this lead is for — BIS, Testing, EPR, MSDS, and the rest",
 	},
 	{
 		"fieldname": "ic_request_category",
@@ -87,11 +88,12 @@ LEAD_FIELDS = [
 	{
 		"fieldname": "ic_lead_source_detail",
 		"fieldtype": "Link",
-		"label": "Lead Source",
+		"label": "Source",
 		"options": "IC Lead Source",
 		"insert_after": "ic_request_category",
 		"in_list_view": 1,
-		"description": "Editable master — Lead Source (Google Search, Ads, IndiaMART, Reference, Consultant, …)",
+		"in_standard_filter": 1,
+		"description": "Where this lead came from — Website, Google, IndiaMART, a call, a reference",
 	},
 	{
 		"fieldname": "ic_website_lead_id",
