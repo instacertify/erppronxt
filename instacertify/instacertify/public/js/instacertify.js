@@ -470,6 +470,7 @@ $(document).on("app_ready", function () {
 		instacertify.polish_desk_search();
 		instacertify.install_password_menu();
 		instacertify.install_chat_menu();
+		instacertify.install_chat_dock();
 		instacertify.sync_sidebar_icons();
 		instacertify.pin_home_sidebar();
 		instacertify.patch_list_view();
@@ -608,6 +609,140 @@ instacertify.open_change_password = function (user) {
 		},
 	});
 	d.show();
+};
+
+/** Small Raven window on every desk page, with a sound and a popup for new messages. */
+instacertify.install_chat_dock = function () {
+	const versions = (frappe.boot && frappe.boot.versions) || {};
+	if (!versions.raven || frappe.session.user === "Guest") return;
+	if (document.querySelector(".ic-chat-dock")) {
+		return;
+	}
+	const dock = document.createElement("div");
+	dock.className = "ic-chat-dock";
+	dock.innerHTML =
+		'<div class="ic-chat-pop" hidden></div>' +
+		'<section class="ic-chat-dock-panel" hidden>' +
+		'<header class="ic-chat-dock-bar"><span>Chat</span>' +
+		'<button type="button" class="ic-chat-dock-close" aria-label="Close chat">×</button></header>' +
+		'<iframe class="ic-chat-dock-frame" title="Chat" src="about:blank"></iframe>' +
+		"</section>" +
+		'<button type="button" class="ic-chat-dock-btn" aria-label="Chat">' +
+		'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 1 1 18 0z"/></svg>' +
+		'<span class="ic-chat-dock-badge" hidden>0</span></button>';
+	document.body.appendChild(dock);
+
+	const pop = dock.querySelector(".ic-chat-pop");
+	const panel = dock.querySelector(".ic-chat-dock-panel");
+	const frame = dock.querySelector(".ic-chat-dock-frame");
+	const badge = dock.querySelector(".ic-chat-dock-badge");
+	const button = dock.querySelector(".ic-chat-dock-btn");
+	const state = { seen: null, ready: false, timer: null, sound: null };
+
+	function openPanel() {
+		panel.hidden = false;
+		pop.hidden = true;
+		if (!frame.getAttribute("src") || frame.getAttribute("src") === "about:blank") {
+			frame.setAttribute("src", "/raven");
+		}
+		button.setAttribute("aria-expanded", "true");
+	}
+	function closePanel() {
+		panel.hidden = true;
+		button.setAttribute("aria-expanded", "false");
+	}
+	button.addEventListener("click", () => {
+		if (panel.hidden) openPanel();
+		else closePanel();
+	});
+	dock.querySelector(".ic-chat-dock-close").addEventListener("click", closePanel);
+	pop.addEventListener("click", openPanel);
+
+	function playSound() {
+		if (!panel.hidden) return;
+		try {
+			if (!state.sound) {
+				state.sound = new Audio("/assets/raven/sounds/raven_notification.mp3");
+				state.sound.volume = 0.45;
+			}
+			state.sound.currentTime = 0;
+			const played = state.sound.play();
+			if (played && played.catch) played.catch(() => {});
+		} catch (e) {
+			/* a browser may block sound until the person has clicked once */
+		}
+	}
+	document.addEventListener(
+		"pointerdown",
+		() => {
+			if (!state.sound) return;
+			const played = state.sound.play();
+			if (played && played.then) {
+				played.then(() => {
+					state.sound.pause();
+					state.sound.currentTime = 0;
+				}).catch(() => {});
+			}
+		},
+		{ once: true }
+	);
+
+	function showPop(message) {
+		if (!message || panel.hidden === false) return;
+		pop.innerHTML =
+			'<div class="ic-chat-pop-kicker">New message</div>' +
+			'<div class="ic-chat-pop-who"></div>' +
+			'<div class="ic-chat-pop-text"></div>';
+		pop.querySelector(".ic-chat-pop-who").textContent = message.where || message.sender || "Chat";
+		pop.querySelector(".ic-chat-pop-text").textContent = message.preview || "New message";
+		pop.hidden = false;
+		clearTimeout(showPop._hide);
+		showPop._hide = setTimeout(() => {
+			pop.hidden = true;
+		}, 8000);
+	}
+
+	function apply(data) {
+		if (!data || !data.enabled) {
+			dock.hidden = true;
+			return;
+		}
+		dock.hidden = false;
+		const unread = Number(data.unread || 0);
+		badge.hidden = unread < 1;
+		badge.textContent = unread > 99 ? "99+" : String(unread);
+		const message = data.message;
+		const id = message && message.id;
+		if (!state.ready) {
+			state.seen = id || null;
+			state.ready = true;
+			return;
+		}
+		if (id && id !== state.seen) {
+			state.seen = id;
+			playSound();
+			showPop(message);
+		}
+	}
+
+	function peek() {
+		frappe.call({
+			method: "instacertify.chat.desk.peek",
+			callback(r) {
+				apply((r && r.message) || {});
+			},
+		});
+	}
+	peek();
+	state.timer = setInterval(peek, 12000);
+	if (frappe.realtime) {
+		if (frappe.realtime.doctype_subscribe) frappe.realtime.doctype_subscribe("Raven User");
+		frappe.realtime.on("raven:unread_channel_count_updated", (data) => {
+			if (data && data.sent_by && data.sent_by === frappe.session.user) return;
+			if (data && data.event_type && data.event_type !== "new_message") return;
+			peek();
+		});
+	}
 };
 
 instacertify.install_chat_menu = function () {
@@ -939,6 +1074,7 @@ $(document).on("page-change", function () {
 		instacertify.polish_desk_search();
 		instacertify.install_password_menu();
 		instacertify.install_chat_menu();
+		instacertify.install_chat_dock();
 		instacertify.sync_sidebar_icons();
 		instacertify.pin_home_sidebar();
 		instacertify.patch_list_view();
