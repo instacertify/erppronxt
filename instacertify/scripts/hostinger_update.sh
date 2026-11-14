@@ -91,6 +91,11 @@ GIT_SHA="$(git rev-parse --short HEAD)"
 cd "${BENCH_ROOT}"
 echo "==> Deploying SHA ${GIT_SHA}"
 
+if [[ "${SKIP_RAVEN:-0}" != "1" ]]; then
+	echo "==> Raven chat"
+	SITE="${SITE}" bash "${APP_PATH}/scripts/install_raven.sh"
+fi
+
 echo "==> migrate"
 bench --site "${SITE}" migrate
 

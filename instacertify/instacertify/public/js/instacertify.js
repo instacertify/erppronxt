@@ -469,6 +469,7 @@ $(document).on("app_ready", function () {
 		instacertify.enable_full_width_desk();
 		instacertify.polish_desk_search();
 		instacertify.install_password_menu();
+		instacertify.install_chat_menu();
 		instacertify.sync_sidebar_icons();
 		instacertify.pin_home_sidebar();
 		instacertify.patch_list_view();
@@ -607,6 +608,18 @@ instacertify.open_change_password = function (user) {
 		},
 	});
 	d.show();
+};
+
+instacertify.install_chat_menu = function () {
+	const versions = (frappe.boot && frappe.boot.versions) || {};
+	if (!versions.raven) return;
+	const menu = document.querySelector(".dropdown-navbar-user .dropdown-menu");
+	if (!menu || menu.querySelector(".ic-open-chat")) return;
+	const item = document.createElement("a");
+	item.className = "dropdown-item ic-open-chat";
+	item.href = "/raven";
+	item.textContent = __("Chat");
+	menu.prepend(item);
 };
 
 instacertify.install_password_menu = function () {
@@ -925,6 +938,7 @@ $(document).on("page-change", function () {
 		instacertify.enable_full_width_desk();
 		instacertify.polish_desk_search();
 		instacertify.install_password_menu();
+		instacertify.install_chat_menu();
 		instacertify.sync_sidebar_icons();
 		instacertify.pin_home_sidebar();
 		instacertify.patch_list_view();
