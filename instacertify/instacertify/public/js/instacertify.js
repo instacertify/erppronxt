@@ -25,6 +25,9 @@ instacertify.ensure_contrast_guard = function () {
 		s.id = ID;
 		(document.head || document.documentElement).appendChild(s);
 	}
+	// Rewriting the sheet on every page change restyles the whole desk and makes the change-over flash.
+	if (s.dataset.icReady) return;
+	s.dataset.icReady = "1";
 	s.textContent = `
 :root {
   --btn-primary-color: #ffffff !important;
@@ -467,6 +470,11 @@ $(document).on("app_ready", function () {
 		instacertify.polish_desk_search();
 		instacertify.install_password_menu();
 		instacertify.sync_sidebar_icons();
+		instacertify.pin_home_sidebar();
+		instacertify.patch_list_view();
+		// Frappe sets this on the first list it opens, after the page is already drawn;
+		// setting it at start stops the first list from sliding sideways.
+		document.body.classList.add("no-list-sidebar");
 	} catch (e) {
 		/* ignore */
 	}
@@ -519,22 +527,7 @@ instacertify.enable_full_width_desk = function () {
 	} catch (e) {
 		/* ignore */
 	}
-	$(".page-body.container, .container.page-body").css({
-		maxWidth: "100%",
-		width: "100%",
-		marginLeft: 0,
-		marginRight: 0,
-	});
-	$("[data-page-route='Workspaces'] .layout-main, [data-page-route='instacertify-home'] .layout-main").css({
-		maxWidth: "none",
-		width: "100%",
-		marginLeft: 0,
-		marginRight: 0,
-	});
-	$(".layout-main-section-wrapper, .layout-main-section").css({
-		maxWidth: "none",
-		width: "100%",
-	});
+	// Widths come from desk_saas.css. Setting them here, after the page has painted, made every page jump.
 };
 
 /** Keep the desk search obvious on every page. Ctrl/Cmd+K focuses it. */
@@ -667,39 +660,250 @@ instacertify.download_doc_pdf = function (doctype, name) {
 	window.open(frappe.urllib.get_full_url(`/api/method/${method}?${params}`), "_blank", "noopener");
 };
 
-/** View and download on each quotation / invoice row. */
+/** Keep one side menu while moving between pages. It only changes when a workspace is opened. */
+instacertify.pin_home_sidebar = function () {
+	const sidebar = frappe.app && frappe.app.sidebar;
+	if (!sidebar || sidebar.__ic_pinned) return;
+	const home =
+		(frappe.boot.instacertify && frappe.boot.instacertify.default_workspace) || "Instacertify Home";
+	const known = frappe.boot.workspace_sidebar_item || {};
+	if (!known[home.toLowerCase()]) return;
+	sidebar.__ic_pinned = true;
+	sidebar.resolve_sidebar = function () {
+		return this.sidebar_title || home;
+	};
+	sidebar.show_sidebar_for_module = function () {
+		this.set_active_workspace_item();
+	};
+	const route = frappe.get_route ? frappe.get_route() : [];
+	const on_workspace = route.length === 2 && route[0] === "Workspaces" && known[String(route[1]).toLowerCase()];
+	if (!on_workspace && sidebar.sidebar_title !== home) {
+		try {
+			sidebar.setup(home);
+			sidebar.set_active_workspace_item();
+		} catch (e) {
+			/* keep the native sidebar */
+		}
+	}
+};
+
+instacertify.ROW_ICONS = {
+	view: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+	download:
+		'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>',
+	filter:
+		'<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg>',
+};
+
+instacertify.ROW_ACTION_DOCTYPES = {
+	Quotation: [__("View quote"), __("Download quote PDF")],
+	"Sales Invoice": [__("View invoice"), __("Download invoice PDF")],
+};
+
+/** View and download icons at the end of each quotation / invoice row. */
 instacertify.decorate_doc_list = function (listview) {
 	if (!listview || !listview.doctype || !listview.$result) return;
 	const doctype = listview.doctype;
-	if (!["Quotation", "Sales Invoice"].includes(doctype)) return;
-	listview.$result.find(".list-row-container").each(function () {
-		const row = this;
-		if (row.querySelector(".ic-row-actions")) return;
-		const named =
-			row.querySelector("a[data-name]") ||
-			row.querySelector(".list-row-checkbox[data-name]") ||
-			row.querySelector("[data-name]");
-		const name = named && named.getAttribute("data-name");
-		if (!name) return;
-		const right = row.querySelector(".level-right") || row.querySelector(".list-row");
-		if (!right) return;
-		const actions = document.createElement("span");
-		actions.className = "ic-row-actions";
-		const viewBtn = row.querySelector(".btn-action")
-			? ""
-			: `<button type="button" class="btn btn-xs btn-default ic-row-view" title="${__("View quote")}">${__("View")}</button>`;
-		actions.innerHTML =
-			viewBtn +
-			`<button type="button" class="btn btn-xs btn-default ic-row-pdf" title="${__("Download PDF")}">${__("PDF")}</button>`;
-		actions.addEventListener("click", (e) => {
+	const labels = instacertify.ROW_ACTION_DOCTYPES[doctype];
+	if (!labels) return;
+	listview.$result.addClass("ic-has-row-actions");
+	if (!listview._ic_row_actions_bound) {
+		listview._ic_row_actions_bound = 1;
+		listview.$result.on("click", ".ic-row-actions button", function (e) {
 			e.preventDefault();
 			e.stopPropagation();
-			if (e.target.closest(".ic-row-view")) instacertify.open_doc_preview(doctype, name);
-			else if (e.target.closest(".ic-row-pdf")) instacertify.download_doc_pdf(doctype, name);
+			const name = this.getAttribute("data-name");
+			if (!name) return;
+			if (this.classList.contains("ic-row-view")) instacertify.open_doc_preview(doctype, name);
+			else instacertify.download_doc_pdf(doctype, name);
 		});
+	}
+	listview.$result.find(".list-row-container").each(function () {
+		const row = this;
+		const right = row.querySelector(".list-row .level-right");
+		if (!right) return;
+		if (right.querySelector(".ic-row-actions")) return;
+		const actions = document.createElement("span");
+		actions.className = "ic-row-actions";
+		const named = row.querySelector(".list-row-checkbox[data-name]") || row.querySelector("a[data-name]");
+		const name = named && named.getAttribute("data-name");
+		if (!name) return;
+		const safe = frappe.utils.escape_html(name);
+		actions.innerHTML =
+			`<button type="button" class="ic-row-btn ic-row-view" data-name="${safe}" title="${labels[0]}" aria-label="${labels[0]}">${instacertify.ROW_ICONS.view}</button>` +
+			`<button type="button" class="ic-row-btn ic-row-pdf" data-name="${safe}" title="${labels[1]}" aria-label="${labels[1]}">${instacertify.ROW_ICONS.download}</button>`;
 		right.prepend(actions);
 	});
 };
+
+/** Filters that stay in view on a list. Any other list keeps its first three. */
+instacertify.LIST_KEEP_FILTERS = {
+	Lead: ["title", "ic_lead_source_detail", "ic_project_type"],
+	Quotation: ["customer_name", "name", "transaction_date"],
+};
+
+/** Plain words in the search box of the main lists. */
+instacertify.LIST_SEARCH_HINTS = {
+	Lead: ["title", __("Search lead or company")],
+	Quotation: ["customer_name", __("Search customer")],
+};
+
+/**
+ * One slim filter row on a list. The fields in `keep` stay in view; the rest open with "More filters".
+ * A field that already holds a value is always shown, so a filtered list never looks unfiltered.
+ */
+instacertify.slim_list_filters = function (listview, keep) {
+	const form = listview && listview.page && listview.page.page_form;
+	if (!form || !form.length) return;
+	const std = form.find(".standard-filter-section");
+	const controls = std.children(".frappe-control");
+	if (!controls.length) return;
+	form.addClass("ic-slim-filters");
+	const preset = keep && keep.length ? keep : instacertify.LIST_KEEP_FILTERS[listview.doctype];
+	const wanted =
+		preset && preset.length
+			? preset
+			: controls
+					.slice(0, 3)
+					.map((i, el) => el.getAttribute("data-fieldname"))
+					.get();
+	controls.each(function () {
+		const at = wanted.indexOf(this.getAttribute("data-fieldname"));
+		this.classList.toggle("ic-keep", at >= 0);
+		this.classList.toggle("ic-keep-first", at === 0);
+		this.style.order = at >= 0 ? String(at - wanted.length) : "";
+	});
+	const hint = instacertify.LIST_SEARCH_HINTS[listview.doctype];
+	const hinted = hint && listview.page.fields_dict && listview.page.fields_dict[hint[0]];
+	if (hinted && hinted.$input) hinted.$input.attr("placeholder", hint[1]);
+	if (controls.length > wanted.length && !form.find(".ic-more-filters").length) {
+		const btn = $(
+			`<button type="button" class="btn btn-default btn-sm ic-more-filters" aria-expanded="false">${instacertify.ROW_ICONS.filter}<span>${__(
+				"More filters"
+			)}</span></button>`
+		);
+		btn.on("click", () => {
+			const open = !form.hasClass("ic-filters-open");
+			form.toggleClass("ic-filters-open", open);
+			btn.attr("aria-expanded", open ? "true" : "false");
+			btn.find("span").text(open ? __("Fewer filters") : __("More filters"));
+		});
+		const host = form.find(".filter-section");
+		if (host.length) host.prepend(btn);
+		else std.after(btn);
+	}
+	instacertify.mark_used_filters(listview);
+};
+
+instacertify.mark_used_filters = function (listview) {
+	const form = listview && listview.page && listview.page.page_form;
+	if (!form || !form.hasClass("ic-slim-filters")) return;
+	const fields = (listview.page && listview.page.fields_dict) || {};
+	Object.keys(fields).forEach((fieldname) => {
+		const field = fields[fieldname];
+		if (!field || !field.$wrapper) return;
+		let value = "";
+		try {
+			value = field.get_value ? field.get_value() : "";
+		} catch (e) {
+			value = "";
+		}
+		field.$wrapper.toggleClass("ic-has-value", !!value);
+	});
+};
+
+/** Run once: every list gets a slim filter row, and quote / invoice rows get their icons as the rows are drawn. */
+instacertify.patch_list_view = function () {
+	const BaseList = frappe.views && frappe.views.BaseList;
+	const ListView = frappe.views && frappe.views.ListView;
+	if (BaseList && !BaseList.prototype.__ic_patched) {
+		BaseList.prototype.__ic_patched = true;
+		const setup_filter_area = BaseList.prototype.setup_filter_area;
+		BaseList.prototype.setup_filter_area = function () {
+			const result = setup_filter_area.apply(this, arguments);
+			try {
+				instacertify.slim_list_filters(this);
+			} catch (e) {
+				/* never block a list from opening */
+			}
+			return result;
+		};
+		const toggle_result_area = BaseList.prototype.toggle_result_area;
+		BaseList.prototype.toggle_result_area = function () {
+			const result = toggle_result_area.apply(this, arguments);
+			try {
+				instacertify.mark_used_filters(this);
+			} catch (e) {
+				/* ignore */
+			}
+			return result;
+		};
+	}
+	if (ListView && !ListView.prototype.__ic_rows_patched) {
+		ListView.prototype.__ic_rows_patched = true;
+		const render_list = ListView.prototype.render_list;
+		ListView.prototype.render_list = function () {
+			const result = render_list.apply(this, arguments);
+			try {
+				instacertify.decorate_doc_list(this);
+			} catch (e) {
+				/* never block a list from drawing */
+			}
+			return result;
+		};
+	}
+};
+
+/** Long quotation blocks that start folded. Click the heading to open; the choice is remembered. */
+instacertify.QUOTE_FOLDED_SECTIONS = ["ic_section_print_sections", "ic_section_policies", "ic_section_terms"];
+
+instacertify.fold_quotation_sections = function (frm) {
+	if (!frm || !frm.fields_dict) return;
+	instacertify.QUOTE_FOLDED_SECTIONS.forEach((fieldname) => {
+		const section = frm.fields_dict[fieldname];
+		if (!section || !section.head || !section.body || typeof section.collapse !== "function") return;
+		const key = "ic-quote-fold-" + fieldname;
+		if (!section.__ic_fold) {
+			section.__ic_fold = 1;
+			if (!section.df.collapsible) {
+				section.head.addClass("collapsible").attr("tabindex", 0);
+				section.head.on("click", () => section.collapse());
+				section.head.on("keydown", (e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						section.collapse();
+					}
+				});
+				if (section.indicator) section.indicator.show();
+			}
+			section.head.attr("data-ic-hint", __("Click to open"));
+			section.head.on("click keydown", () => {
+				setTimeout(() => {
+					try {
+						localStorage.setItem(key, section.body.hasClass("hide") ? "closed" : "open");
+					} catch (e) {
+						/* ignore */
+					}
+				}, 0);
+			});
+		}
+		if (frm.__ic_fold_doc === frm.doc.name) return;
+		let saved = "";
+		try {
+			saved = localStorage.getItem(key) || "";
+		} catch (e) {
+			saved = "";
+		}
+		section.collapse(saved !== "open");
+	});
+	frm.__ic_fold_doc = frm.doc.name;
+};
+
+frappe.ui.form.on("Quotation", {
+	refresh(frm) {
+		instacertify.fold_quotation_sections(frm);
+	},
+});
 
 $(document).on("sidebar-expand.icSidebar", function () {
 	setTimeout(() => instacertify.sync_sidebar_icons(), 20);
@@ -722,15 +926,8 @@ $(document).on("page-change", function () {
 		instacertify.polish_desk_search();
 		instacertify.install_password_menu();
 		instacertify.sync_sidebar_icons();
-		setTimeout(() => {
-			try {
-				if (typeof cur_list !== "undefined" && cur_list && instacertify.decorate_doc_list) {
-					instacertify.decorate_doc_list(cur_list);
-				}
-			} catch (e) {
-				/* list not open */
-			}
-		}, 200);
+		instacertify.pin_home_sidebar();
+		instacertify.patch_list_view();
 		const route = frappe.get_route ? frappe.get_route() : [];
 		if (
 			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
