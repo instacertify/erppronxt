@@ -37,6 +37,7 @@ app_include_js = [
 ]
 web_include_css = _asset("css/instacertify.css")
 website_include_css = _asset("css/instacertify.css")
+web_include_js = [_asset("js/ic_login.js")]
 
 doctype_list_js = {
 	"Lead": "public/js/lead_list.js",
@@ -76,6 +77,7 @@ doc_events = {
 	"Sales Invoice": {
 		"before_insert": "instacertify.accounting.events.before_insert_sales_invoice",
 		"validate": "instacertify.accounting.events.validate_sales_invoice",
+		"on_update": "instacertify.access.assigned.share_with_assignees",
 	},
 	"Purchase Invoice": {
 		"validate": "instacertify.accounting.events.validate_purchase_invoice",
@@ -84,7 +86,10 @@ doc_events = {
 		"before_insert": "instacertify.quotation.events.before_insert_quotation",
 		"before_validate": "instacertify.quotation.events.before_validate_quotation",
 		"after_insert": "instacertify.quotation.events.after_insert_quotation",
-		"on_update": "instacertify.quotation.events.on_update_quotation",
+		"on_update": [
+			"instacertify.quotation.events.on_update_quotation",
+			"instacertify.access.assigned.share_with_assignees",
+		],
 		"validate": "instacertify.quotation.events.validate_quotation",
 		"on_update_after_submit": "instacertify.quotation.events.on_update_after_submit",
 		"on_submit": "instacertify.quotation.events.on_submit_quotation",
@@ -95,7 +100,10 @@ doc_events = {
 	},
 	"Project": {
 		"validate": "instacertify.project.events.validate_project",
-		"on_update": "instacertify.project.events.on_update_project",
+		"on_update": [
+			"instacertify.project.events.on_update_project",
+			"instacertify.access.assigned.share_with_assignees",
+		],
 	},
 	"IC Project Update": {
 		"on_update": "instacertify.project.progress.sync_project_from_update",
@@ -105,6 +113,7 @@ doc_events = {
 		"validate": "instacertify.crm.events.validate_lead",
 		"before_validate": "instacertify.crm.events.before_validate_lead",
 		"before_insert": "instacertify.crm.events.before_validate_lead",
+		"on_update": "instacertify.access.assigned.share_with_assignees",
 	},
 	"IC Sample Tracking": {
 		"before_insert": "instacertify.testing.events.before_insert_sample",
@@ -117,7 +126,10 @@ doc_events = {
 	},
 	"Task": {
 		"validate": "instacertify.project.task_events.validate_task",
-		"on_update": "instacertify.project.task_events.on_update_task",
+		"on_update": [
+			"instacertify.project.task_events.on_update_task",
+			"instacertify.access.assigned.share_with_assignees",
+		],
 	},
 	"Payment Entry": {
 		"on_submit": "instacertify.accounting.payments.on_submit_payment_entry",

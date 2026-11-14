@@ -71,6 +71,7 @@ def get_explore_prompts() -> dict:
 		*,
 		doctype: str | None = None,
 		count: int | None = None,
+		count_filters: dict | None = None,
 		accent: str = "teal",
 		action: str | None = None,
 		priority: int = 50,
@@ -83,6 +84,10 @@ def get_explore_prompts() -> dict:
 			return
 		from instacertify.setup.navigation_icons import EXPLORE_ICONS
 
+		# The number on a card and the list it opens use the same filters.
+		if count_filters is not None and doctype:
+			count = _count(doctype, count_filters)
+
 		cards.append(
 			{
 				"id": card_id,
@@ -91,6 +96,7 @@ def get_explore_prompts() -> dict:
 				"route": route,
 				"doctype": doctype,
 				"count": count,
+				"filters": count_filters,
 				"accent": accent,
 				"action": action,
 				"priority": priority,
@@ -105,7 +111,7 @@ def get_explore_prompts() -> dict:
 		_("Capture & follow up prospects"),
 		["List", "Lead"],
 		doctype="Lead",
-		count=_count("Lead", {"status": ["not in", ["Converted", "Do Not Contact"]]}),
+		count_filters={"status": ["not in", ["Converted", "Do Not Contact"]]},
 		accent="coral",
 		priority=10,
 		show=is_sales or is_ops or is_admin,
@@ -116,7 +122,7 @@ def get_explore_prompts() -> dict:
 		_("Create & share customer quotes"),
 		["List", "Quotation"],
 		doctype="Quotation",
-		count=_count("Quotation"),
+		count_filters={},
 		accent="teal",
 		priority=20,
 		show=is_sales or is_admin,
@@ -127,7 +133,7 @@ def get_explore_prompts() -> dict:
 		_("Upload & manage quote templates"),
 		["List", "IC Quotation Template"],
 		doctype="IC Quotation Template",
-		count=_count("IC Quotation Template", {"is_active": 1}),
+		count_filters={"is_active": 1},
 		accent="citrus",
 		action="upload_quote_format",
 		priority=25,
@@ -139,7 +145,7 @@ def get_explore_prompts() -> dict:
 		_("Accounts & contacts"),
 		["List", "Customer"],
 		doctype="Customer",
-		count=_count("Customer"),
+		count_filters={},
 		accent="teal",
 		priority=30,
 		show=is_sales or is_ops or is_admin,
@@ -150,7 +156,7 @@ def get_explore_prompts() -> dict:
 		_("Delivery board & timelines"),
 		["List", "Project"],
 		doctype="Project",
-		count=_count("Project", {"status": ["not in", ["Completed", "Cancelled"]]}),
+		count_filters={"status": ["not in", ["Completed", "Cancelled"]]},
 		accent="teal",
 		priority=40,
 		show=is_ops or is_sales or is_admin,
@@ -170,7 +176,7 @@ def get_explore_prompts() -> dict:
 		_("Lab names, scope & prices"),
 		["List", "IC Laboratory"],
 		doctype="IC Laboratory",
-		count=_count("IC Laboratory", {"status": "Active"}),
+		count_filters={"status": "Active"},
 		accent="citrus",
 		action="upload_laboratory",
 		priority=50,
@@ -191,7 +197,7 @@ def get_explore_prompts() -> dict:
 		_("Customer upload checklists & share links"),
 		["List", "IC Document Request"],
 		doctype="IC Document Request",
-		count=_count("IC Document Request", {"status": ["in", ["Sent to Customer", "Partially Uploaded"]]}),
+		count_filters={"status": ["in", ["Sent to Customer", "Partially Uploaded"]]},
 		accent="coral",
 		priority=65,
 		show=is_ops or is_sales or is_admin,
@@ -202,7 +208,7 @@ def get_explore_prompts() -> dict:
 		_("Customer sample dispatch data collection"),
 		["List", "IC Sample Dispatch Collection"],
 		doctype="IC Sample Dispatch Collection",
-		count=_count("IC Sample Dispatch Collection"),
+		count_filters={},
 		accent="teal",
 		priority=66,
 		show=is_ops or is_admin,
@@ -213,10 +219,7 @@ def get_explore_prompts() -> dict:
 		_("Complaints & support tickets"),
 		["List", "Helpdesk Ticket"],
 		doctype="Helpdesk Ticket",
-		count=_count(
-			"Helpdesk Ticket",
-			{"status": ["in", ["Open", "In Progress", "Waiting on Customer"]]},
-		),
+		count_filters={"status": ["in", ["Open", "In Progress", "Waiting on Customer"]]},
 		accent="coral",
 		priority=70,
 	)
@@ -274,7 +277,7 @@ def get_explore_prompts() -> dict:
 		_("Travel · petty · office expenses"),
 		["List", "IC Expense Claim"],
 		doctype="IC Expense Claim",
-		count=_count("IC Expense Claim", {"owner": frappe.session.user, "status": ["in", ["Draft", "Submitted"]]}),
+		count_filters={"owner": frappe.session.user, "status": ["in", ["Draft", "Submitted"]]},
 		accent="citrus",
 		action="new_expense",
 		priority=99,

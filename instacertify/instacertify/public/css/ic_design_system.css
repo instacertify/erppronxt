@@ -7,6 +7,21 @@
 
 :root,
 html[data-theme="light"] {
+  /* ——— Brand ——— */
+  --ic-brand: #315CF5;
+  --ic-brand-hover: #2449D8;
+  --ic-brand-soft: #EEF3FF;
+  --ic-indigo: #635BDB;
+  --ic-navy: #172554;
+
+  /* ——— Surfaces and text ——— */
+  --ic-bg: #F5F7FB;
+  --ic-card: #FFFFFF;
+  --ic-text: #202938;
+  --ic-text-2: #64748B;
+  --ic-text-3: #94A3B8; /* hints and disabled text only: 2.6:1 on white */
+  --ic-line: #E7EBF2;
+
   /* Text: seven sizes, nothing smaller than 11px */
   --ic-fs-xs: 11px;
   --ic-fs-sm: 12px;
@@ -24,41 +39,109 @@ html[data-theme="light"] {
   --ic-s5: 24px;
   --ic-s6: 32px;
 
-  /* One colour for "do this" buttons (white text reads at 8.9:1) */
-  --ic-action: #065175;
-  --ic-action-hover: #04405d;
+  /* One colour for "do this" buttons (white text reads at 5.3:1, 6.9:1 on hover) */
+  --ic-action: var(--ic-brand);
+  --ic-action-hover: var(--ic-brand-hover);
   --btn-primary: var(--ic-action);
   --btn-primary-hover: var(--ic-action-hover);
 
-  /* Status: the same five meanings everywhere */
-  --ic-ok: #0b7a4a;
-  --ic-ok-bg: #e5f8ef;
-  --ic-warn: #955700;
-  --ic-warn-bg: #fff4e5;
-  --ic-danger: #c02626;
-  --ic-danger-bg: #fdecec;
-  --ic-info: #1b62b0;
-  --ic-info-bg: #ebf3fe;
-  --ic-neutral: #565b73;
-  --ic-neutral-bg: #eceef4;
+  /* Status: the same five meanings everywhere.
+     "-solid" is the brand status colour, used for dots, bars and edges.
+     The plain name is a darker shade of the same hue, used for text, so words on
+     the tinted background read at 4.7:1 or better (the solid colours read at 2 to 3.5:1). */
+  --ic-ok-solid: #16A36A;
+  --ic-ok: #0E7C50;
+  --ic-ok-bg: #EAF8F0;
+  --ic-warn-solid: #E9A23B;
+  --ic-warn: #9A5B00;
+  --ic-warn-bg: #FFF6E5;
+  --ic-danger-solid: #DC5353;
+  --ic-danger: #BE3535;
+  --ic-danger-bg: #FFF0F0;
+  --ic-info-solid: #3285D8;
+  --ic-info: #1F69B5;
+  --ic-info-bg: #EDF6FF;
+  --ic-neutral-solid: #64748B;
+  --ic-neutral: #566579;
+  --ic-neutral-bg: #F1F4F8;
 
   --ic-btn-h: 32px;
+
+  /* ——— Older names used across the app's style sheets point at the palette above,
+     so one change here reaches every page. ——— */
+  --ic-teal: var(--ic-brand);
+  --ic-teal-deep: var(--ic-brand-hover);
+  --ic-teal-text: var(--ic-navy);
+  --ic-teal-deep-text: var(--ic-navy);
+  --ic-primary: var(--ic-text);
+  --ic-primary-deep: var(--ic-navy);
+  --ic-primary-soft: var(--ic-brand-soft);
+  --ic-accent: var(--ic-brand);
+  --ic-accent-deep: var(--ic-brand-hover);
+  --ic-accent-soft: var(--ic-brand-soft);
+  --ic-surface: var(--ic-bg);
+  --ic-surface-2: #EEF1F7;
+  --ic-mist: var(--ic-line);
+  --ic-ink: var(--ic-text);
+  --ic-muted: var(--ic-text-2);
+  --ic-border: var(--ic-line);
+  --ic-shadow: 0 1px 2px rgba(23, 37, 84, 0.05), 0 8px 24px rgba(23, 37, 84, 0.04);
+  --ic-shadow-hover: 0 8px 22px rgba(49, 92, 245, 0.12);
+  --ic-hl-bg: rgba(49, 92, 245, 0.08);
+  --ic-hl-bg-strong: rgba(49, 92, 245, 0.14);
+  --ic-hl-edge: var(--ic-brand);
+  --bg-color: var(--ic-bg);
+  --fg-color: var(--ic-card);
+  --card-bg: var(--ic-card);
+  --subtle-fg: #F8FAFC;
+  --surface-gray-1: #F8FAFC;
+  --surface-gray-2: var(--ic-bg);
+  --surface-gray-3: var(--ic-line);
+  --border-color: var(--ic-line);
+  --text-color: var(--ic-text);
+  --heading-color: var(--ic-text);
+  --text-primary: var(--ic-text);
+  --icon-stroke: var(--ic-text);
+  --icon-stroke-muted: var(--ic-text-2);
+  --primary: var(--ic-brand);
+  --primary-color: var(--ic-brand);
+  --blue-500: var(--ic-brand);
+  --blue-600: var(--ic-brand-hover);
 }
 
 html[data-theme="dark"],
 body[data-theme="dark"] {
-  --ic-action: #1f6f9c;
-  --ic-action-hover: #2a82b4;
+  --ic-brand: #5B7CFA;
+  --ic-brand-hover: #7C96FB;
+  --ic-brand-soft: #1B2547;
+  --ic-indigo: #8E88EC;
+  --ic-action: #3D63F0;
+  --ic-action-hover: #5B7CFA;
   --btn-primary: var(--ic-action);
   --btn-primary-hover: var(--ic-action-hover);
+  --ic-accent: var(--ic-brand);
+  --ic-accent-deep: var(--ic-brand-hover);
+  --ic-accent-soft: var(--ic-brand-soft);
+  --ic-teal: var(--ic-brand);
+  --ic-teal-deep: var(--ic-brand-hover);
+  --ic-teal-text: #C7D2FE;
+  --ic-teal-deep-text: #C7D2FE;
+  --ic-hl-edge: var(--ic-brand);
+  --primary: var(--ic-brand);
+  --primary-color: var(--ic-brand);
+  --ic-ok-solid: #34C48B;
   --ic-ok: #7dcea0;
   --ic-ok-bg: #143528;
+  --ic-warn-solid: #E9A23B;
   --ic-warn: #f0c27a;
   --ic-warn-bg: #3a2c14;
+  --ic-danger-solid: #E87373;
   --ic-danger: #f0a0a0;
   --ic-danger-bg: #3a1c1c;
+  --ic-info-solid: #5AA2E6;
   --ic-info: #8eb9ff;
   --ic-info-bg: #1a2d4d;
+  --ic-neutral-solid: #94A3B8;
   --ic-neutral: #b3b8cb;
   --ic-neutral-bg: #262a3a;
 }
@@ -112,7 +195,7 @@ body .btn:focus-visible,
 body [role="button"]:focus-visible,
 body [tabindex]:not([tabindex="-1"]):focus-visible,
 body .list-row:focus-visible {
-  outline: 2px solid var(--ic-accent, #408dfb) !important;
+  outline: 2px solid var(--ic-brand, #315CF5) !important;
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -349,7 +432,7 @@ body .page-form .sort-selector .btn {
   text-align: left;
   background: var(--fg-color, #fff);
   border: 1px solid var(--ic-border);
-  border-top: 3px solid var(--ic-stat-tone, var(--ic-neutral));
+  border-top: 3px solid var(--ic-stat-solid, var(--ic-neutral-solid));
   border-radius: 10px;
   color: var(--ic-ink);
   cursor: pointer;
@@ -381,7 +464,7 @@ body .page-form .sort-selector .btn {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--ic-stat-tone, var(--ic-neutral));
+  background: var(--ic-stat-solid, var(--ic-neutral-solid));
 }
 .ic-stat-count {
   grid-area: count;
@@ -405,22 +488,27 @@ body .page-form .sort-selector .btn {
 }
 .ic-tone-ok {
   --ic-stat-tone: var(--ic-ok);
+  --ic-stat-solid: var(--ic-ok-solid);
   --ic-stat-bg: var(--ic-ok-bg);
 }
 .ic-tone-warn {
   --ic-stat-tone: var(--ic-warn);
+  --ic-stat-solid: var(--ic-warn-solid);
   --ic-stat-bg: var(--ic-warn-bg);
 }
 .ic-tone-danger {
   --ic-stat-tone: var(--ic-danger);
+  --ic-stat-solid: var(--ic-danger-solid);
   --ic-stat-bg: var(--ic-danger-bg);
 }
 .ic-tone-info {
   --ic-stat-tone: var(--ic-info);
+  --ic-stat-solid: var(--ic-info-solid);
   --ic-stat-bg: var(--ic-info-bg);
 }
 .ic-tone-neutral {
   --ic-stat-tone: var(--ic-neutral);
+  --ic-stat-solid: var(--ic-neutral-solid);
   --ic-stat-bg: var(--ic-neutral-bg);
 }
 @media (max-width: 767px) {

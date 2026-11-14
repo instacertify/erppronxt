@@ -471,6 +471,16 @@ frappe.provide("instacertify.ux");
 			}
 			return result;
 		};
+		// A total on Home ("6 leads") asks for every record. Without this the list
+		// opened with whatever filter this person last used and showed fewer rows.
+		const before_refresh = ListView.prototype.before_refresh;
+		ListView.prototype.before_refresh = function () {
+			if (frappe.route_options && frappe.route_options.__ic_show_all && this.filter_area) {
+				frappe.route_options = null;
+				return this.filter_area.clear(false);
+			}
+			return before_refresh.apply(this, arguments);
+		};
 	};
 
 	/* ------------------------------------------------------------------ */
@@ -558,8 +568,168 @@ frappe.provide("instacertify.ux");
 		});
 	};
 
+	/* ------------------------------------------------------------------ */
+	/* Charts and totals open the records behind them                      */
+	/* ------------------------------------------------------------------ */
+
+	/** Open a list showing exactly `filters` ([[doctype, field, operator, value], ...]). */
+	ux.open_records = function (doctype, filters) {
+		if (!doctype) return;
+		if (!frappe.model.can_read(doctype)) {
+			frappe.show_alert({ message: __("You do not have permission to open {0}", [__(doctype)]), indicator: "red" });
+			return;
+		}
+		const options = {};
+		(filters || []).forEach((f) => {
+			if (!Array.isArray(f) || f.length < 4 || (f[0] && f[0] !== doctype)) return;
+			options[f[1]] = f[2] === "=" ? f[3] : [f[2], f[3]];
+		});
+		// With nothing to filter by, the list is asked to show everything instead of
+		// the filter this person last used there.
+		frappe.route_options = Object.keys(options).length ? options : { __ic_show_all: 1 };
+		frappe.set_route("List", doctype, "List");
+	};
+
+	/** The label of the bar, slice or legend entry that was clicked, or null. */
+	ux.chart_label_at = function (target, chart) {
+		if (!target || !target.closest) return null;
+		const svg = target.closest("svg");
+		const hit = target.closest(
+			".pie-path, .donut-path, .bar, .legend-dot, .legend-dataset-label, .legend-dataset-value"
+		);
+		if (!svg || !hit) return null;
+		let index = -1;
+		const circular = !!svg.querySelector(".pie-path, .donut-path");
+		if (hit.matches(".pie-path, .donut-path")) {
+			index = Array.from(svg.querySelectorAll(".pie-path, .donut-path")).indexOf(hit);
+		} else if (hit.matches(".bar")) {
+			const group = hit.closest(".dataset-units") || svg;
+			index = Array.from(group.querySelectorAll(".bar")).indexOf(hit);
+		} else {
+			const legend = hit.closest(".chart-legend");
+			const item = hit.closest("g");
+			if (legend && item) index = Array.from(legend.children).indexOf(item);
+		}
+		if (index < 0 || !chart) return null;
+		const labels = circular ? chart.state && chart.state.labels : chart.data && chart.data.labels;
+		const label = labels && labels[index];
+		return label == null ? null : String(label);
+	};
+
+	ux.TIMESPAN = {
+		"Last Year": "last year",
+		"Last Quarter": "last quarter",
+		"Last Month": "last month",
+		"Last Week": "last week",
+	};
+
+	/** Filters that describe what a dashboard chart (and the clicked part of it) counts. */
+	ux.chart_widget_filters = function (widget, label) {
+		const doc = widget.chart_doc || {};
+		const doctype = doc.document_type;
+		let filters = [];
+		const chosen = widget.filters;
+		if (Array.isArray(chosen)) {
+			filters = chosen.map((f) => f.slice(0, 4));
+		} else if (chosen && typeof chosen === "object") {
+			filters = Object.keys(chosen).map((k) =>
+				Array.isArray(chosen[k]) ? [doctype, k, chosen[k][0], chosen[k][1]] : [doctype, k, "=", chosen[k]]
+			);
+		} else {
+			try {
+				filters = (JSON.parse(doc.filters_json || "[]") || []).map((f) => f.slice(0, 4));
+			} catch (e) {
+				filters = [];
+			}
+		}
+		if (doc.chart_type === "Group By" && doc.group_by_based_on) {
+			if (label && label !== "Rest") {
+				const unset = label === "Not Set" || label === __("Not Set");
+				filters.push(
+					unset
+						? [doctype, doc.group_by_based_on, "is", "not set"]
+						: [doctype, doc.group_by_based_on, "=", label]
+				);
+			}
+		} else if (doc.timeseries && doc.based_on) {
+			const settings = widget.chart_settings || {};
+			const span = settings.timespan || doc.timespan;
+			if (ux.TIMESPAN[span]) {
+				filters.push([doctype, doc.based_on, "Timespan", ux.TIMESPAN[span]]);
+			} else if ((settings.from_date || doc.from_date) && (settings.to_date || doc.to_date)) {
+				filters.push([
+					doctype,
+					doc.based_on,
+					"between",
+					[settings.from_date || doc.from_date, settings.to_date || doc.to_date],
+				]);
+			}
+		}
+		return filters;
+	};
+
+	ux.patch_charts = function () {
+		const Chart = frappe.widget && frappe.widget.widget_factory && frappe.widget.widget_factory.chart;
+		if (!Chart || Chart.prototype.__ic_click) return;
+		Chart.prototype.__ic_click = true;
+		const render = Chart.prototype.render;
+		Chart.prototype.render = function () {
+			const result = render.apply(this, arguments);
+			try {
+				const widget = this;
+				const doc = widget.chart_doc || {};
+				const from_records = ["Group By", "Count", "Sum", "Average"].includes(doc.chart_type);
+				if (from_records && widget.chart_wrapper && !widget.__ic_bound) {
+					widget.__ic_bound = true;
+					widget.chart_wrapper
+						.addClass("ic-chart-opens-list")
+						.attr("title", __("Click a bar, slice or name to see those records"))
+						.on("click", function (e) {
+							if (!widget.chart_doc.document_type) return;
+							const label = ux.chart_label_at(e.target, widget.dashboard_chart);
+							ux.open_records(widget.chart_doc.document_type, ux.chart_widget_filters(widget, label));
+						});
+				}
+			} catch (e) {
+				/* the chart still shows; it just does not open a list */
+			}
+			return result;
+		};
+	};
+
+	/**
+	 * For charts drawn inside the Home blocks. `spec` says what the chart counts:
+	 * { doctype, field, base: [[doctype, field, op, value]], ranges: { label: [from, to] }, date_field }.
+	 */
+	ux.bind_block_chart = function (el, chart, spec) {
+		if (!el || !spec || !spec.doctype) return;
+		el.classList.add("ic-chart-opens-list");
+		el.style.cursor = "pointer";
+		el.title = __("Click a bar, slice or name to see those records");
+		el.onclick = function (e) {
+			const label = ux.chart_label_at(e.target, chart);
+			let filters = (spec.base || []).slice();
+			if (label && spec.ranges && spec.ranges[label]) {
+				const range = spec.ranges[label];
+				filters = [
+					range[1]
+						? [spec.doctype, spec.date_field || "creation", "between", [range[0], range[1]]]
+						: [spec.doctype, spec.date_field || "creation", ">=", range[0]],
+				];
+			} else if (label && spec.field && label !== "Rest") {
+				filters.push(
+					label === "Not Set"
+						? [spec.doctype, spec.field, "is", "not set"]
+						: [spec.doctype, spec.field, "=", label]
+				);
+			}
+			ux.open_records(spec.doctype, filters);
+		};
+	};
+
 	ux.on_page = function () {
 		ux.keep_block_links_in_app();
+		ux.patch_charts();
 		ux.patch_indicator();
 		ux.patch_lists();
 		ux.watch_headers();

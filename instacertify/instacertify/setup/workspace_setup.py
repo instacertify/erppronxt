@@ -342,14 +342,29 @@ def _ensure_home_html_block():
 	name = "Home Dashboard"
 	html = """
 <div id="ic-home-root">
-  <div class="ic-greeting">
-    <div class="ic-greeting-brand">
-      <img class="ic-home-brand-icon" src="/assets/instacertify/images/favicon-48.png" width="48" height="48" alt="Instacertify" />
-      <span class="ic-greeting-brand-text">Insta<span>certify</span></span>
+  <div class="ic-greeting ic-hero">
+    <div class="ic-hero-text">
+      <h2 id="ic-greet-title">Welcome</h2>
+      <div class="ic-datetime"><span id="ic-date"></span> · <span id="ic-time"></span></div>
     </div>
-    <h2 id="ic-greet-title">Welcome</h2>
-    <div class="ic-datetime"><span id="ic-date"></span> · <span id="ic-time"></span></div>
+    <div class="ic-hero-actions" id="ic-hero-actions"></div>
   </div>
+
+  <section class="ic-kpi" id="ic-kpi" aria-label="Business overview">
+    <div class="ic-kpi-head">
+      <div>
+        <div class="ic-kpi-title">Business overview</div>
+        <div class="ic-today-sub">Live figures. Click a card to open the records behind it.</div>
+      </div>
+      <button type="button" class="ic-view-all" id="ic-kpi-edit">Choose cards</button>
+    </div>
+    <div class="ic-kpi-grid" id="ic-kpi-grid">
+      <div class="ic-kpi-card ic-kpi-wait" aria-hidden="true"></div>
+      <div class="ic-kpi-card ic-kpi-wait" aria-hidden="true"></div>
+      <div class="ic-kpi-card ic-kpi-wait" aria-hidden="true"></div>
+      <div class="ic-kpi-card ic-kpi-wait" aria-hidden="true"></div>
+    </div>
+  </section>
 
   <section class="ic-today" id="ic-today" aria-live="polite">
     <div class="ic-today-head">
@@ -366,7 +381,7 @@ def _ensure_home_html_block():
           <div class="ic-workdesk-title">My tasks</div>
           <div class="ic-workdesk-sub">Open work assigned to you</div>
         </div>
-        <a class="ic-view-all" href="/app/task">All tasks</a>
+        <button type="button" class="ic-view-all" id="ic-all-tasks">All tasks</button>
       </div>
       <div id="ic-my-tasks"></div>
     </section>
@@ -389,7 +404,7 @@ def _ensure_home_html_block():
           <div class="ic-workdesk-title">My leads</div>
           <div class="ic-workdesk-sub">Owned by you</div>
         </div>
-        <a class="ic-view-all" href="/app/lead">All leads</a>
+        <button type="button" class="ic-view-all" id="ic-all-leads">All leads</button>
       </div>
       <div id="ic-my-leads"></div>
     </section>
@@ -564,6 +579,97 @@ def _ensure_home_html_block():
   refreshClock();
   setInterval(refreshClock, 30000);
 
+  // The "new" actions people use most, one click from Home. Only what this person may create.
+  (function () {
+    const box = root_element.getElementById("ic-hero-actions");
+    if (!box) return;
+    const actions = [["Lead", "New lead"], ["Quotation", "New quotation"], ["Project", "New project"], ["Task", "New task"]]
+      .filter((a) => { try { return frappe.model.can_create(a[0]); } catch (e) { return false; } });
+    box.innerHTML = actions.map((a, i) =>
+      `<button type="button" class="ic-hero-btn${i === 0 ? " primary" : ""}" data-doctype="${esc(a[0])}"><span aria-hidden="true">+</span> ${esc(a[1])}</button>`
+    ).join("");
+    box.querySelectorAll(".ic-hero-btn").forEach((btn) => {
+      btn.onclick = function () { frappe.new_doc(btn.getAttribute("data-doctype")); };
+    });
+  })();
+
+  // Headline figures. Each card opens the records it counts.
+  let kpiCovered = {};
+  let redrawGlance = null;
+  (function () {
+    const grid = root_element.getElementById("ic-kpi-grid");
+    const section = root_element.getElementById("ic-kpi");
+    const edit = root_element.getElementById("ic-kpi-edit");
+    if (!grid || !section) return;
+    const PREF = "ic_home_kpi_hidden:" + frappe.session.user;
+    const hidden = () => { try { return JSON.parse(localStorage.getItem(PREF) || "[]") || []; } catch (e) { return []; } };
+    // the same figure is not repeated lower down under "At a glance"
+    const SAME_AS = { pending_followups: "Leads to Contact", active_projects: "Active Projects", quotations_pending: "Quotations Sent" };
+    let cards = [];
+    function valueText(c) {
+      if (c.currency && typeof format_currency === "function") return format_currency(c.value || 0, c.currency, 0);
+      return String(c.value == null ? 0 : c.value);
+    }
+    function trend(c) {
+      if (c.change == null) return "";
+      const n = Number(c.change);
+      const cls = n > 0 ? "up" : (n < 0 ? "down" : "flat");
+      const arrow = n > 0 ? "▲" : (n < 0 ? "▼" : "•");
+      return `<span class="ic-kpi-trend ${cls}" title="${esc(c.change_label || "")}">${arrow} ${Math.abs(n)}%</span>`;
+    }
+    function draw() {
+      const off = hidden();
+      const shown = cards.filter((c) => off.indexOf(c.id) < 0);
+      kpiCovered = {};
+      shown.forEach((c) => { if (SAME_AS[c.id]) kpiCovered[SAME_AS[c.id]] = 1; });
+      grid.innerHTML = shown.length ? shown.map((c) =>
+        `<button type="button" class="ic-kpi-card ${c.tone ? "tone-" + esc(c.tone) : ""}" data-id="${esc(c.id)}" title="Open these records">
+          <span class="ic-kpi-top"><span class="ic-kpi-label">${esc(c.label)}</span><span class="ic-kpi-icon" aria-hidden="true">${icInlineIcon(String(c.icon || "file").replace(/[^a-z0-9\-]/gi, ""))}</span></span>
+          <span class="ic-kpi-main"><span class="ic-kpi-value">${esc(valueText(c))}</span>${trend(c)}</span>
+          <span class="ic-kpi-sub">${esc([c.sub, c.change != null ? c.change_label : ""].filter(Boolean).join(" · "))}</span>
+        </button>`
+      ).join("") : `<div class="ic-kpi-none">Every card is hidden. Use "Choose cards" to show some.</div>`;
+      grid.querySelectorAll(".ic-kpi-card[data-id]").forEach((el) => {
+        el.onclick = function () {
+          const c = cards.filter((x) => x.id === el.getAttribute("data-id"))[0];
+          if (!c) return;
+          if (window.instacertify && instacertify.ux && instacertify.ux.open_records) {
+            instacertify.ux.open_records(c.doctype, c.filters || []);
+          } else {
+            frappe.set_route("List", c.doctype);
+          }
+        };
+      });
+      if (redrawGlance) redrawGlance();
+    }
+    if (edit) edit.onclick = function () {
+      if (!cards.length) return;
+      const off = hidden();
+      const d = new frappe.ui.Dialog({
+        title: "Choose the cards to show",
+        fields: cards.map((c) => ({ fieldtype: "Check", fieldname: c.id, label: c.label, default: off.indexOf(c.id) < 0 ? 1 : 0 }))
+          .concat([{ fieldtype: "HTML", options: "<p class='text-muted small' style='margin:8px 0 0'>Your choice is remembered on this browser.</p>" }]),
+        primary_action_label: "Save",
+        primary_action(values) {
+          try { localStorage.setItem(PREF, JSON.stringify(cards.filter((c) => !values[c.id]).map((c) => c.id))); } catch (e) {}
+          d.hide();
+          draw();
+        },
+      });
+      d.show();
+    };
+    frappe.call({
+      method: "instacertify.explore.home_kpis.get_home_kpis",
+      silent: true,
+      callback(r) {
+        cards = (r.message && r.message.cards) || [];
+        if (!cards.length) { section.style.display = "none"; return; }
+        draw();
+      },
+      error() { section.style.display = "none"; },
+    });
+  })();
+
   function empty(msg){ return "<div class='ic-lead-prompt-empty'>"+msg+"</div>"; }
 
   function openExploreCard(card) {
@@ -617,6 +723,10 @@ def _ensure_home_html_block():
     const route = card.route || [];
     if (!route.length) return;
     if (route[0] === "List") {
+      // The list opens with the same filters the number on the card was counted with.
+      if (card.filters && route.length === 2) {
+        frappe.route_options = Object.keys(card.filters).length ? card.filters : { __ic_show_all: 1 };
+      }
       frappe.set_route.apply(null, route);
     } else if (route.length === 1) {
       frappe.set_route(route[0]);
@@ -762,15 +872,18 @@ def _ensure_home_html_block():
       const cards = items.slice().sort((a, b) => mine(a[2]) - mine(b[2]) || teamOrder[a[2]] - teamOrder[b[2]]);
       const grid = root_element.getElementById("ic-summary-grid");
       if (!grid) return;
-      grid.innerHTML = cards.filter((i) => canRead(record_type[i[0]])).map((i) => {
-        const value = i[1] || 0;
-        const cls = !value ? "is-zero" : (i[3] === "danger" || i[3] === "warn" ? "tone-" + i[3] : "");
-        return `<div class="ic-summary-card is-clickable ${cls}" data-kpi="${frappe.utils.escape_html(i[0])}" role="button" tabindex="0" title="Click to open the list"><div class="label">${frappe.utils.escape_html(i[0])}</div><div class="value">${value}</div></div>`;
-      }).join("");
-      bindKpiClicks(grid);
-      grid.querySelectorAll(".ic-summary-card").forEach((el) => {
-        el.onkeydown = function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); el.click(); } };
-      });
+      redrawGlance = function () {
+        grid.innerHTML = cards.filter((i) => canRead(record_type[i[0]]) && !kpiCovered[i[0]]).map((i) => {
+          const value = i[1] || 0;
+          const cls = !value ? "is-zero" : (i[3] === "danger" || i[3] === "warn" ? "tone-" + i[3] : "");
+          return `<div class="ic-summary-card is-clickable ${cls}" data-kpi="${frappe.utils.escape_html(i[0])}" role="button" tabindex="0" title="Click to open the list"><div class="label">${frappe.utils.escape_html(i[0])}</div><div class="value">${value}</div></div>`;
+        }).join("");
+        bindKpiClicks(grid);
+        grid.querySelectorAll(".ic-summary-card").forEach((el) => {
+          el.onkeydown = function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); el.click(); } };
+        });
+      };
+      redrawGlance();
     }
   });
 
@@ -787,11 +900,39 @@ def _ensure_home_html_block():
       if (tasksEl) {
         const rows = d.tasks || [];
         tasksEl.innerHTML = rows.length ? rows.map(t =>
-          `<a class="ic-workdesk-row ${esc(t.urgency)}" href="/app/task/${encodeURIComponent(t.name)}">
+          `<div class="ic-workdesk-row ${esc(t.urgency)}" role="link" tabindex="0" data-status="${esc(t.status || "")}">
             <div class="ic-workdesk-row-main">${esc(t.subject || t.name)}</div>
-            <div class="ic-workdesk-row-meta"><span>${esc(t.status||"")}</span><span class="ic-lead-prompt-when ${esc(t.urgency)}">${esc(t.due_label)}</span></div>
-          </a>`
+            <div class="ic-workdesk-row-meta"><span>${esc(t.status||"")}</span><span class="ic-lead-prompt-when ${esc(t.urgency)}">${esc(t.due_label)}</span><button type="button" class="ic-workdesk-open" data-name="${esc(t.name)}">Open</button></div>
+          </div>`
         ).join("") : empty("No open tasks for you.");
+        const openTaskList = (status) => {
+          const filters = status
+            ? [["Task", "status", "=", status]]
+            : [["Task", "status", "in", ["Open", "Working", "Pending Review"]]];
+          if (window.instacertify && instacertify.ux && instacertify.ux.open_records) {
+            instacertify.ux.open_records("Task", filters);
+          } else {
+            frappe.route_options = status ? { status: status } : { status: ["in", ["Open", "Working", "Pending Review"]] };
+            frappe.set_route("List", "Task");
+          }
+        };
+        tasksEl.querySelectorAll(".ic-workdesk-row[data-status]").forEach((row) => {
+          row.addEventListener("click", (ev) => {
+            const opener = ev.target.closest && ev.target.closest(".ic-workdesk-open");
+            if (opener) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              frappe.set_route("Form", "Task", opener.getAttribute("data-name"));
+              return;
+            }
+            openTaskList(row.getAttribute("data-status"));
+          });
+          row.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") openTaskList(row.getAttribute("data-status"));
+          });
+        });
+        const allTasks = root_element.getElementById("ic-all-tasks");
+        if (allTasks) allTasks.onclick = () => openTaskList("");
       }
       if (calEl) {
         const rows = d.events || [];
@@ -821,6 +962,16 @@ def _ensure_home_html_block():
             <div class="ic-workdesk-row-meta"><span>${esc(l.status||"")}</span><span>${esc(l.ic_next_contact_date||"No contact date")}</span></div>
           </a>`
         ).join("") : empty("No active leads owned by you.");
+        const allLeads = root_element.getElementById("ic-all-leads");
+        if (allLeads) allLeads.onclick = () => {
+          const filters = [["Lead", "status", "not in", ["Converted", "Do Not Contact"]]];
+          if (window.instacertify && instacertify.ux && instacertify.ux.open_records) {
+            instacertify.ux.open_records("Lead", filters);
+          } else {
+            frappe.route_options = { status: ["not in", ["Converted", "Do Not Contact"]] };
+            frappe.set_route("List", "Lead");
+          }
+        };
       }
     }
   });
@@ -1400,7 +1551,14 @@ _SHADOW_THEME_CSS = """
   border-radius: 8px !important;
   text-decoration: none !important; white-space: nowrap;
 }
-.ic-view-all:hover { border-color: var(--ic-accent, #408dfb) !important; }
+.ic-view-all:hover { border-color: var(--ic-accent, #315CF5) !important; }
+button.ic-view-all { cursor: pointer; font-family: inherit; }
+.ic-workdesk-row[role="link"] { cursor: pointer; }
+.ic-workdesk-open {
+  margin-left: auto; border: 0; background: transparent; padding: 0;
+  color: var(--ic-brand, #315CF5); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.ic-workdesk-open:hover { text-decoration: underline; }
 .ic-workdesk-row { min-height: 0 !important; }
 .ic-lead-prompt-empty { padding: 4px 0 !important; margin: 0 !important; font-size: 13px !important; color: var(--ic-muted, #6c718a) !important; background: none !important; border: 0 !important; text-align: left !important; }
 .ic-focus-sales .ic-wd-leads, .ic-focus-delivery .ic-wd-tasks { order: -1; }
@@ -1492,6 +1650,81 @@ _SHADOW_THEME_CSS = """
   .ic-today-go { display: none; }
   .ic-summary-grid, .ic-explore-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
+
+/* ——— Hero: greeting and the "new" actions used most ——— */
+.ic-greeting.ic-hero {
+  display: flex !important; flex-wrap: wrap; align-items: center; gap: 12px 24px;
+  padding: 20px 24px !important; margin: 0 0 16px !important;
+  background: linear-gradient(115deg, var(--ic-navy, #172554) 0%, #233a9e 58%, var(--ic-brand, #315CF5) 100%) !important;
+  border: 0 !important; border-radius: 14px !important; box-shadow: none !important; color: #fff !important;
+}
+.ic-hero .ic-hero-text { flex: 1 1 260px; min-width: 0; }
+.ic-greeting.ic-hero h2 {
+  margin: 0 !important; padding: 0 !important; border: 0 !important; flex: none;
+  font-size: 24px !important; font-weight: 600 !important; line-height: 1.25 !important; letter-spacing: -0.01em; color: #fff !important;
+}
+.ic-greeting.ic-hero .ic-datetime { margin: 4px 0 0 !important; font-size: 13px !important; color: rgba(255, 255, 255, 0.82) !important; }
+.ic-hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ic-hero-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px;
+  border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.32); background: rgba(255, 255, 255, 0.10);
+  color: #fff; font-family: inherit; font-size: 13px; font-weight: 500; line-height: 1; cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.ic-hero-btn:hover { background: rgba(255, 255, 255, 0.2); }
+.ic-hero-btn.primary { background: #fff; border-color: #fff; color: var(--ic-navy, #172554); font-weight: 600; }
+.ic-hero-btn.primary:hover { background: var(--ic-brand-soft, #EEF3FF); }
+.ic-hero-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ——— Business overview: headline figures ——— */
+.ic-kpi { margin: 0 0 16px; }
+.ic-kpi-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; }
+.ic-kpi-title { font-size: 17px; font-weight: 600; line-height: 1.3; color: var(--ic-ink, #202938); }
+.ic-kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ic-kpi-card {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 118px; padding: 14px 16px;
+  text-align: left; font-family: inherit; color: var(--ic-ink, #202938); cursor: pointer;
+  background: var(--card-bg, #fff); border: 1px solid var(--ic-border, #E7EBF2); border-radius: 12px;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.ic-kpi-card:hover { border-color: var(--ic-brand, #315CF5); box-shadow: 0 4px 14px rgba(49, 92, 245, 0.10); }
+.ic-kpi-card:focus-visible { outline: 2px solid var(--ic-brand, #315CF5); outline-offset: 2px; }
+.ic-kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ic-kpi-label { font-size: 13px; font-weight: 500; color: var(--ic-muted, #64748B); }
+.ic-kpi-icon {
+  flex: 0 0 32px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px;
+  background: var(--ic-brand-soft, #EEF3FF); color: var(--ic-brand, #315CF5);
+}
+.ic-kpi-icon svg { width: 16px; height: 16px; }
+.ic-kpi-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.ic-kpi-value { font-size: 28px; font-weight: 600; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ic-kpi-trend { padding: 2px 7px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ic-kpi-trend.up { background: var(--ic-ok-bg, #EAF8F0); color: var(--ic-ok, #0b7a4a); }
+.ic-kpi-trend.down { background: var(--ic-danger-bg, #FFF0F0); color: var(--ic-danger, #c02626); }
+.ic-kpi-trend.flat { background: var(--ic-neutral-bg, #F1F4F8); color: var(--ic-neutral, #64748B); }
+.ic-kpi-sub { margin-top: auto; font-size: 12px; line-height: 1.35; color: var(--ic-muted, #64748B); }
+.ic-kpi-card.tone-ok .ic-kpi-icon { background: var(--ic-ok-bg, #EAF8F0); color: var(--ic-ok, #0b7a4a); }
+.ic-kpi-card.tone-warn .ic-kpi-icon { background: var(--ic-warn-bg, #FFF6E5); color: var(--ic-warn, #955700); }
+.ic-kpi-card.tone-danger .ic-kpi-icon { background: var(--ic-danger-bg, #FFF0F0); color: var(--ic-danger, #c02626); }
+.ic-kpi-card.tone-danger .ic-kpi-value { color: var(--ic-danger, #c02626); }
+.ic-kpi-wait { cursor: default; background: linear-gradient(90deg, #f1f4f8 25%, #f8fafc 50%, #f1f4f8 75%); background-size: 200% 100%; animation: ic-kpi-wait 1.2s ease-in-out infinite; border-color: transparent; }
+@keyframes ic-kpi-wait { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .ic-kpi-wait { animation: none; } }
+.ic-kpi-none { grid-column: 1 / -1; padding: 16px; font-size: 13px; color: var(--ic-muted, #64748B); border: 1px dashed var(--ic-border, #E7EBF2); border-radius: 12px; }
+@media (max-width: 1100px) { .ic-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .ic-greeting.ic-hero { padding: 16px !important; }
+  .ic-greeting.ic-hero h2 { font-size: 20px !important; }
+  .ic-hero-actions { width: 100%; }
+  .ic-hero-btn { flex: 1 1 calc(50% - 8px); justify-content: center; height: 40px; }
+  .ic-kpi-grid { gap: 8px; }
+  .ic-kpi-card { min-height: 108px; padding: 12px; }
+  .ic-kpi-value { font-size: 24px; }
+  .ic-kpi-icon { flex-basis: 28px; width: 28px; height: 28px; }
+}
+
+/* Charts in the lead tracker open the leads they count */
+.ic-chart-opens-list .bar, .ic-chart-opens-list .pie-path, .ic-chart-opens-list .donut-path, .ic-chart-opens-list .chart-legend g { cursor: pointer; }
 """
 
 
@@ -1523,7 +1756,7 @@ def _ensure_crm_lead_tracker_block():
     const arrow = n > 0 ? "▲" : (n < 0 ? "▼" : "•");
     return arrow + " " + Math.abs(n) + "%";
   }
-  function makeChart(el, type, labels, values, colors) {
+  function makeChart(el, type, labels, values, colors, opens) {
     if (!el) return;
     el.innerHTML = "";
     if (!(window.frappe && frappe.Chart)) {
@@ -1534,15 +1767,19 @@ def _ensure_crm_lead_tracker_block():
       el.innerHTML = "<div class='text-muted'>No leads in this period</div>";
       return;
     }
-    new frappe.Chart(el, {
+    const chart = new frappe.Chart(el, {
       type: type,
       height: 220,
       data: {
         labels: labels,
         datasets: [{ name: "Leads", values: values }]
       },
-      colors: colors || ["#0D47A1", "#EC691F", "#2a9d8f", "#e9c46a", "#264653", "#f4a261"]
+      colors: colors || ["#315CF5", "#635BDB", "#16A36A", "#E9A23B", "#3285D8", "#94A3B8"]
     });
+    // A bar, slice or name opens the leads it counts.
+    if (opens && window.instacertify && instacertify.ux && instacertify.ux.bind_block_chart) {
+      instacertify.ux.bind_block_chart(el, chart, opens);
+    }
   }
   frappe.call({
     method: "instacertify.crm.dashboard.get_lead_tracker_stats",
@@ -1579,18 +1816,20 @@ def _ensure_crm_lead_tracker_block():
           });
         }
       }
+      const ranges = d.ranges || {};
+      const since = (label) => (ranges[label] ? [["Lead", "creation", ">=", ranges[label][0]]] : []);
       const week = d.week_compare || [];
-      makeChart(root_element.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#0D47A1", "#90CAF9"]);
+      makeChart(root_element.getElementById("ic-crm-week-bar"), "bar", week.map(x=>x.label), week.map(x=>x.count), ["#315CF5"], {doctype: "Lead", ranges: ranges});
       const month = d.month_compare || [];
-      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#EC691F", "#FFAB91"]);
+      makeChart(root_element.getElementById("ic-crm-month-bar"), "bar", month.map(x=>x.label), month.map(x=>x.count), ["#635BDB"], {doctype: "Lead", ranges: ranges});
       const s7 = d.by_source_7d || [];
-      makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 7 Days")});
       const p30 = d.by_project_type_30d || [];
-      makeChart(root_element.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count), null, {doctype: "Lead", field: "ic_project_type", base: since("Last 30 Days")});
       const s30 = d.by_source_30d || [];
-      makeChart(root_element.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 30 Days")});
       const st30 = d.by_status_30d || [];
-      makeChart(root_element.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count));
+      makeChart(root_element.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count), ["#315CF5"], {doctype: "Lead", field: "status", base: since("Last 30 Days")});
       (function renderFollowups(){
         const el = root_element.getElementById("ic-crm-leads-contact");
         const rows = d.leads_to_contact || [];
@@ -1634,21 +1873,8 @@ def _ensure_home_workspace():
 		{"id": "ic_spacer1", "type": "spacer", "data": {"col": 12}},
 		{"id": "ic_crm_header", "type": "header", "data": {"text": "<span class=\"h5\">CRM Lead Tracker</span>", "col": 12}},
 		{"id": "ic_crm_block", "type": "custom_block", "data": {"custom_block_name": "CRM Lead Tracker", "col": 12}},
-		{"id": "nc_leads_week", "type": "number_card", "data": {"number_card_name": "Leads This Week", "col": 2}},
-		{"id": "nc_leads_month", "type": "number_card", "data": {"number_card_name": "Leads This Month", "col": 2}},
-		{"id": "nc_new_leads", "type": "number_card", "data": {"number_card_name": "New Leads", "col": 2}},
-		{"id": "nc_active_leads", "type": "number_card", "data": {"number_card_name": "Active Leads", "col": 2}},
-		{"id": "ic_cards_header", "type": "header", "data": {"text": "<span class=\"h5\">Operations Snapshot</span>", "col": 12}},
-		{"id": "nc_quotes_sent", "type": "number_card", "data": {"number_card_name": "Quotations Sent", "col": 2}},
-		{"id": "nc_quotes_accepted", "type": "number_card", "data": {"number_card_name": "Quotations Accepted", "col": 2}},
-		{"id": "nc_active_projects", "type": "number_card", "data": {"number_card_name": "Active Projects", "col": 2}},
-		{"id": "nc_pending_tasks", "type": "number_card", "data": {"number_card_name": "Pending Tasks", "col": 2}},
-		{"id": "nc_open_tickets", "type": "number_card", "data": {"number_card_name": "Open Tickets", "col": 2}},
-		{"id": "nc_pending_docs", "type": "number_card", "data": {"number_card_name": "Pending Documents", "col": 2}},
-		{"id": "nc_leads_contact", "type": "number_card", "data": {"number_card_name": "Leads to Contact", "col": 2}},
-		{"id": "nc_testing", "type": "number_card", "data": {"number_card_name": "Testing Requests", "col": 2}},
-		{"id": "nc_deadlines", "type": "number_card", "data": {"number_card_name": "Upcoming Deadlines", "col": 2}},
-		{"id": "nc_amc", "type": "number_card", "data": {"number_card_name": "AMC Due Soon", "col": 2}},
+		# The lead and operations figures are shown once, in the Home block above
+		# (Business overview and At a glance), not a second time as number cards.
 		{"id": "ic_samples_header", "type": "header", "data": {"text": "<span class=\"h5\">Sample Custody</span>", "col": 12}},
 		{"id": "nc_smp_transit_office", "type": "number_card", "data": {"number_card_name": "Samples Transit to Office", "col": 2}},
 		{"id": "nc_smp_office", "type": "number_card", "data": {"number_card_name": "Samples At Office", "col": 2}},
@@ -1657,10 +1883,7 @@ def _ensure_home_workspace():
 		{"id": "nc_smp_storage", "type": "number_card", "data": {"number_card_name": "Samples In Storage", "col": 2}},
 		{"id": "nc_smp_discarded", "type": "number_card", "data": {"number_card_name": "Samples Discarded", "col": 2}},
 		{"id": "ic_charts_header", "type": "header", "data": {"text": "<span class=\"h5\">Insights</span>", "col": 12}},
-		{"id": "chart_leads_7d_source", "type": "chart", "data": {"chart_name": "Leads Last 7 Days by Source", "col": 6}},
-		{"id": "chart_leads_30d_ptype", "type": "chart", "data": {"chart_name": "Leads Last 30 Days by Project Type", "col": 6}},
-		{"id": "chart_leads_30d_source", "type": "chart", "data": {"chart_name": "Leads Last 30 Days by Source", "col": 6}},
-		{"id": "chart_leads_status", "type": "chart", "data": {"chart_name": "Leads by Status", "col": 6}},
+		# Leads by source, project type and status are in the CRM Lead Tracker above.
 		{"id": "chart_lead_trend", "type": "chart", "data": {"chart_name": "Lead Trend Weekly", "col": 12}},
 		{"id": "chart_quotes_status", "type": "chart", "data": {"chart_name": "Quotations by Status", "col": 6}},
 		{"id": "chart_projects_status", "type": "chart", "data": {"chart_name": "Projects by Status", "col": 6}},

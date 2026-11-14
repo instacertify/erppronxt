@@ -4,11 +4,11 @@
 :root,
 [data-theme="light"],
 html {
-  --ic-primary: #065175;
+  --ic-primary: var(--ic-teal, #065175);
   --ic-accent: #EC691F;
   --ic-primary-soft: #e4f1f8;
   --ic-accent-soft: #fff1e6;
-  --ic-primary-deep: #033447;
+  --ic-primary-deep: var(--ic-teal-deep, #033447);
   --ic-accent-deep: #c44710;
   --ic-cyan: #0a8fb5;
   --ic-mint: #1b7a4e;
@@ -46,19 +46,19 @@ html {
   --border-color: #c8dae6;
   --navbar-bg: rgba(244, 249, 252, 0.88);
   --text-color: #0B1820;
-  --heading-color: #065175;
+  --heading-color: var(--ic-teal, #065175);
   --font-stack: "Poppins", "Segoe UI", sans-serif;
 
-  --primary: #065175;
-  --primary-color: #065175;
-  --btn-primary: #065175;
-  --btn-primary-hover: #033447;
+  --primary: var(--ic-teal, #065175);
+  --primary-color: var(--ic-teal, #065175);
+  --btn-primary: var(--ic-teal, #065175);
+  --btn-primary-hover: var(--ic-teal-deep, #033447);
   --btn-primary-color: #ffffff;
   /* Text on filled brand surfaces — never use brand blue as button label */
   --text-on-primary: #ffffff;
   --text-on-accent: #ffffff;
   --text-on-danger: #ffffff;
-  --text-primary: #065175;
+  --text-primary: var(--ic-teal, #065175);
   --text-on-blue: #ffffff;
   --icon-stroke: #0B1820;
   --icon-stroke-muted: #5a7382;
@@ -66,9 +66,9 @@ html {
   --ic-hl-bg: rgba(6, 81, 117, 0.08);
   --ic-hl-bg-strong: rgba(6, 81, 117, 0.12);
   --ic-hl-edge: rgba(236, 105, 31, 0.55);
-  --alert-text-info: #065175;
-  --blue-500: #065175;
-  --blue-600: #033447;
+  --alert-text-info: var(--ic-teal, #065175);
+  --blue-500: var(--ic-teal, #065175);
+  --blue-600: var(--ic-teal-deep, #033447);
   --orange-500: #EC691F;
   --orange-600: #c44710;
   --border-radius: 12px;
@@ -423,7 +423,7 @@ body {
   max-width: none;
   box-sizing: border-box;
   background:
-    linear-gradient(125deg, #033447 0%, #065175 42%, #0a8fb5 78%, #ec691f 145%);
+    linear-gradient(125deg, var(--ic-teal-deep, #033447) 0%, var(--ic-teal, #065175) 42%, #0a8fb5 78%, #ec691f 145%);
   color: #fff;
   border-radius: var(--ic-radius);
   padding: 28px 28px 26px;
@@ -608,7 +608,7 @@ body {
 
 .ic-explore-card-title {
   font-weight: 700;
-  color: #033447;
+  color: var(--ic-teal-deep-text, #033447);
   font-size: 0.9rem;
   line-height: 1.25;
   display: -webkit-box;
@@ -783,7 +783,7 @@ body {
 
 .ic-related-table th {
   text-align: left;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-weight: 650;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -863,7 +863,7 @@ body {
 }
 .ic-tr-samples-title {
   font-weight: 700;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-size: 0.98rem;
   letter-spacing: -0.01em;
   display: flex;
@@ -880,7 +880,7 @@ body {
   border-radius: 6px;
   background: #e4f1f8;
   border: 1px solid #9eb8c8;
-  color: #033447;
+  color: var(--ic-teal-deep-text, #033447);
   font-size: 12px;
   font-weight: 700;
 }
@@ -909,7 +909,7 @@ body {
   vertical-align: middle;
   padding: 9px 11px;
   background: #e8f1f6;
-  color: #033447;
+  color: var(--ic-teal-deep-text, #033447);
   font-weight: 700;
   font-size: 11.5px;
   text-transform: uppercase;
@@ -956,11 +956,11 @@ body {
 }
 .ic-tr-track-link {
   font-weight: 700;
-  color: #065175 !important;
+  color: var(--ic-teal-text, #065175) !important;
   text-decoration: none;
 }
 .ic-tr-track-link:hover {
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
   text-decoration: underline;
 }
 .ic-tr-samples-muted {
@@ -986,13 +986,13 @@ body {
 }
 .ic-tr-col-act .btn {
   border: 1.5px solid rgba(3, 52, 71, 0.35) !important;
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
   font-weight: 600 !important;
   background: #fff !important;
 }
 .ic-tr-col-act .btn:hover {
   background: #e7f1f8 !important;
-  border-color: #065175 !important;
+  border-color: var(--ic-teal, #065175) !important;
 }
 
 /* Testing Request child grids (Assignees / Test Reports / Test Items) — aligned outlines */
@@ -1012,7 +1012,7 @@ body {
 [data-page-route="Form/IC Testing Request"] .form-grid .grid-heading-row .grid-static-col,
 [data-page-route="Form/IC Sample Tracking"] .form-grid .grid-heading-row .grid-static-col {
   font-weight: 700 !important;
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
   font-size: 11.5px !important;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -1138,7 +1138,7 @@ body {
   font-size: 11px;
   letter-spacing: 0.02em;
   color: #fff;
-  background: linear-gradient(145deg, #065175, #0a7aa3);
+  background: linear-gradient(145deg, var(--ic-teal, #065175), #0a7aa3);
   box-shadow: 0 4px 10px rgba(6, 81, 117, 0.18);
   flex-shrink: 0;
 }
@@ -1163,7 +1163,7 @@ body {
   margin: 0;
   position: relative;
   z-index: 1;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-size: 0.86rem;
   font-weight: 700;
   line-height: 1.25;
@@ -1309,7 +1309,7 @@ body {
 .ic-project-board-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
 }
 .ic-project-board-sub {
   color: #5f7f90;
@@ -1336,7 +1336,7 @@ body {
 }
 .ic-project-section-head h3 {
   margin: 0;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -1492,7 +1492,7 @@ body {
   padding: 1px 7px;
   border-radius: 999px;
   background: #e8f3f8;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
 }
 
 /* App / navbar logo — circular Instacertify mark */
@@ -1551,7 +1551,7 @@ body.for-login,
 
 .for-login .page-card-head,
 .login-content .page-card-head {
-  background: linear-gradient(120deg, #065175, #0a8fb5 60%, #ec691f) !important;
+  background: linear-gradient(120deg, var(--ic-teal, #065175), #0a8fb5 60%, #ec691f) !important;
   color: #fff !important;
   padding: 22px 20px !important;
 }
@@ -1589,8 +1589,8 @@ body.for-login,
 .login-content .btn-login,
 .login-content button[type="submit"],
 .page-card .btn-primary {
-  background: #065175 !important;
-  border-color: #065175 !important;
+  background: var(--ic-teal, #065175) !important;
+  border-color: var(--ic-teal, #065175) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   font-weight: 600 !important;
@@ -1601,8 +1601,8 @@ body.for-login,
 .for-login .btn-login:hover,
 .for-login button[type="submit"]:hover,
 .login-content .btn-primary:hover {
-  background: #033447 !important;
-  border-color: #033447 !important;
+  background: var(--ic-teal-deep, #033447) !important;
+  border-color: var(--ic-teal-deep, #033447) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
@@ -1620,8 +1620,8 @@ body.for-login,
 .for-login a:not(.btn),
 .for-login .btn-link,
 .login-content a:not(.btn) {
-  color: #065175 !important;
-  -webkit-text-fill-color: #065175 !important;
+  color: var(--ic-teal-text, #065175) !important;
+  -webkit-text-fill-color: var(--ic-teal-text, #065175) !important;
 }
 
 .for-login .form-control,
@@ -2014,7 +2014,7 @@ body.for-login,
   padding: 3px 9px;
   border-radius: 8px;
   background: #e8f1f6;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
 }
 .ic-lead-hub-chip.overdue {
   background: #fde8e6;
@@ -2100,7 +2100,7 @@ a.ic-lead-prompt-phone:hover {
 }
 .ic-lead-form-reminder-title {
   font-weight: 700;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-size: 0.95rem;
   margin-bottom: 6px;
 }
@@ -2680,7 +2680,7 @@ select.input-with-feedback {
 .ic-quote-entry-title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   margin-top: 2px;
 }
 .ic-quote-entry-sub {
@@ -2709,7 +2709,7 @@ select.input-with-feedback {
   transform: translateY(-1px);
 }
 .ic-quote-type-chip.active {
-  border-color: #065175;
+  border-color: var(--ic-teal, #065175);
   background: #e8f3f8;
   box-shadow: 0 0 0 1px rgba(6, 81, 117, 0.12);
 }
@@ -2772,16 +2772,16 @@ select.input-with-feedback {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .ic-new-quote-type-chip:hover {
-  border-color: #065175;
+  border-color: var(--ic-teal, #065175);
 }
 .ic-new-quote-type-chip.active {
-  border-color: #065175;
-  box-shadow: inset 0 0 0 1px #065175;
+  border-color: var(--ic-teal, #065175);
+  box-shadow: inset 0 0 0 1px var(--ic-teal, #065175);
   background: #f0f7fb;
 }
 .ic-new-quote-type-name {
   font-weight: 650;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-size: 0.92rem;
 }
 .ic-new-quote-type-hint {
@@ -2826,7 +2826,7 @@ select.input-with-feedback {
   font-size: 9px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(145deg, #065175, #3d8aab);
+  background: linear-gradient(145deg, var(--ic-teal, #065175), #3d8aab);
   border: 2px solid #fff;
   margin-left: -6px;
 }
@@ -2835,7 +2835,7 @@ select.input-with-feedback {
 }
 .ic-project-avatar.more {
   background: #dce8f0;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
 }
 .ic-project-person-label {
   min-width: 0;
@@ -3080,7 +3080,7 @@ html, body, .desk-page, .page-container, .form-layout,
   background: linear-gradient(180deg, #fff8f1 0%, #fff 70%) !important;
 }
 .ic-summary-card:nth-child(3n+1) {
-  border-top-color: #065175 !important;
+  border-top-color: var(--ic-teal, #065175) !important;
   border-left-color: rgba(6, 81, 117, 0.1) !important;
 }
 .ic-summary-card:nth-child(3n+2) {
@@ -3106,7 +3106,7 @@ html, body, .desk-page, .page-container, .form-layout,
   color: #fff !important;
 }
 .ic-workdesk-title {
-  color: #065175 !important;
+  color: var(--ic-teal-text, #065175) !important;
 }
 
 /* Form reminder color pops */
@@ -3136,7 +3136,7 @@ html, body, .desk-page, .page-container, .form-layout,
 [data-theme="light"] {
   --ic-field-border: #c9d3db;
   --ic-field-border-soft: #d2dbe2;
-  --ic-field-border-hover: #065175;
+  --ic-field-border-hover: var(--ic-teal, #065175);
   --ic-field-border-focus: #EC691F;
   --ic-field-bg: #ffffff;
   --ic-field-bg-tint: #ffffff;
@@ -3177,7 +3177,7 @@ body .page-form .form-control:hover,
 body .modal-body .form-control:hover,
 body .grid-row-open .form-control:hover,
 body .grid-form-body .form-control:hover {
-  border-color: #065175 !important;
+  border-color: var(--ic-teal, #065175) !important;
   box-shadow: 0 0 0 2px rgba(6, 81, 117, 0.12) !important;
 }
 
@@ -3210,10 +3210,10 @@ select.input-with-feedback:not([disabled]):not([readonly]),
 .form-page select.form-control:not([disabled]):not([readonly]):hover,
 .modal-body select.form-control:not([disabled]):not([readonly]):hover,
 select.input-with-feedback:not([disabled]):not([readonly]):hover {
-  border-color: #065175 !important;
+  border-color: var(--ic-teal, #065175) !important;
   background-image:
-    linear-gradient(45deg, transparent 50%, #065175 50%),
-    linear-gradient(135deg, #065175 50%, transparent 50%),
+    linear-gradient(45deg, transparent 50%, var(--ic-teal, #065175) 50%),
+    linear-gradient(135deg, var(--ic-teal, #065175) 50%, transparent 50%),
     linear-gradient(180deg, #ffffff 0%, #ffffff 100%) !important;
 }
 
@@ -3296,7 +3296,7 @@ select.form-control[readonly],
 
 .grid-body .data-row .col input.form-control:hover,
 .form-grid .grid-row .form-control:hover {
-  border-color: #065175 !important;
+  border-color: var(--ic-teal, #065175) !important;
 }
 
 /* List / filter bar dropdowns & search */
@@ -3355,7 +3355,7 @@ select.form-control[readonly],
 
 /* ——— Category color code (Consulting / Testing / Renewal / Other) ——— */
 :root {
-  --ic-cat-consulting: #065175;
+  --ic-cat-consulting: var(--ic-teal, #065175);
   --ic-cat-consulting-bg: #e4f1f8;
   --ic-cat-testing: #EC691F;
   --ic-cat-testing-bg: #fff1e6;
@@ -3551,7 +3551,7 @@ select.form-control[readonly],
 .ic-quote-lib-manage .dropdown-item {
   display: block;
   padding: 8px 14px;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   text-decoration: none;
   font-size: 13px;
 }
@@ -3583,7 +3583,7 @@ select.form-control[readonly],
   font-size: 13px;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
-.ic-quote-lib-tab-label { font-weight: 700; color: #065175; }
+.ic-quote-lib-tab-label { font-weight: 700; color: var(--ic-teal, #065175); }
 .ic-quote-lib-tab-count {
   font-weight: 700;
   font-size: 12px;
@@ -3593,7 +3593,7 @@ select.form-control[readonly],
   padding: 1px 8px;
 }
 .ic-quote-lib-tab.active {
-  border-color: #065175;
+  border-color: var(--ic-teal, #065175);
   background: #eaf4f9;
 }
 .ic-quote-lib-tab.cat-consulting.active {
@@ -3635,13 +3635,13 @@ select.form-control[readonly],
 .ic-quote-lib-tag {
   border: 1px solid #c5d0d7;
   background: #fff;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   border-radius: 4px;
   padding: 3px 10px;
   font-size: 12px;
   cursor: pointer;
 }
-.ic-quote-lib-tag.active { background: #065175; color: #fff; border-color: #065175; }
+.ic-quote-lib-tag.active { background: var(--ic-teal, #065175); color: #fff; border-color: var(--ic-teal, #065175); }
 
 /* Body: sticky category rail + main catalog */
 .ic-quote-lib-body {
@@ -3681,7 +3681,7 @@ select.form-control[readonly],
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
 }
 .ic-quote-lib-rail-item:hover { background: #eef4f8; }
 .ic-quote-lib-rail-item.active { background: #eaf4f9; font-weight: 700; }
@@ -3740,7 +3740,7 @@ select.form-control[readonly],
   margin: 0;
   font-size: 1.25rem;
   font-weight: 700;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   letter-spacing: -0.01em;
 }
 .ic-quote-lib-section.cat-consulting .ic-quote-lib-section-title { color: var(--ic-cat-consulting); }
@@ -3800,7 +3800,7 @@ select.form-control[readonly],
   flex: 1;
   font-weight: 700;
   font-size: 0.95rem;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
 }
 .ic-quote-lib-family-count {
   font-size: 12px;
@@ -3833,7 +3833,7 @@ select.form-control[readonly],
 .ic-quote-lib-row-name {
   font-weight: 700;
   font-size: 0.98rem;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
 }
 .ic-quote-lib-row-meta {
   display: flex;
@@ -3852,7 +3852,7 @@ select.form-control[readonly],
 }
 .ic-quote-lib-row-amount {
   font-weight: 700;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-size: 0.95rem;
 }
 .ic-quote-lib-row-amount.muted { color: #6b8492; font-weight: 500; }
@@ -3881,7 +3881,7 @@ select.form-control[readonly],
   padding: 2px 7px;
   border-radius: 3px;
   background: #eef4f8;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   cursor: pointer;
 }
 .ic-quote-lib-empty {
@@ -4134,7 +4134,7 @@ body.full-width .widget.number-widget-box {
 }
 .ic-report-code {
   font-size: 12px;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   letter-spacing: 0.04em;
 }
 .ic-report-code b {
@@ -4528,7 +4528,7 @@ body.full-width {
   gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   margin: 0;
 }
 .ic-ts-price-grid label:last-child { grid-column: 1 / -1; }
@@ -4781,7 +4781,7 @@ body.full-width {
   border-radius: 6px;
   border: 1px solid #b7cdd9;
   background: #eef4f8;
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-size: 11.5px;
   font-weight: 650;
   line-height: 1.25;
@@ -5537,11 +5537,11 @@ button[title="Minimize"],
 .ql-toolbar button:hover,
 .ql-toolbar button.ql-active,
 .ql-toolbar .ql-picker-label:hover {
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
 }
 .ql-toolbar button:hover .ql-stroke,
 .ql-toolbar button.ql-active .ql-stroke {
-  stroke: #033447 !important;
+  stroke: var(--ic-teal-deep-text, #033447) !important;
 }
 
 /* Cancel / Cut text buttons on light chrome */
@@ -5549,13 +5549,13 @@ button[title="Minimize"],
 .standard-actions .btn-secondary,
 .btn.btn-default.btn-sm,
 .btn.btn-default.ellipsis {
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
   border-color: rgba(3, 52, 71, 0.4) !important;
 }
 .page-actions .btn-default:hover,
 .btn-modal-close:hover,
 .btn-modal-minimize:hover {
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
   background: rgba(6, 81, 117, 0.1) !important;
 }
 
@@ -5664,8 +5664,8 @@ button[title="Minimize"],
 .page-icon-group .ic-print-action:hover {
   border: none !important;
   background: rgba(6, 81, 117, 0.1) !important;
-  color: #033447 !important;
-  --icon-stroke: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
+  --icon-stroke: var(--ic-teal-deep, #033447) !important;
   transform: none !important;
 }
 
@@ -5687,7 +5687,7 @@ button[title="Minimize"],
 .page-icon-group .ic-reload-boxed:hover,
 .page-head .page-icon-group button[title="Reload List"]:hover,
 .page-head .page-icon-group button[data-original-title="Reload List"]:hover {
-  border: 1.5px solid #065175 !important;
+  border: 1.5px solid var(--ic-teal, #065175) !important;
   background: #e7f1f8 !important;
 }
 
@@ -5855,8 +5855,8 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   pointer-events: auto !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  background: #065175 !important;
-  border-color: #065175 !important;
+  background: var(--ic-teal, #065175) !important;
+  border-color: var(--ic-teal, #065175) !important;
   font-weight: 700 !important;
   min-width: 72px !important;
   z-index: 5;
@@ -5987,12 +5987,12 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 }
 .ic-lr-filter:hover {
   background: #fff;
-  color: #033447;
+  color: var(--ic-teal-deep-text, #033447);
 }
 .ic-lr-filter.is-active,
 .ic-lr-filter.active {
-  background: #065175 !important;
-  border-color: #065175 !important;
+  background: var(--ic-teal, #065175) !important;
+  border-color: var(--ic-teal, #065175) !important;
   color: #ffffff !important;
 }
 
@@ -6019,7 +6019,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 }
 .ic-lr-table thead th {
   background: linear-gradient(180deg, #e8f1f7, #dce8f0);
-  color: #065175;
+  color: var(--ic-teal-text, #065175);
   font-weight: 650;
   white-space: nowrap;
   font-size: 12px;
@@ -6048,14 +6048,14 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .ic-lr-badge.today { background: #EC691F; }
 .ic-lr-badge.upcoming { background: #1565C0; }
 .ic-lr-urg-label { font-size: 11px; color: #5a7382; margin-top: 4px; }
-.ic-lr-phone { color: #065175; font-weight: 650; text-decoration: none; }
+.ic-lr-phone { color: var(--ic-teal, #065175); font-weight: 650; text-decoration: none; }
 .ic-lr-phone:hover { color: #EC691F; text-decoration: underline; }
 .ic-lr-remarks { max-width: 280px; color: #3a5563; line-height: 1.35; }
 .ic-lr-remarks .muted { color: #8aa0ad; font-style: italic; }
 .ic-lr-actions { white-space: nowrap; width: 1%; }
 .ic-lr-actions .btn-primary {
-  background: #065175 !important;
-  border-color: #065175 !important;
+  background: var(--ic-teal, #065175) !important;
+  border-color: var(--ic-teal, #065175) !important;
   color: #fff !important;
   font-weight: 650;
 }
@@ -6086,8 +6086,8 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   font-weight: 600;
 }
 .ic-lr-show-more-bar .btn-primary {
-  background: #065175 !important;
-  border-color: #065175 !important;
+  background: var(--ic-teal, #065175) !important;
+  border-color: var(--ic-teal, #065175) !important;
   color: #fff !important;
   font-weight: 700;
 }
@@ -6110,8 +6110,8 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .page-actions .inner-group-button > .btn-default,
 .standard-actions .inner-group-button > .btn-default,
 .page-actions .custom-btn-group .btn-default {
-  color: #033447 !important;
-  -webkit-text-fill-color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
+  -webkit-text-fill-color: var(--ic-teal-deep-text, #033447) !important;
   background: #ffffff !important;
   border: 1.5px solid rgba(3, 52, 71, 0.42) !important;
   font-weight: 600 !important;
@@ -6121,9 +6121,9 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .page-head .inner-group-button > .btn-default:hover,
 .page-head .custom-actions .btn-default:hover,
 .page-actions .inner-group-button > .btn-default:hover {
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
   background: #e7f1f8 !important;
-  border-color: #065175 !important;
+  border-color: var(--ic-teal, #065175) !important;
 }
 
 /* Dropdown items under those groups stay dark and readable */
@@ -6165,8 +6165,8 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 }
 .ic-quote-lib-row-actions .btn-primary,
 .ic-doclib-card-actions .btn-primary {
-  background: #065175 !important;
-  border: 1.5px solid #065175 !important;
+  background: var(--ic-teal, #065175) !important;
+  border: 1.5px solid var(--ic-teal, #065175) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   font-weight: 650 !important;
@@ -6175,15 +6175,15 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .ic-doclib-card-actions .btn-default {
   background: #ffffff !important;
   border: 1.5px solid rgba(3, 52, 71, 0.4) !important;
-  color: #033447 !important;
-  -webkit-text-fill-color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
+  -webkit-text-fill-color: var(--ic-teal-deep-text, #033447) !important;
   font-weight: 600 !important;
 }
 .ic-quote-lib-row-actions .btn-default:hover,
 .ic-doclib-card-actions .btn-default:hover {
   background: #e7f1f8 !important;
-  border: 1.5px solid #065175 !important; /* same width — no layout shift */
-  color: #033447 !important;
+  border: 1.5px solid var(--ic-teal, #065175) !important; /* same width — no layout shift */
+  color: var(--ic-teal-deep-text, #033447) !important;
 }
 .ic-quote-lib-row-actions .ic-cut-action,
 .ic-doclib-card-actions .ic-cut-action,
@@ -6307,7 +6307,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   background: #eef4f8 !important;
 }
 .ic-ts-tab-gen.is-active {
-  background: #065175 !important;
+  background: var(--ic-teal, #065175) !important;
   color: #ffffff !important;
 }
 .ic-ts-tab-manage.is-active {
@@ -6393,7 +6393,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
   background: rgba(6, 81, 117, 0.1) !important;
   border: none !important;
   box-shadow: none !important;
-  color: #033447 !important;
+  color: var(--ic-teal-deep-text, #033447) !important;
   transform: none !important;
   outline: none !important;
 }
@@ -6438,7 +6438,7 @@ body.full-width [data-page-route^="Form/"] .layout-main-section {
 .page-icon-group .icon-btn[data-original-title="Reload List"]:focus,
 .page-icon-group .ic-reload-boxed:focus {
   background: #e7f1f8 !important;
-  border: 1.5px solid #065175 !important; /* same width — no jump */
+  border: 1.5px solid var(--ic-teal, #065175) !important; /* same width — no jump */
   box-shadow: none !important;
   transform: none !important;
   outline: none !important;
@@ -6586,7 +6586,7 @@ body select.form-control:not([disabled]):not([readonly]),
 body .form-control:not([disabled]):not([readonly]):focus,
 body .input-with-feedback:not([disabled]):not([readonly]):focus,
 [data-page-route="Form/Customer"] .form-control:focus {
-  border-bottom-color: #065175 !important;
+  border-bottom-color: var(--ic-teal, #065175) !important;
   box-shadow: none !important;
   outline: none !important;
 }
@@ -6870,7 +6870,7 @@ body,
 .page-icon-group .ic-reload-boxed:active,
 .page-icon-group .ic-reload-boxed:focus {
   background: #e7f1f8 !important;
-  border: 1.5px solid #065175 !important;
+  border: 1.5px solid var(--ic-teal, #065175) !important;
   transform: none !important;
   outline: none !important;
   box-shadow: none !important;
@@ -7212,19 +7212,7 @@ body:is([data-path="login"], [data-path="update-password"]) {
   min-height: 100vh;
   margin: 0;
   font-family: "Inter", "InterVariable", "Segoe UI", system-ui, sans-serif !important;
-  /* brand blue to brand orange, passing through light tones so the middle
-     never turns grey */
-  background: linear-gradient(
-      135deg,
-      #0a6aa1 0%,
-      #1493d0 34%,
-      #41bdea 60%,
-      #a6def3 76%,
-      #f4f3ee 85%,
-      #ffc693 93%,
-      #ff9447 100%
-    )
-    #1493d0 !important;
+  background: #F5F7FB !important;
   background-attachment: fixed !important;
 }
 body:is([data-path="login"], [data-path="update-password"]) #page-login,
@@ -7433,7 +7421,7 @@ body:is([data-path="login"], [data-path="update-password"]) .page-card .page-car
 body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-ldap-login:hover,
 body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-signup:not(:disabled):hover,
 body:is([data-path="login"], [data-path="update-password"]) .page-card .btn-primary:hover {
-  background: #065175 !important;
+  background: var(--ic-teal, #065175) !important;
 }
 body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn:focus-visible {
   outline: 3px solid rgba(21, 150, 209, 0.55) !important;
@@ -7477,4 +7465,87 @@ body:is([data-path="login"], [data-path="update-password"]) .page-card .page-car
   body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn {
     transition: none;
   }
+}
+
+/* Sign-in: brand panel on the left, form on the right. Set Password stays one card. */
+body.ic-login-split {
+  display: flex !important;
+  flex-direction: row;
+  align-items: stretch;
+  min-height: 100vh;
+  background: #F5F7FB !important;
+}
+.ic-login-brand {
+  box-sizing: border-box;
+  flex: 0 0 46%;
+  max-width: 720px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 48px 56px;
+  color: #fff;
+  background: linear-gradient(165deg, #172554 0%, #1e3a8a 62%, #315CF5 140%);
+}
+.ic-login-brand-top { display: flex; align-items: center; gap: 12px; }
+.ic-login-brand-top img { width: 44px; height: 44px; border-radius: 50%; }
+.ic-login-word { font-size: 22px; font-weight: 600; letter-spacing: -0.03em; color: #F28A2E; }
+.ic-login-word span { color: #fff; }
+.ic-login-copy { margin-top: auto; }
+.ic-login-brand h1 {
+  margin: 0 0 12px;
+  max-width: 16ch;
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+.ic-login-support, .ic-login-brand p { margin: 0; max-width: 38ch; font-size: 16px; line-height: 1.5; color: #E4E9FF; }
+.ic-login-diagram { margin-top: 8px; }
+.ic-login-foot { margin-top: auto; font-size: 13px; color: #C9D2F5; }
+body.ic-login-split #page-login,
+body.ic-login-split .page-content-wrapper,
+body.ic-login-split main.container {
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 0;
+  background: #F5F7FB !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card {
+  box-shadow: 0 12px 40px rgba(23, 37, 84, 0.08) !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .btn-primary,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-login {
+  background: #315CF5 !important;
+  box-shadow: none !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .btn-primary:hover,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-login:hover {
+  background: #2449D8 !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .forgot-password-message a,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .sign-up-message a {
+  color: #315CF5 !important;
+  -webkit-text-fill-color: #315CF5 !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card input.form-control:focus {
+  border-color: #315CF5 !important;
+  box-shadow: 0 0 0 4px rgba(49, 92, 245, 0.18) !important;
+}
+@media (max-width: 900px) {
+  body.ic-login-split { flex-direction: column; }
+  .ic-login-brand {
+    flex: 0 0 auto;
+    max-width: none;
+    min-height: 0;
+    gap: 8px;
+    padding: 20px 20px 16px;
+  }
+  .ic-login-diagram, .ic-login-foot { display: none; }
+  .ic-login-copy { margin-top: 0; }
+  .ic-login-brand h1 { font-size: 24px; max-width: none; margin-bottom: 6px; }
+  .ic-login-brand p { font-size: 14px; }
+  body.ic-login-split #page-login { min-height: 0; }
+  body.ic-login-split .page_content { padding: 12px 16px 20px !important; }
 }

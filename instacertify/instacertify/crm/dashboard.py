@@ -113,6 +113,15 @@ def get_lead_tracker_stats():
 		"by_country_30d": _group_leads("country", day_30_start),
 		"leads_to_contact": _leads_to_contact(),
 		"amc_due": _amc_due_list(),
+		# First and last day of each window above, so a chart can open the same leads.
+		"ranges": {
+			"This Week": [str(this_week_start), None],
+			"Last Week": [str(last_week_start), str(add_days(last_week_end, -1))],
+			"This Month": [str(this_month_start), None],
+			"Last Month": [str(last_month_start), str(add_days(last_month_end, -1))],
+			"Last 7 Days": [str(day_7_start), None],
+			"Last 30 Days": [str(day_30_start), None],
+		},
 	}
 
 

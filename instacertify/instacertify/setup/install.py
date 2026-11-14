@@ -190,6 +190,12 @@ def after_migrate():
 
 	ensure_document_collection_templates()
 	_backfill_template_display_names()
+	try:
+		from instacertify.access.assigned import share_existing_assignments
+
+		share_existing_assignments()
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Share records with the people assigned to them")
 	frappe.db.commit()
 
 
