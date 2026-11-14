@@ -12,7 +12,7 @@
 			"</div>" +
 			'<div class="ic-login-copy">' +
 			"<h1>Simplifying Certification. Accelerating Business.</h1>" +
-			"<p>One intelligent workspace to manage customers, certifications, testing and business operations.</p>" +
+			"<p class='ic-login-support'>Your unified workspace for certification, testing, laboratory coordination and business operations.</p>" +
 			"</div>" +
 			'<div class="ic-login-diagram" aria-hidden="true">' +
 			'<svg viewBox="0 0 360 150" width="100%" height="150">' +
@@ -33,7 +33,7 @@
 		var heading = document.querySelector("section.for-login .page-card-head h4");
 		var subtitle = document.querySelector("section.for-login .page-card-head .page-card-subtitle");
 		if (heading && /sign in|log in/i.test(heading.textContent || "")) heading.textContent = "Welcome back";
-		if (subtitle) subtitle.textContent = "Sign in to continue to your workspace.";
+		if (subtitle) subtitle.textContent = "Sign in to access your workspace.";
 		var button = document.querySelector("section.for-login .btn-login");
 		if (button && /continue|log in|sign in/i.test(button.textContent || "")) button.textContent = "Sign In";
 	}

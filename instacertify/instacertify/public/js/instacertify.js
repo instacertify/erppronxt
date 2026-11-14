@@ -7896,18 +7896,13 @@ instacertify.apply_billing_currency = function (frm, customer, opts) {
 			const d = r.message || {};
 			if (!d.currency) return;
 			const currencyField = opts.currency_field || "currency";
-			if (frm.doc[currencyField] !== d.currency) {
+			if (!frm.doc.ic_currency_manual && frm.doc[currencyField] !== d.currency) {
 				instacertify._auto_setting_currency = true;
 				frm.set_value(currencyField, d.currency).then(() => {
 					instacertify._auto_setting_currency = false;
 				});
 				frappe.show_alert({
-					message: d.is_export
-						? __("Export customer ({0}) — billing currency set to {1}. Change anytime if needed.", [
-								d.country || __("Overseas"),
-								d.currency,
-							])
-						: __("India customer — billing currency set to {0}.", [d.currency]),
+					message: __("Currency set to {0}, this customer's currency.", [d.currency]),
 					indicator: "blue",
 				});
 			}
@@ -8040,9 +8035,21 @@ instacertify.apply_manual_currency = function (frm, currency, opts) {
 frappe.ui.form.on("Customer", {
 	ic_country(frm) {
 		if (!frm.doc.ic_country) return;
-		if (frm.doc.ic_currency_manual) return;
 		const isIndia = frm.doc.ic_country === "India";
 		const currency = isIndia ? "INR" : "USD";
+		if (frm.doc.ic_currency_manual) {
+			if (frm.doc.default_currency && frm.doc.default_currency !== currency) {
+				frappe.show_alert({
+					message: __("Suggested currency for {0} is {1}. {2} was left unchanged.", [
+						frm.doc.ic_country,
+						currency,
+						frm.doc.default_currency,
+					]),
+					indicator: "blue",
+				});
+			}
+			return;
+		}
 		instacertify._auto_setting_currency = true;
 		frm.set_value("default_currency", currency);
 		frm.set_value("ic_primary_currency", currency).then(() => {
@@ -8196,14 +8203,14 @@ instacertify.render_customer_currency_banner = function (frm) {
 		<div class="ic-customer-currency-banner" style="
 			display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;
 			padding:12px 14px;margin:6px 0 12px;
-			border:1px solid var(--border-color,#c8d0d8);
-			background:linear-gradient(180deg,#f7fafc 0%,#eef3f7 100%);
-			border-radius:6px;font-size:13px;line-height:1.4;
+			border:1px solid var(--ic-line,#E7EBF2);
+			background:var(--ic-card,#fff);
+			border-radius:12px;font-size:13px;line-height:1.4;
 			min-height:58px;box-sizing:border-box;">
-			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Customer")}</span><br/>
-				<b style="font-size:15px;color:#065175;">${frappe.utils.escape_html(party)}</b></div>
-			<div><span style="color:#667;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;">${__("Primary currency")}</span><br/>
-				<b style="font-size:15px;color:#EC691F;">${frappe.utils.escape_html(symbol)} ${frappe.utils.escape_html(cur)}</b>
+			<div><span style="color:var(--ic-text-2,#64748B);font-size:12px;">${__("Customer")}</span><br/>
+				<b style="font-size:15px;color:var(--ic-text,#202938);">${frappe.utils.escape_html(party)}</b></div>
+			<div><span style="color:var(--ic-text-2,#64748B);font-size:12px;">${__("Primary currency")}</span><br/>
+				<b style="font-size:15px;color:var(--ic-text,#202938);font-variant-numeric:tabular-nums;">${frappe.utils.escape_html(symbol)} ${frappe.utils.escape_html(cur)}</b>
 				<span class="text-muted" style="margin-left:8px;font-size:12px;">${
 					mixed
 						? __("Multi-currency quote — each Test Line / Commercial has its own Currency")
