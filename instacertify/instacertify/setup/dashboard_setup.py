@@ -208,6 +208,7 @@ def ensure_number_cards():
 				"filters_json": json.dumps(list_filters),
 				"is_public": 1,
 				"module": "Instacertify",
+				"color": "",
 				"show_percentage_stats": pct,
 				"stats_time_interval": interval,
 			}
@@ -370,7 +371,23 @@ def ensure_dashboard_charts():
 				"timeseries": chart.get("timeseries", 0),
 				"is_public": 1,
 				"module": "Instacertify",
+				"color": "#065175",
 			}
+			if chart["type"] in ("Donut", "Pie", "Bar"):
+				values["custom_options"] = json.dumps(
+					{
+						"colors": [
+							"#065175",
+							"#033447",
+							"#0f766e",
+							"#1e4d6b",
+							"#4a7c8c",
+							"#64748b",
+							"#0b3a4a",
+							"#94a3b8",
+						]
+					}
+				)
 			if chart.get("group_by_based_on"):
 				values["group_by_based_on"] = chart["group_by_based_on"]
 				values["group_by_type"] = chart.get("group_by_type") or "Count"
