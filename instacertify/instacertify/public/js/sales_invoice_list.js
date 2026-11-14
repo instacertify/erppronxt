@@ -1,18 +1,9 @@
-/* Sales Invoice list: view the print or download the PDF from the row. */
-frappe.listview_settings["Sales Invoice"] = frappe.listview_settings["Sales Invoice"] || {};
-
-frappe.listview_settings["Sales Invoice"].onload = function (listview) {
-	if (listview._ic_doc_actions) return;
-	listview._ic_doc_actions = 1;
-	const render = listview.render_list.bind(listview);
-	listview.render_list = function () {
-		const result = render();
-		if (window.instacertify && instacertify.decorate_doc_list) {
-			instacertify.decorate_doc_list(listview);
-		}
-		return result;
+/* Sales Invoice list: view and download icons on each row (drawn by instacertify.decorate_doc_list). */
+(function () {
+	const settings = (frappe.listview_settings["Sales Invoice"] = frappe.listview_settings["Sales Invoice"] || {});
+	const prev = settings.onload;
+	settings.onload = function (listview) {
+		if (typeof prev === "function") prev.call(this, listview);
+		if (window.instacertify && instacertify.patch_list_view) instacertify.patch_list_view();
 	};
-	if (window.instacertify && instacertify.decorate_doc_list) {
-		instacertify.decorate_doc_list(listview);
-	}
-};
+})();

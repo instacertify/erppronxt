@@ -1,38 +1,26 @@
-/* Quotation list: keep New Quotation, and add View / PDF on each row. */
-frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] || {};
-frappe.listview_settings["Quotation"].button = {
-	show() {
-		return true;
-	},
-	get_label() {
-		return __("View");
-	},
-	get_description(doc) {
-		return __("View {0}", [doc.name]);
-	},
-	action(doc) {
-		if (window.instacertify && instacertify.open_doc_preview) {
-			instacertify.open_doc_preview("Quotation", doc.name);
-		}
-	},
-};
-
+/* Quotation list: view and download icons on each row (drawn by instacertify.decorate_doc_list). */
 (function () {
-	const prev = frappe.listview_settings["Quotation"].onload;
-	frappe.listview_settings["Quotation"].onload = function (listview) {
+	const settings = (frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] || {});
+	delete settings.button;
+	const prev = settings.onload;
+	settings.onload = function (listview) {
 		if (typeof prev === "function") prev(listview);
-		if (listview._ic_doc_actions) return;
-		listview._ic_doc_actions = 1;
-		const render = listview.render_list.bind(listview);
-		listview.render_list = function () {
-			const result = render();
-			if (window.instacertify && instacertify.decorate_doc_list) {
-				instacertify.decorate_doc_list(listview);
-			}
-			return result;
-		};
-		if (window.instacertify && instacertify.decorate_doc_list) {
-			instacertify.decorate_doc_list(listview);
+		if (window.instacertify && instacertify.patch_list_view) instacertify.patch_list_view();
+		// Company repeats on every row; it stays available under "More filters".
+		if (!listview._ic_quote_columns) {
+			listview._ic_quote_columns = 1;
+			const trim = () => {
+				listview.columns = (listview.columns || []).filter(
+					(col) => !(col.df && col.df.fieldname === "company")
+				);
+			};
+			const setup_columns = listview.setup_columns.bind(listview);
+			listview.setup_columns = function () {
+				setup_columns();
+				trim();
+			};
+			trim();
+			if (listview.render_header) listview.render_header(true);
 		}
 	};
 })();

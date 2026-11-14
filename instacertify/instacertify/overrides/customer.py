@@ -32,6 +32,7 @@ def get_dashboard_data(data):
 	missing_ic = [dt for dt in ic_items if dt not in existing_items]
 	if missing_ic:
 		data["transactions"].append({"label": _("Instacertify"), "items": missing_ic})
+		existing_items.update(missing_ic)
 
 	_ensure_group(data, _("Helpdesk"), ["Helpdesk Ticket", "Issue"], existing_items)
 

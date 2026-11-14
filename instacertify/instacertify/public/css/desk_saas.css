@@ -657,50 +657,6 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   align-items: center;
 }
 
-/* Collapsed rail stays the native icon column. Icons sit in the center. */
-.body-sidebar-container:not(.expanded) {
-  width: fit-content !important;
-  min-width: 56px !important;
-  max-width: 56px !important;
-}
-.body-sidebar-container:not(.expanded) .body-sidebar {
-  width: 56px !important;
-  min-width: 56px !important;
-  padding: 8px 0 !important;
-  align-items: center;
-}
-.body-sidebar-container:not(.expanded) .sidebar-item-label,
-.body-sidebar-container:not(.expanded) .item-label,
-.body-sidebar-container:not(.expanded) .sidebar-item-control,
-.body-sidebar-container:not(.expanded) .standard-sidebar-label,
-.body-sidebar-container:not(.expanded) .collapse-sidebar-link span {
-  display: none !important;
-}
-.body-sidebar-container:not(.expanded) .standard-sidebar-item,
-.body-sidebar-container:not(.expanded) .item-anchor {
-  width: 44px !important;
-  min-width: 44px !important;
-  max-width: 44px !important;
-  height: 36px !important;
-  margin: 2px auto !important;
-  padding: 0 !important;
-  justify-content: center !important;
-  align-items: center !important;
-  gap: 0 !important;
-}
-.body-sidebar-container:not(.expanded) .sidebar-item-icon {
-  width: 28px !important;
-  height: 28px !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-.body-sidebar-container:not(.expanded) .sidebar-item-icon svg {
-  margin: 0 !important;
-}
-
 /* Quotation / list filter sidebar: links share one left edge */
 .layout-side-section .list-sidebar .sidebar-label,
 .layout-side-section .list-sidebar .list-link a {
@@ -710,57 +666,6 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   padding-right: 12px !important;
 }
 
-.list-row .level-right {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end;
-  gap: 8px;
-  overflow: visible !important;
-  flex: 0 0 auto !important;
-}
-.ic-row-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  margin-right: 4px;
-}
-.ic-row-actions .btn {
-  min-height: 28px;
-  padding: 2px 10px !important;
-  white-space: nowrap;
-}
-
-/* Lead capture + lead list source / product chips */
-.ic-lead-filter-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0 0 12px;
-}
-.ic-lead-filter-bar,
-.ic-capture-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-.ic-lead-filter-chip {
-  border: 1px solid var(--ic-border, #e3e6ef);
-  background: #fff;
-  color: var(--ic-ink, #21263c);
-  border-radius: 999px;
-  min-height: 32px;
-  padding: 4px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ic-lead-filter-chip.is-on {
-  background: #ebf3fe;
-  border-color: #408dfb;
-  color: #1b6ec2;
-}
 .ic-lead-pill {
   display: inline-flex;
   align-items: center;
@@ -794,20 +699,7 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   color: var(--ic-muted, #6c718a);
   margin: 8px 0 4px;
 }
-@media (max-width: 768px) {
-  .ic-lead-filter-chip { min-height: 36px; }
-}
 
-[data-page-route^="Form/Quotation"] .frappe-control[data-fieldname="ic_total_quoted_value"] .like-disabled-input,
-[data-page-route^="Form/Quotation"] .frappe-control[data-fieldname="grand_total"] .like-disabled-input,
-[data-page-route^="Form/Quotation"] .frappe-control[data-fieldname="net_total"] .like-disabled-input {
-  min-height: 34px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-[data-page-route^="Form/Quotation"] .form-grid {
-  overflow-x: auto;
-}
 .layout-main,
 .layout-main-section-wrapper {
   min-width: 0;
@@ -869,11 +761,7 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   overflow: hidden;
 }
 
-/* Forms: two columns on a wide screen, one column when narrow */
-.form-section .section-body,
-.form-dashboard-section .section-body {
-  gap: 8px 16px;
-}
+/* Forms keep the native two / three column grid. A flex gap here pushed the last column onto its own row. */
 .frappe-control {
   margin-bottom: 10px;
   min-width: 0;
@@ -923,26 +811,6 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   min-width: min(100%, 160px);
   max-width: 280px;
   margin: 0 !important;
-}
-.list-row-container,
-.frappe-list .result {
-  overflow-x: auto !important;
-  overflow-y: visible !important;
-  max-width: 100%;
-}
-.list-row,
-.list-row-head {
-  min-width: 640px;
-}
-.list-row .level-right,
-.list-row .list-row-right,
-.list-row .row-actions {
-  flex-shrink: 0 !important;
-  overflow: visible !important;
-}
-.list-row .level-left,
-.list-subject {
-  min-width: 0;
 }
 .dt-cell[data-fieldtype="Currency"],
 .dt-cell[data-fieldtype="Float"],
@@ -1017,12 +885,6 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   }
 }
 @media (max-width: 768px) {
-  .ic-row-actions {
-    margin-right: 0;
-  }
-  .ic-row-actions .btn {
-    min-height: 36px;
-  }
   .page-head .page-title .title-text {
     font-size: 1rem;
   }
@@ -1049,10 +911,6 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
     max-width: none;
     flex-basis: 100%;
   }
-  .list-row,
-  .list-row-head {
-    min-width: 560px;
-  }
   .ic-global-search::after {
     display: none;
   }
@@ -1065,4 +923,719 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
     max-width: calc(100vw - 16px);
     margin: 8px auto;
   }
+}
+
+/* ==========================================================================
+   Checked on a running desk (Frappe 16.32 / ERPNext 16.33 markup).
+   Side menu, list rows, list filters and the quotation form.
+   ========================================================================== */
+
+/* ——— Side menu: every row is a 40px icon cell + label, open or shrunk ——— */
+@media (min-width: 768px) {
+  .body-sidebar-container .body-sidebar {
+    padding: 8px !important;
+    gap: 8px;
+  }
+  /* 40px icon cell + 8px each side + 1px border */
+  .body-sidebar-container:not(.expanded) .body-sidebar {
+    width: 57px !important;
+    min-width: 57px !important;
+  }
+}
+.body-sidebar-container .body-sidebar .body-sidebar-top {
+  padding: 0 !important;
+  align-items: stretch;
+}
+.body-sidebar-container .body-sidebar .standard-sidebar-item {
+  width: 100%;
+  min-height: 34px;
+  margin: 0 0 2px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  align-items: center;
+}
+.body-sidebar-container .body-sidebar .standard-sidebar-item .item-anchor {
+  width: 100%;
+  min-width: 0;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 8px 0 0 !important;
+  gap: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.body-sidebar-container .body-sidebar .standard-sidebar-item .sidebar-item-icon {
+  flex: 0 0 40px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.body-sidebar-container .body-sidebar .standard-sidebar-item .sidebar-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ic-ink) !important;
+}
+.body-sidebar-container .body-sidebar .standard-sidebar-item:hover {
+  background: var(--ic-primary-soft) !important;
+}
+.body-sidebar-container .body-sidebar .standard-sidebar-item.active-sidebar {
+  background: var(--ic-accent-soft) !important;
+}
+.body-sidebar-container .body-sidebar .standard-sidebar-item.active-sidebar .sidebar-item-label,
+.body-sidebar-container .body-sidebar .standard-sidebar-item.active-sidebar .sidebar-item-icon {
+  color: var(--ic-accent-deep) !important;
+  font-weight: 600;
+}
+.body-sidebar-container .body-sidebar .item-anchor.section-break {
+  height: 28px !important;
+  margin: 8px 0 0 !important;
+  padding: 0 8px 0 12px !important;
+}
+.body-sidebar-container .body-sidebar .item-anchor.section-break .sidebar-item-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ic-muted) !important;
+}
+.body-sidebar-container .body-sidebar .nested-container {
+  margin-left: 0 !important;
+}
+.body-sidebar-container .body-sidebar .sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100% !important;
+  height: 44px;
+  padding: 0 !important;
+  border-radius: 8px;
+}
+.body-sidebar-container .body-sidebar .sidebar-header .sidebar-item-icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+}
+.body-sidebar-container .body-sidebar .sidebar-header .header-logo,
+.body-sidebar-container .body-sidebar .sidebar-header .header-logo img {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+.body-sidebar-container .body-sidebar .sidebar-header .title-container {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 4px;
+}
+.body-sidebar-container .body-sidebar .sidebar-toggle-btn {
+  opacity: 1;
+  visibility: visible;
+}
+.body-sidebar-container .body-sidebar .sidebar-user-button {
+  padding: 0 !important;
+}
+.body-sidebar-container .body-sidebar .sidebar-user-button > div:first-child {
+  flex: 0 0 40px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Shrunk: words go, icons stay on one center line */
+.body-sidebar-container:not(.expanded) .body-sidebar .sidebar-item-label,
+.body-sidebar-container:not(.expanded) .body-sidebar .sidebar-item-suffix,
+.body-sidebar-container:not(.expanded) .body-sidebar .sidebar-item-control,
+.body-sidebar-container:not(.expanded) .body-sidebar .sidebar-item-edit-controls,
+.body-sidebar-container:not(.expanded) .body-sidebar .title-container,
+.body-sidebar-container:not(.expanded) .body-sidebar .drop-icon,
+.body-sidebar-container:not(.expanded) .body-sidebar .avatar-name-email {
+  display: none !important;
+}
+.body-sidebar-container:not(.expanded) .body-sidebar .standard-sidebar-item .item-anchor {
+  padding: 0 !important;
+  justify-content: center;
+}
+.body-sidebar-container:not(.expanded) .body-sidebar .item-anchor.section-break {
+  height: 1px !important;
+  margin: 8px 8px !important;
+  padding: 0 !important;
+  width: auto;
+  flex: 1 1 auto;
+  background: var(--ic-border) !important;
+}
+.body-sidebar-container:not(.expanded) .body-sidebar .standard-sidebar-item:has(.section-break) {
+  min-height: 0;
+  background: transparent !important;
+}
+.body-sidebar-container:not(.expanded) .body-sidebar .nav-item {
+  padding: 4px 0 !important;
+}
+
+/* ——— Pages fill the space beside the side menu from the first paint ——— */
+body .page-body.container,
+body .container.page-body,
+body .page-head .container {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* ——— Lists ——— */
+.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result-container .result .list-row-container .level-left .list-row-col {
+  min-width: 100px;
+}
+@media (max-width: 1399px) {
+  .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result-container .result .list-row-container .level-left .list-row-col {
+    min-width: 88px;
+    margin-right: 10px;
+  }
+}
+.frappe-list .result-container {
+  overflow-x: auto;
+}
+.frappe-list .list-row .level-right,
+.frappe-list .list-row-head .level-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+/* Quotation / invoice rows: view + download stay pinned at the right end of the row */
+.frappe-list .result.ic-has-row-actions .list-row .level-right,
+.frappe-list .result.ic-has-row-actions .list-row-head .level-right {
+  flex: 0 0 148px !important;
+  width: 148px !important;
+  overflow: visible !important;
+}
+/* Comment count and like give way to the two buttons, so the row fits without scrolling */
+.frappe-list .result.ic-has-row-actions .list-row .comment-count,
+.frappe-list .result.ic-has-row-actions .list-row .comment-count + span,
+.frappe-list .result.ic-has-row-actions .list-row .list-row-like,
+.frappe-list .result.ic-has-row-actions .list-row-head .list-liked-by-me {
+  display: none !important;
+}
+.frappe-list .result.ic-has-row-actions .list-row .list-row-activity .modified {
+  margin-right: 0;
+}
+.ic-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  margin-right: auto;
+}
+.ic-row-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--ic-border);
+  border-radius: 8px;
+  background: var(--fg-color);
+  color: var(--ic-ink);
+  cursor: pointer;
+}
+.ic-row-btn:hover,
+.ic-row-btn:focus-visible {
+  background: var(--ic-accent-soft);
+  border-color: var(--ic-accent);
+  color: var(--ic-accent-deep);
+  outline: none;
+}
+.ic-row-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+/* ——— List filters: one slim row. The rest open with "More filters". ——— */
+.page-form.ic-slim-filters {
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 52px;
+  padding: 8px var(--ic-page-pad) !important;
+}
+.page-form.ic-slim-filters .standard-filter-section {
+  display: flex !important;
+  flex: 1 1 320px;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: auto !important;
+  min-width: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+.page-form.ic-slim-filters .standard-filter-section > .frappe-control {
+  flex: 1 1 130px;
+  min-width: 120px;
+  max-width: 230px;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.page-form.ic-slim-filters .standard-filter-section > .frappe-control.ic-keep-first {
+  flex: 1 1 190px;
+  max-width: 300px;
+}
+.page-form.ic-slim-filters:not(.ic-filters-open) .standard-filter-section > .frappe-control:not(.ic-keep):not(.ic-has-value) {
+  display: none !important;
+}
+.page-form.ic-slim-filters .filter-section {
+  flex: 0 0 auto;
+  width: auto !important;
+  margin-left: auto;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.ic-more-filters {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.ic-more-filters svg {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+.ic-lead-pill.ic-lead-pill-pick {
+  cursor: pointer;
+}
+
+/* ——— Quotation form: fields in columns, long blocks folded, short editors ——— */
+#page-Quotation .form-section,
+#page-Quotation .form-dashboard-section {
+  margin-bottom: 10px !important;
+  padding: 6px 4px 8px !important;
+}
+#page-Quotation .frappe-control {
+  margin-bottom: 8px;
+}
+#page-Quotation .form-section > .section-head {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+  font-size: 14px;
+}
+#page-Quotation .section-head.collapsible {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#page-Quotation .section-head.collapsible.collapsed {
+  margin-bottom: 0;
+  padding-bottom: 6px;
+}
+#page-Quotation .section-head.collapsible.collapsed::after {
+  content: attr(data-ic-hint);
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ic-muted);
+}
+#page-Quotation .section-head.collapsed + .form-section-description {
+  display: none;
+}
+#page-Quotation .form-section[data-fieldname="ic_section_print_sections"] .form-column > form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0 12px;
+  align-items: start;
+}
+#page-Quotation .form-section[data-fieldname="ic_section_print_sections"] .frappe-control {
+  margin-bottom: 2px;
+}
+#page-Quotation .frappe-control[data-fieldname="ic_total_quoted_value"] .like-disabled-input,
+#page-Quotation .frappe-control[data-fieldname="grand_total"] .like-disabled-input,
+#page-Quotation .frappe-control[data-fieldname="net_total"] .like-disabled-input {
+  min-height: 34px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+#page-Quotation .form-grid {
+  overflow-x: auto;
+}
+#page-Quotation .ic-quote-entry {
+  margin: 0 0 8px;
+  padding: 12px 14px;
+}
+#page-Quotation .ic-quote-entry-title {
+  font-size: 15px;
+  margin-top: 0;
+}
+#page-Quotation .ic-quote-entry-sub {
+  font-size: 12px;
+  margin: 2px 0 8px;
+}
+#page-Quotation .ic-quote-type-grid {
+  margin-bottom: 8px;
+}
+#page-Quotation .ic-quote-type-chip {
+  padding: 8px 10px;
+}
+#page-Quotation .ic-quote-type-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+/* ——— One field look everywhere: a full box, never a bare underline ——— */
+body .form-control.form-control:not([disabled]):not([readonly]),
+body .frappe-control .awesomplete > input.form-control:not([disabled]):not([readonly]) {
+  border: 1px solid #cfd5e3 !important;
+  border-radius: 8px !important;
+  background-color: var(--control-bg, #fff) !important;
+}
+body select.form-control.form-control:not([disabled]):not([readonly]) {
+  background-image: none !important;
+}
+body .form-control.form-control:not([disabled]):not([readonly]):focus {
+  border-color: var(--ic-accent) !important;
+  box-shadow: 0 0 0 3px rgba(64, 141, 251, 0.16) !important;
+}
+[data-theme="dark"] body .form-control.form-control:not([disabled]):not([readonly]) {
+  border-color: var(--ic-border) !important;
+}
+
+/* ——— Page header: when the buttons do not fit beside the title they drop to a
+   second line and the header grows with them (it used to overlap the page). ——— */
+body .page-container .page-head .page-title {
+  min-width: 0;
+}
+@media (min-width: 768px) {
+  body .page-container .page-head,
+  body .page-container .page-head > .container {
+    height: auto !important;
+    min-height: var(--page-head-height, 48px);
+  }
+  body .page-container .page-head .page-head-content {
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    height: auto !important;
+    min-height: var(--page-head-height, 48px);
+    gap: 0 8px !important;
+  }
+  body .page-container .page-head .page-title {
+    flex: 1 1 200px;
+    min-height: 40px;
+    align-items: center;
+  }
+  body .page-container .page-head .standard-items-section {
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    min-width: 0;
+    max-width: 100%;
+  }
+  body .page-container .page-head .page-actions {
+    flex: 0 1 auto !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    top: 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin-left: auto !important;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    gap: 4px 6px !important;
+  }
+  body .page-container .page-head .page-actions .custom-actions,
+  body .page-container .page-head .page-actions .standard-actions {
+    flex: 0 1 auto !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end;
+    width: auto !important;
+    max-width: 100%;
+    gap: 4px 6px !important;
+  }
+}
+/* Narrower screens: the home icon already leads to the workspace, so drop its name
+   from the trail and keep room for the page name. */
+@media (max-width: 1399px) {
+  .page-head .navbar-breadcrumbs li:has(> a.worksapce-breadcrumb) {
+    display: none !important;
+  }
+}
+.page-head .navbar-breadcrumbs li.ellipsis:not(:last-child) {
+  flex-shrink: 8;
+}
+@media (max-width: 767px) {
+  body .page-container .page-head .page-head-content {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px;
+  }
+  body .page-container .page-head .page-title {
+    flex: 1 1 auto;
+  }
+  body .page-container .page-head .page-actions {
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    top: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    margin-left: auto !important;
+    gap: 6px;
+  }
+  body .page-container .page-head .page-actions .standard-actions {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    flex-wrap: nowrap !important;
+    gap: 6px;
+  }
+}
+
+/* ——— Phone: one search box, rows edge to edge ——— */
+@media (max-width: 767px) {
+  body .page-container .page-head .page-actions .page-icon-group.hidden-xs {
+    display: none !important;
+  }
+  .page-form.ic-slim-filters {
+    align-content: flex-start;
+    height: auto !important;
+    min-height: 0;
+    padding: 8px 12px !important;
+  }
+  .page-form.ic-slim-filters .standard-filter-section {
+    flex: 1 1 100%;
+    order: 1;
+    align-content: flex-start;
+    height: auto !important;
+  }
+  .page-form.ic-slim-filters .standard-filter-section > .frappe-control,
+  .page-form.ic-slim-filters .standard-filter-section > .frappe-control.ic-keep-first {
+    flex: 1 1 100%;
+    max-width: none;
+    height: auto !important;
+  }
+  .page-form.ic-slim-filters:not(.ic-filters-open) .standard-filter-section > .frappe-control.ic-keep:not(.ic-keep-first):not(.ic-has-value) {
+    display: none !important;
+  }
+  .page-form.ic-slim-filters .filter-section {
+    flex: 1 1 100%;
+    order: 2;
+    margin-left: 0;
+    flex-wrap: nowrap !important;
+    justify-content: space-between;
+    height: auto !important;
+  }
+  .page-form.ic-slim-filters .filter-section .mobile-id-filter {
+    display: none !important;
+  }
+  .page-form.ic-slim-filters .filter-section > * {
+    flex: 0 0 auto;
+  }
+  .ic-more-filters span {
+    display: none;
+  }
+  body .page-container .page-head {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  body .page-container .page-head > .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  body .page-container .page-head .page-title {
+    padding-left: 15px !important;
+    padding-right: 4px !important;
+  }
+  body .layout-main-section-wrapper.list-view {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  body .layout-main-section.layout-main-list {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  body .layout-main-list .frappe-list {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  body .layout-main-list .list-row-container {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  body .layout-main-list .list-row,
+  body .layout-main-list .list-row-head {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  body .layout-main-list .list-row .level-left,
+  body .layout-main-list .list-row-head .level-left {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+  body .layout-main-list .level-left .list-row-col {
+    min-width: 0 !important;
+  }
+  body .layout-main-list .result.ic-has-row-actions .list-row .level-right,
+  body .layout-main-list .result.ic-has-row-actions .list-row-head .level-right {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+  body .layout-main-list .result.ic-has-row-actions .list-row {
+    align-items: center !important;
+  }
+  body .layout-main-list .result.ic-has-row-actions .list-row .level-right {
+    gap: 3px;
+    padding: 0 !important;
+    align-self: center;
+  }
+  body .layout-main-list .result.ic-has-row-actions .ic-row-actions {
+    gap: 3px;
+    margin-right: 0;
+  }
+  body .layout-main-list .result.ic-has-row-actions .ic-row-btn {
+    width: 28px;
+    height: 28px;
+  }
+  body .layout-main-list .result.ic-has-row-actions .mobile-layout .indicator-pill {
+    padding-left: 4px;
+    padding-right: 6px;
+  }
+  body .layout-main-list .result.ic-has-row-actions .level-right .indicator-pill {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  body .layout-main-list .result.ic-has-row-actions .list-row .level-right .list-row-activity {
+    display: none !important;
+  }
+  .body-sidebar-container:not(.expanded) .body-sidebar {
+    border-right: 0 !important;
+  }
+}
+
+/* Quotation text blocks: as tall as their text, side by side. The formatting bar
+   drops down under the block only while it is being edited, so nothing moves. */
+#page-Quotation .ql-container,
+#page-Quotation .ql-container .ql-editor {
+  height: auto !important;
+}
+#page-Quotation .ql-container .ql-editor {
+  min-height: 72px !important;
+  max-height: 260px;
+  overflow-y: auto;
+}
+#page-Quotation .frappe-control[data-fieldtype="Text Editor"] .control-input {
+  position: relative;
+}
+#page-Quotation .frappe-control[data-fieldtype="Text Editor"] .ql-toolbar {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 6;
+  background: var(--fg-color, #fff);
+  border: 1px solid var(--ic-accent) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 10px 22px rgba(33, 38, 60, 0.14);
+}
+#page-Quotation .frappe-control[data-fieldtype="Text Editor"]:focus-within .ql-toolbar {
+  display: block;
+}
+#page-Quotation .frappe-control[data-fieldtype="Text Editor"] .ql-container {
+  border: 1px solid #cfd5e3 !important;
+  border-radius: 8px;
+  background: var(--control-bg, #fff);
+}
+#page-Quotation .frappe-control[data-fieldtype="Text Editor"]:focus-within .ql-container {
+  border-color: var(--ic-accent) !important;
+  border-radius: 8px 8px 0 0;
+}
+@media (min-width: 1100px) {
+  #page-Quotation .form-section[data-fieldname="ic_section_about"] .form-column > form,
+  #page-Quotation .form-section[data-fieldname="ic_section_docs_timeline"] .form-column > form,
+  #page-Quotation .form-section[data-fieldname="ic_section_scope"] .form-column > form,
+  #page-Quotation .form-section[data-fieldname="ic_section_policies"] .form-column > form,
+  #page-Quotation .form-section[data-fieldname="ic_section_terms"] .form-column > form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 16px;
+    align-items: start;
+  }
+}
+
+/* Tick boxes in forms: the underline field style was also hitting them, so they showed
+   as a short dash with no tick. Give them back a box and a visible tick. */
+body input[type="checkbox"][type="checkbox"][type="checkbox"]:not([disabled]) {
+  width: 15px !important;
+  height: 15px !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 1.5px solid #8b93a8 !important;
+  border-radius: 4px !important;
+  background: var(--control-bg, #fff) !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+body input[type="checkbox"][type="checkbox"][type="checkbox"]:not([disabled]):checked {
+  border-color: var(--ic-accent) !important;
+  background: var(--ic-accent)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E")
+    center / 12px 12px no-repeat !important;
+}
+body input[type="checkbox"][type="checkbox"][type="checkbox"]:not([disabled]):focus-visible {
+  outline: 2px solid rgba(64, 141, 251, 0.45) !important;
+  outline-offset: 1px;
+}
+
+/* Quick lead capture: tap-to-pick chips for source and product / service. */
+.ic-capture-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ic-lead-filter-chip {
+  border: 1px solid #cfd5e3;
+  background: #fff;
+  color: var(--ic-ink, #21263c);
+  border-radius: 999px;
+  min-height: 32px;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ic-lead-filter-chip:hover {
+  border-color: var(--ic-accent);
+}
+.ic-lead-filter-chip.is-on {
+  background: var(--ic-accent-soft);
+  border-color: var(--ic-accent);
+  color: var(--ic-accent-deep);
+}
+@media (max-width: 767px) {
+  .ic-lead-filter-chip {
+    min-height: 36px;
+  }
+}
+
+/* A header button Frappe has hidden stays hidden (an empty dark button used to show on reports). */
+body .page-head .page-actions .btn.hide,
+body .page-head .page-actions .hide > .btn {
+  display: none !important;
 }

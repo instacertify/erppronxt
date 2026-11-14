@@ -31,8 +31,13 @@
     #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     #msg.err { display:block; background:#fdecea; color:#b42318; }
     .ic-btn { border-radius:10px; min-height:40px; padding:8px 14px; }
+    /* The shared stylesheet adds side padding to this block, so a width worked out
+       from the screen alone made the card run past the right edge on phones and tablets. */
+    @media (max-width: 1000px) {
+      .ic-portal-wrap { width:100%; box-sizing:border-box; }
+    }
     @media (max-width: 700px) {
-      .ic-portal-wrap { width:calc(100% - 16px); margin:12px auto 28px; }
+      .ic-portal-wrap { width:100%; box-sizing:border-box; margin:12px auto 28px; }
       .ic-portal-card { padding:16px 14px; border-radius:12px; }
       .ic-portal-card h2 { font-size:1.3rem; }
       .ic-portal-actions .ic-btn, .ic-portal-actions a.ic-btn { flex:1 1 100%; text-align:center; }

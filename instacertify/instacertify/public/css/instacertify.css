@@ -6766,27 +6766,8 @@ body,
   box-sizing: border-box !important;
   min-width: 0 !important;
 }
-.list-row-container,
-.list-row,
-.result,
-.frappe-list .list-row-head {
-  max-width: 100% !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-.list-row .level-left,
-.list-row .level-right,
-.list-row-col,
-.list-subject,
-.list-row-col .ellipsis,
-.list-row .ellipsis {
-  min-width: 0 !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
+/* List rows: widths and overflow are set in desk_saas.css ("Lists" block). Forcing
+   min-width:0 + overflow:hidden here squeezed columns to one letter and cut off row buttons. */
 
 /* Home / workspace grids fill width evenly — no sparse empty columns */
 .ic-explore-grid,
@@ -7225,92 +7206,275 @@ body,
   box-sizing: border-box;
 }
 
-/* Login — one calm card, bold type, easy on a phone */
-body.for-login,
-.for-login {
-  background: #f5f6fa !important;
-  background-image: none !important;
+/* Login and Set Password — bright page, one white card, nothing else on it.
+   Scoped to those two addresses so no other website page is touched. */
+body:is([data-path="login"], [data-path="update-password"]) {
   min-height: 100vh;
+  margin: 0;
+  font-family: "Inter", "InterVariable", "Segoe UI", system-ui, sans-serif !important;
+  /* brand blue to brand orange, passing through light tones so the middle
+     never turns grey */
+  background: linear-gradient(
+      135deg,
+      #0a6aa1 0%,
+      #1493d0 34%,
+      #41bdea 60%,
+      #a6def3 76%,
+      #f4f3ee 85%,
+      #ffc693 93%,
+      #ff9447 100%
+    )
+    #1493d0 !important;
+  background-attachment: fixed !important;
 }
-.for-login .page-card,
-.login-content .page-card {
-  width: min(420px, calc(100vw - 32px)) !important;
-  max-width: 420px !important;
-  margin: 10vh auto 32px !important;
-  border-radius: 16px !important;
-  border: 1px solid #e3e6ef !important;
-  box-shadow: 0 16px 40px rgba(33, 38, 60, 0.08) !important;
-  overflow: hidden;
-  background: #fff !important;
+body:is([data-path="login"], [data-path="update-password"]) #page-login,
+body:is([data-path="login"], [data-path="update-password"]) .page-content-wrapper,
+body:is([data-path="login"], [data-path="update-password"]) main.container {
+  min-height: 100vh;
+  min-height: 100svh;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
 }
-.for-login .page-card-head,
-.login-content .page-card-head {
-  background: #21263c !important;
-  color: #fff !important;
-  padding: 28px 24px 22px !important;
+body:is([data-path="login"], [data-path="update-password"]) main.container {
+  display: flex;
+  flex-direction: column;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-header-wrapper:not(:has(*:not(.page-header))),
+body:is([data-path="login"], [data-path="update-password"]) .page-breadcrumbs:empty,
+body:is([data-path="login"], [data-path="update-password"]) .page-footer:empty {
+  display: none;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page_content {
+  flex: 1 1 auto;
+  display: flex;
+  margin: 0 !important;
+  padding: 24px 16px !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page_content > div {
+  width: 100%;
+  margin: auto;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page_content section {
+  background: transparent !important;
+  background-image: none !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body:is([data-path="login"], [data-path="update-password"]) .page-card {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 400px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  padding: 36px 32px 30px !important;
+  gap: 22px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 24px 64px rgba(4, 44, 66, 0.3) !important;
+  overflow: visible;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card,
+body:is([data-path="login"], [data-path="update-password"]) .page-card * {
+  font-family: "Inter", "InterVariable", "Segoe UI", system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-head {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
   text-align: center;
 }
-.for-login .page-card-head h4,
-.login-content .page-card-head h4 {
-  color: #fff !important;
-  -webkit-text-fill-color: #fff !important;
-  font-family: "Inter", "Segoe UI", sans-serif !important;
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-head img.app-logo {
+  display: block;
+  width: 56px !important;
+  height: 56px !important;
+  max-height: 56px !important;
+  margin: 0 auto 14px !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-head h4 {
+  margin: 0 !important;
+  font-size: 24px !important;
+  line-height: 1.25 !important;
   font-weight: 700 !important;
-  font-size: 1.45rem !important;
-  letter-spacing: -0.03em !important;
-  margin: 8px 0 0 !important;
+  color: #0f2530 !important;
+  -webkit-text-fill-color: #0f2530 !important;
 }
-.for-login .page-card-head img,
-.login-content .page-card-head img {
-  max-height: 52px !important;
-  margin: 0 auto;
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-head .page-card-subtitle {
+  margin: 6px 0 0 !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+  color: #566573 !important;
+  -webkit-text-fill-color: #566573 !important;
 }
-.for-login .page-card-body,
-.login-content .page-card-body {
-  padding: 22px 24px 26px !important;
+
+body:is([data-path="login"], [data-path="update-password"]) .page-card form {
+  gap: 20px !important;
 }
-.for-login .form-control,
-.login-content .form-control {
-  min-height: 44px !important;
-  border-radius: 10px !important;
-  border: 1px solid #d5d9e6 !important;
-  font-size: 15px !important;
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-body {
+  padding: 0 !important;
+  gap: 16px !important;
 }
-.for-login .btn-primary,
-.for-login .btn-login,
-.for-login button[type="submit"],
-.login-content .btn-primary,
-.login-content button[type="submit"],
-.page-card .btn-primary {
-  width: 100%;
+body:is([data-path="login"], [data-path="update-password"]) .page-card .form-label,
+body:is([data-path="login"], [data-path="update-password"]) .page-card label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #24323d !important;
+  -webkit-text-fill-color: #24323d !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card input.form-control {
+  height: 46px !important;
   min-height: 46px !important;
-  border-radius: 10px !important;
-  background: #408dfb !important;
-  border-color: #408dfb !important;
-  color: #fff !important;
-  -webkit-text-fill-color: #fff !important;
-  font-weight: 700 !important;
+  padding: 0 40px !important;
+  border: 1.5px solid #d3dbe3 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
   font-size: 15px !important;
-  letter-spacing: -0.01em;
+  color: #0f2530 !important;
+  -webkit-text-fill-color: #0f2530 !important;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
-.for-login .btn-primary:hover,
-.for-login button[type="submit"]:hover,
-.login-content .btn-primary:hover {
-  background: #1b6ec2 !important;
-  border-color: #1b6ec2 !important;
+body:is([data-path="login"], [data-path="update-password"]) .page-card input.form-control:hover {
+  border-color: #aebbc7 !important;
 }
-@media (max-width: 640px) {
-  .for-login .page-card,
-  .login-content .page-card {
-    width: calc(100vw - 24px) !important;
-    margin: 16px auto !important;
-  }
-  .for-login .page-card-head,
-  .login-content .page-card-head {
-    padding: 22px 16px 16px !important;
-  }
-  .for-login .page-card-body,
-  .login-content .page-card-body {
+body:is([data-path="login"], [data-path="update-password"]) .page-card input.form-control:focus {
+  border-color: #1596d1 !important;
+  box-shadow: 0 0 0 4px rgba(21, 150, 209, 0.2) !important;
+  outline: 0 !important;
+}
+/* a hint must look like a hint, not like a filled-in address */
+body:is([data-path="login"], [data-path="update-password"]) .page-card input.form-control::placeholder {
+  color: #a3aeb9 !important;
+  -webkit-text-fill-color: #a3aeb9 !important;
+  opacity: 1;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .form-group.invalid input.form-control,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-body.invalid input.form-control {
+  border-color: #d92d20 !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .field-icon {
+  left: 14px !important;
+  fill: #7d8b97 !important;
+  stroke: none;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .toggle-password {
+  right: 14px !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .forgot-password-message {
+  margin: 0 !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .forgot-password-message a {
+  display: inline-block;
+  padding: 6px 0;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .forgot-password-message a,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .sign-up-message a,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .resend-link a {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0a6aa1 !important;
+  -webkit-text-fill-color: #0a6aa1 !important;
+  text-decoration: none;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .forgot-password-message a:hover,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .sign-up-message a:hover {
+  text-decoration: underline;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .sign-up-message {
+  font-size: 13px !important;
+  color: #566573 !important;
+  -webkit-text-fill-color: #566573 !important;
+}
+
+body:is([data-path="login"], [data-path="update-password"]) .page-card .password-hint,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .password-strength-message,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .field-error {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .password-hint {
+  color: #566573 !important;
+  -webkit-text-fill-color: #566573 !important;
+}
+
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions {
+  gap: 10px !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-login,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-ldap-login,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-signup,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .btn-primary {
+  width: 100%;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 16px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: #0a6aa1 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  box-shadow: 0 8px 18px rgba(10, 106, 161, 0.3) !important;
+  transition: background-color 120ms ease, box-shadow 120ms ease;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-login:hover,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-ldap-login:hover,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-signup:not(:disabled):hover,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .btn-primary:hover {
+  background: #065175 !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn:focus-visible {
+  outline: 3px solid rgba(21, 150, 209, 0.55) !important;
+  outline-offset: 2px;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-signup:disabled,
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-login:disabled {
+  background: #9fb4c0 !important;
+  box-shadow: none !important;
+}
+/* other ways to sign in stay available, but quiet */
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-login-option {
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 16px !important;
+  border: 1.5px solid #d3dbe3 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: #24323d !important;
+  -webkit-text-fill-color: #24323d !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn-login-option:hover {
+  border-color: #aebbc7 !important;
+  background: #f5f8fa !important;
+}
+
+@media (max-width: 480px) {
+  body:is([data-path="login"], [data-path="update-password"]) .page_content {
     padding: 16px !important;
+  }
+  body:is([data-path="login"], [data-path="update-password"]) .page-card {
+    padding: 28px 20px 24px !important;
+    border-radius: 18px !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:is([data-path="login"], [data-path="update-password"]) .page-card input.form-control,
+  body:is([data-path="login"], [data-path="update-password"]) .page-card .page-card-actions .btn {
+    transition: none;
   }
 }
