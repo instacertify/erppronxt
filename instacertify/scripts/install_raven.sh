@@ -43,9 +43,20 @@ if [[ ! -d apps/raven/.git ]]; then
 	bench get-app --branch "${RAVEN_REF}" "${RAVEN_REPO}"
 else
 	echo "==> Update Raven to ${RAVEN_REF}"
-	git -C apps/raven fetch origin --tags
-	git -C apps/raven checkout "${RAVEN_REF}"
-	./env/bin/pip install -q -e apps/raven
+	# bench get-app names the remote "upstream", not "origin".
+	RAVEN_REMOTE=""
+	if git -C apps/raven remote | grep -qx upstream; then
+		RAVEN_REMOTE="upstream"
+	elif git -C apps/raven remote | grep -qx origin; then
+		RAVEN_REMOTE="origin"
+	else
+		RAVEN_REMOTE="$(git -C apps/raven remote | head -1 || true)"
+	fi
+	if [[ -n "${RAVEN_REMOTE}" ]]; then
+		git -C apps/raven fetch "${RAVEN_REMOTE}" --tags || echo "WARN: could not fetch Raven. Keeping the copy already on the bench."
+	fi
+	git -C apps/raven checkout "${RAVEN_REF}" || echo "WARN: Raven stayed on its current version."
+	./env/bin/pip install -q -e apps/raven || echo "WARN: Raven Python package was not refreshed."
 fi
 
 if ! bench --site "${SITE}" list-apps | awk '{print $1}' | grep -qx raven; then
