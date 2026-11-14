@@ -452,6 +452,9 @@ frappe.provide("instacertify.ux");
 		ListView.prototype.setup_view = function () {
 			const result = setup_view.apply(this, arguments);
 			try {
+				// Frappe marks the page as a list only once the rows arrive; on a phone
+				// that changed the side padding and moved the whole list 16px sideways.
+				if (this.view_name === "List") this.parent.page.main.parent().addClass("list-view");
 				ux.render_status_bar(this, true);
 			} catch (e) {
 				/* never block a list from drawing */
