@@ -446,15 +446,25 @@ frappe.provide("instacertify.ux");
 			}
 			return result;
 		};
+		// Frappe marks the page as a list only once the rows arrive; on a phone that
+		// changed the side padding and moved the whole list 16px sideways. Mark it as
+		// soon as the page exists.
+		const setup_page = ListView.prototype.setup_page;
+		ListView.prototype.setup_page = function () {
+			const result = setup_page.apply(this, arguments);
+			try {
+				if (this.view_name === "List") this.parent.page.main.parent().addClass("list-view");
+			} catch (e) {
+				/* never block a list from drawing */
+			}
+			return result;
+		};
 		// Put the (still empty) bar in place while the list is being built, so the
 		// rows are drawn below it once instead of being pushed down a moment later.
 		const setup_view = ListView.prototype.setup_view;
 		ListView.prototype.setup_view = function () {
 			const result = setup_view.apply(this, arguments);
 			try {
-				// Frappe marks the page as a list only once the rows arrive; on a phone
-				// that changed the side padding and moved the whole list 16px sideways.
-				if (this.view_name === "List") this.parent.page.main.parent().addClass("list-view");
 				ux.render_status_bar(this, true);
 			} catch (e) {
 				/* never block a list from drawing */
