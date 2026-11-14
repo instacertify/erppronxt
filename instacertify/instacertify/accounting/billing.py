@@ -52,14 +52,22 @@ def is_export_customer(country: str | None) -> bool:
 
 
 def customer_saved_currency(customer: str | None = None, customer_doc=None) -> str:
-	"""The currency this customer bills in: their saved choice, else India → INR and every other country → USD."""
+	"""Currency for this customer.
+
+	India, or no country yet, is INR. Any other country is USD.
+	A currency chosen by hand (the manual flag) is kept.
+	"""
 	doc = customer_doc or (frappe.get_cached_doc("Customer", customer) if customer else None)
 	if not doc:
 		return DOMESTIC_CURRENCY
-	saved = (getattr(doc, "ic_primary_currency", None) or doc.get("default_currency") or "").strip()
-	if saved:
-		return saved
-	return default_currency_for_country(get_customer_country(customer_doc=doc))
+	country = get_customer_country(customer_doc=doc)
+	if not country and getattr(doc, "gst_category", None) == "Overseas":
+		country = "Overseas"
+	suggested = default_currency_for_country(country)
+	if cint_flag(getattr(doc, "ic_currency_manual", 0)):
+		saved = (getattr(doc, "ic_primary_currency", None) or doc.get("default_currency") or "").strip()
+		return saved or suggested
+	return suggested
 
 
 def apply_customer_billing_defaults(doc, force: bool = False):
@@ -372,6 +380,12 @@ def _apply_country_currency(doc, field: str, suggested: str, force: bool = False
 		return
 	before = doc.get_doc_before_save()
 	if not before:
+		# ERPNext fills INR from the company before this runs. An overseas country is still USD.
+		if current == DOMESTIC_CURRENCY and suggested == EXPORT_CURRENCY:
+			setattr(doc, field, suggested)
+		return
+	if current == DOMESTIC_CURRENCY and suggested == EXPORT_CURRENCY:
+		setattr(doc, field, suggested)
 		return
 	old_country = (getattr(before, "ic_country", None) or "").strip() or None
 	new_country = (getattr(doc, "ic_country", None) or "").strip() or None
