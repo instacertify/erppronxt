@@ -1,131 +1,111 @@
-/* Lead list: quick capture, source chips, and product/service on every row. */
+/* Lead list: quick capture and clear columns (source, product / service, phone).
+   The slim filter row comes from instacertify.LIST_KEEP_FILTERS. */
 (function () {
 	const base = frappe.listview_settings["Lead"] || {};
 	const prev_onload = base.onload;
 	const prev_formatters = base.formatters || {};
 
-	function pill(value, kind, empty) {
+	const COLUMNS = [
+		["ic_lead_source_detail", __("Source")],
+		["ic_project_type", __("Product / service")],
+		["mobile_no", __("Phone")],
+		["ic_next_contact_date", __("Next contact")],
+	];
+
+	/* Click a pill to show only leads with that source / product. */
+	function pill(fieldname, value, kind, empty) {
 		if (!value) {
 			return `<span class="ic-lead-pill ic-lead-pill-empty">${empty}</span>`;
 		}
-		return `<span class="ic-lead-pill ic-lead-pill-${kind}">${frappe.utils.escape_html(value)}</span>`;
+		const safe = frappe.utils.escape_html(value);
+		return `<span class="ic-lead-pill ic-lead-pill-${kind} ic-lead-pill-pick" data-ic-field="${fieldname}" data-ic-value="${safe}" title="${__(
+			"Show only {0}",
+			[safe]
+		)}">${safe}</span>`;
 	}
 
-	function set_lead_filter(listview, fieldname, value) {
-		const current = (listview.filter_area && listview.filter_area.get()) || [];
-		const kept = current.filter((row) => row[1] !== fieldname);
-		if (value) kept.push(["Lead", fieldname, "=", value]);
-		listview.filter_area.clear(false);
-		if (kept.length) listview.filter_area.add(kept);
-		else listview.refresh();
+	/* Frappe's own ".filterable" click removes the filter and adds it again; when the list
+	   was already filtered by that value the two steps raced and the filter was lost. */
+	function pick(listview, fieldname, value) {
+		const control = listview.page.fields_dict && listview.page.fields_dict[fieldname];
+		if (control && control.get_value && control.get_value() === value) return;
+		listview.filter_area.add([[listview.doctype, fieldname, "=", value]]);
 	}
 
-	function chip_bar(listview, fieldname, choices, all_label) {
-		const bar = document.createElement("div");
-		bar.className = "ic-lead-filter-bar";
-		bar.dataset.field = fieldname;
-		choices.forEach((choice) => {
-			const btn = document.createElement("button");
-			btn.type = "button";
-			btn.className = "ic-lead-filter-chip" + (choice ? "" : " is-on");
-			btn.textContent = choice || all_label;
-			btn.addEventListener("click", () => {
-				bar.querySelectorAll(".ic-lead-filter-chip").forEach((el) => el.classList.remove("is-on"));
-				btn.classList.add("is-on");
-				set_lead_filter(listview, fieldname, choice);
-			});
-			bar.appendChild(btn);
+	function lead_columns(listview) {
+		const kept = (listview.columns || []).filter((col) => ["Subject", "Tag", "Status"].includes(col.type));
+		if (!kept.some((col) => col.type === "Status")) {
+			kept.push({ type: "Status" });
+		}
+		COLUMNS.forEach(([fieldname, label]) => {
+			const meta_df = frappe.meta.get_docfield("Lead", fieldname);
+			if (!meta_df) return;
+			kept.push({ type: "Field", df: Object.assign({}, meta_df, { label, in_list_view: 1 }) });
 		});
-		return bar;
-	}
-
-	function ensure_columns(listview) {
-		const want = [
-			["ic_lead_source_detail", __("Source")],
-			["ic_project_type", __("Product / service")],
-			["mobile_no", __("Phone")],
-		];
-		const have = new Set((listview.columns || []).map((col) => col.df && col.df.fieldname));
-		let added = false;
-		want.forEach(([fieldname, label]) => {
-			if (have.has(fieldname)) return;
-			const df = frappe.meta.get_docfield("Lead", fieldname) || {
-				fieldname,
-				label,
-				fieldtype: "Data",
-			};
-			df.in_list_view = 1;
-			df.label = label;
-			const name_at = (listview.columns || []).findIndex(
-				(col) => col.type === "Field" && col.df && col.df.fieldname === "name"
-			);
-			const column = { type: "Field", df };
-			if (name_at > 0) listview.columns.splice(name_at, 0, column);
-			else listview.columns.push(column);
-			added = true;
-		});
-		if (added && listview.render_header) listview.render_header(true);
+		return kept;
 	}
 
 	frappe.listview_settings["Lead"] = Object.assign({}, base, {
-		add_fields: ["ic_lead_source_detail", "ic_project_type", "ic_request_category", "mobile_no", "email_id", "ic_call_remarks", "status"],
+		hide_name_column: true,
+		add_fields: [
+			"ic_lead_source_detail",
+			"ic_project_type",
+			"ic_request_category",
+			"ic_next_contact_date",
+			"mobile_no",
+			"email_id",
+			"ic_call_remarks",
+			"status",
+		],
 		formatters: Object.assign({}, prev_formatters, {
 			ic_lead_source_detail(value) {
-				return pill(value, "source", __("No source"));
+				return pill("ic_lead_source_detail", value, "source", __("No source"));
 			},
 			ic_project_type(value) {
-				return pill(value, "service", __("No service"));
+				return pill("ic_project_type", value, "service", __("No service"));
 			},
 		}),
+		/* "Add Lead" opens the short capture box. The full form stays one click away. */
+		primary_action() {
+			if (window.instacertify && instacertify.open_quick_lead) {
+				instacertify.open_quick_lead({
+					on_done() {
+						if (window.cur_list && cur_list.doctype === "Lead") cur_list.refresh();
+					},
+				});
+			} else {
+				frappe.new_doc("Lead");
+			}
+		},
 		onload(listview) {
 			if (typeof prev_onload === "function") prev_onload(listview);
-			if (typeof instacertify !== "undefined" && instacertify.enable_full_width_desk) {
-				instacertify.enable_full_width_desk();
-			}
 			if (listview.page && listview.page.wrapper) {
 				listview.page.wrapper.addClass("ic-lead-list-page");
 			}
-			ensure_columns(listview);
-			listview.page.set_primary_action(
-				__("New lead"),
-				() => {
-					if (window.instacertify && instacertify.open_quick_lead) {
-						instacertify.open_quick_lead({
-							on_done() {
-								listview.refresh();
-							},
-						});
-					} else {
-						frappe.new_doc("Lead");
-					}
-				},
-				"add"
-			);
-			listview.page.add_inner_button(__("Full form"), () => frappe.new_doc("Lead"));
 
-			const host = listview.$result && listview.$result.parent();
-			if (host && host.length) {
-				host.find(".ic-lead-filter-bars").remove();
-				const wrap = document.createElement("div");
-				wrap.className = "ic-lead-filter-bars";
-				wrap.appendChild(
-					chip_bar(
-						listview,
-						"ic_lead_source_detail",
-						["", "Website", "Google Search", "Google Ads", "IndiaMART", "Direct Call", "Reference", "Consultant"],
-						__("All sources")
-					)
-				);
-				wrap.appendChild(
-					chip_bar(
-						listview,
-						"ic_project_type",
-						["", "BIS", "Testing", "Certification", "Consulting", "EPR", "MSDS Authoring", "LMPC"],
-						__("All products / services")
-					)
-				);
-				listview.$result.before(wrap);
+			if (!listview._ic_lead_columns) {
+				listview._ic_lead_columns = 1;
+				const setup_columns = listview.setup_columns.bind(listview);
+				listview.setup_columns = function () {
+					setup_columns();
+					listview.columns = lead_columns(listview);
+				};
+				listview.columns = lead_columns(listview);
+				if (listview.render_header) listview.render_header(true);
 			}
+
+			if (!listview._ic_lead_pick) {
+				listview._ic_lead_pick = 1;
+				listview.$result.on("click", ".ic-lead-pill-pick", (e) => {
+					if (e.metaKey || e.ctrlKey) return;
+					e.preventDefault();
+					e.stopPropagation();
+					const el = e.currentTarget;
+					pick(listview, el.getAttribute("data-ic-field"), el.getAttribute("data-ic-value"));
+				});
+			}
+
+			listview.page.add_inner_button(__("Full form"), () => frappe.new_doc("Lead"));
 		},
 	});
 })();
