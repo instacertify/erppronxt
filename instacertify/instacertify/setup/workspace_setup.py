@@ -488,6 +488,17 @@ def _ensure_home_html_block():
 	script = """
 (function() {
   function esc(v){ return frappe.utils.escape_html(v == null ? "" : String(v)); }
+  // Home loads in the background, so a missing permission hides that panel
+  // instead of raising a "Permission Error" box over the page.
+  function canRead(doctype) {
+    if (!doctype) return true;
+    try { return !!frappe.model.can_read(doctype); } catch (e) { return true; }
+  }
+  function hidePanel(id) {
+    const el = root_element.getElementById(id);
+    const panel = el && (el.closest(".ic-workdesk-panel") || el.closest(".ic-lead-prompt-panel") || el);
+    if (panel) panel.style.display = "none";
+  }
   function greet() {
     const hour = moment().hour();
     let g = "Good Evening";
@@ -715,13 +726,22 @@ def _ensure_home_html_block():
         ["Active Leads", data.active_leads, "sales", "", "", ""],
         ["Active Projects", data.active_projects, "delivery", "", "", ""],
       ];
+      // a count the user cannot open would only lead to a "not permitted" page
+      const record_type = {
+        "Leads to Contact": "Lead", "New Leads": "Lead", "Active Leads": "Lead",
+        "Open Complaints": "Helpdesk Ticket", "Open Tickets": "Helpdesk Ticket",
+        "Upcoming Deadlines": "Project", "AMC Due Soon": "Project", "Active Projects": "Project",
+        "Pending Tasks": "Task", "Pending Documents": "IC Document Request",
+        "Testing Requests": "IC Testing Request",
+        "Quotations Sent": "Quotation", "Quotations Accepted": "Quotation",
+      };
       const mine = (team) => (focus !== "all" && team === focus ? 0 : 1);
       const severity = { danger: 0, warn: 1, info: 2, ok: 3, "": 4 };
 
       const today = root_element.getElementById("ic-today-list");
       if (today) {
         const due = items
-          .filter((i) => i[3] && (i[1] || 0) > 0)
+          .filter((i) => i[3] && (i[1] || 0) > 0 && canRead(record_type[i[0]]))
           .sort((a, b) => mine(a[2]) - mine(b[2]) || severity[a[3]] - severity[b[3]])
           .slice(0, 6);
         today.innerHTML = due.length
@@ -742,7 +762,7 @@ def _ensure_home_html_block():
       const cards = items.slice().sort((a, b) => mine(a[2]) - mine(b[2]) || teamOrder[a[2]] - teamOrder[b[2]]);
       const grid = root_element.getElementById("ic-summary-grid");
       if (!grid) return;
-      grid.innerHTML = cards.map((i) => {
+      grid.innerHTML = cards.filter((i) => canRead(record_type[i[0]])).map((i) => {
         const value = i[1] || 0;
         const cls = !value ? "is-zero" : (i[3] === "danger" || i[3] === "warn" ? "tone-" + i[3] : "");
         return `<div class="ic-summary-card is-clickable ${cls}" data-kpi="${frappe.utils.escape_html(i[0])}" role="button" tabindex="0" title="Click to open the list"><div class="label">${frappe.utils.escape_html(i[0])}</div><div class="value">${value}</div></div>`;
@@ -754,9 +774,11 @@ def _ensure_home_html_block():
     }
   });
 
+  if (!canRead("Lead")) hidePanel("ic-my-leads");
   frappe.call({
     method: "instacertify.hr.dashboard.get_workdesk_insights",
     args: { limit: 8 },
+    silent: true,
     callback(r) {
       const d = r.message || {};
       const tasksEl = root_element.getElementById("ic-my-tasks");
@@ -803,9 +825,11 @@ def _ensure_home_html_block():
     }
   });
 
-  frappe.call({
+  if (!canRead("Lead")) hidePanel("ic-lead-hub");
+  else frappe.call({
     method: "instacertify.crm.dashboard.get_lead_contact_prompts",
     args: { limit: 10 },
+    silent: true,
     callback(r) {
       const el = root_element.getElementById("ic-lead-prompts");
       const counts = root_element.getElementById("ic-lead-hub-counts");
@@ -878,9 +902,11 @@ def _ensure_home_html_block():
     }
   });
 
-  frappe.call({
+  if (!canRead("Helpdesk Ticket")) hidePanel("ic-helpdesk-panel");
+  else frappe.call({
     method: "instacertify.helpdesk.api.get_open_ticket_summary",
     args: { limit: 8 },
+    silent: true,
     callback(r) {
       const el = root_element.getElementById("ic-helpdesk-tickets");
       if (!el) return;
