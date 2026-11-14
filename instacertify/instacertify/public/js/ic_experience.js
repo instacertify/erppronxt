@@ -333,7 +333,7 @@ frappe.provide("instacertify.ux");
 		}
 	}
 
-	ux.render_status_bar = function (lv) {
+	ux.render_status_bar = function (lv, frame_only) {
 		const config = ux.STATUS_BARS[lv.doctype];
 		if (!config || !lv.page || !lv.page.main) return;
 		const main = lv.page.main[0] || lv.page.main;
@@ -365,6 +365,7 @@ frappe.provide("instacertify.ux");
 			});
 		}
 		ux.mark_active_segment(lv, config, segments, bar);
+		if (frame_only) return;
 
 		const now = Date.now();
 		if (lv.__ic_stat_at && now - lv.__ic_stat_at < 8000) return;
@@ -440,6 +441,18 @@ frappe.provide("instacertify.ux");
 			const result = render_list.apply(this, arguments);
 			try {
 				ux.render_status_bar(this);
+			} catch (e) {
+				/* never block a list from drawing */
+			}
+			return result;
+		};
+		// Put the (still empty) bar in place while the list is being built, so the
+		// rows are drawn below it once instead of being pushed down a moment later.
+		const setup_view = ListView.prototype.setup_view;
+		ListView.prototype.setup_view = function () {
+			const result = setup_view.apply(this, arguments);
+			try {
+				ux.render_status_bar(this, true);
 			} catch (e) {
 				/* never block a list from drawing */
 			}
