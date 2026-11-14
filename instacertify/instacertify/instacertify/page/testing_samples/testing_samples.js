@@ -204,6 +204,24 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		"Returned to Client": "With Client",
 	};
 
+	// The stages a Testing Request moves through, in order. The short name is the tag.
+	const TR_STAGES = [
+		{ name: "Testing Request Created", short: "New", tone: "new" },
+		{ name: "Sample Awaited", short: "Awaiting sample", tone: "wait" },
+		{ name: "Sample Received", short: "Sample in", tone: "wait" },
+		{ name: "Sample Dispatched to Laboratory", short: "Sent to lab", tone: "progress" },
+		{ name: "Testing in Progress", short: "Testing", tone: "progress" },
+		{ name: "Report Available", short: "Report ready", tone: "done" },
+		{ name: "Report Uploaded", short: "Uploaded", tone: "done" },
+		{ name: "Report Shared with Customer", short: "Shared", tone: "done" },
+	];
+
+	function stage_of(status) {
+		const idx = TR_STAGES.findIndex((s) => s.name === status);
+		if (idx >= 0) return Object.assign({ index: idx }, TR_STAGES[idx]);
+		return { name: status || "—", short: status || "—", tone: "new", index: -1 };
+	}
+
 	page.main.html(`
 		<div class="ic-ts">
 			<div class="ic-ts-head">
@@ -372,7 +390,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						<div>
 							<div class="ic-ts-card-title">${__("Manage TR")}</div>
 							<div class="ic-ts-card-sub" style="margin-bottom:0">${__(
-								"All Testing Requests in one outlined table. Samples open in a bordered sub-table. Click QR / Print for labels."
+								"Grouped by stage. The tag and the bar show where each Testing Request is."
 							)}</div>
 						</div>
 						<button type="button" class="btn btn-primary btn-sm" id="ic-ts-goto-generate">${__("+ Generate new")}</button>
@@ -427,6 +445,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		price_currency: "INR",
 		manage_page_size: 20,
 		manage_visible: 20,
+		stage_filter: "",
 	};
 
 	const form = new frappe.ui.FieldGroup({
@@ -1114,13 +1133,44 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 		</select>`;
 	}
 
-	function status_class(status) {
-		const s = String(status || "").toLowerCase();
-		if (s.includes("report") || s.includes("complete") || s.includes("closed")) return "is-done";
-		if (s.includes("progress") || s.includes("testing") || s.includes("lab")) return "is-progress";
-		if (s.includes("await") || s.includes("sample") || s.includes("dispatch")) return "is-wait";
-		if (s.includes("cancel") || s.includes("hold")) return "is-hold";
-		return "is-new";
+	function stage_tag(status) {
+		const stage = stage_of(status);
+		const full = frappe.utils.escape_html(stage.name);
+		const rail =
+			stage.index < 0
+				? ""
+				: `<span class="ic-ts-stage-rail" aria-hidden="true">${TR_STAGES.map((_, i) => {
+						const cls = i < stage.index ? "is-on" : i === stage.index ? "is-current" : "";
+						return `<i class="${cls}"></i>`;
+				  }).join("")}</span>`;
+		return `<div class="ic-ts-stage">
+			<span class="ic-ts-status is-${stage.tone}" title="${full}">${frappe.utils.escape_html(stage.short)}</span>
+			${rail}
+		</div>`;
+	}
+
+	function stage_filters(rows) {
+		const counts = {};
+		rows.forEach((tr) => {
+			const key = tr.status || "—";
+			counts[key] = (counts[key] || 0) + 1;
+		});
+		const all_on = !state.stage_filter ? "is-on" : "";
+		const chips = [
+			`<button type="button" class="ic-ts-stage-chip ${all_on}" data-stage="">${__("All")}<b>${rows.length}</b></button>`,
+		];
+		TR_STAGES.forEach((stage) => {
+			const n = counts[stage.name] || 0;
+			const on = state.stage_filter === stage.name ? "is-on" : "";
+			chips.push(
+				`<button type="button" class="ic-ts-stage-chip tone-${stage.tone} ${on}" data-stage="${frappe.utils.escape_html(
+					stage.name
+				)}" title="${frappe.utils.escape_html(stage.name)}"><span>${frappe.utils.escape_html(
+					stage.short
+				)}</span><b>${n}</b></button>`
+			);
+		});
+		return `<div class="ic-ts-stage-filters" role="tablist">${chips.join("")}</div>`;
 	}
 
 	function render_manage(rows) {
@@ -1139,21 +1189,30 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 			return;
 		}
 
+		const filtered_raw = state.stage_filter
+			? rows.filter((tr) => (tr.status || "") === state.stage_filter)
+			: rows;
+		const stage_rank = (tr) => {
+			const idx = TR_STAGES.findIndex((s) => s.name === tr.status);
+			return idx < 0 ? TR_STAGES.length : idx;
+		};
+		const filtered = filtered_raw.slice().sort((a, b) => stage_rank(a) - stage_rank(b));
 		const page_size = cint(state.manage_page_size) || 20;
 		let visible = cint(state.manage_visible) || page_size;
 		if (visible < page_size) visible = page_size;
 		// Keep focused TR in view after generate
 		if (state.focus_tr) {
-			const idx = rows.findIndex((r) => r.name === state.focus_tr);
+			const idx = filtered.findIndex((r) => r.name === state.focus_tr);
 			if (idx >= 0 && idx + 1 > visible) {
 				visible = Math.ceil((idx + 1) / page_size) * page_size;
 				state.manage_visible = visible;
 			}
 		}
-		const total = rows.length;
-		const shown = rows.slice(0, visible);
+		const total = filtered.length;
+		const shown = filtered.slice(0, visible);
 		const remaining = Math.max(0, total - shown.length);
 
+		let stage_heading = "";
 		const body = shown
 			.map((tr, i) => {
 				const open = !!state.expanded[tr.name];
@@ -1166,6 +1225,20 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					: "—";
 				const focus = state.focus_tr === tr.name ? "ic-ts-flash" : "";
 				const zebra = i % 2 === 1 ? "is-alt" : "";
+				const stage = stage_of(tr.status);
+				const group =
+					stage.name === stage_heading
+						? ""
+						: `<tr class="ic-ts-stage-head">
+							<td colspan="9">
+								<div class="ic-ts-stage-head-inner">
+									<span class="ic-ts-stage-bar tone-${stage.tone}"></span>
+									<span class="ic-ts-stage-name">${frappe.utils.escape_html(stage.name)}</span>
+									<span class="ic-ts-stage-count">${filtered.filter((row) => (row.status || "—") === (tr.status || "—")).length}</span>
+								</div>
+							</td>
+						</tr>`;
+				stage_heading = stage.name;
 
 				const sample_table = !samples.length
 					? `<div class="ic-ts-nested-empty text-muted">${__("No samples linked yet.")}</div>`
@@ -1214,7 +1287,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						</table>
 					</div>`;
 
-				return `
+				return `${group}
 						<tr class="ic-ts-tr-row ic-ts-tr-group ${open ? "is-open" : ""} ${zebra} ${focus}" data-tr="${frappe.utils.escape_html(
 							tr.name
 						)}">
@@ -1231,11 +1304,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								)}</a>
 								<div class="ic-ts-cell-sub">${frappe.utils.escape_html(tr.title || tr.product || "")}</div>
 							</td>
-							<td class="ic-ts-status-cell">
-								<span class="ic-ts-status ${status_class(tr.status)}">${frappe.utils.escape_html(
-									tr.status || "—"
-								)}</span>
-							</td>
+							<td class="ic-ts-status-cell">${stage_tag(tr.status)}</td>
 							<td>
 								${
 									tr.customer
@@ -1274,7 +1343,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								</button>
 							</td>
 							<td style="text-align:center"><span class="ic-ts-count">${samples.length}</span></td>
-							<td class="ic-ts-actions-cell">
+							<td class="ic-ts-actions-cell"><div class="ic-ts-row-actions">
 								<button type="button" class="btn btn-xs ic-ts-btn-qr ic-ts-print-qr" data-tr="${frappe.utils.escape_html(
 									tr.name
 								)}" title="${__("View & print sample QR")}">${__("QR")}</button>
@@ -1308,7 +1377,7 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 								<a class="btn btn-xs btn-default" href="/app/ic-testing-request/${encodeURIComponent(
 									tr.name
 								)}">${__("Open")}</a>
-							</td>
+							</div></td>
 						</tr>
 						<tr class="ic-ts-tr-detail ${zebra}" data-tr="${frappe.utils.escape_html(tr.name)}" ${
 					open ? "" : "hidden"
@@ -1349,13 +1418,14 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					</div>`;
 
 		$board.html(`
+			${stage_filters(rows)}
 			<div class="ic-ts-table-wrap ic-ts-manage-table-wrap">
 				<table class="ic-ts-table ic-ts-manage-table">
 					<thead>
 						<tr>
 							<th style="width:40px"></th>
 							<th>${__("Testing Request")}</th>
-							<th>${__("Status")}</th>
+							<th>${__("Stage")}</th>
 							<th>${__("Customer / Project")}</th>
 							<th>${__("Test / Standard")}</th>
 							<th>${__("Laboratory")}</th>
@@ -1365,13 +1435,18 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 						</tr>
 					</thead>
 					<tbody class="ic-ts-manage-tbody">
-						${body}
+						${body || `<tr><td colspan="9" class="ic-ts-empty-row">${__("No Testing Requests at this stage.")}</td></tr>`}
 					</tbody>
 				</table>
 			</div>
 			${more_footer}
 		`);
 
+		$board.find(".ic-ts-stage-chip").on("click", function () {
+			state.stage_filter = $(this).attr("data-stage") || "";
+			state.manage_visible = cint(state.manage_page_size) || 20;
+			render_manage(state.board_rows);
+		});
 		$board.find("#ic-ts-show-more").on("click", function () {
 			state.manage_visible = (cint(state.manage_visible) || page_size) + page_size;
 			render_manage(state.board_rows);
@@ -1688,12 +1763,10 @@ frappe.pages["testing-samples"].on_page_load = function (wrapper) {
 					state.manage_visible = cint(state.manage_page_size) || 20;
 				}
 				state._keep_visible = false;
-				// default expand rows that have samples so sample data shows in outlined tables
+				// Keep the stage list closed until a row is opened, so the stages stay in one view.
 				state.board_rows.forEach((tr) => {
 					if (state.expanded[tr.name] === undefined) {
-						const has_samples = (tr.samples || []).length > 0;
-						state.expanded[tr.name] =
-							state.focus_tr === tr.name || has_samples;
+						state.expanded[tr.name] = state.focus_tr === tr.name;
 					}
 				});
 				render_manage(state.board_rows);
