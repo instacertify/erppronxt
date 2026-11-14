@@ -1096,6 +1096,12 @@ body .page-head .container {
 .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result-container .result .list-row-container .level-left .list-row-col {
   min-width: 100px;
 }
+@media (max-width: 1399px) {
+  .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result-container .result .list-row-container .level-left .list-row-col {
+    min-width: 88px;
+    margin-right: 10px;
+  }
+}
 .frappe-list .result-container {
   overflow-x: auto;
 }
@@ -1177,14 +1183,14 @@ body .page-head .container {
   background: transparent !important;
 }
 .page-form.ic-slim-filters .standard-filter-section > .frappe-control {
-  flex: 0 1 200px;
-  min-width: 150px;
+  flex: 1 1 130px;
+  min-width: 120px;
   max-width: 230px;
   margin: 0 !important;
   padding: 0 !important;
 }
 .page-form.ic-slim-filters .standard-filter-section > .frappe-control.ic-keep-first {
-  flex: 1 1 240px;
+  flex: 1 1 190px;
   max-width: 300px;
 }
 .page-form.ic-slim-filters:not(.ic-filters-open) .standard-filter-section > .frappe-control:not(.ic-keep):not(.ic-has-value) {
@@ -1210,7 +1216,7 @@ body .page-head .container {
   stroke: currentColor !important;
   fill: none !important;
 }
-.ic-lead-pill.filterable {
+.ic-lead-pill.ic-lead-pill-pick {
   cursor: pointer;
 }
 
@@ -1335,7 +1341,6 @@ body .page-container .page-head .page-title {
     justify-content: flex-end;
     min-width: 0;
     max-width: 100%;
-    margin-left: auto;
   }
   body .page-container .page-head .page-actions {
     flex: 0 1 auto !important;
@@ -1360,6 +1365,16 @@ body .page-container .page-head .page-title {
     max-width: 100%;
     gap: 4px 6px !important;
   }
+}
+/* Narrower screens: the home icon already leads to the workspace, so drop its name
+   from the trail and keep room for the page name. */
+@media (max-width: 1399px) {
+  .page-head .navbar-breadcrumbs li:has(> a.worksapce-breadcrumb) {
+    display: none !important;
+  }
+}
+.page-head .navbar-breadcrumbs li.ellipsis:not(:last-child) {
+  flex-shrink: 8;
 }
 @media (max-width: 767px) {
   body .page-container .page-head .page-head-content {
