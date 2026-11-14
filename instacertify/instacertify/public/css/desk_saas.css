@@ -657,67 +657,78 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   align-items: center;
 }
 
-/* Expanded sidebar has one width. Collapsed sidebar is icons only. */
-.body-sidebar-container,
-.body-sidebar {
-  transition: width 180ms ease, min-width 180ms ease, max-width 180ms ease, flex-basis 180ms ease;
-}
-@media (min-width: 992px) {
-  .body-sidebar-container.expanded {
-    width: var(--ic-sidebar);
-    min-width: var(--ic-sidebar);
-    max-width: var(--ic-sidebar);
-  }
-  .layout-side-section:not(.hidden) {
-    flex: 0 0 240px;
-    width: 240px;
-    max-width: 280px;
-  }
-}
-body.ic-sidebar-collapsed .body-sidebar-container,
+/* Collapsed rail stays the native icon column. Icons sit in the center. */
 .body-sidebar-container:not(.expanded) {
-  width: 64px !important;
-  min-width: 64px !important;
-  max-width: 64px !important;
+  width: fit-content !important;
+  min-width: 56px !important;
+  max-width: 56px !important;
 }
-body.ic-sidebar-collapsed .sidebar-item-label,
-body.ic-sidebar-collapsed .item-label,
-body.ic-sidebar-collapsed .sidebar-item-control,
-body.ic-sidebar-collapsed .standard-sidebar-label,
-body.ic-sidebar-collapsed .section-break .sidebar-item-label,
+.body-sidebar-container:not(.expanded) .body-sidebar {
+  width: 56px !important;
+  min-width: 56px !important;
+  padding: 8px 0 !important;
+  align-items: center;
+}
 .body-sidebar-container:not(.expanded) .sidebar-item-label,
 .body-sidebar-container:not(.expanded) .item-label,
 .body-sidebar-container:not(.expanded) .sidebar-item-control,
-.body-sidebar-container:not(.expanded) .standard-sidebar-label {
+.body-sidebar-container:not(.expanded) .standard-sidebar-label,
+.body-sidebar-container:not(.expanded) .collapse-sidebar-link span {
   display: none !important;
 }
-body.ic-sidebar-collapsed .item-anchor,
-body.ic-sidebar-collapsed .standard-sidebar-item,
-.body-sidebar-container:not(.expanded) .item-anchor,
-.body-sidebar-container:not(.expanded) .standard-sidebar-item {
+.body-sidebar-container:not(.expanded) .standard-sidebar-item,
+.body-sidebar-container:not(.expanded) .item-anchor {
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  height: 36px !important;
+  margin: 2px auto !important;
+  padding: 0 !important;
   justify-content: center !important;
-  width: 40px !important;
-  min-width: 40px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
-  padding: 8px !important;
+  align-items: center !important;
   gap: 0 !important;
 }
-body.ic-sidebar-collapsed .sidebar-item-icon,
 .body-sidebar-container:not(.expanded) .sidebar-item-icon {
+  width: 28px !important;
+  height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.body-sidebar-container:not(.expanded) .sidebar-item-icon svg {
   margin: 0 !important;
 }
 
+/* Quotation / list filter sidebar: links share one left edge */
+.layout-side-section .list-sidebar .sidebar-label,
+.layout-side-section .list-sidebar .list-link a {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+.list-row .level-right {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end;
+  gap: 8px;
+  overflow: visible !important;
+  flex: 0 0 auto !important;
+}
 .ic-row-actions {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  margin-right: 8px;
+  margin-right: 4px;
 }
 .ic-row-actions .btn {
   min-height: 28px;
   padding: 2px 10px !important;
+  white-space: nowrap;
 }
 
 [data-page-route^="Form/Quotation"] .frappe-control[data-fieldname="ic_total_quoted_value"] .like-disabled-input,

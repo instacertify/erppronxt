@@ -1,5 +1,21 @@
 /* Quotation list: keep New Quotation, and add View / PDF on each row. */
 frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] || {};
+frappe.listview_settings["Quotation"].button = {
+	show() {
+		return true;
+	},
+	get_label() {
+		return __("View");
+	},
+	get_description(doc) {
+		return __("View {0}", [doc.name]);
+	},
+	action(doc) {
+		if (window.instacertify && instacertify.open_doc_preview) {
+			instacertify.open_doc_preview("Quotation", doc.name);
+		}
+	},
+};
 
 (function () {
 	const prev = frappe.listview_settings["Quotation"].onload;

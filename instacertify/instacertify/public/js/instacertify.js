@@ -647,42 +647,55 @@ instacertify.sync_sidebar_icons = function () {
 	});
 };
 
-/** View and download from quotation and invoice lists without opening the form first. */
+/** Open the printed quote, or download its PDF. */
+instacertify.open_doc_preview = function (doctype, name) {
+	const url = frappe.urllib.get_full_url(
+		`/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(name)}&trigger_print=0`
+	);
+	window.open(url, "_blank", "noopener");
+};
+
+instacertify.download_doc_pdf = function (doctype, name) {
+	const method =
+		doctype === "Quotation"
+			? "instacertify.utils.pdf.download_quotation_pdf"
+			: "frappe.utils.print_format.download_pdf";
+	const params =
+		doctype === "Quotation"
+			? `name=${encodeURIComponent(name)}`
+			: `doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(name)}&no_letterhead=0`;
+	window.open(frappe.urllib.get_full_url(`/api/method/${method}?${params}`), "_blank", "noopener");
+};
+
+/** View and download on each quotation / invoice row. */
 instacertify.decorate_doc_list = function (listview) {
 	if (!listview || !listview.doctype || !listview.$result) return;
 	const doctype = listview.doctype;
 	if (!["Quotation", "Sales Invoice"].includes(doctype)) return;
-	listview.$result.find(".list-row-container[data-name]").each(function () {
+	listview.$result.find(".list-row-container").each(function () {
 		const row = this;
 		if (row.querySelector(".ic-row-actions")) return;
-		const name = row.getAttribute("data-name");
+		const named =
+			row.querySelector("a[data-name]") ||
+			row.querySelector(".list-row-checkbox[data-name]") ||
+			row.querySelector("[data-name]");
+		const name = named && named.getAttribute("data-name");
 		if (!name) return;
-		const right = row.querySelector(".level-right");
+		const right = row.querySelector(".level-right") || row.querySelector(".list-row");
 		if (!right) return;
 		const actions = document.createElement("span");
 		actions.className = "ic-row-actions";
+		const viewBtn = row.querySelector(".btn-action")
+			? ""
+			: `<button type="button" class="btn btn-xs btn-default ic-row-view" title="${__("View quote")}">${__("View")}</button>`;
 		actions.innerHTML =
-			`<button type="button" class="btn btn-xs btn-default ic-row-view">${__("View")}</button>` +
-			`<button type="button" class="btn btn-xs btn-default ic-row-pdf">${__("PDF")}</button>`;
+			viewBtn +
+			`<button type="button" class="btn btn-xs btn-default ic-row-pdf" title="${__("Download PDF")}">${__("PDF")}</button>`;
 		actions.addEventListener("click", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			const view = e.target.closest(".ic-row-view");
-			const pdf = e.target.closest(".ic-row-pdf");
-			if (view) {
-				const route = `/app/print/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`;
-				window.open(route, "_blank", "noopener");
-			} else if (pdf) {
-				const method =
-					doctype === "Quotation"
-						? "instacertify.utils.pdf.download_quotation_pdf"
-						: "frappe.utils.print_format.download_pdf";
-				const params =
-					doctype === "Quotation"
-						? `name=${encodeURIComponent(name)}`
-						: `doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(name)}&no_letterhead=0`;
-				window.open(`/api/method/${method}?${params}`, "_blank", "noopener");
-			}
+			if (e.target.closest(".ic-row-view")) instacertify.open_doc_preview(doctype, name);
+			else if (e.target.closest(".ic-row-pdf")) instacertify.download_doc_pdf(doctype, name);
 		});
 		right.prepend(actions);
 	});
@@ -709,6 +722,15 @@ $(document).on("page-change", function () {
 		instacertify.polish_desk_search();
 		instacertify.install_password_menu();
 		instacertify.sync_sidebar_icons();
+		setTimeout(() => {
+			try {
+				if (typeof cur_list !== "undefined" && cur_list && instacertify.decorate_doc_list) {
+					instacertify.decorate_doc_list(cur_list);
+				}
+			} catch (e) {
+				/* list not open */
+			}
+		}, 200);
 		const route = frappe.get_route ? frappe.get_route() : [];
 		if (
 			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
