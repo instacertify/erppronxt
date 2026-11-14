@@ -69,9 +69,13 @@
             <textarea id="customer_remarks" rows="3"></textarea>
           </div>
         </div>
-        <div style="margin-top:16px;">
+        <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:10px;">
           <button class="ic-btn ic-btn-primary" id="btn-save">Submit dispatch sheet</button>
+          <a class="ic-btn ic-btn-accent" id="btn-pdf" href="#" target="_blank" rel="noopener" style="display:none;">Download PDF of filled data</a>
         </div>
+      </div>
+      <div id="pdf-only" style="display:none;margin-top:12px;">
+        <a class="ic-btn ic-btn-accent" id="btn-pdf-closed" href="#" target="_blank" rel="noopener">Download PDF of filled data</a>
       </div>
     </div>
   </div>
@@ -129,12 +133,20 @@
           if (d.laboratory_name) html += '<p class="ic-hint">Destination lab: ' + esc(d.laboratory_name) + '</p>';
           if (d.customer_instructions) html += '<div class="ic-hint">' + d.customer_instructions + '</div>';
           document.getElementById('content').innerHTML = html;
+          const pdfUrl = d.pdf_url || ('/api/method/instacertify.sample_dispatch.api.download_dispatch_pdf?token=' + encodeURIComponent(token));
+          const pdfBtn = document.getElementById('btn-pdf');
+          const pdfClosed = document.getElementById('btn-pdf-closed');
+          if (pdfBtn) pdfBtn.href = pdfUrl;
+          if (pdfClosed) pdfClosed.href = pdfUrl;
           if (d.read_only) {
             document.getElementById('form').style.display = 'none';
-            showMsg('This sheet is closed. Contact your Instacertify coordinator if you need changes.', false);
+            document.getElementById('pdf-only').style.display = 'block';
+            showMsg('This sheet is closed. You can still download the PDF of what was submitted.', true);
             return;
           }
           document.getElementById('form').style.display = 'block';
+          document.getElementById('pdf-only').style.display = 'none';
+          if (pdfBtn) pdfBtn.style.display = 'inline-block';
           ['contact_person','contact_phone','contact_email','dispatch_from_address','sample_description',
            'sample_quantity','sample_condition','packaging_details','courier_name','tracking_number',
            'dispatch_date','expected_delivery','customer_remarks'].forEach(k => fill(k, d[k]));
@@ -164,7 +176,7 @@
           pod_attachment: pod,
           customer_remarks: document.getElementById('customer_remarks').value
         });
-        showMsg('Sample dispatch sheet submitted. Thank you.', true);
+        showMsg('Sample dispatch sheet submitted. You can download the PDF below.', true);
         setTimeout(load, 700);
       } catch (e) { showMsg(e.message || 'Could not save', false); }
     };

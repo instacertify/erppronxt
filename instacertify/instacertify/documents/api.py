@@ -656,6 +656,7 @@ def get_document_request_by_token(token: str):
 			"This link does not provide access to Instacertify ERP."
 		),
 		"allowed_types": "PDF, images (PNG/JPG/WEBP/GIF/TIFF), Excel/CSV, Word",
+		"pdf_url": f"/api/method/instacertify.documents.api.download_collection_pdf?token={token}",
 		"items": [
 			{
 				"idx": row.idx,
@@ -673,6 +674,19 @@ def get_document_request_by_token(token: str):
 			for row in doc.items
 		],
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def download_collection_pdf(token: str):
+	"""Customer downloads PDF of the Documents / Data Collection Sheet they filled."""
+	from instacertify.utils.collection_pdf import download_by_share_token
+
+	download_by_share_token(
+		"IC Document Request",
+		token,
+		print_format="Instacertify Documents Collection Sheet",
+		filename_prefix="Documents-Collection",
+	)
 
 
 @frappe.whitelist(allow_guest=True)
