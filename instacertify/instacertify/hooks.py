@@ -28,8 +28,12 @@ def _asset(path):
 app_include_css = [
 	_asset("css/instacertify.css"),
 	_asset("css/desk_saas.css"),
+	# Sizes, spacing, action colour and status colours for every desk page. Keep last.
+	_asset("css/ic_design_system.css"),
 ]
-app_include_js = _asset("js/instacertify.js")
+app_include_js = [
+	_asset("js/instacertify.js"),
+]
 web_include_css = _asset("css/instacertify.css")
 website_include_css = _asset("css/instacertify.css")
 

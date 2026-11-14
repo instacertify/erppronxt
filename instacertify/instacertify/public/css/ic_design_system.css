@@ -1,0 +1,628 @@
+/* ==========================================================================
+   Instacertify design system
+   One place for text sizes, spacing, the action colour and status colours.
+   Loaded last on the desk, so a change here reaches every page.
+   Visual only: no field, price, tax, permission or workflow is touched.
+   ========================================================================== */
+
+:root,
+html[data-theme="light"] {
+  /* Text: seven sizes, nothing smaller than 11px */
+  --ic-fs-xs: 11px;
+  --ic-fs-sm: 12px;
+  --ic-fs-base: 13px;
+  --ic-fs-md: 14px;
+  --ic-fs-lg: 16px;
+  --ic-fs-xl: 20px;
+  --ic-fs-2xl: 24px;
+
+  /* Spacing: 4px steps */
+  --ic-s1: 4px;
+  --ic-s2: 8px;
+  --ic-s3: 12px;
+  --ic-s4: 16px;
+  --ic-s5: 24px;
+  --ic-s6: 32px;
+
+  /* One colour for "do this" buttons (white text reads at 8.9:1) */
+  --ic-action: #065175;
+  --ic-action-hover: #04405d;
+  --btn-primary: var(--ic-action);
+  --btn-primary-hover: var(--ic-action-hover);
+
+  /* Status: the same five meanings everywhere */
+  --ic-ok: #0b7a4a;
+  --ic-ok-bg: #e5f8ef;
+  --ic-warn: #955700;
+  --ic-warn-bg: #fff4e5;
+  --ic-danger: #c02626;
+  --ic-danger-bg: #fdecec;
+  --ic-info: #1b62b0;
+  --ic-info-bg: #ebf3fe;
+  --ic-neutral: #565b73;
+  --ic-neutral-bg: #eceef4;
+
+  --ic-btn-h: 32px;
+}
+
+html[data-theme="dark"],
+body[data-theme="dark"] {
+  --ic-action: #1f6f9c;
+  --ic-action-hover: #2a82b4;
+  --btn-primary: var(--ic-action);
+  --btn-primary-hover: var(--ic-action-hover);
+  --ic-ok: #7dcea0;
+  --ic-ok-bg: #143528;
+  --ic-warn: #f0c27a;
+  --ic-warn-bg: #3a2c14;
+  --ic-danger: #f0a0a0;
+  --ic-danger-bg: #3a1c1c;
+  --ic-info: #8eb9ff;
+  --ic-info-bg: #1a2d4d;
+  --ic-neutral: #b3b8cb;
+  --ic-neutral-bg: #262a3a;
+}
+
+/* ——— Type: one family, no text under 11px ——— */
+body [class^="ic-"],
+body [class*=" ic-"] {
+  font-family: var(--ic-font, "Inter", "Segoe UI", sans-serif) !important;
+}
+body .ic-ts-summary-badge {
+  font-size: var(--ic-fs-xs) !important;
+}
+
+/* ——— Buttons: one action colour, one height ——— */
+body .btn-primary,
+body .btn.btn-primary,
+body .btn-primary:not(:disabled) {
+  background: var(--ic-action) !important;
+  border-color: var(--ic-action) !important;
+  color: #fff !important;
+}
+body .btn-primary:hover,
+body .btn-primary:focus {
+  background: var(--ic-action-hover) !important;
+  border-color: var(--ic-action-hover) !important;
+}
+body .btn[disabled],
+body .btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+body .page-head .page-actions .btn:not(.btn-xs) {
+  height: var(--ic-btn-h) !important;
+  min-height: var(--ic-btn-h) !important;
+  line-height: 20px;
+}
+body .page-head .page-actions .btn.icon-btn {
+  width: var(--ic-btn-h);
+  min-width: var(--ic-btn-h);
+}
+body .layout-main-section .btn.btn-sm,
+body .layout-main-section a.btn.btn-sm {
+  min-height: var(--ic-btn-h);
+  line-height: 20px;
+}
+
+/* ——— Keyboard focus is always visible ——— */
+body a:focus-visible,
+body button:focus-visible,
+body .btn:focus-visible,
+body [role="button"]:focus-visible,
+body [tabindex]:not([tabindex="-1"]):focus-visible,
+body .list-row:focus-visible {
+  outline: 2px solid var(--ic-accent, #408dfb) !important;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ——— Status pills ——— */
+body .indicator-pill.green,
+body .indicator-pill.green span {
+  background: var(--ic-ok-bg) !important;
+  color: var(--ic-ok) !important;
+}
+body .indicator-pill.blue,
+body .indicator-pill.blue span,
+body .indicator-pill.light-blue,
+body .indicator-pill.light-blue span {
+  background: var(--ic-info-bg) !important;
+  color: var(--ic-info) !important;
+}
+body .indicator-pill.orange,
+body .indicator-pill.orange span,
+body .indicator-pill.yellow,
+body .indicator-pill.yellow span {
+  background: var(--ic-warn-bg) !important;
+  color: var(--ic-warn) !important;
+}
+body .indicator-pill.red,
+body .indicator-pill.red span {
+  background: var(--ic-danger-bg) !important;
+  color: var(--ic-danger) !important;
+}
+body .indicator-pill.gray,
+body .indicator-pill.gray span,
+body .indicator-pill.grey,
+body .indicator-pill.grey span,
+body .indicator-pill.darkgrey,
+body .indicator-pill.darkgrey span {
+  background: var(--ic-neutral-bg) !important;
+  color: var(--ic-neutral) !important;
+}
+
+/* ——— Page header ———
+   The home icon already leads to the workspace, so its name is dropped from the
+   trail on every screen. The last name in the trail is the page title. */
+.page-head .navbar-breadcrumbs li:has(> a.worksapce-breadcrumb) {
+  display: none !important;
+}
+body .page-head .navbar-breadcrumbs li a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-warning):not(.btn-danger):not(.btn-success):not(.btn-info):not(.btn-accent) {
+  color: var(--ic-muted) !important;
+  font-weight: 500;
+  font-size: var(--ic-fs-base);
+}
+body .page-head .navbar-breadcrumbs li:last-child a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-warning):not(.btn-danger):not(.btn-success):not(.btn-info):not(.btn-accent) {
+  color: var(--ic-ink) !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+}
+
+/* One line: title on the left, buttons on the right. Buttons that do not fit are
+   folded into "More" by ic_experience.js; until that has run the header may wrap. */
+@media (min-width: 768px) {
+  body .page-container .page-head.ic-head-tidy .page-head-content {
+    flex-wrap: nowrap !important;
+  }
+  body .page-container .page-head.ic-head-tidy .page-title {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+  /* when room is short the earlier names give way first; the page name stays */
+  body .page-head.ic-head-tidy .navbar-breadcrumbs li:not(:last-child) {
+    flex-shrink: 8;
+  }
+  body .page-head.ic-head-tidy .navbar-breadcrumbs li:last-child {
+    flex: 0 1 auto;
+    min-width: 72px;
+  }
+  body .page-container .page-head.ic-head-tidy .page-actions,
+  body .page-container .page-head.ic-head-tidy .standard-items-section,
+  body .page-container .page-head.ic-head-tidy .page-actions .custom-actions,
+  body .page-container .page-head.ic-head-tidy .page-actions .standard-actions {
+    flex-wrap: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+}
+.page-head.ic-head-measure .title-area,
+.page-head.ic-head-measure .title-area * {
+  flex-shrink: 0 !important;
+  max-width: none !important;
+}
+.page-head .title-area > .navbar-breadcrumbs {
+  min-width: 72px;
+}
+.page-head .title-area > .indicator-pill {
+  flex-shrink: 0;
+}
+.page-head .custom-actions > .ic-folded {
+  display: none !important;
+}
+.page-head .ic-more-actions {
+  position: relative;
+  display: inline-flex;
+}
+.page-head .ic-more-actions .ic-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.page-head .ic-more-actions .dropdown-menu {
+  min-width: 220px;
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+}
+.page-head .ic-more-actions .ic-more-head {
+  font-size: var(--ic-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ic-muted);
+  padding: 8px 12px 2px;
+}
+body .page-head .ic-more-actions a.dropdown-item:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-warning):not(.btn-danger):not(.btn-success):not(.btn-info):not(.btn-accent) {
+  font-size: var(--ic-fs-base);
+  padding: 7px 12px;
+  white-space: nowrap;
+  color: var(--ic-ink) !important;
+  text-decoration: none !important;
+}
+body .page-head .ic-more-actions a.dropdown-item:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-warning):not(.btn-danger):not(.btn-success):not(.btn-info):not(.btn-accent):hover,
+body .page-head .ic-more-actions a.dropdown-item:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-warning):not(.btn-danger):not(.btn-success):not(.btn-info):not(.btn-accent):focus-visible {
+  background: var(--ic-accent-soft) !important;
+}
+.page-head .ic-more-actions .dropdown-item.ic-more-sub {
+  padding-left: 20px;
+}
+
+/* An older rule forces the filter row to show even on pages that have no filters,
+   which left an empty white strip under the header of Home and the custom pages. */
+.page-form.hide {
+  display: none !important;
+}
+
+/* ——— List filter row: every box and button the same height ——— */
+body .page-form .frappe-control input.form-control,
+body .page-form .frappe-control select.form-control,
+body .page-form .filter-section .btn,
+body .page-form .sort-selector .btn {
+  height: var(--ic-btn-h) !important;
+  min-height: var(--ic-btn-h) !important;
+}
+
+/* ——— Lists: columns share the row instead of pushing it sideways ——— */
+.frappe-list .result-container {
+  container-type: inline-size;
+  container-name: iclist;
+}
+.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col {
+  flex-shrink: 1 !important;
+  min-width: 56px !important;
+}
+.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col.list-subject {
+  min-width: 140px !important;
+}
+/* a status is never cut short */
+.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col:has(> .indicator-pill),
+.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col:has(> span > .indicator-pill) {
+  flex-shrink: 0 !important;
+  min-width: 96px !important;
+}
+@container iclist (max-width: 900px) {
+  .result .level-left > .list-row-col:nth-child(n + 8) {
+    display: none !important;
+  }
+}
+@container iclist (max-width: 720px) {
+  .result .level-left > .list-row-col:nth-child(n + 6) {
+    display: none !important;
+  }
+}
+@container iclist (max-width: 600px) {
+  .result .level-left > .list-row-col:nth-child(n + 5) {
+    display: none !important;
+  }
+}
+
+/* ——— Stage bar above a list ——— */
+.ic-statbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--ic-s2);
+  margin: 0 0 var(--ic-s3);
+  min-height: 74px;
+}
+.ic-stat {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "label count" "amount amount";
+  align-items: baseline;
+  gap: 2px var(--ic-s2);
+  min-width: 0;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--fg-color, #fff);
+  border: 1px solid var(--ic-border);
+  border-top: 3px solid var(--ic-stat-tone, var(--ic-neutral));
+  border-radius: 10px;
+  color: var(--ic-ink);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+.ic-stat:hover {
+  background: var(--ic-stat-bg, var(--ic-neutral-bg));
+}
+.ic-stat.is-on {
+  background: var(--ic-stat-bg, var(--ic-neutral-bg));
+  border-color: var(--ic-stat-tone, var(--ic-neutral));
+  box-shadow: inset 0 0 0 1px var(--ic-stat-tone, var(--ic-neutral));
+}
+.ic-stat-label {
+  grid-area: label;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--ic-fs-sm);
+  font-weight: 600;
+  color: var(--ic-stat-tone, var(--ic-neutral));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ic-stat-dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ic-stat-tone, var(--ic-neutral));
+}
+.ic-stat-count {
+  grid-area: count;
+  font-size: var(--ic-fs-xl);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.ic-stat-amount {
+  grid-area: amount;
+  font-size: var(--ic-fs-sm);
+  color: var(--ic-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ic-stat.is-empty .ic-stat-count {
+  color: var(--ic-muted);
+  font-weight: 600;
+}
+.ic-tone-ok {
+  --ic-stat-tone: var(--ic-ok);
+  --ic-stat-bg: var(--ic-ok-bg);
+}
+.ic-tone-warn {
+  --ic-stat-tone: var(--ic-warn);
+  --ic-stat-bg: var(--ic-warn-bg);
+}
+.ic-tone-danger {
+  --ic-stat-tone: var(--ic-danger);
+  --ic-stat-bg: var(--ic-danger-bg);
+}
+.ic-tone-info {
+  --ic-stat-tone: var(--ic-info);
+  --ic-stat-bg: var(--ic-info-bg);
+}
+.ic-tone-neutral {
+  --ic-stat-tone: var(--ic-neutral);
+  --ic-stat-bg: var(--ic-neutral-bg);
+}
+@media (max-width: 767px) {
+  .ic-statbar {
+    display: flex;
+    overflow-x: auto;
+    gap: 6px;
+    margin: 0 8px var(--ic-s2);
+    min-height: 66px;
+    scrollbar-width: none;
+  }
+  .ic-statbar::-webkit-scrollbar {
+    display: none;
+  }
+  .ic-stat {
+    flex: 0 0 auto;
+    min-width: 112px;
+    max-width: 220px;
+    padding: 8px 10px;
+  }
+  .ic-stat-label {
+    overflow: visible;
+  }
+}
+
+/* ——— Page intro on the custom pages: one look ———
+   Lead Reminders, Project Board, Testing & Samples, Quote Format Library and the
+   Document Collection Library each had their own banner. */
+body .ic-lr-hero,
+body .ic-project-board-head,
+body .ic-ts-head,
+body .ic-quote-lib-head,
+body .ic-doclib-head {
+  background: var(--fg-color, #fff) !important;
+  background-image: none !important;
+  border: 1px solid var(--ic-border) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  color: var(--ic-ink) !important;
+  padding: var(--ic-s4) 20px !important;
+  min-height: 0 !important;
+}
+body .ic-lr-kicker,
+body .ic-project-board-kicker,
+body .ic-ts-kicker,
+body .ic-quote-lib-kicker,
+body .ic-doclib-kicker,
+body .ic-collab-kicker {
+  font-size: var(--ic-fs-xs) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--ic-muted) !important;
+}
+body .ic-lr-title,
+body .ic-project-board-title,
+body .ic-ts-title,
+body .ic-quote-lib-title,
+body .ic-doclib-title {
+  font-size: var(--ic-fs-xl) !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.02em;
+  color: var(--ic-ink) !important;
+  margin: 2px 0 !important;
+}
+body .ic-collab-side-title {
+  font-size: var(--ic-fs-lg) !important;
+  font-weight: 700 !important;
+  color: var(--ic-ink) !important;
+}
+body .ic-lr-sub,
+body .ic-project-board-sub,
+body .ic-ts-sub,
+body .ic-quote-lib-sub,
+body .ic-doclib-sub {
+  font-size: var(--ic-fs-base) !important;
+  line-height: 1.45 !important;
+  color: var(--ic-muted) !important;
+  margin: 0 !important;
+}
+body .ic-lr-hero .ic-lr-counts {
+  background: var(--ic-warn-bg) !important;
+  color: var(--ic-warn) !important;
+  border: 0 !important;
+  border-radius: 999px;
+  font-size: var(--ic-fs-sm) !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ——— Home: quick links are one compact row each, empty headings are dropped ——— */
+.ce-block.ic-empty-heading {
+  display: none !important;
+}
+
+/* Shortcut and number tiles were tall squares that were mostly empty and cut their
+   own names short. They are now as tall as their content and show the full name. */
+body [data-page-route="Workspaces"] .widget.shortcut-widget-box,
+body [data-page-route="Workspaces"] .widget.number-widget-box,
+body [data-page-route="instacertify-home"] .widget.shortcut-widget-box,
+body [data-page-route="instacertify-home"] .widget.number-widget-box,
+body.full-width .widget.shortcut-widget-box,
+body.full-width .widget.number-widget-box {
+  aspect-ratio: auto !important;
+  min-height: 0 !important;
+  justify-content: center !important;
+}
+body .widget.shortcut-widget-box {
+  padding: var(--ic-s2) var(--ic-s3) !important;
+  min-height: 44px !important;
+  justify-content: center !important;
+}
+body .widget.shortcut-widget-box .widget-head {
+  align-items: center;
+  gap: var(--ic-s2);
+}
+body .widget.shortcut-widget-box .widget-title {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  font-size: var(--ic-fs-md) !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+}
+body .widget.shortcut-widget-box .widget-title,
+body .widget.shortcut-widget-box .widget-title .ellipsis {
+  white-space: normal !important;
+  overflow: visible !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  hyphens: none !important;
+}
+/* Tiles in one row share the height of the tallest one. */
+.ce-block:has(> .ce-block__content .shortcut-widget-box) > .ce-block__content,
+.ce-block:has(> .ce-block__content .shortcut-widget-box) > .ce-block__content > div,
+.ce-block:has(> .ce-block__content .number-widget-box) > .ce-block__content,
+.ce-block:has(> .ce-block__content .number-widget-box) > .ce-block__content > div {
+  height: 100%;
+  box-sizing: border-box;
+}
+body .ce-block .widget.shortcut-widget-box,
+body .ce-block .widget.number-widget-box {
+  height: 100% !important;
+}
+body .widget.number-widget-box .widget-title,
+body .widget.number-widget-box .widget-title .ellipsis {
+  white-space: normal !important;
+  overflow: visible !important;
+  line-height: 1.3 !important;
+}
+body .widget.number-widget-box {
+  padding: var(--ic-s3) !important;
+  gap: var(--ic-s1);
+}
+body .widget.number-widget-box .widget-body {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+}
+body .widget.number-widget-box .widget-body .widget-content,
+body .widget.number-widget-box .widget-body .widget-content .number {
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: var(--ic-fs-2xl) !important;
+  line-height: 1.2 !important;
+}
+
+/* ——— Phone: finger-sized targets without moving anything ——— */
+@media (max-width: 767px) {
+  body .page-head .sidebar-toggle-btn {
+    position: relative;
+  }
+  body .page-head .sidebar-toggle-btn::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+  }
+  body .page-form .frappe-control input.form-control,
+  body .page-form .frappe-control select.form-control,
+  body .page-form .filter-section .btn,
+  body .page-form .sort-selector .btn {
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  /* On a phone the status is a small dot, not a word; an empty pill only took room. */
+  body .page-head .title-area .indicator-pill:empty {
+    display: none !important;
+  }
+  body .page-head .title-area .indicator-pill:has(> .indicator-doc-html) {
+    padding: 0 !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    margin-left: 6px !important;
+  }
+  body .page-head .title-area .indicator-pill > .indicator-doc-html {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  /* The page name was cut to three letters ("Quo…") because the buttons took the
+     row first. The name now gets the spare room and the buttons sit closer. */
+  body .page-head .page-head-content > .page-title {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+  body .page-head .page-head-content > .standard-items-section {
+    flex: 0 0 auto !important;
+  }
+  body .page-head .page-actions .custom-mobile-actions {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  body .page-head .page-actions .standard-actions .btn-primary {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    min-width: 0 !important;
+    margin-left: 2px !important;
+  }
+  body .page-head .page-actions .custom-mobile-actions .custom-btn-group,
+  body .page-head .page-actions .custom-mobile-actions .btn {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
+  body .page-head .page-actions .standard-actions .menu-btn-group {
+    margin-left: 4px !important;
+    padding-left: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ic-stat {
+    transition: none;
+  }
+}
