@@ -266,25 +266,34 @@ body .page-form .sort-selector .btn {
   container-type: inline-size;
   container-name: iclist;
 }
-/* A row is as wide as the list, not as wide as its columns would like to be, so
-   the columns give way to each other down to a readable minimum; on narrow
-   screens the last columns are dropped (see the container rules below). */
-.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .list-row-container {
-  width: 100% !important;
-  min-width: 0 !important;
-}
-.layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .list-row-container .level-left {
-  min-width: 0 !important;
-}
 .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col {
   flex-shrink: 1 !important;
-  /* wide enough for a full date or a short amount */
-  min-width: 84px !important;
+  min-width: 56px !important;
 }
-/* the name of the record is the last thing to be shortened */
 .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col.list-subject {
-  flex-shrink: 0.15 !important;
   min-width: 140px !important;
+}
+/* Tablet and up, where a list is a table. (A phone draws each record as a small
+   card, which already fits.) A row is as wide as the list, not as wide as its
+   columns would like to be, so the columns give way to each other down to a
+   readable minimum; the last columns are dropped when there are too many. */
+@media (min-width: 768px) {
+  .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .list-row-container {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .list-row-container .level-left {
+    min-width: 0 !important;
+  }
+  /* wide enough for a full date or a short amount */
+  .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col {
+    min-width: 84px !important;
+  }
+  /* the name of the record is the last thing to be shortened */
+  .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col.list-subject {
+    flex-shrink: 0.15 !important;
+    min-width: 140px !important;
+  }
 }
 /* a status is never cut short */
 .layout-main-section-wrapper:not(.disable-scrolling) .frappe-list .result .level-left .list-row-col:has(> .indicator-pill),
