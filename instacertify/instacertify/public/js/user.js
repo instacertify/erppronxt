@@ -34,7 +34,8 @@ frappe.ui.form.on("User", {
 		}
 		frm.remove_custom_button(__("Reset Password"), __("Password"));
 		frm.remove_custom_button(__("Change Password"), __("Password"));
-		frm.add_custom_button(__("Set Password"), () => ic_set_password_dialog(frm), __("Password"));
+		frm.remove_custom_button(__("Set Password"), __("Password"));
+		frm.add_custom_button(__("Change Password"), () => ic_set_password_dialog(frm), __("Password"));
 	},
 
 	new_password(frm) {
@@ -61,54 +62,7 @@ function ic_show_password_fields(frm) {
 }
 
 function ic_set_password_dialog(frm) {
-	const d = new frappe.ui.Dialog({
-		title: __("Set Password"),
-		fields: [
-			{
-				fieldname: "help",
-				fieldtype: "HTML",
-				options: `<p class="text-muted">${__(
-					"Sets the password now. No email is sent."
-				)}</p>`,
-			},
-			{
-				fieldname: "new_password",
-				fieldtype: "Password",
-				label: __("New Password"),
-				reqd: 1,
-			},
-			{
-				fieldname: "confirm_password",
-				fieldtype: "Password",
-				label: __("Confirm Password"),
-				reqd: 1,
-			},
-		],
-		primary_action_label: __("Set Password"),
-		primary_action(values) {
-			if (values.new_password !== values.confirm_password) {
-				frappe.msgprint(__("Passwords do not match."));
-				return;
-			}
-			const logout = frm.doc.name === frappe.session.user ? 0 : 1;
-			frappe.call({
-				method: "frappe.core.doctype.user.user.change_password",
-				args: {
-					user: frm.doc.name,
-					new_password: values.new_password,
-					logout_all_sessions: logout,
-				},
-				freeze: true,
-				freeze_message: __("Setting password…"),
-				callback() {
-					d.hide();
-					frappe.show_alert({
-						message: __("Password set. No email was sent."),
-						indicator: "green",
-					});
-				},
-			});
-		},
-	});
-	d.show();
+	if (window.instacertify && instacertify.open_change_password) {
+		instacertify.open_change_password(frm.doc.name);
+	}
 }

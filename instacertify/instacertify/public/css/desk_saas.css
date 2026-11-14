@@ -657,15 +657,78 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   align-items: center;
 }
 
-/* Sidebar keeps one width and does not cover the page */
+/* Expanded sidebar has one width. Collapsed sidebar is icons only. */
+.body-sidebar-container,
+.body-sidebar {
+  transition: width 180ms ease, min-width 180ms ease, max-width 180ms ease, flex-basis 180ms ease;
+}
 @media (min-width: 992px) {
-  .layout-side-section,
-  .desk-sidebar,
-  .body-sidebar-container {
-    flex: 0 0 var(--ic-sidebar);
+  .body-sidebar-container.expanded {
     width: var(--ic-sidebar);
+    min-width: var(--ic-sidebar);
     max-width: var(--ic-sidebar);
   }
+  .layout-side-section:not(.hidden) {
+    flex: 0 0 240px;
+    width: 240px;
+    max-width: 280px;
+  }
+}
+body.ic-sidebar-collapsed .body-sidebar-container,
+.body-sidebar-container:not(.expanded) {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+}
+body.ic-sidebar-collapsed .sidebar-item-label,
+body.ic-sidebar-collapsed .item-label,
+body.ic-sidebar-collapsed .sidebar-item-control,
+body.ic-sidebar-collapsed .standard-sidebar-label,
+body.ic-sidebar-collapsed .section-break .sidebar-item-label,
+.body-sidebar-container:not(.expanded) .sidebar-item-label,
+.body-sidebar-container:not(.expanded) .item-label,
+.body-sidebar-container:not(.expanded) .sidebar-item-control,
+.body-sidebar-container:not(.expanded) .standard-sidebar-label {
+  display: none !important;
+}
+body.ic-sidebar-collapsed .item-anchor,
+body.ic-sidebar-collapsed .standard-sidebar-item,
+.body-sidebar-container:not(.expanded) .item-anchor,
+.body-sidebar-container:not(.expanded) .standard-sidebar-item {
+  justify-content: center !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 8px !important;
+  gap: 0 !important;
+}
+body.ic-sidebar-collapsed .sidebar-item-icon,
+.body-sidebar-container:not(.expanded) .sidebar-item-icon {
+  margin: 0 !important;
+}
+
+.ic-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+.ic-row-actions .btn {
+  min-height: 28px;
+  padding: 2px 10px !important;
+}
+
+[data-page-route^="Form/Quotation"] .frappe-control[data-fieldname="ic_total_quoted_value"] .like-disabled-input,
+[data-page-route^="Form/Quotation"] .frappe-control[data-fieldname="grand_total"] .like-disabled-input,
+[data-page-route^="Form/Quotation"] .frappe-control[data-fieldname="net_total"] .like-disabled-input {
+  min-height: 34px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+[data-page-route^="Form/Quotation"] .form-grid {
+  overflow-x: auto;
 }
 .layout-main,
 .layout-main-section-wrapper {
@@ -876,6 +939,15 @@ a:not(.btn):not(.btn-primary):not(.btn-secondary):not(.btn-default):not(.btn-war
   }
 }
 @media (max-width: 768px) {
+  .ic-row-actions {
+    margin-right: 0;
+  }
+  .ic-row-actions .btn {
+    min-height: 36px;
+  }
+  .page-head .page-title .title-text {
+    font-size: 1rem;
+  }
   :root {
     --ic-page-pad: 10px;
     --ic-home-side-pad: 10px;

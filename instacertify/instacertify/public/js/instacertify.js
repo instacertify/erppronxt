@@ -465,6 +465,8 @@ $(document).on("app_ready", function () {
 	try {
 		instacertify.enable_full_width_desk();
 		instacertify.polish_desk_search();
+		instacertify.install_password_menu();
+		instacertify.sync_sidebar_icons();
 	} catch (e) {
 		/* ignore */
 	}
@@ -545,6 +547,151 @@ instacertify.polish_desk_search = function () {
 	if (box) box.classList.add("ic-global-search");
 };
 
+/** Current password + new password. Own account must prove the current one. */
+instacertify.open_change_password = function (user) {
+	user = user || (frappe.session && frappe.session.user);
+	if (!user || user === "Guest") return;
+	const isSelf = user === frappe.session.user;
+	const d = new frappe.ui.Dialog({
+		title: __("Change Password"),
+		fields: [
+			{
+				fieldname: "help",
+				fieldtype: "HTML",
+				options: `<p class="text-muted" style="margin-bottom:8px">${__(
+					isSelf
+						? "Enter your current password, then the new one. No email is sent."
+						: "Set a new password for this user. No email is sent."
+				)}</p>`,
+			},
+			{
+				fieldname: "old_password",
+				fieldtype: "Password",
+				label: __("Current Password"),
+				reqd: isSelf ? 1 : 0,
+			},
+			{
+				fieldname: "new_password",
+				fieldtype: "Password",
+				label: __("New Password"),
+				reqd: 1,
+			},
+			{
+				fieldname: "confirm_password",
+				fieldtype: "Password",
+				label: __("Confirm New Password"),
+				reqd: 1,
+			},
+		],
+		primary_action_label: __("Change Password"),
+		primary_action(values) {
+			if ((values.new_password || "") !== (values.confirm_password || "")) {
+				frappe.msgprint(__("New passwords do not match."));
+				return;
+			}
+			if (isSelf && !values.old_password) {
+				frappe.msgprint(__("Enter your current password."));
+				return;
+			}
+			frappe.call({
+				method: "instacertify.overrides.user.change_user_password",
+				args: {
+					user,
+					old_password: values.old_password || "",
+					new_password: values.new_password,
+				},
+				freeze: true,
+				freeze_message: __("Updating password…"),
+				callback(r) {
+					if (r.exc) return;
+					d.hide();
+					frappe.show_alert({
+						message: __("Password updated. No email was sent."),
+						indicator: "green",
+					});
+				},
+			});
+		},
+	});
+	d.show();
+};
+
+instacertify.install_password_menu = function () {
+	const menu = document.querySelector(".dropdown-navbar-user .dropdown-menu");
+	if (!menu || menu.querySelector(".ic-change-password")) return;
+	const item = document.createElement("a");
+	item.className = "dropdown-item ic-change-password";
+	item.href = "#";
+	item.textContent = __("Change Password");
+	item.addEventListener("click", (e) => {
+		e.preventDefault();
+		instacertify.open_change_password(frappe.session.user);
+	});
+	const divider = menu.querySelector(".dropdown-divider");
+	if (divider) menu.insertBefore(item, divider);
+	else menu.prepend(item);
+};
+
+/** Collapsed desk sidebar keeps icons and shows the name on hover. */
+instacertify.sync_sidebar_icons = function () {
+	const root =
+		document.querySelector(".body-sidebar-container") ||
+		document.querySelector(".body-sidebar")?.parentElement;
+	if (!root) return;
+	const collapsed = !root.classList.contains("expanded");
+	document.body.classList.toggle("ic-sidebar-collapsed", collapsed);
+	root.querySelectorAll(".item-anchor, .standard-sidebar-item").forEach((el) => {
+		const label = el.querySelector(".sidebar-item-label");
+		const text = (label && label.textContent.trim()) || el.getAttribute("data-label") || "";
+		if (text) el.setAttribute("title", text);
+	});
+};
+
+/** View and download from quotation and invoice lists without opening the form first. */
+instacertify.decorate_doc_list = function (listview) {
+	if (!listview || !listview.doctype || !listview.$result) return;
+	const doctype = listview.doctype;
+	if (!["Quotation", "Sales Invoice"].includes(doctype)) return;
+	listview.$result.find(".list-row-container[data-name]").each(function () {
+		const row = this;
+		if (row.querySelector(".ic-row-actions")) return;
+		const name = row.getAttribute("data-name");
+		if (!name) return;
+		const right = row.querySelector(".level-right");
+		if (!right) return;
+		const actions = document.createElement("span");
+		actions.className = "ic-row-actions";
+		actions.innerHTML =
+			`<button type="button" class="btn btn-xs btn-default ic-row-view">${__("View")}</button>` +
+			`<button type="button" class="btn btn-xs btn-default ic-row-pdf">${__("PDF")}</button>`;
+		actions.addEventListener("click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			const view = e.target.closest(".ic-row-view");
+			const pdf = e.target.closest(".ic-row-pdf");
+			if (view) {
+				const route = `/app/print/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`;
+				window.open(route, "_blank", "noopener");
+			} else if (pdf) {
+				const method =
+					doctype === "Quotation"
+						? "instacertify.utils.pdf.download_quotation_pdf"
+						: "frappe.utils.print_format.download_pdf";
+				const params =
+					doctype === "Quotation"
+						? `name=${encodeURIComponent(name)}`
+						: `doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(name)}&no_letterhead=0`;
+				window.open(`/api/method/${method}?${params}`, "_blank", "noopener");
+			}
+		});
+		right.prepend(actions);
+	});
+};
+
+$(document).on("sidebar-expand.icSidebar", function () {
+	setTimeout(() => instacertify.sync_sidebar_icons(), 20);
+});
+
 $(document).on("keydown.icDeskSearch", function (e) {
 	const key = (e.key || "").toLowerCase();
 	if (!((e.ctrlKey || e.metaKey) && key === "k")) return;
@@ -560,6 +707,8 @@ $(document).on("page-change", function () {
 	try {
 		instacertify.enable_full_width_desk();
 		instacertify.polish_desk_search();
+		instacertify.install_password_menu();
+		instacertify.sync_sidebar_icons();
 		const route = frappe.get_route ? frappe.get_route() : [];
 		if (
 			(route[0] === "Workspaces" && (route[1] === "Home" || route[1] === "Welcome Workspace")) ||
@@ -2716,7 +2865,42 @@ frappe.ui.form.on("Quotation Item", {
 			frappe.model.set_value(cdt, cdn, "item_name", row.description);
 		}
 	},
+	rate(frm, cdt, cdn) {
+		instacertify.reflect_quote_line_amount(frm, cdt, cdn);
+	},
+	qty(frm, cdt, cdn) {
+		instacertify.reflect_quote_line_amount(frm, cdt, cdn);
+	},
+	amount(frm, cdt, cdn) {
+		instacertify.reflect_quote_line_amount(frm, cdt, cdn);
+	},
 });
+
+/** Paint rate, line amount, and quote totals as soon as a figure changes. */
+instacertify.reflect_quote_line_amount = function (frm, cdt, cdn) {
+	if (!frm || frm.doctype !== "Quotation") return;
+	clearTimeout(frm._ic_amt_timer);
+	frm._ic_amt_timer = setTimeout(() => {
+		try {
+			if (frm.cscript && typeof frm.cscript.calculate_taxes_and_totals === "function") {
+				frm.cscript.calculate_taxes_and_totals();
+			}
+		} catch (e) {
+			/* core calculator already ran */
+		}
+		["total", "net_total", "grand_total", "rounded_total", "total_taxes_and_charges", "base_grand_total"].forEach(
+			(fieldname) => {
+				if (frm.fields_dict[fieldname]) frm.refresh_field(fieldname);
+			}
+		);
+		if (cdt && cdn) {
+			instacertify.refresh_grid_row_soft(frm, "items", cdn, ["qty", "rate", "amount"]);
+		}
+		if (typeof instacertify.refresh_quotation_cost_totals === "function") {
+			instacertify.refresh_quotation_cost_totals(frm);
+		}
+	}, 30);
+};
 
 instacertify.suggest_quote_item_service_price = function (frm, cdt, cdn) {
 	const row = locals[cdt][cdn];
@@ -4072,10 +4256,9 @@ instacertify.refresh_quotation_cost_totals = function (frm) {
 		if (cint(row.exclude_from_total)) return;
 		const custom = (row.charges_display || "").trim();
 		const qty = cint(row.qty) || 1;
-		const amount =
-			row.total_amount != null && row.total_amount !== ""
-				? flt(row.total_amount)
-				: flt(row.amount) * qty;
+		const live = flt(row.amount) * qty;
+		const stored = row.total_amount != null && row.total_amount !== "" ? flt(row.total_amount) : live;
+		const amount = Math.abs(stored - live) > 0.009 ? live : stored || live;
 		if (custom && !flt(row.amount) && !amount) return;
 		add(row.currency, amount);
 		const treatment = (row.revenue_treatment || "").trim();

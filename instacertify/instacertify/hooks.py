@@ -20,6 +20,8 @@ website_include_css = "/assets/instacertify/css/instacertify.css"
 
 doctype_list_js = {
 	"Lead": "public/js/lead_list.js",
+	"Quotation": "public/js/quotation_list.js",
+	"Sales Invoice": "public/js/sales_invoice_list.js",
 }
 
 doctype_js = {

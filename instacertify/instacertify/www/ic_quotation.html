@@ -8,22 +8,35 @@
   <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
   <style>
-    .ic-portal-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
-    .ic-portal-muted { color:#5b7380; font-size:0.92rem; }
-    .ic-portal-table { width:100%; border-collapse:collapse; margin:12px 0; font-size:0.95rem; }
-    .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #e2eef4; padding:8px 6px; text-align:left; }
-    .ic-portal-table th { color:#0D47A1; font-weight:600; }
-    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#E7F1FC; color:#0D47A1; font-size:0.85rem; }
+    body.ic-portal-body { margin:0; background:#f5f6fa; color:#21263c; font-family:Inter,"Segoe UI",sans-serif; }
+    .ic-portal-wrap { width:min(920px, calc(100% - 32px)); margin:28px auto 48px; }
+    .ic-portal-card { background:#fff; border:1px solid #e3e6ef; border-radius:16px; box-shadow:0 10px 30px rgba(33,38,60,.06); padding:28px 28px 22px; }
+    .ic-portal-card h2 { color:#21263c; margin:0 0 8px; letter-spacing:-0.03em; font-size:1.6rem; }
+    .ic-portal-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; align-items:center; }
+    .ic-portal-muted { color:#6c718a; font-size:0.92rem; }
+    .ic-table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .ic-portal-table { width:100%; border-collapse:collapse; margin:8px 0 4px; font-size:0.95rem; min-width:560px; }
+    .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #e8ebf3; padding:10px 8px; text-align:left; vertical-align:top; }
+    .ic-portal-table th { color:#6c718a; font-weight:600; font-size:0.78rem; letter-spacing:.04em; text-transform:uppercase; }
+    .ic-portal-table td { font-variant-numeric:tabular-nums; }
+    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#ebf3fe; color:#1b6ec2; font-size:0.85rem; font-weight:600; }
     .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
     .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
     .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
     .ic-portal-prose { white-space:pre-wrap; line-height:1.55; margin:0; }
-    .ic-portal-total { margin-top:14px; padding:12px 14px; border:1px solid #d7e3ea; border-radius:8px; background:#f7fafc; display:flex; justify-content:space-between; gap:12px; font-weight:700; color:#16324f; }
+    .ic-portal-total { margin-top:14px; padding:14px 16px; border:1px solid #d7e0f0; border-radius:12px; background:#f7f9fd; display:flex; justify-content:space-between; gap:12px; font-weight:700; color:#21263c; font-size:1.05rem; }
     .ic-portal-section { margin-top:18px; }
-    .ic-portal-section h4 { margin:0 0 8px; color:#16324f; font-size:1rem; letter-spacing:0.01em; }
+    .ic-portal-section h4, .ic-portal-card h4 { margin:16px 0 8px; color:#21263c; font-size:1rem; letter-spacing:-0.01em; }
     #msg { margin-top:12px; padding:10px 12px; border-radius:10px; display:none; }
     #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     #msg.err { display:block; background:#fdecea; color:#b42318; }
+    .ic-btn { border-radius:10px; min-height:40px; padding:8px 14px; }
+    @media (max-width: 700px) {
+      .ic-portal-wrap { width:calc(100% - 16px); margin:12px auto 28px; }
+      .ic-portal-card { padding:16px 14px; border-radius:12px; }
+      .ic-portal-card h2 { font-size:1.3rem; }
+      .ic-portal-actions .ic-btn, .ic-portal-actions a.ic-btn { flex:1 1 100%; text-align:center; }
+    }
   </style>
 </head>
 <body class="ic-portal-body">
@@ -122,10 +135,10 @@
         : '';
       return {
         total: grand,
-        html: '<h4 style="color:#0D47A1;margin:18px 0 6px;">Commercials / Cost Breakdown</h4>' +
+        html: '<h4>Commercials / Cost Breakdown</h4><div class="ic-table-scroll">' +
           '<table class="ic-portal-table"><thead><tr><th>Particulars</th><th>Unit Price</th><th>No. of Units</th><th>Total Charges</th></tr></thead><tbody>' +
           body + totalRow +
-          '</tbody></table>'
+          '</tbody></table></div>'
       };
     }
     function testTable(rows, currency, showTotals) {
@@ -151,12 +164,12 @@
         : '';
       return {
         total: grand,
-        html: '<h4 style="color:#0D47A1;margin:12px 0 6px;">Test Lines — Laboratory, Scope &amp; Charges</h4>' +
+        html: '<h4>Test Lines — Laboratory, Scope &amp; Charges</h4><div class="ic-table-scroll">' +
           '<table class="ic-portal-table"><thead><tr>' +
           '<th>Test Name</th><th>Standard</th><th>Description</th>' +
           '<th>No. of Samples</th><th>Price</th><th>Total Price</th>' +
           '</tr></thead><tbody>' + body + totalRow +
-          '</tbody></table>'
+          '</tbody></table></div>'
       };
     }
     function paymentGstNote(currency) {
