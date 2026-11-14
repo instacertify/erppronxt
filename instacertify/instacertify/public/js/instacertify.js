@@ -2283,7 +2283,8 @@ instacertify.kpi_routes = function () {
 			doctype: "Lead",
 			filters: {
 				status: ["not in", ["Converted", "Do Not Contact"]],
-				ic_next_contact_date: ["<=", today],
+				// "between" leaves out leads with no contact date, so the list matches the count.
+				ic_next_contact_date: ["between", ["2000-01-01", today]],
 			},
 		},
 		"Leads This Week": { doctype: "Lead", filters: { creation: [">=", week_start] } },
