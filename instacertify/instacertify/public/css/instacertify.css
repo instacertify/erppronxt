@@ -1781,14 +1781,15 @@ body.for-login,
   background: linear-gradient(180deg, #f3f8fb 0%, #ffffff 40%);
   border: 1px solid #d7e6ef;
   border-radius: var(--ic-radius);
-  padding: 16px 18px 8px;
+  padding: 18px 20px 18px;
   margin-bottom: 12px;
 }
 .ic-crm-tracker-title {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--ic-primary);
-  margin-bottom: 12px;
+  margin: 0 0 12px;
+  line-height: 1.4;
 }
 .ic-crm-charts {
   display: grid;
@@ -1800,7 +1801,7 @@ body.for-login,
   background: #fff;
   border: 1px solid #d7e6ef;
   border-radius: var(--ic-radius);
-  padding: 12px 12px 4px;
+  padding: 16px 18px 14px;
   min-height: 260px;
 }
 .ic-crm-chart-label {
@@ -1809,7 +1810,8 @@ body.for-login,
   letter-spacing: 0.04em;
   color: #5b7382;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin: 0 0 10px;
+  line-height: 1.4;
 }
 .ic-summary-card.up .value { color: #1b7a4e; }
 .ic-summary-card.down .value { color: #b42318; }
@@ -4114,7 +4116,8 @@ body.full-width .widget.number-widget-box {
 
 @media (min-width: 1200px) {
   :root {
-    --ic-home-side-pad: 4px;
+    --ic-home-side-pad: 20px;
+    --ic-page-pad: 20px;
     --ic-tile-min: 140px;
   }
 }
