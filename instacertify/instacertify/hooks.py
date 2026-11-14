@@ -252,6 +252,7 @@ override_doctype_dashboards = {
 	"Quotation": "instacertify.overrides.quotation.get_dashboard_data",
 	"Project": "instacertify.overrides.project.get_dashboard_data",
 	"Lead": "instacertify.overrides.lead.get_dashboard_data",
+	"Helpdesk Ticket": "instacertify.overrides.helpdesk_ticket.get_dashboard_data",
 }
 
 override_doctype_class = {
