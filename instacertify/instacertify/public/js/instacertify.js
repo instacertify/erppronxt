@@ -8754,9 +8754,7 @@ instacertify.open_quick_lead = function (opts) {
 			{ fieldtype: "Column Break" },
 			{ fieldname: "email_id", fieldtype: "Data", label: __("Email"), options: "Email" },
 			{ fieldtype: "Section Break" },
-			{ fieldname: "source_box", fieldtype: "HTML" },
-			{ fieldtype: "Section Break" },
-			{ fieldname: "service_box", fieldtype: "HTML" },
+			{ fieldname: "choices", fieldtype: "HTML" },
 			{ fieldtype: "Section Break" },
 			{ fieldname: "need_box", fieldtype: "HTML" },
 		],
@@ -8892,17 +8890,38 @@ instacertify.open_quick_lead = function (opts) {
 		const chips = document.createElement("div");
 		chips.className = "ic-capture-chips";
 		root.appendChild(chips);
+		const tools = document.createElement("div");
+		tools.className = "ic-choice-tools";
+		const select = document.createElement("select");
+		select.className = "form-control ic-choice-select";
 		const search = document.createElement("input");
 		search.type = "text";
 		search.className = "form-control ic-choice-search";
-		search.placeholder = __("Search or add another");
+		search.placeholder = __("Not in the list");
 		search.setAttribute("autocomplete", "off");
-		root.appendChild(search);
-		const menu = document.createElement("div");
-		menu.className = "ic-city-menu";
-		menu.hidden = true;
-		root.appendChild(menu);
+		const addBtn = document.createElement("button");
+		addBtn.type = "button";
+		addBtn.className = "ic-choice-add";
+		addBtn.textContent = __("Add");
+		tools.append(select, search, addBtn);
+		root.appendChild(tools);
 		host.append(root);
+
+		function fill_select() {
+			const current = state[key] || "";
+			select.innerHTML = "";
+			const blank = document.createElement("option");
+			blank.value = "";
+			blank.textContent = __("Choose from the list");
+			select.appendChild(blank);
+			all.forEach((name) => {
+				const opt = document.createElement("option");
+				opt.value = name;
+				opt.textContent = name;
+				select.appendChild(opt);
+			});
+			select.value = all.indexOf(current) >= 0 ? current : "";
+		}
 
 		function paint_chips() {
 			chips.innerHTML = "";
@@ -8915,61 +8934,45 @@ instacertify.open_quick_lead = function (opts) {
 				btn.textContent = value;
 				btn.addEventListener("click", () => {
 					state[key] = state[key] === value ? "" : value;
+					fill_select();
 					paint_chips();
-					menu.hidden = true;
 				});
 				chips.appendChild(btn);
 			});
+			fill_select();
 		}
 
-		function select(name) {
+		function select_name(name) {
 			state[key] = name;
 			search.value = "";
-			menu.hidden = true;
-			if (popular.indexOf(name) < 0 && all.indexOf(name) < 0) {
-				all.push(name);
-				popular.push(name);
-			}
+			if (name && all.indexOf(name) < 0) all.push(name);
+			if (name && popular.indexOf(name) < 0) popular.push(name);
 			paint_chips();
 		}
 
-		function open_menu() {
-			const typed = search.value.trim().toLowerCase();
-			const rows = all.filter((name) => !typed || name.toLowerCase().indexOf(typed) >= 0).slice(0, 12);
-			menu.innerHTML = "";
-			rows.forEach((name) => {
-				const btn = document.createElement("button");
-				btn.type = "button";
-				btn.className = "ic-city-option";
-				btn.textContent = name;
-				btn.addEventListener("click", () => select(name));
-				menu.appendChild(btn);
-			});
+		select.addEventListener("change", () => select_name(select.value));
+		addBtn.addEventListener("click", () => {
 			const raw = search.value.trim();
-			const exact = all.some((name) => name.toLowerCase() === raw.toLowerCase());
-			if (raw && !exact) {
-				const add = document.createElement("button");
-				add.type = "button";
-				add.className = "ic-city-option ic-city-add";
-				add.textContent = __("Add {0}", [raw]);
-				add.addEventListener("click", () => {
-					frappe.call({
-						method: "instacertify.crm.events.add_lead_capture_choice",
-						args: { kind, label: raw },
-						freeze: true,
-						callback(r) {
-							if (r.message && r.message.name) select(r.message.name);
-						},
-					});
-				});
-				menu.appendChild(add);
+			if (!raw) {
+				frappe.show_alert({ message: __("Type the new name, then press Add"), indicator: "orange" });
+				search.focus();
+				return;
 			}
-			menu.hidden = !menu.childElementCount;
-		}
-		search.addEventListener("focus", open_menu);
-		search.addEventListener("input", open_menu);
-		d.$wrapper.on("click.ic-choice-" + key, (ev) => {
-			if (!root.contains(ev.target)) menu.hidden = true;
+			const existing = all.find((name) => name.toLowerCase() === raw.toLowerCase());
+			if (existing) {
+				select_name(existing);
+				return;
+			}
+			frappe.call({
+				method: "instacertify.crm.events.add_lead_capture_choice",
+				args: { kind, label: raw },
+				callback(r) {
+					if (r.message && r.message.name) {
+						select_name(r.message.name);
+						frappe.show_alert({ message: __("Added {0}", [r.message.name]), indicator: "green" });
+					}
+				},
+			});
 		});
 		paint_chips();
 	}
@@ -8978,14 +8981,14 @@ instacertify.open_quick_lead = function (opts) {
 		const host = d.fields_dict.need_box.$wrapper.empty();
 		const root = document.createElement("div");
 		root.className = "ic-need";
-		root.innerHTML = `<div class="ic-capture-label">${__("Description")}</div><div class="ic-need-hint">${__(
-			"What do they need? Pick a color, then write."
-		)}</div>`;
+		root.innerHTML = `<div class="ic-need-head"><div class="ic-capture-label">${__(
+			"Description"
+		)}</div><div class="ic-need-hint">${__("Pick a color, then write what they need.")}</div></div>`;
 		const colors = document.createElement("div");
 		colors.className = "ic-need-colors";
 		const area = document.createElement("textarea");
 		area.className = "form-control ic-need-text";
-		area.rows = 4;
+		area.rows = 2;
 		area.placeholder = __("Describe what they need");
 		function apply(color) {
 			state.color = color.hex;
@@ -9004,7 +9007,7 @@ instacertify.open_quick_lead = function (opts) {
 			btn.addEventListener("click", () => apply(color));
 			colors.appendChild(btn);
 		});
-		root.appendChild(colors);
+		root.querySelector(".ic-need-head").appendChild(colors);
 		root.appendChild(area);
 		host.append(root);
 		apply(instacertify.REMARK_COLORS[0]);
@@ -9021,8 +9024,14 @@ instacertify.open_quick_lead = function (opts) {
 			lists.sources = msg.sources || [];
 			lists.popular_services = msg.popular_services || [];
 			lists.services = msg.services || [];
+			const grid = document.createElement("div");
+			grid.className = "ic-choice-grid";
+			const sourceHost = document.createElement("div");
+			const serviceHost = document.createElement("div");
+			grid.append(sourceHost, serviceHost);
+			d.fields_dict.choices.$wrapper.empty().append(grid);
 			choice_block(
-				d.fields_dict.source_box.$wrapper,
+				$(sourceHost),
 				__("Where did they come from?"),
 				"source",
 				lists.popular_sources,
@@ -9030,7 +9039,7 @@ instacertify.open_quick_lead = function (opts) {
 				"source"
 			);
 			choice_block(
-				d.fields_dict.service_box.$wrapper,
+				$(serviceHost),
 				__("What is it for?"),
 				"service",
 				lists.popular_services,

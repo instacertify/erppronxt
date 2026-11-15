@@ -913,7 +913,91 @@ body[data-route="Workspaces/Instacertify Home"] .legend-dataset-label {
   }
 }
 
-/* New lead: searchable city and source lists, Monday description colors. */
+/* New lead: Monday board colors, a real dropdown, and an Add button that stays visible. */
+.ic-capture-dialog .modal-content {
+  background: #f5f6f8 !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+.ic-capture-dialog .modal-header {
+  background: linear-gradient(90deg, #0073ea 0%, #579bfc 55%, #a25ddc 100%) !important;
+  border: 0 !important;
+  padding: 12px 16px !important;
+}
+.ic-capture-dialog .modal-title,
+.ic-capture-dialog .modal-header .btn-modal-close {
+  color: #fff !important;
+}
+.ic-capture-dialog .modal-body {
+  padding: 12px 12px 4px !important;
+}
+.ic-capture-dialog .modal-footer {
+  background: #fff !important;
+  border-top: 1px solid #e6e9ef !important;
+}
+.ic-capture-dialog .modal-footer .btn-primary {
+  background: #0073ea !important;
+  border-color: #0073ea !important;
+  color: #fff !important;
+}
+.ic-capture-dialog .form-layout { background: transparent !important; }
+.ic-capture-dialog .form-section,
+.ic-capture-dialog .form-section .section-body {
+  background: #fff;
+}
+.ic-capture-dialog .form-section {
+  border: 1px solid #e6e9ef !important;
+  border-radius: 12px !important;
+  padding: 8px 12px 2px !important;
+  margin: 0 0 8px !important;
+}
+.ic-capture-dialog .form-section:nth-child(1) { border-top: 3px solid #579bfc !important; }
+.ic-capture-dialog .form-section:nth-child(2) { border-top: 3px solid #00c875 !important; }
+.ic-capture-dialog .form-section:nth-child(3) { border-top: 3px solid #fdab3d !important; }
+.ic-capture-dialog .form-section:nth-child(4) { border-top: 3px solid #a25ddc !important; }
+.ic-capture-dialog .form-section:nth-child(5) { border-top: 3px solid #ff642e !important; }
+.ic-capture-dialog .frappe-control { margin-bottom: 6px !important; }
+.ic-capture-dialog .ic-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.ic-capture-dialog .ic-choice-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto;
+  gap: 6px;
+  margin-top: 8px;
+  align-items: center;
+}
+.ic-capture-dialog .ic-choice-add {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #0073ea;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ic-capture-dialog .ic-choice-add:hover { background: #0060c2; }
+.ic-capture-dialog .ic-lead-filter-chip.is-on {
+  background: #0073ea !important;
+  border-color: #0073ea !important;
+  color: #fff !important;
+}
+.ic-capture-dialog .ic-need-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ic-capture-dialog .ic-need-head .ic-need-hint { margin: 0; }
+@media (max-width: 800px) {
+  .ic-capture-dialog .ic-choice-grid,
+  .ic-capture-dialog .ic-choice-tools { grid-template-columns: 1fr; }
+}
 .ic-capture-dialog .ic-capture-label {
   text-transform: none;
   letter-spacing: 0;
