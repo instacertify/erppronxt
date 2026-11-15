@@ -591,7 +591,14 @@ def _ensure_home_html_block():
       `<button type="button" class="ic-hero-btn${i === 0 ? " primary" : ""}" data-doctype="${esc(a[0])}"><span aria-hidden="true">+</span> ${esc(a[1])}</button>`
     ).join("");
     box.querySelectorAll(".ic-hero-btn").forEach((btn) => {
-      btn.onclick = function () { frappe.new_doc(btn.getAttribute("data-doctype")); };
+      btn.onclick = function () {
+        const dt = btn.getAttribute("data-doctype");
+        if (dt === "Lead" && window.instacertify && instacertify.open_quick_lead) {
+          instacertify.open_quick_lead();
+          return;
+        }
+        frappe.new_doc(dt);
+      };
     });
   })();
 
