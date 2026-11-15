@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import re
+
 import frappe
 from frappe import _
 
@@ -12,37 +14,163 @@ def before_validate_lead(doc, method=None):
 	_sync_party_name(doc)
 
 
+_POPULAR_SOURCES = (
+	"Website",
+	"Google Search",
+	"Google Ads",
+	"IndiaMART",
+	"Direct Call",
+	"Reference",
+	"Consultant",
+)
+_POPULAR_SERVICES = ("BIS", "Testing", "Certification", "Consulting", "EPR")
+_REMARK_COLOR = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def _clean_choice(label: str) -> str:
+	label = " ".join((label or "").split())
+	if not label or len(label) > 140:
+		frappe.throw(_("Use a name of 1 to 140 characters."))
+	if any(ch in label for ch in "<>\n\r\t"):
+		frappe.throw(_("Use letters and numbers in the name."))
+	return label
+
+
+def _choice_names(doctype: str) -> list[str]:
+	if not frappe.db.exists("DocType", doctype):
+		return []
+	return frappe.get_all(
+		doctype,
+		filters={"is_active": 1},
+		pluck="name",
+		order_by="sort_order asc, name asc",
+		limit_page_length=500,
+	)
+
+
+@frappe.whitelist()
+def get_lead_capture_choices():
+	"""Popular chips plus every active source and product for the new-lead form."""
+	frappe.has_permission("Lead", "create", throw=True)
+	sources = _choice_names("IC Lead Source")
+	services = _choice_names("IC Project Type")
+	have_sources = set(sources)
+	have_services = set(services)
+	return {
+		"popular_sources": [name for name in _POPULAR_SOURCES if name in have_sources],
+		"sources": sources,
+		"popular_services": [name for name in _POPULAR_SERVICES if name in have_services],
+		"services": services,
+	}
+
+
+@frappe.whitelist()
+def add_lead_capture_choice(kind: str, label: str):
+	"""Add a source or a product from the new-lead form. Only someone who can create a lead."""
+	frappe.has_permission("Lead", "create", throw=True)
+	label = _clean_choice(label)
+	if kind == "source":
+		doctype, field = "IC Lead Source", "source_name"
+	elif kind == "service":
+		doctype, field = "IC Project Type", "project_type_name"
+	else:
+		frappe.throw(_("Choose a source or a product."))
+	if not frappe.db.exists("DocType", doctype):
+		frappe.throw(_("That list is not ready yet."))
+	if frappe.db.exists(doctype, label):
+		return {"name": label}
+	doc = frappe.get_doc(
+		{"doctype": doctype, field: label, "is_active": 1, "sort_order": 500}
+	)
+	doc.insert(ignore_permissions=True)
+	return {"name": doc.name}
+
+
+@frappe.whitelist()
+def search_india_cities(txt: str | None = None):
+	"""Indian cities for the lead form, plus any city already saved on a lead."""
+	frappe.has_permission("Lead", "create", throw=True)
+	from instacertify.crm.india_cities import india_city_names
+
+	names = india_city_names()
+	seen = {name.casefold() for name in names}
+	try:
+		saved = frappe.db.sql(
+			"""
+			select distinct city
+			from `tabLead`
+			where ifnull(country, '') in ('India', '')
+			  and ifnull(city, '') != ''
+			"""
+		)
+	except Exception:
+		saved = []
+	for (city,) in saved:
+		city = " ".join(str(city).split())
+		if city and city.casefold() not in seen:
+			seen.add(city.casefold())
+			names.append(city)
+	names.sort(key=str.casefold)
+	needle = " ".join((txt or "").split()).casefold()
+	if needle:
+		starts = [name for name in names if name.casefold().startswith(needle)]
+		contains = [
+			name
+			for name in names
+			if needle in name.casefold() and not name.casefold().startswith(needle)
+		]
+		names = starts + contains
+	return names[:40]
+
+
 @frappe.whitelist()
 def create_quick_lead(
 	party_name: str,
+	company_name: str | None = None,
 	mobile_no: str | None = None,
 	email_id: str | None = None,
 	source: str | None = None,
 	project_type: str | None = None,
 	remarks: str | None = None,
+	remark_color: str | None = None,
+	country: str | None = None,
+	city: str | None = None,
 ):
-	"""Create a Lead from the short capture card. Name is the only required value."""
+	"""Create a Lead from the short capture card. The person's name is the only required value."""
 	frappe.has_permission("Lead", "create", throw=True)
-	party = (party_name or "").strip()
+	party = " ".join((party_name or "").split())
 	if not party:
-		frappe.throw(_("Name is required"))
+		frappe.throw(_("Name of the person is required"))
+	company = " ".join((company_name or "").split()) or party
 	source = (source or "").strip()
 	project_type = (project_type or "").strip()
 	if source and not frappe.db.exists("IC Lead Source", source):
 		source = ""
 	if project_type and not frappe.db.exists("IC Project Type", project_type):
 		project_type = ""
+	country_name = (country or "").strip() or "India"
+	if not frappe.db.exists("Country", country_name):
+		country_name = "India" if frappe.db.exists("Country", "India") else ""
+	note = (remarks or "").strip()
+	color = (remark_color or "").strip()
+	if note and _REMARK_COLOR.match(color) and color.lower() != "#323338":
+		note = f"#ic:{color}\n{note}"
+	parts = party.split()
 	doc = frappe.get_doc(
 		{
 			"doctype": "Lead",
 			"ic_party_name": party[:140],
-			"company_name": party[:140],
-			"first_name": party.split()[0][:140],
+			"lead_name": party[:140],
+			"company_name": company[:140],
+			"first_name": parts[0][:140],
+			"last_name": " ".join(parts[1:])[:140] or None,
 			"mobile_no": (mobile_no or "").strip()[:20] or None,
 			"email_id": (email_id or "").strip()[:140] or None,
+			"country": country_name or None,
+			"city": " ".join((city or "").split())[:140] or None,
 			"ic_lead_source_detail": source or None,
 			"ic_project_type": project_type or None,
-			"ic_call_remarks": (remarks or "").strip() or None,
+			"ic_call_remarks": note or None,
 			"status": "Lead",
 			"ic_pipeline_stage": "Lead",
 		}

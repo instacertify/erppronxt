@@ -912,3 +912,91 @@ body[data-route="Workspaces/Instacertify Home"] .legend-dataset-label {
     max-width: 100% !important;
   }
 }
+
+/* New lead: searchable city and source lists, Monday description colors. */
+.ic-capture-dialog .ic-capture-label {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #323338;
+}
+.ic-capture-dialog .ic-city-pick,
+.ic-capture-dialog .ic-choice,
+.ic-capture-dialog .ic-need {
+  position: relative;
+}
+.ic-capture-dialog .ic-choice-search {
+  margin-top: 8px;
+}
+.ic-capture-dialog .ic-city-menu {
+  position: absolute;
+  z-index: 30;
+  left: 0;
+  right: 0;
+  top: calc(100% - 2px);
+  max-height: 220px;
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #d0d4e4;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(50, 51, 56, 0.12);
+}
+.ic-capture-dialog .ic-city-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: #fff;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #323338;
+  cursor: pointer;
+}
+.ic-capture-dialog .ic-city-option:hover {
+  background: #f5f6f8;
+}
+.ic-capture-dialog .ic-city-add {
+  color: #0073ea;
+  font-weight: 600;
+}
+.ic-capture-dialog .ic-need-hint {
+  font-size: 12px;
+  color: #676879;
+  margin-bottom: 6px;
+}
+.ic-capture-dialog .ic-need-colors {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.ic-capture-dialog .ic-need-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #d0d4e4;
+  cursor: pointer;
+  padding: 0;
+}
+.ic-capture-dialog .ic-need-swatch.is-on {
+  box-shadow: 0 0 0 2px #323338;
+}
+.ic-capture-dialog .ic-need-text {
+  min-height: 96px;
+  font-weight: 600;
+}
+textarea[data-tone="#323338"],
+.ic-capture-dialog .ic-need-text[data-tone="#323338"] { color: #323338 !important; background: #fff !important; }
+textarea[data-tone="#2259a8"] { color: #2259a8 !important; background: #e8f3ff !important; }
+textarea[data-tone="#037f4c"] { color: #037f4c !important; background: #e6f9ef !important; }
+textarea[data-tone="#7a4d00"] { color: #7a4d00 !important; background: #fff6de !important; }
+textarea[data-tone="#c43e0c"] { color: #c43e0c !important; background: #ffeee8 !important; }
+textarea[data-tone="#b3253d"] { color: #b3253d !important; background: #fde8ec !important; }
+textarea[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !important; }
+.ic-capture-dialog .ic-need-text[data-tone="#2259a8"] { color: #2259a8 !important; background: #e8f3ff !important; border-color: #2259a8 !important; }
+.ic-capture-dialog .ic-need-text[data-tone="#037f4c"] { color: #037f4c !important; background: #e6f9ef !important; border-color: #037f4c !important; }
+.ic-capture-dialog .ic-need-text[data-tone="#7a4d00"] { color: #7a4d00 !important; background: #fff6de !important; border-color: #7a4d00 !important; }
+.ic-capture-dialog .ic-need-text[data-tone="#c43e0c"] { color: #c43e0c !important; background: #ffeee8 !important; border-color: #c43e0c !important; }
+.ic-capture-dialog .ic-need-text[data-tone="#b3253d"] { color: #b3253d !important; background: #fde8ec !important; border-color: #b3253d !important; }
+.ic-capture-dialog .ic-need-text[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !important; border-color: #6b3fa0 !important; }

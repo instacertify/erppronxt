@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import re
+
 import frappe
 from frappe.utils import add_days, add_months, cint, get_first_day, getdate, nowdate
 
@@ -198,7 +200,8 @@ def _leads_to_contact(limit=20, include_upcoming_days=7, mine_first=True):
 	def _plain(html_or_text):
 		if not html_or_text:
 			return ""
-		text = frappe.utils.strip_html(str(html_or_text))
+		text = re.sub(r"^#ic:#[0-9A-Fa-f]{6}\s*", "", str(html_or_text))
+		text = frappe.utils.strip_html(text)
 		return " ".join(text.split())
 
 	out = []

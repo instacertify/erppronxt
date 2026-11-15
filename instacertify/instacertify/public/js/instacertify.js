@@ -8682,53 +8682,104 @@ $(document).ready(function () {
 	setTimeout(tryInject, 2000);
 });
 
-// --- Short lead capture: name, phone, source chips, product/service chips ---
+// --- New lead: person, company, country, city, source, purpose, colored description ---
+instacertify.REMARK_COLORS = [
+	{ hex: "#323338", bg: "#ffffff", name: __("Black") },
+	{ hex: "#2259a8", bg: "#e8f3ff", name: __("Blue") },
+	{ hex: "#037f4c", bg: "#e6f9ef", name: __("Green") },
+	{ hex: "#7a4d00", bg: "#fff6de", name: __("Yellow") },
+	{ hex: "#c43e0c", bg: "#ffeee8", name: __("Orange") },
+	{ hex: "#b3253d", bg: "#fde8ec", name: __("Red") },
+	{ hex: "#6b3fa0", bg: "#f4eafb", name: __("Purple") },
+];
+
+instacertify.split_remark_color = function (raw) {
+	const match = /^#ic:(#[0-9A-Fa-f]{6})\n?([\s\S]*)$/.exec(raw || "");
+	if (!match) return { color: "", text: raw || "" };
+	return { color: match[1], text: match[2] };
+};
+
+instacertify.paint_saved_remark = function (frm) {
+	const field = frm.fields_dict && frm.fields_dict.ic_call_remarks;
+	if (!field || !field.$input) return;
+	const parsed = instacertify.split_remark_color(frm.doc.ic_call_remarks || "");
+	const color = (instacertify.REMARK_COLORS || []).find(
+		(item) => item.hex.toLowerCase() === (parsed.color || "").toLowerCase()
+	);
+	if (!parsed.color || !color) {
+		field.$input.css({ color: "", background: "", borderColor: "", fontWeight: "" });
+		return;
+	}
+	frm._ic_remark_color = color.hex;
+	field.$input.attr("data-tone", color.hex);
+	if (String(field.$input.val() || "").indexOf("#ic:") === 0) field.$input.val(parsed.text);
+};
+
 instacertify.open_quick_lead = function (opts) {
 	opts = opts || {};
-	const sources = ["Website", "Google Search", "Google Ads", "IndiaMART", "Direct Call", "Reference", "Consultant", "Other"];
-	const services = ["BIS", "Testing", "Certification", "Consulting", "EPR", "MSDS Authoring", "LMPC", "SABER", "GMARK"];
+	const state = { source: "", service: "", city: "", color: "#323338" };
+	const lists = { popular_sources: [], sources: [], popular_services: [], services: [] };
 	const d = new frappe.ui.Dialog({
 		title: __("New lead"),
 		size: "large",
 		fields: [
 			{ fieldname: "intro", fieldtype: "HTML" },
+			{ fieldtype: "Section Break" },
 			{
-				fieldname: "ic_party_name",
+				fieldname: "person_name",
 				fieldtype: "Data",
-				label: __("Name"),
+				label: __("Name of the person"),
 				reqd: 1,
-				description: __("Person or company. This is enough to save."),
 			},
 			{ fieldtype: "Column Break" },
-			{ fieldname: "mobile_no", fieldtype: "Data", label: __("Phone") },
-			{ fieldtype: "Section Break" },
-			{ fieldname: "email_id", fieldtype: "Data", label: __("Email"), options: "Email" },
-			{ fieldtype: "Column Break" },
-			{ fieldname: "chips", fieldtype: "HTML" },
+			{ fieldname: "company_name", fieldtype: "Data", label: __("Company name") },
 			{ fieldtype: "Section Break" },
 			{
-				fieldname: "ic_call_remarks",
-				fieldtype: "Small Text",
-				label: __("What do they need?"),
+				fieldname: "country",
+				fieldtype: "Link",
+				label: __("Country"),
+				options: "Country",
+				default: "India",
+				get_query() {
+					return { query: "instacertify.crm.dashboard.search_country_india_first" };
+				},
+				onchange() {
+					paint_city();
+				},
 			},
+			{ fieldtype: "Column Break" },
+			{ fieldname: "city_slot", fieldtype: "HTML" },
+			{ fieldtype: "Section Break" },
+			{ fieldname: "mobile_no", fieldtype: "Data", label: __("Phone") },
+			{ fieldtype: "Column Break" },
+			{ fieldname: "email_id", fieldtype: "Data", label: __("Email"), options: "Email" },
+			{ fieldtype: "Section Break" },
+			{ fieldname: "source_box", fieldtype: "HTML" },
+			{ fieldtype: "Section Break" },
+			{ fieldname: "service_box", fieldtype: "HTML" },
+			{ fieldtype: "Section Break" },
+			{ fieldname: "need_box", fieldtype: "HTML" },
 		],
 		primary_action_label: __("Save lead"),
 		primary_action(values) {
-			const name = (values.ic_party_name || "").trim();
+			const name = (values.person_name || "").trim();
 			if (!name) {
-				frappe.msgprint(__("Add a name first."));
+				frappe.msgprint(__("Add the person's name first."));
 				return;
 			}
-			const picked = d.$wrapper.data("ic-capture") || {};
 			frappe.call({
 				method: "instacertify.crm.events.create_quick_lead",
 				args: {
 					party_name: name,
+					company_name: values.company_name || "",
 					mobile_no: values.mobile_no || "",
 					email_id: values.email_id || "",
-					source: picked.source || "",
-					project_type: picked.service || "",
-					remarks: values.ic_call_remarks || "",
+					country: values.country || "India",
+					city: state.city || "",
+					source: state.source || "",
+					project_type: state.service || "",
+					remarks: (d.fields_dict.need_box.$wrapper.find("textarea").val() || "").trim(),
+					remark_color: state.color || "",
 				},
 				freeze: true,
 				freeze_message: __("Saving lead…"),
@@ -8745,49 +8796,251 @@ instacertify.open_quick_lead = function (opts) {
 		},
 	});
 	d.$wrapper.addClass("ic-capture-dialog");
-	d.$wrapper.data("ic-capture", { source: "", service: "" });
 	d.show();
-	const intro = d.fields_dict.intro.$wrapper;
-	intro.html(
-		`<div class="ic-capture-intro"><b>${__("Who is this?")}</b><span>${__(
-			"Tap where they came from and what they want. You can fill the rest later."
+	d.set_value("country", "India");
+	d.fields_dict.intro.$wrapper.html(
+		`<div class="ic-capture-intro"><b>${__("New lead")}</b><span>${__(
+			"Person, company, and where they are. Then where they came from and what it is for."
 		)}</span></div>`
 	);
 
-	function chips(title, key, values) {
+	function paint_city() {
+		const country = (d.get_value("country") || "India").trim();
+		const slot = d.fields_dict.city_slot.$wrapper.empty();
 		const wrap = document.createElement("div");
-		wrap.className = "ic-capture-group";
-		wrap.innerHTML = `<div class="ic-capture-label">${title}</div>`;
-		const row = document.createElement("div");
-		row.className = "ic-capture-chips";
-		values.forEach((value) => {
+		wrap.className = "ic-city-pick";
+		const india = country === "India";
+		wrap.innerHTML = `<div class="ic-capture-label">${__("City")}</div>`;
+		const input = document.createElement("input");
+		input.type = "text";
+		input.className = "form-control";
+		input.value = state.city || "";
+		input.placeholder = india ? __("Search a city") : __("City");
+		input.setAttribute("autocomplete", "off");
+		wrap.appendChild(input);
+		const menu = document.createElement("div");
+		menu.className = "ic-city-menu";
+		menu.hidden = true;
+		wrap.appendChild(menu);
+		slot.append(wrap);
+
+		if (!india) {
+			input.addEventListener("input", () => {
+				state.city = input.value.trim();
+			});
+			return;
+		}
+
+		let timer = null;
+		function choose(name) {
+			state.city = name;
+			input.value = name;
+			menu.hidden = true;
+		}
+		function show(rows, typed) {
+			menu.innerHTML = "";
+			const exact = rows.some((name) => name.toLowerCase() === typed.toLowerCase());
+			rows.forEach((name) => {
+				const btn = document.createElement("button");
+				btn.type = "button";
+				btn.className = "ic-city-option";
+				btn.textContent = name;
+				btn.addEventListener("click", () => choose(name));
+				menu.appendChild(btn);
+			});
+			if (typed && !exact) {
+				const add = document.createElement("button");
+				add.type = "button";
+				add.className = "ic-city-option ic-city-add";
+				add.textContent = __("Add {0}", [typed]);
+				add.addEventListener("click", () => choose(typed));
+				menu.appendChild(add);
+			}
+			menu.hidden = !menu.childElementCount;
+		}
+		function search() {
+			const typed = input.value.trim();
+			state.city = typed;
+			frappe.call({
+				method: "instacertify.crm.events.search_india_cities",
+				args: { txt: typed },
+				silent: true,
+				callback(r) {
+					if (input.value.trim() !== typed) return;
+					show(r.message || [], typed);
+				},
+			});
+		}
+		input.addEventListener("focus", search);
+		input.addEventListener("input", () => {
+			clearTimeout(timer);
+			timer = setTimeout(search, 180);
+		});
+		input.addEventListener("keydown", (ev) => {
+			if (ev.key === "Escape") menu.hidden = true;
+		});
+		d.$wrapper.on("click.ic-city", (ev) => {
+			if (!wrap.contains(ev.target)) menu.hidden = true;
+		});
+	}
+
+	function choice_block(host, title, key, popular, all, kind) {
+		host.empty();
+		const root = document.createElement("div");
+		root.className = "ic-choice";
+		root.innerHTML = `<div class="ic-capture-label">${title}</div>`;
+		const chips = document.createElement("div");
+		chips.className = "ic-capture-chips";
+		root.appendChild(chips);
+		const search = document.createElement("input");
+		search.type = "text";
+		search.className = "form-control ic-choice-search";
+		search.placeholder = __("Search or add another");
+		search.setAttribute("autocomplete", "off");
+		root.appendChild(search);
+		const menu = document.createElement("div");
+		menu.className = "ic-city-menu";
+		menu.hidden = true;
+		root.appendChild(menu);
+		host.append(root);
+
+		function paint_chips() {
+			chips.innerHTML = "";
+			const shown = popular.slice();
+			if (state[key] && shown.indexOf(state[key]) < 0) shown.push(state[key]);
+			shown.forEach((value) => {
+				const btn = document.createElement("button");
+				btn.type = "button";
+				btn.className = "ic-lead-filter-chip" + (state[key] === value ? " is-on" : "");
+				btn.textContent = value;
+				btn.addEventListener("click", () => {
+					state[key] = state[key] === value ? "" : value;
+					paint_chips();
+					menu.hidden = true;
+				});
+				chips.appendChild(btn);
+			});
+		}
+
+		function select(name) {
+			state[key] = name;
+			search.value = "";
+			menu.hidden = true;
+			if (popular.indexOf(name) < 0 && all.indexOf(name) < 0) {
+				all.push(name);
+				popular.push(name);
+			}
+			paint_chips();
+		}
+
+		function open_menu() {
+			const typed = search.value.trim().toLowerCase();
+			const rows = all.filter((name) => !typed || name.toLowerCase().indexOf(typed) >= 0).slice(0, 12);
+			menu.innerHTML = "";
+			rows.forEach((name) => {
+				const btn = document.createElement("button");
+				btn.type = "button";
+				btn.className = "ic-city-option";
+				btn.textContent = name;
+				btn.addEventListener("click", () => select(name));
+				menu.appendChild(btn);
+			});
+			const raw = search.value.trim();
+			const exact = all.some((name) => name.toLowerCase() === raw.toLowerCase());
+			if (raw && !exact) {
+				const add = document.createElement("button");
+				add.type = "button";
+				add.className = "ic-city-option ic-city-add";
+				add.textContent = __("Add {0}", [raw]);
+				add.addEventListener("click", () => {
+					frappe.call({
+						method: "instacertify.crm.events.add_lead_capture_choice",
+						args: { kind, label: raw },
+						freeze: true,
+						callback(r) {
+							if (r.message && r.message.name) select(r.message.name);
+						},
+					});
+				});
+				menu.appendChild(add);
+			}
+			menu.hidden = !menu.childElementCount;
+		}
+		search.addEventListener("focus", open_menu);
+		search.addEventListener("input", open_menu);
+		d.$wrapper.on("click.ic-choice-" + key, (ev) => {
+			if (!root.contains(ev.target)) menu.hidden = true;
+		});
+		paint_chips();
+	}
+
+	function paint_need() {
+		const host = d.fields_dict.need_box.$wrapper.empty();
+		const root = document.createElement("div");
+		root.className = "ic-need";
+		root.innerHTML = `<div class="ic-capture-label">${__("Description")}</div><div class="ic-need-hint">${__(
+			"What do they need? Pick a color, then write."
+		)}</div>`;
+		const colors = document.createElement("div");
+		colors.className = "ic-need-colors";
+		const area = document.createElement("textarea");
+		area.className = "form-control ic-need-text";
+		area.rows = 4;
+		area.placeholder = __("Describe what they need");
+		function apply(color) {
+			state.color = color.hex;
+			area.setAttribute("data-tone", color.hex);
+			colors.querySelectorAll("button").forEach((btn) => {
+				btn.classList.toggle("is-on", btn.getAttribute("data-hex") === color.hex);
+			});
+		}
+		instacertify.REMARK_COLORS.forEach((color) => {
 			const btn = document.createElement("button");
 			btn.type = "button";
-			btn.className = "ic-lead-filter-chip";
-			btn.textContent = value;
-			btn.addEventListener("click", () => {
-				const state = d.$wrapper.data("ic-capture") || {};
-				const on = !btn.classList.contains("is-on");
-				row.querySelectorAll(".ic-lead-filter-chip").forEach((el) => el.classList.remove("is-on"));
-				if (on) {
-					btn.classList.add("is-on");
-					state[key] = value;
-				} else {
-					state[key] = "";
-				}
-				d.$wrapper.data("ic-capture", state);
-			});
-			row.appendChild(btn);
+			btn.className = "ic-need-swatch";
+			btn.title = color.name;
+			btn.setAttribute("data-hex", color.hex);
+			btn.style.background = color.hex;
+			btn.addEventListener("click", () => apply(color));
+			colors.appendChild(btn);
 		});
-		wrap.appendChild(row);
-		return wrap;
+		root.appendChild(colors);
+		root.appendChild(area);
+		host.append(root);
+		apply(instacertify.REMARK_COLORS[0]);
 	}
-	const box = d.fields_dict.chips.$wrapper;
-	box.empty();
-	box.append(chips(__("Where did they come from?"), "source", sources));
-	box.append(chips(__("What is it for?"), "service", services));
+
+	paint_city();
+	paint_need();
+	frappe.call({
+		method: "instacertify.crm.events.get_lead_capture_choices",
+		silent: true,
+		callback(r) {
+			const msg = r.message || {};
+			lists.popular_sources = msg.popular_sources || [];
+			lists.sources = msg.sources || [];
+			lists.popular_services = msg.popular_services || [];
+			lists.services = msg.services || [];
+			choice_block(
+				d.fields_dict.source_box.$wrapper,
+				__("Where did they come from?"),
+				"source",
+				lists.popular_sources,
+				lists.sources,
+				"source"
+			);
+			choice_block(
+				d.fields_dict.service_box.$wrapper,
+				__("What is it for?"),
+				"service",
+				lists.popular_services,
+				lists.services,
+				"service"
+			);
+		},
+	});
 	setTimeout(() => {
-		const input = d.get_field("ic_party_name") && d.get_field("ic_party_name").$input;
+		const input = d.get_field("person_name") && d.get_field("person_name").$input;
 		if (input && input.length) input.trigger("focus");
 	}, 200);
 };
@@ -8814,6 +9067,9 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("mobile_no", "reqd", 0);
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
+		frm.set_df_property("ic_party_name", "label", __("Name of the person"));
+		frm.set_df_property("ic_call_remarks", "label", __("Description"));
+		instacertify.paint_saved_remark(frm);
 		if (frm.is_new()) {
 			frm.set_intro(
 				__("Start with the name, phone, source, and product or service. Everything else can wait."),
@@ -8875,6 +9131,14 @@ frappe.ui.form.on("Lead", {
 	},
 	ic_assigned_salesperson(frm) {
 		instacertify.render_lead_reminder_banner(frm);
+	},
+	before_save(frm) {
+		const parsed = instacertify.split_remark_color(frm.doc.ic_call_remarks || "");
+		const color = frm._ic_remark_color || parsed.color;
+		let text = parsed.color ? parsed.text : frm.doc.ic_call_remarks || "";
+		if (color && color.toLowerCase() !== "#323338" && String(text).trim()) {
+			frm.doc.ic_call_remarks = "#ic:" + color + "\n" + String(text).trim();
+		}
 	},
 	ic_party_name(frm) {
 		const party = (frm.doc.ic_party_name || "").trim();

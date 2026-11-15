@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import re
+
 import frappe
 from frappe import _
 from frappe.utils import add_days, today
@@ -123,7 +125,7 @@ def lead_contact_reminders():
 	for lead in leads:
 		title = lead.ic_party_name or lead.company_name or lead.lead_name or lead.name
 		connected = "Connected" if lead.ic_lead_connected else "Not connected yet"
-		remarks = lead.ic_call_remarks or "No call remarks yet"
+		remarks = re.sub(r"^#ic:#[0-9A-Fa-f]{6}\s*", "", lead.ic_call_remarks or "") or "No call remarks yet"
 		for user in set(filter(None, [lead.lead_owner, lead.owner, "Administrator"])):
 			if not frappe.db.exists("User", user):
 				continue
