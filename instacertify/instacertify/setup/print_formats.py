@@ -450,6 +450,48 @@ LETTERHEAD_CONTEXT_JINJA = """
 # Kept for callers that still compose with the old name — now running page header.
 QUOTE_LETTERHEAD_HTML = QUOTE_RUNNING_HEADER_HTML
 
+# One reading size on every quotation. Only the word Quotation is larger.
+QUOTE_EVEN_TYPE_CSS = """
+  .ic-quote, .ic-quote *,
+  .tq, .tq *,
+  .cq, .cq *,
+  .ic-quote h1, .ic-quote h2, .ic-quote h3, .ic-quote h4,
+  .tq h1, .tq h2, .tq h3, .cq h1, .cq h2, .cq h3,
+  .ic-box > h3, .tq-label, .cq-bar, .tq-h, .cq-h, .cq-service,
+  .tq-meta, .cq-meta, .ic-meta, .ic-party-strip, .ic-party-strip *,
+  .tq-note, .tq-value, .cq-body, .ic-grand-total, .ic-sign, .tq-close, .cq-close,
+  table.ic-table th, table.ic-table td,
+  table.tq-comm th, table.tq-comm td, table.tq-comm td.amt,
+  table.cq-comm th, table.cq-comm td, table.cq-comm td.amt,
+  table.tq-bank td, table.tq-bank td.k,
+  table.cq-bank td, table.cq-bank td.k,
+  table.ic-bank-tbl td, .ic-bank-tbl td {
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-size: 11pt !important;
+    letter-spacing: 0.01em !important;
+  }
+  .ic-doc-title, .tq-title, .cq-title {
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em !important;
+    line-height: 1.25 !important;
+  }
+  .ic-print-header .ic-mast-details,
+  .ic-print-header .ic-mast-details div,
+  .ic-print-header .ic-mast-legal {
+    font-size: 10pt !important;
+    letter-spacing: 0.01em !important;
+    line-height: 1.4 !important;
+  }
+  .ic-print-header .ic-mast-legal { font-weight: 700 !important; }
+  .ic-print-footer-tag { font-size: 11pt !important; letter-spacing: 0.04em !important; }
+  td.tq-label[colspan], td.tq-value[colspan] { width: auto !important; }
+  .tq-value table, .cq-body table, .ic-box table {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+"""
+
 QUOTATION_HTML = """
 """ + LETTERHEAD_CONTEXT_JINJA + """
 <style>
@@ -476,14 +518,15 @@ QUOTATION_HTML = """
     font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
-  .ic-grand-total { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:18pt; color:var(--ic-ink); }
+  .ic-grand-total { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:11pt; color:var(--ic-ink); }
+""" + QUOTE_EVEN_TYPE_CSS + """
 </style>
 """ + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
 <div class="ic-print-body">
 <div class="ic-quote">
   <div class="ic-doc-title">Quotation</div>
-  <p style="margin:0 0 8px;font-size:10.5pt;">Dear {{ doc.customer_name or doc.party_name or 'Sir or Madam' }},</p>
-  <p style="margin:0 0 12px;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The particulars are set out below.</p>
+  <p style="margin:0 0 8px;">Dear {{ doc.customer_name or doc.party_name or 'Sir or Madam' }},</p>
+  <p style="margin:0 0 12px;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The particulars are set out below.</p>
   <div class="ic-meta">
     <div>
       <div><b>Quotation:</b> {{ doc.name }}</div>
@@ -585,7 +628,7 @@ QUOTATION_HTML = """
           <td>{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
           <td>{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
           <td>{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
-          <td><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="color:#667;font-size:10px;">(not summed)</span>{% endif %}</td>
+          <td><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="color:#667;">(not summed)</span>{% endif %}</td>
         </tr>
       {% endfor %}
       {% for t in _by %}
@@ -673,7 +716,6 @@ QUOTATION_HTML = """
     <p style="margin:0 0 8px;">We shall be pleased to proceed upon your written acceptance of this quotation.</p>
     <p style="margin:0 0 8px;">Yours faithfully,</p>
     <div style="margin-top:28px;"><b>For Instacertify Labs Private Limited</b></div>
-    <div>Authorised Signatory</div>
   </div>
 
   <div class="ic-footer">
@@ -983,6 +1025,7 @@ TESTING_QUOTATION_HTML = """
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
   .tq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
+""" + QUOTE_EVEN_TYPE_CSS + """
 </style>
 """ + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
 <div class="ic-print-body">
@@ -1000,8 +1043,8 @@ TESTING_QUOTATION_HTML = """
     <div><b>Prepared for:</b> {{ _party }}</div>
     <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
-  <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
-  <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
+  <p style="margin:0 0 8px;">Dear {{ _party or 'Sir or Madam' }},</p>
+  <p style="margin:0 0 12px;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
 
     <table class="tq-grid">
     <tr>
@@ -1079,8 +1122,10 @@ TESTING_QUOTATION_HTML = """
     {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') %}
     <table class="tq-grid" style="margin-top:-1px;">
       <tr>
-            <td class="tq-label">{{ doc.ic_label_commercials or 'Commercials' }}</td>
-            <td class="tq-value">
+            <td class="tq-label" colspan="2">{{ doc.ic_label_commercials or 'Commercials' }}</td>
+      </tr>
+      <tr>
+            <td class="tq-value" colspan="2">
               {%- set _by = quote_totals_by_currency(doc) -%}
               <div class="tq-h">Testing Charges</div>
               <table class="tq-comm">
@@ -1148,7 +1193,7 @@ TESTING_QUOTATION_HTML = """
                     <td class="num">{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
                     <td class="amt">{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
                     <td class="num">{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
-                    <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
+                    <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="color:#555;">*</span>{% endif %}</td>
                   </tr>
                 {% endfor %}
                 {% for t in _by %}
@@ -1333,7 +1378,6 @@ TESTING_QUOTATION_HTML = """
     <p>Yours faithfully,</p>
     <div class="tq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="tq-sign">For Instacertify Labs Private Limited</div>
-    <div style="margin-top:2px;font-family:'Aptos',sans-serif;font-size:10pt;">Authorised Signatory</div>
   </div>
 </div>
 </div>
@@ -1379,6 +1423,7 @@ CONSULTING_QUOTATION_HTML = """
   .cq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
   .cq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
+""" + QUOTE_EVEN_TYPE_CSS + """
 </style>
 """ + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
 <div class="ic-print-body">
@@ -1397,8 +1442,8 @@ CONSULTING_QUOTATION_HTML = """
     <div><b>Prepared for:</b> {{ _party }}</div>
     <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
-  <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
-  <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
+  <p style="margin:0 0 8px;">Dear {{ _party or 'Sir or Madam' }},</p>
+  <p style="margin:0 0 12px;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
 
   <div class="cq-box">
     {% for _sk in quote_section_order(doc) %}
@@ -1513,7 +1558,7 @@ CONSULTING_QUOTATION_HTML = """
               <td style="text-align:center;">{% if row.charges_display %}—{% else %}{{ rcur }}{% endif %}</td>
               <td class="amt">{{ quote_cost_charge_display(row, doc, 'unit') }}</td>
               <td style="text-align:center;">{% if row.charges_display %}—{% else %}{{ units }}{% endif %}</td>
-              <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="font-size:8pt;color:#555;">*</span>{% endif %}</td>
+              <td class="amt"><b>{{ quote_cost_charge_display(row, doc, 'total') }}</b>{% if row.exclude_from_total and quote_totals_on(doc) %} <span style="color:#555;">*</span>{% endif %}</td>
             </tr>
           {% endfor %}
           {% for t in _by %}
@@ -1679,7 +1724,6 @@ CONSULTING_QUOTATION_HTML = """
     <p>Yours faithfully,</p>
     <div class="cq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="cq-sign">For Instacertify Labs Private Limited</div>
-    <div style="margin-top:2px;font-family:'Aptos',sans-serif;font-size:10pt;">Authorised Signatory</div>
   </div>
 </div>
 </div>
