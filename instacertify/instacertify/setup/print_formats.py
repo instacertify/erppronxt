@@ -306,6 +306,8 @@ QUOTE_PAGE_CHROME_CSS = """
     background: #fff;
     padding: 0;
     margin: 0;
+    /* Straight dual-tone rule sits 0.7in above the sheet edge */
+    padding-bottom: 0.7in;
   }
   .ic-bleed-rule {
     display: block;
@@ -318,21 +320,30 @@ QUOTE_PAGE_CHROME_CSS = """
   }
   .ic-bleed-navy { height: 1px !important; background: #065175 !important; }
   .ic-bleed-orange { height: 1px !important; background: #EC691F !important; }
-  /* Footer accent rules: half page width, slightly thicker */
+  /* One straight footer line: left half navy, right half orange */
   .ic-footer-rules {
-    width: 50%;
-    max-width: 50%;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    max-width: none;
+    height: 2.5px;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
-  .ic-footer-rules .ic-bleed-rule {
-    width: 100% !important;
+  .ic-footer-half {
+    display: block;
+    width: 50%;
+    height: 2.5px;
+    margin: 0;
+    padding: 0;
+    border: 0;
   }
-  .ic-footer-rules .ic-bleed-navy { height: 2.5px !important; }
-  .ic-footer-rules .ic-bleed-orange { height: 2.5px !important; }
+  .ic-footer-half.navy { background: #065175; }
+  .ic-footer-half.orange { background: #EC691F; }
   .ic-print-body {
-    padding: 38mm 12mm 30mm 12mm;
+    /* Leave room for QR/tagline + rule + 0.7in below the rule */
+    padding: 38mm 12mm 42mm 12mm;
     min-height: 200mm;
     box-sizing: border-box;
   }
@@ -343,8 +354,8 @@ QUOTE_PAGE_CHROME_CSS = """
     gap: 12px;
     width: 100%;
     box-sizing: border-box;
-    /* QR + tagline sit above the rules with a little space */
-    padding: 6px 12mm 10px 12mm;
+    /* QR + tagline sit above the straight rule with a little space */
+    padding: 6px 12mm 8px 12mm;
   }
   .ic-print-footer-spacer { width: 56px; flex: 0 0 56px; }
   .ic-print-footer-tag {
@@ -397,9 +408,9 @@ QUOTE_RUNNING_FOOTER_HTML = """
       <div class="cap">Verify</div>
     </div>
   </div>
-  <div class="ic-footer-rules">
-    <div class="ic-bleed-rule ic-bleed-navy"></div>
-    <div class="ic-bleed-rule ic-bleed-orange"></div>
+  <div class="ic-footer-rules" aria-hidden="true">
+    <div class="ic-footer-half navy"></div>
+    <div class="ic-footer-half orange"></div>
   </div>
 </div>
 """
@@ -1978,19 +1989,18 @@ def letterhead_html() -> str:
 
 
 def letter_footer_html() -> str:
-	"""Static Letter Head footer — tagline above half-width thicker brand rules."""
+	"""Static Letter Head footer — tagline/QR above one straight navy|orange rule at 0.7in."""
 	return """
-<div style="width:100%;box-sizing:border-box;margin:0;padding:0;">
-  <div style="padding:6px 12mm 10px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
+<div style="width:100%;box-sizing:border-box;margin:0;padding:0 0 0.7in 0;">
+  <div style="padding:6px 12mm 8px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
     Certification Made Simple
   </div>
-  <div style="width:50%;max-width:50%;">
-    <div style="height:2.5px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
-    <div style="height:2.5px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+  <div style="display:flex;width:100%;height:2.5px;margin:0;padding:0;">
+    <div style="width:50%;height:2.5px;background:#065175;margin:0;padding:0;border:0;"></div>
+    <div style="width:50%;height:2.5px;background:#EC691F;margin:0;padding:0;border:0;"></div>
   </div>
 </div>
 """
-
 def _ensure_instacertify_letter_head():
 	"""Create/update Letter Head so every print can use the quotation header/footer."""
 	name = "Instacertify"
