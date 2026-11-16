@@ -8042,13 +8042,42 @@ instacertify.apply_billing_currency = function (frm, customer, opts) {
 	});
 };
 
+/** Suggest INR/USD from a Lead's country when quoting a lead. */
+instacertify.apply_lead_billing_currency = function (frm, lead) {
+	if (!lead || (frm.doc.ic_currency_manual && !frm.is_new())) return;
+	frappe.db.get_value("Lead", lead, "country", (v) => {
+		const country = (v && v.country) || "India";
+		const currency = country === "India" || !country ? "INR" : "USD";
+		if (frm.doc.currency === currency) {
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
+		if (frm.doc.ic_currency_manual && frm.doc.currency) {
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
+		instacertify._auto_setting_currency = true;
+		frm.set_value("currency", currency).then(() => {
+			instacertify._auto_setting_currency = false;
+			instacertify.render_customer_currency_banner(frm);
+			frappe.show_alert({
+				message:
+					currency === "USD"
+						? __("Overseas lead — primary currency set to USD. Change anytime.")
+						: __("India lead — primary currency set to INR. Change anytime."),
+				indicator: "blue",
+			});
+		});
+	});
+};
+
 /** Visible Change Currency action for Quotation / Invoice / Testing finance screens. */
 instacertify.add_change_currency_button = function (frm, opts) {
 	opts = opts || {};
 	const field = opts.fieldname || "currency";
 	if (!frm.fields_dict[field] && !opts.force_button) return;
 	if (frm.doc.docstatus === 1 && !opts.allow_submitted) return;
-	const label = opts.label || __("Change Currency");
+	const label = opts.label || __("Change Primary Currency");
 	frm.add_custom_button(label, () => instacertify.open_change_currency(frm, opts), __("Finance"));
 };
 
@@ -8059,14 +8088,14 @@ instacertify.open_change_currency = function (frm, opts) {
 	const quick = ["INR", "USD", "EUR", "AED", "GBP"];
 
 	const d = new frappe.ui.Dialog({
-		title: __("Change Currency"),
+		title: __("Change Primary Currency"),
 		fields: [
 			{
 				fieldtype: "HTML",
 				options: `<p class="text-muted" style="margin:0 0 8px;">${__(
-					"Current"
+					"Current primary currency"
 				)}: <b>${frappe.utils.escape_html(current)}</b>. ${__(
-					"Sets the primary / default currency for new lines. Existing Test Lines and Commercials keep their own Currency unless blank. Amounts stay the same numbers."
+					"Sets the primary / default currency for this quotation and new lines. Existing Test Lines and Commercials keep their own Currency unless blank. Amounts stay the same numbers."
 				)}</p>`,
 			},
 			{
@@ -8164,6 +8193,45 @@ instacertify.apply_manual_currency = function (frm, currency, opts) {
 };
 
 frappe.ui.form.on("Customer", {
+	setup(frm) {
+		frm.set_query("ic_country", () => ({
+			query: "instacertify.crm.dashboard.search_country_india_first",
+		}));
+	},
+	refresh(frm) {
+		[
+			"ic_section_country",
+			"ic_country",
+			"ic_column_country",
+			"ic_primary_currency",
+			"ic_currency_manual",
+		].forEach((fn) => {
+			if (frm.fields_dict[fn]) frm.set_df_property(fn, "hidden", 0);
+		});
+		if (frm.fields_dict.ic_section_country) {
+			frm.set_df_property("ic_section_country", "label", __("Country & Currency"));
+		}
+		if (frm.fields_dict.ic_country) {
+			frm.set_df_property("ic_country", "label", __("Country"));
+			frm.set_df_property(
+				"ic_country",
+				"description",
+				__("Select the customer country. India is listed first.")
+			);
+		}
+		if (frm.fields_dict.ic_primary_currency) {
+			frm.set_df_property("ic_primary_currency", "label", __("Preferred Currency"));
+		}
+		if (frm.is_new() && !frm.doc.ic_country) {
+			frm.set_value("ic_country", "India");
+		}
+		if (!frm.__ic_country_btn && frm.fields_dict.ic_country) {
+			frm.__ic_country_btn = 1;
+			frm.add_custom_button(__("Country & Currency"), () => {
+				frm.scroll_to_field("ic_country");
+			});
+		}
+	},
 	ic_country(frm) {
 		if (!frm.doc.ic_country) return;
 		const isIndia = frm.doc.ic_country === "India";
@@ -8209,12 +8277,18 @@ frappe.ui.form.on("Customer", {
 		if (instacertify._auto_setting_currency) return;
 		if (frm.doc.default_currency) {
 			frm.set_value("ic_currency_manual", 1);
+			if (frm.doc.ic_primary_currency !== frm.doc.default_currency) {
+				frm.set_value("ic_primary_currency", frm.doc.default_currency);
+			}
 		}
 	},
 	ic_primary_currency(frm) {
 		if (instacertify._auto_setting_currency) return;
 		if (frm.doc.ic_primary_currency && frm.doc.default_currency !== frm.doc.ic_primary_currency) {
 			frm.set_value("default_currency", frm.doc.ic_primary_currency);
+		}
+		if (frm.doc.ic_primary_currency) {
+			frm.set_value("ic_currency_manual", 1);
 		}
 	},
 	ic_gst_number(frm) {
@@ -8231,7 +8305,16 @@ frappe.ui.form.on("Customer", {
 
 frappe.ui.form.on("Quotation", {
 	party_name(frm) {
-		if (frm.doc.quotation_to !== "Customer" || !frm.doc.party_name) {
+		if (!frm.doc.party_name) {
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
+		if (frm.doc.quotation_to === "Lead") {
+			instacertify.apply_lead_billing_currency(frm, frm.doc.party_name);
+			instacertify.render_customer_currency_banner(frm);
+			return;
+		}
+		if (frm.doc.quotation_to !== "Customer") {
 			instacertify.render_customer_currency_banner(frm);
 			return;
 		}
@@ -8340,7 +8423,8 @@ instacertify.render_customer_currency_banner = function (frm) {
 	const symbol =
 		cur === "INR" ? "₹" : cur === "USD" ? "$" : cur === "EUR" ? "€" : cur === "GBP" ? "£" : cur;
 	const mixed = instacertify.quote_has_mixed_currencies(frm);
-	const sig = `${party}|${cur}|${mixed ? 1 : 0}`;
+	const canChange = frm.doc.docstatus !== 1;
+	const sig = `${party}|${cur}|${mixed ? 1 : 0}|${canChange ? 1 : 0}`;
 	// Skip identical rewrites — HTML replace was causing layout fidget on every dropdown change
 	if (wrap.data("ic-banner-sig") === sig) return;
 	wrap.data("ic-banner-sig", sig);
@@ -8360,9 +8444,27 @@ instacertify.render_customer_currency_banner = function (frm) {
 						? `<span class="text-muted" style="margin-left:8px;font-size:12px;">${__("Each line can use its own currency")}</span>`
 						: ""
 				}</div>
+			${
+				canChange
+					? `<div style="margin-left:auto;">
+						<button type="button" class="btn btn-primary btn-sm ic-change-primary-currency">
+							${__("Change primary currency")}
+						</button>
+					</div>`
+					: ""
+			}
 		</div>
 	`);
-	if (frm.fields_dict.currency) frm.set_df_property("currency", "description", "");
+	wrap.find(".ic-change-primary-currency").off("click.icCur").on("click.icCur", () => {
+		instacertify.open_change_currency(frm, { fieldname: "currency" });
+	});
+	if (frm.fields_dict.currency) {
+		frm.set_df_property(
+			"currency",
+			"description",
+			__("Primary currency for this quotation — change anytime while creating or editing.")
+		);
+	}
 };
 
 instacertify.quote_has_mixed_currencies = function (frm) {
@@ -9032,7 +9134,7 @@ instacertify.open_quick_lead = function (opts) {
 			d.fields_dict.choices.$wrapper.empty().append(grid);
 			choice_block(
 				$(sourceHost),
-				__("Where did they come from?"),
+				__("Lead source"),
 				"source",
 				lists.popular_sources,
 				lists.sources,
@@ -9040,7 +9142,7 @@ instacertify.open_quick_lead = function (opts) {
 			);
 			choice_block(
 				$(serviceHost),
-				__("What is it for?"),
+				__("Inquiry for"),
 				"service",
 				lists.popular_services,
 				lists.services,
@@ -9052,6 +9154,115 @@ instacertify.open_quick_lead = function (opts) {
 		const input = d.get_field("person_name") && d.get_field("person_name").$input;
 		if (input && input.length) input.trigger("focus");
 	}, 200);
+};
+
+/** Separate "add new option" box under Source / Inquiry for on the Lead form. */
+instacertify.render_lead_choice_add_box = function (frm, opts) {
+	opts = opts || {};
+	const field = frm.fields_dict[opts.html_field];
+	if (!field || !field.$wrapper) return;
+	const wrap = field.$wrapper;
+	const kind = opts.kind;
+	const linkField = opts.link_field;
+	const title = opts.title || __("Add new option");
+	const placeholder = opts.placeholder || __("Type a new name");
+	const current = frm.doc[linkField] || "";
+
+	wrap.html(`
+		<div class="ic-lead-add-box" data-kind="${frappe.utils.escape_html(kind)}">
+			<div class="ic-lead-add-box-title">${frappe.utils.escape_html(title)}</div>
+			<div class="ic-lead-add-box-row">
+				<input type="text" class="form-control ic-lead-add-input" placeholder="${frappe.utils.escape_html(
+					placeholder
+				)}" autocomplete="off" />
+				<button type="button" class="btn btn-primary btn-sm ic-lead-add-btn">${__("Add")}</button>
+			</div>
+			<div class="ic-lead-add-box-hint text-muted">
+				${
+					current
+						? __("Selected: {0}", [frappe.utils.escape_html(current)])
+						: __("Choose from the dropdown above, or add a new option here.")
+				}
+			</div>
+		</div>
+	`);
+
+	const $input = wrap.find(".ic-lead-add-input");
+	const add = () => {
+		const raw = ($input.val() || "").trim();
+		if (!raw) {
+			frappe.show_alert({
+				message: __("Type the new name, then press Add"),
+				indicator: "orange",
+			});
+			$input.trigger("focus");
+			return;
+		}
+		frappe.call({
+			method: "instacertify.crm.events.add_lead_capture_choice",
+			args: { kind, label: raw },
+			freeze: true,
+			freeze_message: __("Adding…"),
+			callback(r) {
+				const name = r.message && r.message.name;
+				if (!name) return;
+				frm.set_value(linkField, name).then(() => {
+					$input.val("");
+					instacertify.render_lead_choice_add_box(frm, opts);
+					frappe.show_alert({
+						message: __("Added {0}", [name]),
+						indicator: "green",
+					});
+				});
+			},
+		});
+	};
+	wrap.find(".ic-lead-add-btn").off("click.icAdd").on("click.icAdd", add);
+	$input.off("keydown.icAdd").on("keydown.icAdd", (ev) => {
+		if (ev.key === "Enter") {
+			ev.preventDefault();
+			add();
+		}
+	});
+};
+
+instacertify.render_lead_source_inquiry_boxes = function (frm) {
+	[
+		"ic_section_source",
+		"ic_lead_source_detail",
+		"ic_source_add_html",
+		"ic_section_inquiry",
+		"ic_project_type",
+		"ic_inquiry_add_html",
+	].forEach((fn) => {
+		if (frm.fields_dict[fn]) frm.set_df_property(fn, "hidden", 0);
+	});
+	if (frm.fields_dict.ic_section_source) {
+		frm.set_df_property("ic_section_source", "label", __("Lead Source"));
+	}
+	if (frm.fields_dict.ic_section_inquiry) {
+		frm.set_df_property("ic_section_inquiry", "label", __("Inquiry For"));
+	}
+	if (frm.fields_dict.ic_lead_source_detail) {
+		frm.set_df_property("ic_lead_source_detail", "label", __("Source"));
+	}
+	if (frm.fields_dict.ic_project_type) {
+		frm.set_df_property("ic_project_type", "label", __("Inquiry for"));
+	}
+	instacertify.render_lead_choice_add_box(frm, {
+		html_field: "ic_source_add_html",
+		kind: "source",
+		link_field: "ic_lead_source_detail",
+		title: __("Add a new source"),
+		placeholder: __("e.g. Trade show, LinkedIn, Partner"),
+	});
+	instacertify.render_lead_choice_add_box(frm, {
+		html_field: "ic_inquiry_add_html",
+		kind: "service",
+		link_field: "ic_project_type",
+		title: __("Add a new inquiry option"),
+		placeholder: __("e.g. BIS, EPR, MSDS, Lab Testing"),
+	});
 };
 
 // --- Lead capture: mandatory name, India-first country, editable source/type ---
@@ -9079,9 +9290,12 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("ic_party_name", "label", __("Name of the person"));
 		frm.set_df_property("ic_call_remarks", "label", __("Description"));
 		instacertify.paint_saved_remark(frm);
+		instacertify.render_lead_source_inquiry_boxes(frm);
 		if (frm.is_new()) {
 			frm.set_intro(
-				__("Start with the name, phone, source, and product or service. Everything else can wait."),
+				__(
+					"Start with the name, phone, source, and what the inquiry is for. Use the Add box under each dropdown for a new option."
+				),
 				"blue"
 			);
 		}
@@ -9129,6 +9343,16 @@ frappe.ui.form.on("Lead", {
 			}, __("View"));
 		}
 	},
+	ic_lead_source_detail(frm) {
+		const src = frm.doc.ic_lead_source_detail;
+		if (src !== "Consultant" && src !== "Reference") {
+			frm.set_value("ic_consultant_referral", "");
+		}
+		instacertify.render_lead_source_inquiry_boxes(frm);
+	},
+	ic_project_type(frm) {
+		instacertify.render_lead_source_inquiry_boxes(frm);
+	},
 	ic_next_contact_date(frm) {
 		instacertify.render_lead_reminder_banner(frm);
 	},
@@ -9157,12 +9381,6 @@ frappe.ui.form.on("Lead", {
 		}
 		if (!frm.doc.first_name) {
 			frm.set_value("first_name", party.split(/\s+/)[0]);
-		}
-	},
-	ic_lead_source_detail(frm) {
-		const src = frm.doc.ic_lead_source_detail;
-		if (src !== "Consultant" && src !== "Reference") {
-			frm.set_value("ic_consultant_referral", "");
 		}
 	},
 });

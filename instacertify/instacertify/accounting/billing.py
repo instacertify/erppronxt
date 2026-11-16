@@ -8,9 +8,14 @@ from frappe import _
 from frappe.utils import flt
 
 
+from instacertify.utils.values import pick_nonempty
+
 INDIA = "India"
 EXPORT_CURRENCY = "USD"
 DOMESTIC_CURRENCY = "INR"
+
+# Back-compat alias for lead → customer profile copy
+pick_customer_value_from_lead = pick_nonempty
 
 
 def get_customer_country(customer: str | None = None, customer_doc=None) -> str | None:

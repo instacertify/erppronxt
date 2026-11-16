@@ -1,4 +1,4 @@
-/* Lead list: quick capture and clear columns (source, product / service, phone).
+/* Lead list: quick capture and clear columns (source, inquiry for, phone).
    The slim filter row comes from instacertify.LIST_KEEP_FILTERS. */
 (function () {
 	const base = frappe.listview_settings["Lead"] || {};
@@ -7,7 +7,7 @@
 
 	const COLUMNS = [
 		["ic_lead_source_detail", __("Source")],
-		["ic_project_type", __("Product / service")],
+		["ic_project_type", __("Inquiry for")],
 		["mobile_no", __("Phone")],
 		["ic_next_contact_date", __("Next contact")],
 	];
@@ -62,7 +62,7 @@
 				return pill("ic_lead_source_detail", value, "source", __("No source"));
 			},
 			ic_project_type(value) {
-				return pill("ic_project_type", value, "service", __("No service"));
+				return pill("ic_project_type", value, "service", __("No inquiry"));
 			},
 		}),
 		/* "Add Lead" opens the short capture box. The full form stays one click away. */
