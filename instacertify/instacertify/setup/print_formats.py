@@ -149,7 +149,12 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   }
   .ic-mast-details .ic-mast-legal {
     color: #111111 !important;
-    font-weight: 700 !important;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.01em !important;
+    padding: 1px 0 2px !important;
+    margin-bottom: 6px !important;
   }
   #header-html { width: 100%; box-sizing: border-box; }
   table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
@@ -270,7 +275,7 @@ LETTERHEAD_BLOCK_HTML = """
         <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
       </div>
       <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
-        <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{{ legal }}</div>
+        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{{ legal }}</div>
         <div>{{ address }}</div>
         {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
         <div style="margin-top:3px;">{{ phone }}</div>
@@ -1972,7 +1977,7 @@ def letterhead_html() -> str:
         <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
       </div>
       <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
-        <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{legal}</div>
+        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{legal}</div>
         <div>{addr_html}</div>
         <div>CIN {cin}</div>
         <div style="margin-top:3px;">{phone}</div>
