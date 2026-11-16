@@ -260,58 +260,77 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   p, li { orphans: 3; widows: 3; }
 """
 
-# Masthead: logo left; company name/address/contacts right-aligned.
+# Masthead: logo left; company details right. Content inset; brand rules full-bleed.
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
 LETTERHEAD_BLOCK_HTML = """
 <div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0;padding:0;">
-  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 8px;">
-    <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
-      <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
-    </div>
-    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
-      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{{ legal }}</div>
-      <div>{{ address }}</div>
-      {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
-      <div style="margin-top:3px;">{{ phone }}</div>
-      <div>{{ email }}</div>
-      {% if website %}<div>{{ website }}</div>{% endif %}
-      {% if gstin %}<div>GSTIN {{ gstin }}</div>{% endif %}
+  <div class="ic-mast-pad" style="padding:8mm 12mm 6px;">
+    <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
+      <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
+        <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
+      </div>
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+        <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{{ legal }}</div>
+        <div>{{ address }}</div>
+        {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
+        <div style="margin-top:3px;">{{ phone }}</div>
+        <div>{{ email }}</div>
+        {% if website %}<div>{{ website }}</div>{% endif %}
+        {% if gstin %}<div>GSTIN {{ gstin }}</div>{% endif %}
+      </div>
     </div>
   </div>
-  <div style="height:1px;background:#065175;width:100%;"></div>
-  <div style="height:1px;background:#EC691F;width:56px;margin:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
 </div>
 """
 
-# Running page chrome: letterhead top + grey QR / tagline bottom on every page.
+# Running page chrome: full-bleed A4 header/footer; content inset; lines to sheet edge.
 QUOTE_PAGE_CHROME_CSS = """
-  @page { size: A4; margin: 10mm 12mm 10mm 12mm; }
+  @page { size: A4; margin: 0; }
   .print-format { padding: 0 !important; margin: 0 !important; position: relative; }
   .ic-print-header {
     position: fixed;
     top: 0; left: 0; right: 0;
+    width: 100%;
     z-index: 20;
     background: #fff;
-    padding: 0 0 4px;
+    padding: 0;
+    margin: 0;
   }
   .ic-print-footer {
     position: fixed;
     bottom: 0; left: 0; right: 0;
+    width: 100%;
     z-index: 20;
     background: #fff;
-    padding: 4px 0 0;
+    padding: 0;
+    margin: 0;
   }
+  .ic-bleed-rule {
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-sizing: border-box;
+  }
+  .ic-bleed-navy { height: 1px !important; background: #065175 !important; }
+  .ic-bleed-orange { height: 1px !important; background: #EC691F !important; }
   .ic-print-body {
-    padding-top: 36mm;
-    padding-bottom: 26mm;
+    padding: 38mm 12mm 28mm 12mm;
     min-height: 200mm;
+    box-sizing: border-box;
   }
   .ic-print-footer-inner {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
     gap: 12px;
     width: 100%;
+    box-sizing: border-box;
+    padding: 6px 12mm;
   }
   .ic-print-footer-spacer { width: 56px; flex: 0 0 56px; }
   .ic-print-footer-tag {
@@ -322,9 +341,8 @@ QUOTE_PAGE_CHROME_CSS = """
     font-size: 9pt !important;
     color: #111111 !important;
     letter-spacing: 0.08em !important;
-    padding: 6px 8px !important;
-    border-top: 1px solid #065175 !important;
-    border-bottom: 1px solid #EC691F !important;
+    padding: 4px 8px !important;
+    border: none !important;
     background: transparent !important;
     line-height: 1.3;
   }
@@ -353,6 +371,7 @@ QUOTE_RUNNING_HEADER_HTML = """
 
 QUOTE_RUNNING_FOOTER_HTML = """
 <div id="footer-html" class="ic-print-footer">
+  <div class="ic-bleed-rule ic-bleed-navy"></div>
   <div class="ic-print-footer-inner">
     <div class="ic-print-footer-spacer"></div>
     <div class="ic-print-footer-tag">Certification Made Simple</div>
@@ -365,6 +384,7 @@ QUOTE_RUNNING_FOOTER_HTML = """
       <div class="cap">Verify</div>
     </div>
   </div>
+  <div class="ic-bleed-rule ic-bleed-orange"></div>
 </div>
 """
 
@@ -1916,36 +1936,40 @@ def letterhead_html() -> str:
 	cin = frappe.utils.escape_html((getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291")
 	gstin = frappe.utils.escape_html((getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7")
 	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
-	# Logo left; company details right-aligned as one block.
+	# Logo/words inset; brand rules full-bleed to A4 sheet edge.
 	return f"""
 <div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0;padding:0;">
-  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 8px;">
-    <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
-      <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
-    </div>
-    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
-      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{legal}</div>
-      <div>{addr_html}</div>
-      <div>CIN {cin}</div>
-      <div style="margin-top:3px;">{phone}</div>
-      <div>{email}</div>
-      <div>{website}</div>
-      <div>GSTIN {gstin}</div>
+  <div class="ic-mast-pad" style="padding:8mm 12mm 6px;">
+    <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
+      <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
+        <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
+      </div>
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+        <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{legal}</div>
+        <div>{addr_html}</div>
+        <div>CIN {cin}</div>
+        <div style="margin-top:3px;">{phone}</div>
+        <div>{email}</div>
+        <div>{website}</div>
+        <div>GSTIN {gstin}</div>
+      </div>
     </div>
   </div>
-  <div style="height:1px;background:#065175;width:100%;"></div>
-  <div style="height:1px;background:#EC691F;width:56px;margin:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
 </div>
 """
 
 
 def letter_footer_html() -> str:
-	"""Static Letter Head footer — Certification Made Simple with brand rules."""
+	"""Static Letter Head footer — full-bleed rules; tagline inset from edges."""
 	return """
-<div style="width:100%;box-sizing:border-box;padding-top:4px;">
-  <div style="text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;padding:6px 8px;border-top:1px solid #065175;border-bottom:1px solid #EC691F;line-height:1.3;">
+<div style="width:100%;box-sizing:border-box;margin:0;padding:0;">
+  <div style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div style="padding:6px 12mm;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
     Certification Made Simple
   </div>
+  <div style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
 </div>
 """
 
