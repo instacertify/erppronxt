@@ -482,6 +482,8 @@ QUOTATION_HTML = """
 <div class="ic-print-body">
 <div class="ic-quote">
   <div class="ic-doc-title">Quotation</div>
+  <p style="margin:0 0 8px;font-size:10.5pt;">Dear {{ doc.customer_name or doc.party_name or 'Sir or Madam' }},</p>
+  <p style="margin:0 0 12px;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The particulars are set out below.</p>
   <div class="ic-meta">
     <div>
       <div><b>Quotation:</b> {{ doc.name }}</div>
@@ -668,8 +670,10 @@ QUOTATION_HTML = """
   {% endif %}
 
   <div class="ic-sign">
-    <div>Authorized Signatory</div>
-    <div style="margin-top:36px;"><b>For Instacertify Labs Private Limited</b></div>
+    <p style="margin:0 0 8px;">We shall be pleased to proceed upon your written acceptance of this quotation.</p>
+    <p style="margin:0 0 8px;">Yours faithfully,</p>
+    <div style="margin-top:28px;"><b>For Instacertify Labs Private Limited</b></div>
+    <div>Authorised Signatory</div>
   </div>
 
   <div class="ic-footer">
@@ -996,6 +1000,8 @@ TESTING_QUOTATION_HTML = """
     <div><b>Prepared for:</b> {{ _party }}</div>
     <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
+  <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
+  <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
 
     <table class="tq-grid">
     <tr>
@@ -1323,10 +1329,11 @@ TESTING_QUOTATION_HTML = """
   {% endfor %}
 
   <div class="tq-close">
-    <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
-    <p><b>Thanking You,</b></p>
+    <p>We shall be pleased to proceed upon your written acceptance of this quotation. Should you require any clarification, we remain at your disposal.</p>
+    <p>Yours faithfully,</p>
     <div class="tq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="tq-sign">For Instacertify Labs Private Limited</div>
+    <div style="margin-top:2px;font-family:'Aptos',sans-serif;font-size:10pt;">Authorised Signatory</div>
   </div>
 </div>
 </div>
@@ -1390,6 +1397,8 @@ CONSULTING_QUOTATION_HTML = """
     <div><b>Prepared for:</b> {{ _party }}</div>
     <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
+  <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
+  <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
 
   <div class="cq-box">
     {% for _sk in quote_section_order(doc) %}
@@ -1666,10 +1675,11 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 
   <div class="cq-close">
-    <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
-    <p><b>Thanking You,</b></p>
+    <p>We shall be pleased to proceed upon your written acceptance of this quotation. Should you require any clarification, we remain at your disposal.</p>
+    <p>Yours faithfully,</p>
     <div class="cq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="cq-sign">For Instacertify Labs Private Limited</div>
+    <div style="margin-top:2px;font-family:'Aptos',sans-serif;font-size:10pt;">Authorised Signatory</div>
   </div>
 </div>
 </div>
