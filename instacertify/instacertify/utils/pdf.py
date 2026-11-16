@@ -88,9 +88,18 @@ def quotation_print_format(doc) -> str | None:
 def even_print_margins(for_quote: bool = False) -> dict:
 	"""Even A4 margins so printed PDFs align cleanly on all sides.
 
-	Letterhead is embedded in the print body (not `#header-html`), so top margin
-	matches the other sides.
+	Quotes keep a slightly tighter top margin because the letterhead is drawn
+	as a fixed/running header inside the page (every page), with body padding
+	under it — large empty top gaps are avoided.
 	"""
+	if for_quote:
+		return {
+			"page-size": "A4",
+			"margin-top": "10mm",
+			"margin-right": "12mm",
+			"margin-bottom": "12mm",
+			"margin-left": "12mm",
+		}
 	return {
 		"page-size": "A4",
 		"margin-top": "14mm",

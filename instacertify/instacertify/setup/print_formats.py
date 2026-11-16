@@ -162,7 +162,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 9.5pt !important;
-    background: #D0D0D0 !important;
+    background: #EDE4DC !important;
     color: #111111 !important;
   }
   table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
@@ -170,14 +170,14 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-weight: 400 !important;
     color: #111111 !important;
   }
-  /* Numbered / bulleted process steps — black on light grey wash */
+  /* Numbered / bulleted process steps — black on warm wash */
   .cq-body ol li, .cq-body ul li, .tq-value ol li, .tq-value ul li,
   .ic-box ol li, .ic-box ul li {
     color: #111111 !important;
   }
   .cq-body ol > li, .tq-value ol > li, .ic-process-steps ol > li {
-    background: #F3F3F3;
-    border-left: 3px solid #C8C8C8;
+    background: #FFF7F2;
+    border-left: 3px solid var(--ic-orange);
     padding: 4px 8px;
     margin-bottom: 6px !important;
     list-style-position: inside;
@@ -193,31 +193,119 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 400 !important;
     font-size: 8.5pt !important;
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%) !important;
+    background: linear-gradient(90deg, #065175 0%, #0a6a94 35%, var(--ic-orange) 100%) !important;
   }
   .ic-accent-text { color: var(--ic-orange) !important; }
   .ic-soft-block { background: var(--ic-soft) !important; }
   table.tq-comm td.amt, table.cq-comm td.amt, .ic-grand-total {
-    color: #111111 !important;
+    color: #065175 !important;
+  }
+
+  /* ——— Page flow: letterhead every page, sections pack tightly ——— */
+  .ic-lh-inner {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    width:100%;
+    box-sizing:border-box;
+    background:#fff;
+  }
+  .ic-party-strip {
+    display:flex;
+    justify-content:space-between;
+    gap:16px;
+    margin:0 0 10px;
+    padding:10px 12px;
+    border:1px solid #E2D2C6;
+    border-left:4px solid var(--ic-orange);
+    border-radius:0 8px 8px 0;
+    background:linear-gradient(90deg, #FFF7F2 0%, #fff 55%);
+    font-family:'Aptos',sans-serif;
+    font-size:10px;
+  }
+  .tq-label, .cq-bar {
+    border-left: 3px solid var(--ic-orange) !important;
+  }
+  /* Let long sections split across pages so we do not leave empty page bottoms */
+  table.tq-grid,
+  table.tq-grid > tbody > tr,
+  table.tq-grid > tbody > tr > td,
+  .cq-box,
+  .ic-box,
+  .tq-value,
+  .cq-body {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  .tq-label, .cq-bar, .tq-title, .cq-title, .cq-service {
+    page-break-after: avoid;
+    break-after: avoid-page;
+  }
+  table.tq-comm tr, table.cq-comm tr, table.ic-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .tq-close, .cq-close, .ic-sign, .ic-footer {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* Chrome print: fixed letterhead repeats on every page */
+  .ic-lh-running {
+    display: none;
+  }
+  @media print {
+    .ic-lh-running {
+      display: block !important;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 0 0 8px;
+      background: #fff;
+      border-bottom: 1.5px solid #EC691F;
+    }
+    .ic-lh-first {
+      visibility: hidden !important;
+      height: 0 !important;
+      max-height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
+    }
+    .tq, .cq, .ic-quote, .ic-inv, .ic {
+      padding-top: 82px !important;
+    }
   }
 """
 
-# Visible letterhead block for quotation / invoice print bodies.
-# Prefer body placement over `#header-html` alone — Chrome/wkhtmltopdf often
-# strip or fail to inject `#header-html`, which made the header look "missing".
+# Letterhead markup. `#header-html` is for wkhtmltopdf page headers;
+# `.ic-lh-running` is fixed in Chrome print so it repeats on every page;
+# `.ic-lh-first` shows on screen / printview (hidden when printing).
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
-LETTERHEAD_BLOCK_HTML = """
-<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
-  <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
-    <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{{ legal }}</div>
-    <div>{{ address }}</div>
-    <div>Phone: {{ phone }}</div>
-    <div>Email: {{ email }}</div>
-    {% if website %}<div>{{ website }}</div>{% endif %}
-    {% if cin %}<div><b>CIN:</b> {{ cin }}</div>{% endif %}
-    {% if gstin %}<div><b>GSTIN:</b> {{ gstin }}</div>{% endif %}
+LETTERHEAD_INNER_HTML = """
+  <div class="ic-lh-inner" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;width:100%;box-sizing:border-box;background:#fff;">
+    <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
+    <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
+      <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{{ legal }}</div>
+      <div>{{ address }}</div>
+      <div>Phone: {{ phone }}</div>
+      <div>Email: {{ email }}</div>
+      {% if website %}<div>{{ website }}</div>{% endif %}
+      {% if cin %}<div><b>CIN:</b> {{ cin }}</div>{% endif %}
+      {% if gstin %}<div><b>GSTIN:</b> {{ gstin }}</div>{% endif %}
+    </div>
   </div>
+"""
+
+LETTERHEAD_BLOCK_HTML = """
+<div id="header-html" class="ic-lh-running">
+""" + LETTERHEAD_INNER_HTML + """
+</div>
+<div class="ic-lh ic-lh-first" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 12px 0;">
+""" + LETTERHEAD_INNER_HTML + """
 </div>
 """
 
@@ -758,7 +846,7 @@ TESTING_QUOTATION_HTML = """
 {%- set curr = doc.currency or 'INR' -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
+  @page { size: A4; margin: 10mm 12mm 12mm 12mm; }
   .tq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
   .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -767,32 +855,32 @@ TESTING_QUOTATION_HTML = """
   .tq-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:none; }
   .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
   .tq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:16pt; font-weight:700; margin:8px 0 12px; color:var(--ic-navy); letter-spacing:0.01em; line-height:1.2; text-transform:none; }
-  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
-  table.tq-grid > tbody > tr { page-break-inside:avoid; }
-  table.tq-grid > tbody > tr > td { border:1px solid #333; vertical-align:top; padding:0; }
-  .tq-label { width:17%; background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:10px 8px; color:#111; font-size:11pt; }
+  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  table.tq-grid > tbody > tr { page-break-inside:auto; break-inside:auto; }
+  table.tq-grid > tbody > tr > td { border:1px solid #D0C4BA; vertical-align:top; padding:0; }
+  .tq-label { width:17%; background:#FFF1E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:10px 8px; color:#111; font-size:11pt; border-left:3px solid var(--ic-orange); }
   .tq-value { width:83%; padding:10px 12px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
   .tq-value ul { margin:6px 0 0 18px; padding:0; }
   .tq-value ol { margin:6px 0 0 18px; padding:0; }
   .tq-value li { margin-bottom:4px; }
   .tq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
   table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.tq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
-  table.tq-comm td { border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-ink); }
+  table.tq-comm th { background:#EDE4DC; color:#111; border:1px solid #C9B8A8; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
+  table.tq-comm td { border:1px solid #C9B8A8; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-ink); }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
-  table.tq-comm td.amt { text-align:center; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); }
+  table.tq-comm td.amt { text-align:center; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:#065175; }
   .tq-note { margin-top:8px; font-family:'Aptos',sans-serif; font-size:8.75pt; color:var(--ic-ink); }
   table.tq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.tq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
-  table.tq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
-  .tq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
+  table.tq-bank td { border:1px solid #C9B8A8; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  table.tq-bank td.k { width:34%; background:#FFF1E8; font-weight:600; }
+  .tq-close { margin-top:20px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
   .tq-close p { margin:6px 0; }
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
   .tq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
   .tq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
-    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
+    background: linear-gradient(90deg, #065175 0%, #0a6a94 35%, var(--ic-orange) 100%);
+    color:#fff; text-align:center; padding:6px 12px; margin-top:16px;
     font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
@@ -812,7 +900,7 @@ TESTING_QUOTATION_HTML = """
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
   <div class="tq-title">Quotation</div>
-  <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
+  <div class="ic-party-strip">
     <div><b>Customer:</b> {{ _party }}</div>
     <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(lines may use other currencies)</span></div>
   </div>
@@ -1179,7 +1267,7 @@ CONSULTING_QUOTATION_HTML = """
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
+  @page { size: A4; margin: 10mm 12mm 12mm 12mm; }
   .cq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
   .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
@@ -1189,27 +1277,27 @@ CONSULTING_QUOTATION_HTML = """
   .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
   .cq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:16pt; font-weight:700; margin:8px 0 10px; color:var(--ic-navy); letter-spacing:0.01em; line-height:1.2; text-transform:none; }
   .cq-service { text-align:center; font-family:'Aptos Display',sans-serif; font-size:14pt; font-weight:600; margin:0 0 12px; color:var(--ic-navy); line-height:1.25; text-transform:none; }
-  .cq-box { border:1px solid #333; margin-bottom:0; }
-  .cq-sec { border-top:1px solid #333; }
+  .cq-box { border:1px solid #D0C4BA; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  .cq-sec { border-top:1px solid #E2D2C6; page-break-inside:auto; break-inside:auto; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid #333; font-size:10.5pt; text-transform:none; letter-spacing:0.01em; color:#111; }
-  .cq-body { padding:12px 14px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
+  .cq-bar { background:#FFF1E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid #E2D2C6; border-left:3px solid var(--ic-orange); font-size:10.5pt; text-transform:none; letter-spacing:0.01em; color:#111; }
+  .cq-body { padding:10px 14px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); page-break-inside:auto; break-inside:auto; }
   .cq-body ul, .cq-body ol { margin:6px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:4px; }
   .cq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
   table.cq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
-  table.cq-comm td { border:1px solid #555; padding:8px; vertical-align:top; font-family:'Aptos',sans-serif; font-size:9.5pt; color:var(--ic-ink); }
-  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); width:32%; }
+  table.cq-comm th { background:#EDE4DC; color:#111; border:1px solid #C9B8A8; padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
+  table.cq-comm td { border:1px solid #C9B8A8; padding:8px; vertical-align:top; font-family:'Aptos',sans-serif; font-size:9.5pt; color:var(--ic-ink); }
+  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:#065175; width:32%; }
   table.cq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
-  table.cq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
-  .cq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
+  table.cq-bank td { border:1px solid #C9B8A8; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  table.cq-bank td.k { width:34%; background:#FFF1E8; font-weight:600; }
+  .cq-close { margin-top:20px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
   .cq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
   .cq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
-    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
+    background: linear-gradient(90deg, #065175 0%, #0a6a94 35%, var(--ic-orange) 100%);
+    color:#fff; text-align:center; padding:6px 12px; margin-top:16px;
     font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
@@ -1230,7 +1318,7 @@ CONSULTING_QUOTATION_HTML = """
   </div>
   <div class="cq-title">Quotation</div>
   <div class="cq-service">{{ title }}</div>
-  <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
+  <div class="ic-party-strip">
     <div><b>Customer:</b> {{ _party }}</div>
     <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(lines may use other currencies)</span></div>
   </div>
@@ -1828,18 +1916,24 @@ def letterhead_html() -> str:
 	cin = frappe.utils.escape_html((getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291")
 	gstin = frappe.utils.escape_html((getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7")
 	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
-	return f"""
-<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
-  <div class="ic-lh-logo"><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
-    <div class="name" style="font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{legal}</div>
-    <div>{addr_html}</div>
-    <div>Phone: {phone}</div>
-    <div>Email: {email}</div>
-    <div>{website}</div>
-    <div><b>CIN:</b> {cin}</div>
-    <div><b>GSTIN:</b> {gstin}</div>
+	inner = f"""
+  <div class="ic-lh-inner" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;width:100%;box-sizing:border-box;background:#fff;">
+    <div class="ic-lh-logo"><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
+    <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
+      <div class="name" style="font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{legal}</div>
+      <div>{addr_html}</div>
+      <div>Phone: {phone}</div>
+      <div>Email: {email}</div>
+      <div>{website}</div>
+      <div><b>CIN:</b> {cin}</div>
+      <div><b>GSTIN:</b> {gstin}</div>
+    </div>
   </div>
+"""
+	# Letter Head content is used as a repeating page header in print/PDF.
+	return f"""
+<div id="header-html" class="ic-lh-running" style="padding:0 0 8px;border-bottom:1.5px solid #EC691F;background:#fff;">
+{inner}
 </div>
 """
 

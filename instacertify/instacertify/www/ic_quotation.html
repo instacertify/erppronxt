@@ -8,37 +8,67 @@
   <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
   <style>
-    body.ic-portal-body { margin:0; background:#f5f6fa; color:#21263c; font-family:Inter,"Segoe UI",sans-serif; }
+    body.ic-portal-body {
+      margin:0;
+      background:
+        radial-gradient(1200px 420px at 10% -10%, rgba(236,105,31,.12), transparent 60%),
+        radial-gradient(900px 380px at 100% 0%, rgba(6,81,117,.10), transparent 55%),
+        #f4f6f8;
+      color:#1a2433;
+      font-family:"Segoe UI",Aptos,system-ui,sans-serif;
+    }
     .ic-portal-wrap { width:min(920px, calc(100% - 32px)); margin:28px auto 48px; }
-    .ic-portal-card { background:#fff; border:1px solid #e3e6ef; border-radius:16px; box-shadow:0 10px 30px rgba(33,38,60,.06); padding:28px 28px 22px; }
-    .ic-portal-card h2 { color:#21263c; margin:0 0 8px; letter-spacing:-0.03em; font-size:1.6rem; }
+    .ic-portal-letterhead {
+      display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+      padding:14px 18px 12px; margin-bottom:14px;
+      background:#fff; border:1px solid #e7dcd3; border-bottom:2px solid #EC691F;
+      border-radius:14px 14px 0 0; box-shadow:0 8px 24px rgba(6,81,117,.06);
+    }
+    .ic-portal-letterhead img { max-height:48px; max-width:260px; }
+    .ic-portal-letterhead-co { text-align:right; font-size:12px; line-height:1.45; color:#334155; }
+    .ic-portal-letterhead-co .name { font-weight:700; color:#065175; font-size:13px; margin-bottom:2px; }
+    .ic-portal-card {
+      background:#fff; border:1px solid #e7dcd3; border-radius:0 0 16px 16px;
+      box-shadow:0 14px 34px rgba(33,38,60,.07); padding:22px 26px 22px;
+    }
+    .ic-portal-card h2 {
+      color:#065175; margin:0 0 10px; letter-spacing:-0.02em; font-size:1.55rem;
+      padding-bottom:8px; border-bottom:1px solid #f0e4db;
+    }
     .ic-portal-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; align-items:center; }
     .ic-portal-muted { color:#6c718a; font-size:0.92rem; }
     .ic-table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
     .ic-portal-table { width:100%; border-collapse:collapse; margin:8px 0 4px; font-size:0.95rem; min-width:560px; }
-    .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #e8ebf3; padding:10px 8px; text-align:left; vertical-align:top; }
-    .ic-portal-table th { color:#6c718a; font-weight:600; font-size:0.78rem; letter-spacing:.04em; text-transform:uppercase; }
+    .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #efe5dd; padding:10px 8px; text-align:left; vertical-align:top; }
+    .ic-portal-table th { color:#065175; font-weight:700; font-size:0.78rem; letter-spacing:.03em; text-transform:uppercase; background:#FFF7F2; }
     .ic-portal-table td { font-variant-numeric:tabular-nums; }
     .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#ebf3fe; color:#1b6ec2; font-size:0.85rem; font-weight:600; }
     .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
     .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
     .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
     .ic-portal-prose { white-space:pre-wrap; line-height:1.55; margin:0; }
-    .ic-portal-total { margin-top:14px; padding:14px 16px; border:1px solid #d7e0f0; border-radius:12px; background:#f7f9fd; display:flex; justify-content:space-between; gap:12px; font-weight:700; color:#21263c; font-size:1.05rem; }
-    .ic-portal-section { margin-top:18px; }
-    .ic-portal-section h4, .ic-portal-card h4 { margin:16px 0 8px; color:#21263c; font-size:1rem; letter-spacing:-0.01em; }
+    .ic-portal-total {
+      margin-top:14px; padding:14px 16px; border:1px solid #f0d8c8; border-radius:12px;
+      background:linear-gradient(90deg,#FFF7F2,#fff); display:flex; justify-content:space-between;
+      gap:12px; font-weight:700; color:#065175; font-size:1.05rem;
+    }
+    .ic-portal-section { margin-top:14px; padding-top:4px; }
+    .ic-portal-section h4, .ic-portal-card h4 {
+      margin:14px 0 8px; color:#065175; font-size:1rem; letter-spacing:-0.01em;
+      padding:6px 10px; background:#FFF1E8; border-left:3px solid #EC691F; border-radius:0 8px 8px 0;
+    }
     #msg { margin-top:12px; padding:10px 12px; border-radius:10px; display:none; }
     #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     #msg.err { display:block; background:#fdecea; color:#b42318; }
     .ic-btn { border-radius:10px; min-height:40px; padding:8px 14px; }
-    /* The shared stylesheet adds side padding to this block, so a width worked out
-       from the screen alone made the card run past the right edge on phones and tablets. */
     @media (max-width: 1000px) {
       .ic-portal-wrap { width:100%; box-sizing:border-box; }
     }
     @media (max-width: 700px) {
       .ic-portal-wrap { width:100%; box-sizing:border-box; margin:12px auto 28px; }
-      .ic-portal-card { padding:16px 14px; border-radius:12px; }
+      .ic-portal-letterhead { flex-direction:column; align-items:flex-start; }
+      .ic-portal-letterhead-co { text-align:left; }
+      .ic-portal-card { padding:16px 14px; border-radius:0 0 12px 12px; }
       .ic-portal-card h2 { font-size:1.3rem; }
       .ic-portal-actions .ic-btn, .ic-portal-actions a.ic-btn { flex:1 1 100%; text-align:center; }
     }
@@ -46,11 +76,16 @@
 </head>
 <body class="ic-portal-body">
   <div class="ic-portal-wrap">
-    <div class="ic-portal-brand" style="margin-bottom:14px;">
-      <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+    <div class="ic-portal-letterhead">
+      <img src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+      <div class="ic-portal-letterhead-co">
+        <div class="name">Instacertify Labs Private Limited</div>
+        <div>PK 01 Sector 63A Noida, Gautam Buddha Nagar</div>
+        <div>contact@instacertify.com · www.instacertify.com</div>
+      </div>
     </div>
     <div class="ic-portal-card" id="app">
-      <h2 style="color:#0D47A1;margin-top:0;">Your Quotation</h2>
+      <h2>Your Quotation</h2>
       <div id="content">Loading…</div>
       <div id="msg"></div>
       <div class="ic-portal-actions" id="actions" style="display:none;">

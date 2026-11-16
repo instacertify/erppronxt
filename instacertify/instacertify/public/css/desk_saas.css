@@ -1220,19 +1220,38 @@ body .page-head .container {
   cursor: pointer;
 }
 
-/* ——— Quotation form: fields in columns, long blocks folded, short editors ——— */
+/* ——— Quotation form: packed sections, less empty space, lively cards ——— */
+#page-Quotation .layout-main-section {
+  background:
+    radial-gradient(900px 280px at 0% 0%, rgba(236,105,31,.05), transparent 55%),
+    radial-gradient(700px 240px at 100% 0%, rgba(6,81,117,.05), transparent 50%),
+    var(--bg-color, #f7f8fb);
+}
 #page-Quotation .form-section,
 #page-Quotation .form-dashboard-section {
-  margin-bottom: 10px !important;
-  padding: 14px 16px 16px !important;
+  margin-bottom: 8px !important;
+  padding: 10px 14px 12px !important;
+  border: 1px solid #e8dfd7 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 0 rgba(6,81,117,.03);
+}
+#page-Quotation .form-section[data-fieldname="ic_section_type"],
+#page-Quotation .form-section[data-fieldname="ic_section_costing"],
+#page-Quotation .form-section[data-fieldname="ic_section_test_lines"] {
+  border-left: 3px solid #EC691F !important;
 }
 #page-Quotation .frappe-control {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 #page-Quotation .form-section > .section-head {
-  padding-left: 15px !important;
-  padding-right: 15px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
   font-size: 14px;
+  color: #065175;
+}
+#page-Quotation .form-section.hide-control {
+  display: none !important;
 }
 #page-Quotation .section-head.collapsible {
   cursor: pointer;
