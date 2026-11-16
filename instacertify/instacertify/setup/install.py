@@ -1222,12 +1222,14 @@ def _ensure_lead_source_link_field():
 	cf_name = "Lead-ic_lead_source_detail"
 	meta = {
 		"fieldname": "ic_lead_source_detail",
-		"label": "Lead Source",
+		"label": "Source",
 		"fieldtype": "Link",
 		"options": "IC Lead Source",
-		"insert_after": "ic_request_category",
+		"insert_after": "ic_section_source",
 		"in_list_view": 1,
-		"description": "Editable under IC Lead Source",
+		"in_standard_filter": 1,
+		"bold": 1,
+		"description": "Where this lead came from — pick from the list or add a new source",
 	}
 	_upsert_lead_custom_field(cf_name, meta)
 
@@ -1236,12 +1238,14 @@ def _ensure_lead_project_type_field():
 	cf_name = "Lead-ic_project_type"
 	meta = {
 		"fieldname": "ic_project_type",
-		"label": "Project Type",
+		"label": "Inquiry for",
 		"fieldtype": "Link",
 		"options": "IC Project Type",
-		"insert_after": "ic_section_request",
+		"insert_after": "ic_section_inquiry",
 		"in_list_view": 1,
-		"description": "Editable under IC Project Type",
+		"in_standard_filter": 1,
+		"bold": 1,
+		"description": "What the inquiry is for — pick from the list or add a new option",
 	}
 	_upsert_lead_custom_field(cf_name, meta)
 
@@ -1249,20 +1253,21 @@ def _ensure_lead_project_type_field():
 def _upsert_lead_custom_field(cf_name, meta):
 	try:
 		if frappe.db.exists("Custom Field", cf_name):
-			frappe.db.set_value(
-				"Custom Field",
-				cf_name,
-				{
-					"label": meta["label"],
-					"fieldtype": meta["fieldtype"],
-					"options": meta.get("options"),
-					"insert_after": meta.get("insert_after"),
-					"reqd": meta.get("reqd", 0),
-					"in_list_view": meta.get("in_list_view", 0),
-					"description": meta.get("description"),
-					"module": "Instacertify",
-				},
-			)
+			payload = {
+				"label": meta["label"],
+				"fieldtype": meta["fieldtype"],
+				"options": meta.get("options"),
+				"insert_after": meta.get("insert_after"),
+				"reqd": meta.get("reqd", 0),
+				"in_list_view": meta.get("in_list_view", 0),
+				"description": meta.get("description"),
+				"module": "Instacertify",
+			}
+			if "in_standard_filter" in meta:
+				payload["in_standard_filter"] = meta.get("in_standard_filter") or 0
+			if "bold" in meta:
+				payload["bold"] = meta.get("bold") or 0
+			frappe.db.set_value("Custom Field", cf_name, payload)
 		else:
 			frappe.get_doc(
 				{
@@ -1632,13 +1637,16 @@ def setup_project_types():
 
 
 def setup_lead_capture_properties():
-	"""Phone/email optional; source and product/service stay on the lead list filters."""
+	"""Phone/email optional; source and inquiry stay on the lead list filters."""
 	from instacertify.setup.pos import _make_setter
 
 	for fieldname, updates in (
-		("ic_lead_source_detail", {"label": "Source", "in_list_view": 1, "in_standard_filter": 1}),
-		("ic_project_type", {"label": "Product / service", "in_list_view": 1, "in_standard_filter": 1}),
+		("ic_lead_source_detail", {"label": "Source", "in_list_view": 1, "in_standard_filter": 1, "bold": 1}),
+		("ic_project_type", {"label": "Inquiry for", "in_list_view": 1, "in_standard_filter": 1, "bold": 1}),
 		("ic_request_category", {"in_standard_filter": 1, "in_list_view": 1}),
+		("ic_section_source", {"label": "Lead Source", "collapsible": 0}),
+		("ic_section_inquiry", {"label": "Inquiry For", "collapsible": 0}),
+		("ic_section_request", {"label": "Opportunity Details", "collapsible": 0}),
 	):
 		name = f"Lead-{fieldname}"
 		if frappe.db.exists("Custom Field", name):

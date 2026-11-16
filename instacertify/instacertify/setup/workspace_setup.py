@@ -1848,7 +1848,8 @@ def _ensure_crm_lead_tracker_block():
   <div class="ic-crm-charts">
     <div class="ic-crm-chart-card" id="ic-crm-source-7-card"><div class="ic-crm-chart-label">Last 7 days by source</div><div id="ic-crm-source-7"></div></div>
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by source</div><div id="ic-crm-source-30"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by project type</div><div id="ic-crm-ptype-30"></div></div>
+    <div class="ic-crm-chart-card" id="ic-crm-ptype-7-card"><div class="ic-crm-chart-label">Last 7 days by inquiry</div><div id="ic-crm-ptype-7"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by inquiry</div><div id="ic-crm-ptype-30"></div></div>
     <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by status</div><div id="ic-crm-status-30"></div></div>
   </div>
   <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC renewals due (31 days)</div><div id="ic-crm-amc-due"></div></div>
@@ -1923,11 +1924,15 @@ def _ensure_crm_lead_tracker_block():
       const since = (label) => (ranges[label] ? [["Lead", "creation", ">=", ranges[label][0]]] : []);
       const s7 = d.by_source_7d || [];
       const s30 = d.by_source_30d || [];
+      const p7 = d.by_project_type_7d || [];
+      const p30 = d.by_project_type_30d || [];
       const sameSeries = (a, b) => a.length === b.length && a.every((row, i) => row.label === b[i].label && Number(row.count) === Number(b[i].count));
       const source7 = root_element.getElementById("ic-crm-source-7-card");
       if (source7 && (!s7.length || sameSeries(s7, s30))) source7.style.display = "none";
       else makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 7 Days")});
-      const p30 = d.by_project_type_30d || [];
+      const inquiry7 = root_element.getElementById("ic-crm-ptype-7-card");
+      if (inquiry7 && (!p7.length || sameSeries(p7, p30))) inquiry7.style.display = "none";
+      else makeChart(root_element.getElementById("ic-crm-ptype-7"), "pie", p7.map(x=>x.label), p7.map(x=>x.count), null, {doctype: "Lead", field: "ic_project_type", base: since("Last 7 Days")});
       makeChart(root_element.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count), null, {doctype: "Lead", field: "ic_project_type", base: since("Last 30 Days")});
       makeChart(root_element.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 30 Days")});
       const st30 = d.by_status_30d || [];

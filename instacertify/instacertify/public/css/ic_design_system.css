@@ -958,6 +958,69 @@ body[data-route="Workspaces/Instacertify Home"] .legend-dataset-label {
 .ic-capture-dialog .form-section:nth-child(4) { border-top: 3px solid #a25ddc !important; }
 .ic-capture-dialog .form-section:nth-child(5) { border-top: 3px solid #ff642e !important; }
 .ic-capture-dialog .frappe-control { margin-bottom: 6px !important; }
+/* Lead form: separate Source / Inquiry boxes with Add option */
+.ic-lead-form-page [data-fieldname="ic_section_source"] .section-head,
+.ic-lead-form-page [data-fieldname="ic_section_inquiry"] .section-head {
+  font-weight: 650;
+  color: #323338;
+}
+.ic-lead-form-page [data-fieldname="ic_section_source"] .form-section,
+.ic-lead-form-page [data-fieldname="ic_section_inquiry"] .form-section,
+.ic-lead-form-page .form-section[data-fieldname="ic_section_source"],
+.ic-lead-form-page .form-section[data-fieldname="ic_section_inquiry"] {
+  border: 1px solid #e6e9ef !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  margin: 0 0 12px !important;
+  padding: 4px 4px 8px !important;
+}
+.ic-lead-form-page [data-fieldname="ic_section_source"] {
+  box-shadow: inset 0 3px 0 #579bfc;
+}
+.ic-lead-form-page [data-fieldname="ic_section_inquiry"] {
+  box-shadow: inset 0 3px 0 #00c875;
+}
+.ic-lead-add-box {
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border: 1px dashed #c9d0e0;
+  border-radius: 10px;
+  background: #f7f8fa;
+}
+.ic-lead-add-box-title {
+  font-size: 12px;
+  font-weight: 650;
+  color: #323338;
+  margin-bottom: 6px;
+}
+.ic-lead-add-box-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+.ic-lead-add-box .ic-lead-add-btn {
+  height: 32px;
+  padding: 0 14px;
+  white-space: nowrap;
+  background: #0073ea;
+  border-color: #0073ea;
+  color: #fff;
+  font-weight: 600;
+}
+.ic-lead-add-box .ic-lead-add-btn:hover {
+  background: #0060c2;
+  border-color: #0060c2;
+  color: #fff;
+}
+.ic-lead-add-box-hint {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.ic-customer-currency-banner .ic-change-primary-currency {
+  white-space: nowrap;
+}
+
 .ic-capture-dialog .ic-choice-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
