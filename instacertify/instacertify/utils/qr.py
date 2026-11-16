@@ -9,8 +9,16 @@ import io
 import frappe
 
 
-def get_qr_code_data_uri(data: str, box_size: int = 4, border: int = 2) -> str:
-	"""Return a data URI PNG for the given payload."""
+def get_qr_code_data_uri(
+	data: str,
+	box_size: int = 4,
+	border: int = 2,
+	fill_color: str = "black",
+) -> str:
+	"""Return a data URI PNG for the given payload.
+
+	``fill_color`` may be a soft grey (e.g. ``#6A727C``) for print letterheads.
+	"""
 	try:
 		import qrcode
 	except ImportError:
@@ -24,7 +32,7 @@ def get_qr_code_data_uri(data: str, box_size: int = 4, border: int = 2) -> str:
 	)
 	qr.add_data(data)
 	qr.make(fit=True)
-	img = qr.make_image(fill_color="black", back_color="white")
+	img = qr.make_image(fill_color=fill_color or "black", back_color="white")
 	buf = io.BytesIO()
 	img.save(buf, format="PNG")
 	b64 = base64.b64encode(buf.getvalue()).decode()
