@@ -8882,30 +8882,28 @@ instacertify.open_quick_lead = function (opts) {
 		});
 	}
 
-	function choice_block(host, title, key, popular, all, kind) {
+	function choice_block(host, title, key, all, kind) {
 		host.empty();
 		const root = document.createElement("div");
 		root.className = "ic-choice";
 		root.innerHTML = `<div class="ic-capture-label">${title}</div>`;
-		const chips = document.createElement("div");
-		chips.className = "ic-capture-chips";
-		root.appendChild(chips);
-		const tools = document.createElement("div");
-		tools.className = "ic-choice-tools";
 		const select = document.createElement("select");
 		select.className = "form-control ic-choice-select";
+		const adder = document.createElement("div");
+		adder.className = "ic-choice-adder";
+		adder.hidden = true;
 		const search = document.createElement("input");
 		search.type = "text";
-		search.className = "form-control ic-choice-search";
-		search.placeholder = __("Not in the list");
-		search.setAttribute("autocomplete", "off");
+		search.className = "form-control";
+		search.placeholder = __("Type the new name");
 		const addBtn = document.createElement("button");
 		addBtn.type = "button";
 		addBtn.className = "ic-choice-add";
 		addBtn.textContent = __("Add");
-		tools.append(select, search, addBtn);
-		root.appendChild(tools);
+		adder.append(search, addBtn);
+		root.append(select, adder);
 		host.append(root);
+		const ADD = "__add__";
 
 		function fill_select() {
 			const current = state[key] || "";
@@ -8920,37 +8918,29 @@ instacertify.open_quick_lead = function (opts) {
 				opt.textContent = name;
 				select.appendChild(opt);
 			});
+			const add = document.createElement("option");
+			add.value = ADD;
+			add.textContent = __("Add a new one…");
+			select.appendChild(add);
 			select.value = all.indexOf(current) >= 0 ? current : "";
 		}
 
-		function paint_chips() {
-			chips.innerHTML = "";
-			const shown = popular.slice();
-			if (state[key] && shown.indexOf(state[key]) < 0) shown.push(state[key]);
-			shown.forEach((value) => {
-				const btn = document.createElement("button");
-				btn.type = "button";
-				btn.className = "ic-lead-filter-chip" + (state[key] === value ? " is-on" : "");
-				btn.textContent = value;
-				btn.addEventListener("click", () => {
-					state[key] = state[key] === value ? "" : value;
-					fill_select();
-					paint_chips();
-				});
-				chips.appendChild(btn);
-			});
+		function select_name(name) {
+			state[key] = name || "";
+			search.value = "";
+			adder.hidden = true;
+			if (name && all.indexOf(name) < 0) all.push(name);
 			fill_select();
 		}
 
-		function select_name(name) {
-			state[key] = name;
-			search.value = "";
-			if (name && all.indexOf(name) < 0) all.push(name);
-			if (name && popular.indexOf(name) < 0) popular.push(name);
-			paint_chips();
-		}
-
-		select.addEventListener("change", () => select_name(select.value));
+		select.addEventListener("change", () => {
+			if (select.value === ADD) {
+				adder.hidden = false;
+				search.focus();
+				return;
+			}
+			select_name(select.value);
+		});
 		addBtn.addEventListener("click", () => {
 			const raw = search.value.trim();
 			if (!raw) {
@@ -8974,7 +8964,7 @@ instacertify.open_quick_lead = function (opts) {
 				},
 			});
 		});
-		paint_chips();
+		fill_select();
 	}
 
 	function paint_need() {
@@ -9034,7 +9024,6 @@ instacertify.open_quick_lead = function (opts) {
 				$(sourceHost),
 				__("Where did they come from?"),
 				"source",
-				lists.popular_sources,
 				lists.sources,
 				"source"
 			);
@@ -9042,7 +9031,6 @@ instacertify.open_quick_lead = function (opts) {
 				$(serviceHost),
 				__("What is it for?"),
 				"service",
-				lists.popular_services,
 				lists.services,
 				"service"
 			);
