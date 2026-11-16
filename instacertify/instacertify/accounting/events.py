@@ -8,13 +8,51 @@ import frappe
 from instacertify.accounting.billing import (
 	apply_customer_billing_defaults,
 	apply_transaction_billing_defaults,
+	pick_customer_value_from_lead,
 )
 from instacertify.accounting.consulting_billing import strip_warehouse_from_service_items
 
 
 def validate_customer(doc, method=None):
+	_adapt_country_from_lead(doc)
 	apply_customer_billing_defaults(doc)
 	_sync_customer_portal_credentials(doc)
+
+
+def _adapt_country_from_lead(doc):
+	"""When a lead becomes a customer, copy country (and related profile) onto the customer."""
+	lead = (doc.get("lead_name") or "").strip()
+	if not lead or not frappe.db.exists("Lead", lead):
+		return
+
+	fields = ["country", "ic_gst_number", "ic_state", "city", "ic_company_size", "ic_factory_address"]
+	try:
+		lead_doc = frappe.db.get_value("Lead", lead, fields, as_dict=True) or {}
+	except Exception:
+		lead_doc = {}
+		for field in fields:
+			try:
+				lead_doc[field] = frappe.db.get_value("Lead", lead, field)
+			except Exception:
+				lead_doc[field] = None
+
+	if doc.meta.has_field("ic_country"):
+		country = pick_customer_value_from_lead(doc.get("ic_country"), lead_doc.get("country"))
+		if country and frappe.db.exists("Country", country):
+			doc.ic_country = country
+
+	copies = (
+		("ic_gst_number", "ic_gst_number"),
+		("ic_state", "ic_state"),
+		("ic_company_size", "ic_company_size"),
+		("ic_factory_address", "ic_factory_address"),
+	)
+	for lead_field, customer_field in copies:
+		if not doc.meta.has_field(customer_field):
+			continue
+		value = pick_customer_value_from_lead(doc.get(customer_field), lead_doc.get(lead_field))
+		if value:
+			setattr(doc, customer_field, value)
 
 
 def _sync_customer_portal_credentials(doc):

@@ -43,180 +43,386 @@ GST_PAYMENT_TERMS_NOTE_HTML = """
 {%- endif -%}
 """
 
-# Instacertify Aptos Display / Aptos print typography (quotations + printable docs)
-# Hierarchy: Display for titles/headings; Aptos for body/tables/terms.
-# Quote print look: black text with grey-highlighted section/step bars.
+# Simple Arial quote typography: black words, grey table values, hairline brand accents.
+IC_PRINT_FONT = "Arial, Helvetica, 'Segoe UI', sans-serif"
 IC_PRINT_TYPOGRAPHY_CSS = """
-  @font-face {
-    font-family: 'Aptos Display';
-    src: url('/assets/instacertify/fonts/aptos/Aptos-Display.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'Aptos Display';
-    src: url('/assets/instacertify/fonts/aptos/Aptos-Display-Bold.ttf') format('truetype');
-    font-weight: 600 700;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'Aptos';
-    src: url('/assets/instacertify/fonts/aptos/Aptos.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
-    font-family: 'Aptos';
-    src: url('/assets/instacertify/fonts/aptos/Aptos-Bold.ttf') format('truetype');
-    font-weight: 600 700;
-    font-style: normal;
-    font-display: swap;
-  }
   :root {
-    --ic-navy: #111111;
+    --ic-navy: #065175;
+    --ic-navy-deep: #043A54;
     --ic-orange: #EC691F;
     --ic-ink: #111111;
-    --ic-soft: #E8E8E8;
-    --ic-soft-mid: #D9D9D9;
+    --ic-value: #6A727C;
+    --ic-muted: #6A727C;
+    --ic-half: #F1F2F4;
+    --ic-soft: #F1F2F4;
+    --ic-line: #B7BCC4;
+    --ic-line-soft: #D7DBE0;
     --ic-white: #FFFFFF;
   }
   .ic-font-body, .ic-quote, .ic-inv, .tq, .cq, .ic, .ic-sheet {
-    font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif;
     color: var(--ic-ink);
     font-size: 10px;
-    line-height: 1.45;
+    line-height: 1.65;
+    letter-spacing: 0.02em;
     font-weight: 400;
+    word-spacing: 0.06em;
   }
   .ic-doc-title, .tq-title, .cq-title {
-    font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 700 !important;
-    font-size: 16pt !important;
+    font-size: 18pt !important;
     color: #111111 !important;
-    letter-spacing: 0.01em;
-    text-transform: none !important;
-    text-align: center;
-    margin: 8px 0 10px !important;
-    line-height: 1.2;
+    letter-spacing: 0.14em;
+    text-transform: uppercase !important;
+    text-align: left;
+    margin: 14px 0 10px !important;
+    line-height: 1.3;
   }
   .ic-doc-subtitle, .cq-service {
-    font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 14pt !important;
-    color: #111111 !important;
-    text-transform: none !important;
-    text-align: center;
-    margin: 0 0 12px !important;
-    line-height: 1.25;
-  }
-  .ic-section-heading, .tq-label, .cq-bar, .ic-box > h3, .tq-h, .cq-h {
-    font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 11pt !important;
     color: #111111 !important;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.03em;
     text-transform: none !important;
+    text-align: left;
+    margin: 0 0 12px !important;
+    line-height: 1.45;
   }
-  /* Grey-highlighted step / section bars — normal case, not ALL CAPS */
-  .tq-label, .cq-bar {
-    font-size: 10.5pt !important;
-    background: #E8E8E8 !important;
+  .ic-section-heading, .tq-label, .cq-bar, .ic-box > h3, .tq-h, .cq-h {
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 9pt !important;
     color: #111111 !important;
-    text-transform: none !important;
+    letter-spacing: 0.05em;
+    text-transform: uppercase !important;
+  }
+  .tq-label, .cq-bar {
+    font-size: 8.5pt !important;
+    background: var(--ic-half) !important;
+    color: #111111 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    border-left: 1px solid var(--ic-line) !important;
   }
   .ic-subheading {
-    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 12pt !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 10pt !important;
     color: #111111 !important;
   }
   .ic-quote-no, .tq-meta, .cq-meta {
-    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
-    font-size: 9.5pt !important;
+    font-size: 9pt !important;
     color: #111111 !important;
+    letter-spacing: 0.02em;
   }
-  .ic-lh-co .name, .tq-co .name, .cq-co .name {
-    font-family: 'Aptos Display', 'Aptos', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 12.5px !important;
+  .ic-mast-brand .name, .ic-lh-co .name, .tq-co .name, .cq-co .name {
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
     color: #111111 !important;
     text-transform: none !important;
   }
-  .ic-lh, .tq-head, .cq-head {
-    border-bottom-color: var(--ic-orange) !important;
+  .ic-masthead, .ic-lh, .tq-head, .cq-head {
+    border-bottom: none !important;
     background: transparent;
   }
-  #header-html {
-    width: 100%;
-    box-sizing: border-box;
+  .ic-mast-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 24px !important;
   }
-  #header-html .ic-lh,
-  #header-html .tq-head,
-  #header-html .cq-head {
-    margin-bottom: 0 !important;
-  }
-  table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
-    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 9.5pt !important;
-    background: #D0D0D0 !important;
+  .ic-mast-logo { flex: 0 0 auto; min-width: 0; }
+  .ic-mast-details, .ic-mast-details * {
     color: #111111 !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    text-align: right !important;
+  }
+  .ic-mast-details {
+    flex: 1 1 auto;
+    max-width: 58%;
+    margin-left: auto;
+  }
+  .ic-mast-details .ic-mast-legal {
+    color: #111111 !important;
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.01em !important;
+    padding: 1px 0 2px !important;
+    margin-bottom: 6px !important;
+  }
+  #header-html { width: 100%; box-sizing: border-box; }
+  table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 8.5pt !important;
+    background: var(--ic-half) !important;
+    color: #111111 !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-top: 1px solid var(--ic-line) !important;
+    border-bottom: 1px solid var(--ic-line) !important;
+  }
+  /* Narrative / words / amounts in quote = black */
+  .tq-value, .cq-body, .ic-box, .tq-value p, .cq-body p, .tq-value b, .cq-body b,
+  .tq-value strong, .cq-body strong, .ic-terms, .tq-note, .cq-body .ic-terms {
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    color: #111111 !important;
+    line-height: 1.65 !important;
+    letter-spacing: 0.02em;
+    word-spacing: 0.06em;
   }
   table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
-    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 400 !important;
     color: #111111 !important;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
   }
-  /* Numbered / bulleted process steps — black on light grey wash */
+  table.tq-comm td.amt, table.cq-comm td.amt, .ic-grand-total {
+    color: #111111 !important;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700 !important;
+  }
   .cq-body ol li, .cq-body ul li, .tq-value ol li, .tq-value ul li,
   .ic-box ol li, .ic-box ul li {
     color: #111111 !important;
+    margin-bottom: 6px !important;
+    line-height: 1.6;
   }
   .cq-body ol > li, .tq-value ol > li, .ic-process-steps ol > li {
-    background: #F3F3F3;
-    border-left: 3px solid #C8C8C8;
-    padding: 4px 8px;
+    background: transparent;
+    border-left: 1px solid var(--ic-line);
+    padding: 5px 10px;
     margin-bottom: 6px !important;
     list-style-position: inside;
   }
-
-  .ic-terms, .tq-note, .cq-body .ic-terms {
-    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
-    font-weight: 400 !important;
-    font-size: 8.75pt !important;
-    color: #111111 !important;
+  /* Quote box / table outlines — uniform grey */
+  table.tq-grid > tbody > tr > td,
+  .cq-box, .cq-sec,
+  table.tq-comm th, table.tq-comm td,
+  table.cq-comm th, table.cq-comm td,
+  table.tq-bank td, table.cq-bank td,
+  table.ic-table th, table.ic-table td {
+    border-color: var(--ic-line) !important;
   }
   .ic-footer-bar, .tq-footer-bar, .cq-footer-bar {
-    font-family: 'Aptos', 'Segoe UI', sans-serif !important;
-    font-weight: 400 !important;
-    font-size: 8.5pt !important;
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%) !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 9pt !important;
+    background: transparent !important;
+    color: #111111 !important;
+    border-top: 1px solid var(--ic-navy) !important;
+    border-bottom: 1px solid var(--ic-orange) !important;
+    letter-spacing: 0.08em !important;
+    text-transform: none !important;
+    padding: 8px 0 !important;
   }
   .ic-accent-text { color: var(--ic-orange) !important; }
-  .ic-soft-block { background: var(--ic-soft) !important; }
-  table.tq-comm td.amt, table.cq-comm td.amt, .ic-grand-total {
+  .ic-soft-block { background: var(--ic-half) !important; }
+  .ic-party-strip {
+    display:flex; justify-content:space-between; gap:16px; align-items:center;
+    margin:0 0 16px; padding:12px 0;
+    border-top: 1px solid var(--ic-line);
+    border-bottom: 1px solid var(--ic-line);
+    background: transparent;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif;
+    font-size:9.5px; color:#111111;
+    line-height: 1.6; letter-spacing: 0.02em; word-spacing: 0.06em;
+  }
+  .ic-party-strip, .ic-party-strip * { color: #111111 !important; }
+  .tq-sign, .cq-sign, .tq-close, .cq-close, .ic-sign {
     color: #111111 !important;
+    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+  }
+  .ic-rule-navy { height:1px; background:var(--ic-navy); width:100%; border:0; }
+  .ic-rule-orange { height:1px; background:var(--ic-orange); width:56px; border:0; margin:0; }
+  .ic-rule-double { border:0; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-line); height:3px; background:transparent; }
+  /* Prefer keeping a section together; if it cannot fit, browsers break and
+     continue under the running header on the next page. */
+  table.tq-grid > tbody > tr, .cq-sec {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+  }
+  .tq-value, .cq-body, .cq-box {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  .tq-label, .cq-bar, .tq-title, .cq-title, .cq-service {
+    page-break-after: avoid;
+    break-after: avoid-page;
+  }
+  table.tq-comm tr, table.cq-comm tr, table.ic-table tr,
+  .tq-close, .cq-close, .ic-sign {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  p, li { orphans: 3; widows: 3; }
+"""
+
+# Masthead: logo left; company details right. Content inset; brand rules full-bleed.
+# Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
+LETTERHEAD_BLOCK_HTML = """
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0;padding:0;">
+  <div class="ic-mast-pad" style="padding:8mm 12mm 6px;">
+    <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
+      <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
+        <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
+      </div>
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{{ legal }}</div>
+        <div>{{ address }}</div>
+        {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
+        <div style="margin-top:3px;">{{ phone }}</div>
+        <div>{{ email }}</div>
+        {% if website %}<div>{{ website }}</div>{% endif %}
+        {% if gstin %}<div>GSTIN {{ gstin }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+</div>
+"""
+
+# Running page chrome: full-bleed A4 header/footer; content inset; lines to sheet edge.
+QUOTE_PAGE_CHROME_CSS = """
+  @page { size: A4; margin: 0; }
+  .print-format { padding: 0 !important; margin: 0 !important; position: relative; }
+  .ic-print-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    width: 100%;
+    z-index: 20;
+    background: #fff;
+    padding: 0;
+    margin: 0;
+  }
+  .ic-print-footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    width: 100%;
+    z-index: 20;
+    background: #fff;
+    padding: 0;
+    margin: 0;
+  }
+  .ic-bleed-rule {
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-sizing: border-box;
+  }
+  .ic-bleed-navy { height: 1px !important; background: #065175 !important; }
+  .ic-bleed-orange { height: 1px !important; background: #EC691F !important; }
+  /* One straight footer line: left half navy, right half orange */
+  .ic-footer-rules {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    max-width: none;
+    height: 2.5px;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  .ic-footer-half {
+    display: block;
+    width: 50%;
+    height: 2.5px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .ic-footer-half.navy { background: #065175; }
+  .ic-footer-half.orange { background: #EC691F; }
+  .ic-print-body {
+    /* Leave room for QR above + rule + tagline in the 0.7in band below */
+    padding: 38mm 12mm 42mm 12mm;
+    min-height: 200mm;
+    box-sizing: border-box;
+  }
+  .ic-print-footer-inner {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    /* QR sits above the straight rule with a little space */
+    padding: 6px 12mm 8px 12mm;
+  }
+  .ic-print-footer-spacer { width: 56px; flex: 0 0 56px; }
+  /* Tagline below the dual-tone line, inside the 0.7in bottom band */
+  .ic-print-footer-below {
+    box-sizing: border-box;
+    min-height: 0.7in;
+    padding: 5px 12mm 6px 12mm;
+    text-align: center;
+  }
+  .ic-print-footer-tag {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 9pt !important;
+    color: #111111 !important;
+    letter-spacing: 0.08em !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    line-height: 1.3;
+  }
+  .ic-print-footer-qr {
+    width: 56px; flex: 0 0 56px;
+    text-align: right;
+  }
+  .ic-print-footer-qr img {
+    width: 52px; height: 52px;
+    display: block;
+    margin-left: auto;
+    opacity: 0.62;
+    filter: grayscale(1);
+  }
+  .ic-print-footer-qr .cap {
+    font-size: 7px; color: #6A727C; text-align: center; margin-top: 2px;
+    font-family: Arial, Helvetica, sans-serif;
   }
 """
 
-# Visible letterhead block for quotation / invoice print bodies.
-# Prefer body placement over `#header-html` alone — Chrome/wkhtmltopdf often
-# strip or fail to inject `#header-html`, which made the header look "missing".
-# Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
-LETTERHEAD_BLOCK_HTML = """
-<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
-  <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
-    <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{{ legal }}</div>
-    <div>{{ address }}</div>
-    <div>Phone: {{ phone }}</div>
-    <div>Email: {{ email }}</div>
-    {% if website %}<div>{{ website }}</div>{% endif %}
-    {% if cin %}<div><b>CIN:</b> {{ cin }}</div>{% endif %}
-    {% if gstin %}<div><b>GSTIN:</b> {{ gstin }}</div>{% endif %}
+QUOTE_RUNNING_HEADER_HTML = """
+<div id="header-html" class="ic-print-header">
+""" + LETTERHEAD_BLOCK_HTML + """
+</div>
+"""
+
+QUOTE_RUNNING_FOOTER_HTML = """
+<div id="footer-html" class="ic-print-footer">
+  <div class="ic-print-footer-inner">
+    <div class="ic-print-footer-qr">
+      {% if doc.ic_qr_code %}
+        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+      {% else %}
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT'), 3, 1, '#6A727C') }}" alt="QR"/>
+      {% endif %}
+      <div class="cap">Verify</div>
+    </div>
+  </div>
+  <div class="ic-footer-rules" aria-hidden="true">
+    <div class="ic-footer-half navy"></div>
+    <div class="ic-footer-half orange"></div>
+  </div>
+  <div class="ic-print-footer-below">
+    <div class="ic-print-footer-tag">Certification Made Simple</div>
   </div>
 </div>
 """
@@ -232,7 +438,7 @@ LETTERHEAD_CONTEXT_JINJA = """
 {%- set cin = s.cin or 'U74999UP2022PTC170291' -%}
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
-{%- set logo_raw = s.header_image or s.logo or '/assets/instacertify/images/instacertify_letterhead.png' -%}
+{%- set logo_raw = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo_tagline_print.png' -%}
 {%- if logo_raw and (logo_raw.startswith('http://') or logo_raw.startswith('https://') or logo_raw.startswith('data:')) -%}
 {%- set logo = logo_raw -%}
 {%- else -%}
@@ -241,43 +447,39 @@ LETTERHEAD_CONTEXT_JINJA = """
 {%- set bank = bank_for_document(doc) -%}
 """
 
-# Kept for callers that still compose with the old name — body letterhead (not header-only).
-QUOTE_LETTERHEAD_HTML = LETTERHEAD_BLOCK_HTML
+# Kept for callers that still compose with the old name — now running page header.
+QUOTE_LETTERHEAD_HTML = QUOTE_RUNNING_HEADER_HTML
 
 QUOTATION_HTML = """
 """ + LETTERHEAD_CONTEXT_JINJA + """
 <style>
-""" + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
-  .print-format { padding: 0 !important; margin: 0 !important; }
-  .ic-quote { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color: var(--ic-ink); font-size: 10px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
-  .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .ic-lh-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; text-transform:none; margin-bottom:2px; }
+""" + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
+  .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: var(--ic-ink); font-size: 10px; }
+  .ic-masthead { margin-bottom:0; }
   .ic-accent { color: var(--ic-orange); }
-  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-navy); margin-bottom: 12px; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
-  .ic-box { border: 1px solid #d9e6ee; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
-  .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; border-bottom: 1px solid #ecf3f7; padding-bottom: 4px; }
+  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-line); margin-bottom: 12px; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:9.5pt; }
+  .ic-box { border: 1px solid var(--ic-line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+  .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:13pt; border-bottom: 1px solid var(--ic-line); padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.ic-table th { background: #D0D0D0; color: #111; padding: 6px 8px; text-align: left; font-family:'Aptos',sans-serif; font-weight:600; font-size: 9.5pt; }
-  table.ic-table td { border-bottom: 1px solid #e5eef3; padding: 6px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
-  .badge-pass { background: #fff3e8; color: var(--ic-orange); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
-  .badge-rev { background: var(--ic-soft); color: var(--ic-navy); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
-  .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; font-family:'Aptos',sans-serif; font-size:8.5pt; }
+  table.ic-table th { background: var(--ic-half); color: var(--ic-ink); padding: 6px 8px; text-align: left; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size: 8.5pt; letter-spacing:0.06em; text-transform:uppercase; border-top:1px solid var(--ic-navy); }
+  table.ic-table td { border-bottom: 1px solid var(--ic-line); padding: 6px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; }
+  .badge-pass { background: #fff3e8; color: var(--ic-orange); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:Arial,Helvetica,sans-serif; font-weight:600; }
+  .badge-rev { background: var(--ic-soft); color: var(--ic-navy); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:Arial,Helvetica,sans-serif; font-weight:600; }
+  .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; }
   .ic-qr { float: right; margin: 0 0 8px 16px; text-align: center; }
   .ic-qr img { width: 72px; height: 72px; }
-  .ic-qr .cap { font-size: 8px; color: #555; font-family:'Aptos',sans-serif; }
-  .ic-sign { margin-top: 28px; page-break-inside: avoid; font-family:'Aptos',sans-serif; }
+  .ic-qr .cap { font-size: 8px; color: #555; font-family:Arial,Helvetica,sans-serif; }
+  .ic-sign { margin-top: 28px; page-break-inside: avoid; font-family:Arial,Helvetica,sans-serif; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
+    background: transparent; color: var(--ic-muted); border-top: 1px solid var(--ic-navy); border-bottom: 1px solid var(--ic-orange);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
-    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
-  .ic-grand-total { font-family:'Aptos Display',sans-serif; font-weight:700; font-size:18pt; color:var(--ic-navy); }
+  .ic-grand-total { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:18pt; color:var(--ic-ink); }
 </style>
-""" + LETTERHEAD_BLOCK_HTML + """
+""" + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
+<div class="ic-print-body">
 <div class="ic-quote">
   <div class="ic-doc-title">Quotation</div>
   <p style="margin:0 0 8px;font-size:10.5pt;">Dear {{ doc.customer_name or doc.party_name or 'Sir or Madam' }},</p>
@@ -476,16 +678,8 @@ QUOTATION_HTML = """
 
   <div class="ic-footer">
     <div style="max-width:70%; color:#667;">Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
-    <div class="ic-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
-      {% endif %}
-      <div style="font-size:8px;">Scan to verify</div>
-    </div>
   </div>
-  <div class="ic-footer-bar">www.instacertify.com</div>
+</div>
 </div>
 """
 
@@ -495,20 +689,20 @@ INVOICE_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
-  .ic-inv { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; font-size: 10px; color: var(--ic-ink); }
+  .ic-inv { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size: 10px; color: var(--ic-ink); }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .ic-lh-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; text-transform:none; margin-bottom:2px; }
+  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:Arial,Helvetica,sans-serif; }
+  .ic-lh-co .name { color:var(--ic-navy); font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:12.5px; text-transform:none; margin-bottom:2px; }
   table { width:100%; border-collapse: collapse; margin-top:12px; }
-  th { background:var(--ic-navy); color:#fff; padding:6px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
-  td { border-bottom:1px solid #e5eef3; padding:6px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  th { background:var(--ic-navy); color:#fff; padding:6px; text-align:left; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:9.5pt; }
+  td { border-bottom:1px solid #e5eef3; padding:6px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; }
   .qr { text-align:right; margin-top:20px; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
+    background: transparent; color: var(--ic-muted); border-top: 1px solid var(--ic-navy); border-bottom: 1px solid var(--ic-orange);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
-    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
 </style>
@@ -538,7 +732,7 @@ INVOICE_HTML = """
   <div class="qr">
     <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Sales Invoice/' + doc.name) }}" alt="QR"/>
   </div>
-  <div class="ic-footer-bar">www.instacertify.com</div>
+  <div class="ic-footer-bar">Certification Made Simple</div>
 </div>
 """
 
@@ -559,7 +753,7 @@ SAMPLE_HTML = """
   .qr-block img { width:90px; height:90px; image-rendering: pixelated; }
   .qr-block .trk { font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size:14px; font-weight:700; color:#065175; letter-spacing:0.02em; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
+    background: transparent; color: #6A727C; border-top: 1px solid #065175; border-bottom: 1px solid #EC691F;
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -580,7 +774,7 @@ SAMPLE_HTML = """
       <div class="trk">{{ trk }}</div>
     </div>
   </div>
-  <div class="ic-footer-bar">www.instacertify.com</div>
+  <div class="ic-footer-bar">Certification Made Simple</div>
 </div>
 """
 
@@ -691,7 +885,7 @@ TESTING_HTML = """
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
   .ic-lh-co .name { color:#EC691F; font-weight:700; font-size:11px; text-transform:uppercase; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
+    background: transparent; color: #6A727C; border-top: 1px solid #065175; border-bottom: 1px solid #EC691F;
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -707,7 +901,7 @@ TESTING_HTML = """
   <p><b>Laboratory:</b> {{ doc.laboratory or '' }} ({{ doc.laboratory_location or '' }})</p>
   <p><b>Samples:</b> {{ doc.number_of_samples }} | <b>Status:</b> {{ doc.status }}</p>
   <img style="width:72px;height:72px;" src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/IC Testing Request/' + doc.name) }}" alt="QR"/>
-  <div class="ic-footer-bar">www.instacertify.com</div>
+  <div class="ic-footer-bar">Certification Made Simple</div>
 </div>
 """
 
@@ -725,7 +919,7 @@ JOINING_HTML = """
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
+    background: transparent; color: #6A727C; border-top: 1px solid #065175; border-bottom: 1px solid #EC691F;
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -743,7 +937,7 @@ JOINING_HTML = """
     <div>Verification: {{ doc.verification_code or doc.name }}</div>
   </div>
   <p style="margin-top:28px;"><b>For Instacertify Labs Private Limited</b></p>
-  <div class="ic-footer-bar">www.instacertify.com</div>
+  <div class="ic-footer-bar">Certification Made Simple</div>
 </div>
 """
 
@@ -761,64 +955,50 @@ TESTING_QUOTATION_HTML = """
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
-""" + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
-  .tq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
+""" + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
+  .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
-  .tq-logo img { max-height:58px; max-width:320px; }
-  .tq-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .tq-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:none; }
-  .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
-  .tq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:16pt; font-weight:700; margin:8px 0 12px; color:var(--ic-navy); letter-spacing:0.01em; line-height:1.2; text-transform:none; }
-  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
-  table.tq-grid > tbody > tr { page-break-inside:avoid; }
-  table.tq-grid > tbody > tr > td { border:1px solid #333; vertical-align:top; padding:0; }
-  .tq-label { width:17%; background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:10px 8px; color:#111; font-size:11pt; }
-  .tq-value { width:83%; padding:10px 12px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
-  .tq-value ul { margin:6px 0 0 18px; padding:0; }
-  .tq-value ol { margin:6px 0 0 18px; padding:0; }
-  .tq-value li { margin-bottom:4px; }
-  .tq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
-  table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.tq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
-  table.tq-comm td { border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-ink); }
+  .tq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
+  .tq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 10px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
+  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  table.tq-grid > tbody > tr { page-break-inside:avoid; break-inside:avoid-page; }
+  table.tq-grid > tbody > tr > td { border:1px solid var(--ic-line); vertical-align:top; padding:0; }
+  .tq-label { width:18%; background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 10px; color:#111111; font-size:8.5pt; letter-spacing:0.05em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.55; }
+  .tq-value { width:82%; padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .tq-value ul { margin:8px 0 0 18px; padding:0; }
+  .tq-value ol { margin:8px 0 0 18px; padding:0; }
+  .tq-value li { margin-bottom:6px; color:#111111; line-height:1.6; }
+  .tq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
+  table.tq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.tq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 6px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; text-align:center; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+  table.tq-comm td { border:1px solid var(--ic-line); padding:9px 6px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; vertical-align:top; color:#111111; line-height:1.55; letter-spacing:0.02em; }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
-  table.tq-comm td.amt { text-align:center; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); }
-  .tq-note { margin-top:8px; font-family:'Aptos',sans-serif; font-size:8.75pt; color:var(--ic-ink); }
-  table.tq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.tq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
-  table.tq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
-  .tq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
-  .tq-close p { margin:6px 0; }
+  table.tq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; }
+  .tq-note { margin-top:10px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; color:#111111; line-height:1.6; }
+  table.tq-bank { width:100%; border-collapse:collapse; margin-top:8px; }
+  table.tq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
+  table.tq-bank td.k { width:34%; background:var(--ic-half); font-weight:700; color:#111111; letter-spacing:0.04em; text-transform:uppercase; font-size:8.5pt; }
+  .tq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
+  .tq-close p { margin:6px 0; color:#111111; }
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
-  .tq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
-  .tq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
-    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
-    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
-    border:none; line-height:1.2;
-  }
-  .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
-  .tq-qr img { width:72px; height:72px; }
-  .tq-qr .cap { font-size:8px; color:#555; font-family:'Aptos',sans-serif; }
-  .print-format { padding:0 !important; margin:0 !important; }
+  .tq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
 </style>
-""" + QUOTE_LETTERHEAD_HTML + """
+""" + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
+<div class="ic-print-body">
 <div class="tq">
 
 {%- set _party = doc.customer_name or doc.party_name or '' -%}
 {%- set _cur = doc.currency or 'INR' -%}
 {%- set _sym = '₹' if _cur == 'INR' else ('$' if _cur == 'USD' else ('€' if _cur == 'EUR' else ('£' if _cur == 'GBP' else _cur))) -%}
-<div class="tq-meta">
+  <div class="tq-title">Quotation</div>
+  <div class="tq-meta">
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
-  <div class="tq-title">Quotation</div>
-  <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
-    <div><b>Customer:</b> {{ _party }}</div>
-    <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">Individual lines may be stated in another currency.</span></div>
+  <div class="ic-party-strip">
+    <div><b>Prepared for:</b> {{ _party }}</div>
+    <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
   <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
   <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
@@ -1149,23 +1329,13 @@ TESTING_QUOTATION_HTML = """
   {% endfor %}
 
   <div class="tq-close">
-    <div class="tq-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Scan to verify</div>
-    </div>
     <p>We shall be pleased to proceed upon your written acceptance of this quotation. Should you require any clarification, we remain at your disposal.</p>
     <p>Yours faithfully,</p>
     <div class="tq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="tq-sign">For Instacertify Labs Private Limited</div>
     <div style="margin-top:2px;font-family:'Aptos',sans-serif;font-size:10pt;">Authorised Signatory</div>
   </div>
-
-  <div style="clear:both;"></div>
-  <div class="tq-footer-bar">www.instacertify.com</div>
+</div>
 </div>
 """
 
@@ -1185,61 +1355,47 @@ CONSULTING_QUOTATION_HTML = """
 {%- set title = doc.ic_service_name or 'Consultancy' -%}
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
-""" + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
-  .cq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
+""" + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
+  .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
-  .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
-  .cq-logo img { max-height:58px; max-width:320px; }
-  .cq-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .cq-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:none; }
-  .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
-  .cq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:16pt; font-weight:700; margin:8px 0 10px; color:var(--ic-navy); letter-spacing:0.01em; line-height:1.2; text-transform:none; }
-  .cq-service { text-align:center; font-family:'Aptos Display',sans-serif; font-size:14pt; font-weight:600; margin:0 0 12px; color:var(--ic-navy); line-height:1.25; text-transform:none; }
-  .cq-box { border:1px solid #333; margin-bottom:0; }
-  .cq-sec { border-top:1px solid #333; }
+  .cq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
+  .cq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 8px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
+  .cq-service { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
+  .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:avoid; break-inside:avoid-page; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid #333; font-size:10.5pt; text-transform:none; letter-spacing:0.01em; color:#111; }
-  .cq-body { padding:12px 14px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
-  .cq-body ul, .cq-body ol { margin:6px 0 0 18px; padding:0; }
-  .cq-body li { margin-bottom:4px; }
-  .cq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
-  table.cq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
-  table.cq-comm td { border:1px solid #555; padding:8px; vertical-align:top; font-family:'Aptos',sans-serif; font-size:9.5pt; color:var(--ic-ink); }
-  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); width:32%; }
-  table.cq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
-  table.cq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
-  .cq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
+  .cq-bar { background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.05em; color:#111111; line-height:1.55; }
+  .cq-body { padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .cq-body ul, .cq-body ol { margin:8px 0 0 18px; padding:0; }
+  .cq-body li { margin-bottom:6px; color:#111111; line-height:1.6; }
+  .cq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
+  table.cq-comm { width:100%; border-collapse:collapse; margin-top:8px; }
+  table.cq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 8px; text-align:left; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:8.5pt; letter-spacing:0.04em; text-transform:uppercase; }
+  table.cq-comm td { border:1px solid var(--ic-line); padding:9px 8px; vertical-align:top; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; letter-spacing:0.02em; }
+  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; width:32%; }
+  table.cq-bank { width:100%; border-collapse:collapse; margin-top:8px; }
+  table.cq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
+  table.cq-bank td.k { width:34%; background:var(--ic-half); font-weight:700; color:#111111; letter-spacing:0.04em; text-transform:uppercase; font-size:8.5pt; }
+  .cq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
-  .cq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
-  .cq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
-    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
-    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
-    border:none; line-height:1.2;
-  }
-  .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
-  .cq-qr img { width:72px; height:72px; }
-  .cq-qr .cap { font-size:8px; color:#555; font-family:'Aptos',sans-serif; }
-  .print-format { padding:0 !important; margin:0 !important; }
+  .cq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
 </style>
-""" + QUOTE_LETTERHEAD_HTML + """
+""" + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
+<div class="ic-print-body">
 <div class="cq">
 
 {%- set _party = doc.customer_name or doc.party_name or '' -%}
 {%- set _cur = doc.currency or 'INR' -%}
 {%- set _sym = '₹' if _cur == 'INR' else ('$' if _cur == 'USD' else ('€' if _cur == 'EUR' else ('£' if _cur == 'GBP' else _cur))) -%}
-<div class="cq-meta">
+  <div class="cq-title">Quotation</div>
+  <div class="cq-service">{{ title }}</div>
+  <div class="cq-meta">
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
-  <div class="cq-title">Quotation</div>
-  <div class="cq-service">{{ title }}</div>
-  <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
-    <div><b>Customer:</b> {{ _party }}</div>
-    <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">Individual lines may be stated in another currency.</span></div>
+  <div class="ic-party-strip">
+    <div><b>Prepared for:</b> {{ _party }}</div>
+    <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
   <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
   <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
@@ -1519,22 +1675,13 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 
   <div class="cq-close">
-    <div class="cq-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Scan to verify</div>
-    </div>
     <p>We shall be pleased to proceed upon your written acceptance of this quotation. Should you require any clarification, we remain at your disposal.</p>
     <p>Yours faithfully,</p>
     <div class="cq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="cq-sign">For Instacertify Labs Private Limited</div>
     <div style="margin-top:2px;font-family:'Aptos',sans-serif;font-size:10pt;">Authorised Signatory</div>
   </div>
-  <div style="clear:both;"></div>
-  <div class="cq-footer-bar">www.instacertify.com</div>
+</div>
 </div>
 """
 
@@ -1556,7 +1703,7 @@ DOCUMENTS_COLLECTION_HTML = """
   table.ic-table th { background:#065175; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:transparent;color:#6A727C;border-top:1px solid #065175;border-bottom:1px solid #EC691F; color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -1661,7 +1808,7 @@ TRF_HTML = """
   .ic-meta { margin-bottom:10px; }
   .ic-qr-row { display:flex; gap:16px; align-items:center; }
   .ic-qr-row img { width:28mm; height:28mm; border:1px solid #cfd8dc; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:transparent;color:#6A727C;border-top:1px solid #065175;border-bottom:1px solid #EC691F; color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -1734,7 +1881,7 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; vertical-align:top; }
   table.ic-table td:first-child { width:32%; color:#065175; font-weight:600; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:transparent;color:#6A727C;border-top:1px solid #065175;border-bottom:1px solid #EC691F; color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -1822,7 +1969,7 @@ def letterhead_html() -> str:
 	logo = (
 		(getattr(s, "header_image", None) if s else None)
 		or (getattr(s, "logo", None) if s else None)
-		or "/assets/instacertify/images/instacertify_letterhead.png"
+		or "/assets/instacertify/images/instacertify_logo_tagline_print.png"
 	)
 	if logo and not str(logo).startswith(("http://", "https://", "data:")):
 		logo = frappe.utils.get_url(logo)
@@ -1838,45 +1985,73 @@ def letterhead_html() -> str:
 	cin = frappe.utils.escape_html((getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291")
 	gstin = frappe.utils.escape_html((getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7")
 	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
+	# Logo/words inset; brand rules full-bleed to A4 sheet edge.
 	return f"""
-<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
-  <div class="ic-lh-logo"><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
-    <div class="name" style="font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{legal}</div>
-    <div>{addr_html}</div>
-    <div>Phone: {phone}</div>
-    <div>Email: {email}</div>
-    <div>{website}</div>
-    <div><b>CIN:</b> {cin}</div>
-    <div><b>GSTIN:</b> {gstin}</div>
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0;padding:0;">
+  <div class="ic-mast-pad" style="padding:8mm 12mm 6px;">
+    <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
+      <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
+        <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
+      </div>
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{legal}</div>
+        <div>{addr_html}</div>
+        <div>CIN {cin}</div>
+        <div style="margin-top:3px;">{phone}</div>
+        <div>{email}</div>
+        <div>{website}</div>
+        <div>GSTIN {gstin}</div>
+      </div>
+    </div>
+  </div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+</div>
+"""
+
+
+def letter_footer_html() -> str:
+	"""Static Letter Head footer — dual-tone rule, then Certification Made Simple below."""
+	return """
+<div style="width:100%;box-sizing:border-box;margin:0;padding:0;">
+  <div style="display:flex;width:100%;height:2.5px;margin:0;padding:0;">
+    <div style="width:50%;height:2.5px;background:#065175;margin:0;padding:0;border:0;"></div>
+    <div style="width:50%;height:2.5px;background:#EC691F;margin:0;padding:0;border:0;"></div>
+  </div>
+  <div style="box-sizing:border-box;min-height:0.7in;padding:5px 12mm 6px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
+    Certification Made Simple
   </div>
 </div>
 """
 
 
 def _ensure_instacertify_letter_head():
-	"""Create/update Letter Head so every print can use the quotation header."""
+	"""Create/update Letter Head so every print can use the quotation header/footer."""
 	name = "Instacertify"
 	content = letterhead_html()
+	footer = letter_footer_html()
 	try:
 		if frappe.db.exists("Letter Head", name):
 			doc = frappe.get_doc("Letter Head", name)
 			doc.source = "HTML"
 			doc.content = content
+			if doc.meta.has_field("footer"):
+				doc.footer = footer
 			doc.disabled = 0
 			doc.is_default = 1
 			doc.save(ignore_permissions=True)
 		else:
-			frappe.get_doc(
-				{
-					"doctype": "Letter Head",
-					"letter_head_name": name,
-					"source": "HTML",
-					"content": content,
-					"disabled": 0,
-					"is_default": 1,
-				}
-			).insert(ignore_permissions=True)
+			payload = {
+				"doctype": "Letter Head",
+				"letter_head_name": name,
+				"source": "HTML",
+				"content": content,
+				"disabled": 0,
+				"is_default": 1,
+			}
+			# Footer field exists on standard Letter Head
+			payload["footer"] = footer
+			frappe.get_doc(payload).insert(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Instacertify Letter Head")
 

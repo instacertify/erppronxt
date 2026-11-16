@@ -29,7 +29,7 @@ FRIENDLY_LABELS = {
 	"IC Quotation Product": "Quotation Product",
 	"IC Project Update": "Project Update",
 	"IC Project Record": "Project Record",
-	"IC Project Type": "Project Type",
+	"IC Project Type": "Inquiry Type",
 	"IC Lead Source": "Lead Source",
 	"IC Joining Letter": "Joining Letter",
 	"IC Employee Document": "Employee Document",
