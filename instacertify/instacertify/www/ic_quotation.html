@@ -8,49 +8,84 @@
   <link rel="apple-touch-icon" href="/assets/instacertify/images/apple-touch-icon.png"/>
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
   <style>
-    body.ic-portal-body { margin:0; background:#f5f6fa; color:#21263c; font-family:Inter,"Segoe UI",sans-serif; }
+    body.ic-portal-body {
+      margin:0; background:#eef3f6; color:#1a2433;
+      font-family:"Segoe UI",Aptos,system-ui,sans-serif;
+    }
     .ic-portal-wrap { width:min(920px, calc(100% - 32px)); margin:28px auto 48px; }
-    .ic-portal-card { background:#fff; border:1px solid #e3e6ef; border-radius:16px; box-shadow:0 10px 30px rgba(33,38,60,.06); padding:28px 28px 22px; }
-    .ic-portal-card h2 { color:#21263c; margin:0 0 8px; letter-spacing:-0.03em; font-size:1.6rem; }
+    .ic-portal-mast {
+      display:flex; justify-content:space-between; align-items:center; gap:16px;
+      padding:14px 18px 12px; background:#fff; border:1px solid #c9d7e0; border-bottom:none;
+      border-radius:12px 12px 0 0;
+    }
+    .ic-portal-mast-left { display:flex; align-items:center; gap:12px; min-width:0; }
+    .ic-portal-mast img { max-height:40px; max-width:200px; }
+    .ic-portal-mast .legal { color:#065175; font-weight:700; font-size:14px; line-height:1.2; }
+    .ic-portal-mast .tag { color:#5b6775; font-size:12px; margin-top:2px; }
+    .ic-portal-mast-rule { height:2px; background:#065175; }
+    .ic-portal-mast-accent { height:2px; width:72px; background:#EC691F; }
+    .ic-portal-card {
+      background:#fff; border:1px solid #c9d7e0; border-top:none;
+      border-radius:0 0 12px 12px; box-shadow:0 10px 28px rgba(6,81,117,.07);
+      padding:22px 26px 22px;
+    }
+    .ic-portal-card h2 {
+      color:#065175; margin:0 0 10px; letter-spacing:0.04em; font-size:1.45rem;
+      text-transform:uppercase; font-weight:700;
+    }
     .ic-portal-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; align-items:center; }
-    .ic-portal-muted { color:#6c718a; font-size:0.92rem; }
+    .ic-portal-muted { color:#5b6775; font-size:0.92rem; }
     .ic-table-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
     .ic-portal-table { width:100%; border-collapse:collapse; margin:8px 0 4px; font-size:0.95rem; min-width:560px; }
-    .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #e8ebf3; padding:10px 8px; text-align:left; vertical-align:top; }
-    .ic-portal-table th { color:#6c718a; font-weight:600; font-size:0.78rem; letter-spacing:.04em; text-transform:uppercase; }
+    .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #d7e4eb; padding:10px 8px; text-align:left; vertical-align:top; }
+    .ic-portal-table th { color:#fff; background:#065175; font-weight:600; font-size:0.78rem; letter-spacing:.04em; text-transform:uppercase; }
     .ic-portal-table td { font-variant-numeric:tabular-nums; }
-    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#ebf3fe; color:#1b6ec2; font-size:0.85rem; font-weight:600; }
+    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:999px; background:#eef5f8; color:#065175; font-size:0.85rem; font-weight:600; }
     .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
     .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
     .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
     .ic-portal-prose { white-space:pre-wrap; line-height:1.55; margin:0; }
-    .ic-portal-total { margin-top:14px; padding:14px 16px; border:1px solid #d7e0f0; border-radius:12px; background:#f7f9fd; display:flex; justify-content:space-between; gap:12px; font-weight:700; color:#21263c; font-size:1.05rem; }
-    .ic-portal-section { margin-top:18px; }
-    .ic-portal-section h4, .ic-portal-card h4 { margin:16px 0 8px; color:#21263c; font-size:1rem; letter-spacing:-0.01em; }
+    .ic-portal-total {
+      margin-top:14px; padding:14px 16px; border:1px solid #c9d7e0; border-top:2px solid #065175;
+      border-radius:8px; background:#eef5f8; display:flex; justify-content:space-between;
+      gap:12px; font-weight:700; color:#065175; font-size:1.05rem;
+    }
+    .ic-portal-section { margin-top:14px; }
+    .ic-portal-section h4, .ic-portal-card h4 {
+      margin:14px 0 8px; color:#065175; font-size:0.98rem; letter-spacing:0.01em;
+      padding:7px 10px; background:#eef5f8; border-left:3px solid #065175;
+    }
     #msg { margin-top:12px; padding:10px 12px; border-radius:10px; display:none; }
     #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     #msg.err { display:block; background:#fdecea; color:#b42318; }
-    .ic-btn { border-radius:10px; min-height:40px; padding:8px 14px; }
-    /* The shared stylesheet adds side padding to this block, so a width worked out
-       from the screen alone made the card run past the right edge on phones and tablets. */
+    .ic-btn { border-radius:8px; min-height:40px; padding:8px 14px; }
     @media (max-width: 1000px) {
       .ic-portal-wrap { width:100%; box-sizing:border-box; }
     }
     @media (max-width: 700px) {
       .ic-portal-wrap { width:100%; box-sizing:border-box; margin:12px auto 28px; }
-      .ic-portal-card { padding:16px 14px; border-radius:12px; }
-      .ic-portal-card h2 { font-size:1.3rem; }
+      .ic-portal-mast { flex-direction:column; align-items:flex-start; }
+      .ic-portal-card { padding:16px 14px; }
+      .ic-portal-card h2 { font-size:1.2rem; }
       .ic-portal-actions .ic-btn, .ic-portal-actions a.ic-btn { flex:1 1 100%; text-align:center; }
     }
   </style>
 </head>
 <body class="ic-portal-body">
   <div class="ic-portal-wrap">
-    <div class="ic-portal-brand" style="margin-bottom:14px;">
-      <img class="ic-brand-logo" src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+    <div class="ic-portal-mast">
+      <div class="ic-portal-mast-left">
+        <img src="/assets/instacertify/images/instacertify_logo.png" alt="Instacertify"/>
+        <div>
+          <div class="legal">Instacertify Labs Private Limited</div>
+          <div class="tag">Testing · Certification · Compliance</div>
+        </div>
+      </div>
     </div>
+    <div class="ic-portal-mast-rule"></div>
+    <div class="ic-portal-mast-accent"></div>
     <div class="ic-portal-card" id="app">
-      <h2 style="color:#0D47A1;margin-top:0;">Your Quotation</h2>
+      <h2>Quotation</h2>
       <div id="content">Loading…</div>
       <div id="msg"></div>
       <div class="ic-portal-actions" id="actions" style="display:none;">

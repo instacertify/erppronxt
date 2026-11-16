@@ -44,8 +44,7 @@ GST_PAYMENT_TERMS_NOTE_HTML = """
 """
 
 # Instacertify Aptos Display / Aptos print typography (quotations + printable docs)
-# Hierarchy: Display for titles/headings; Aptos for body/tables/terms.
-# Quote print look: black text with grey-highlighted section/step bars.
+# Formal document look: navy primary, orange as a thin accent — not stationery letterhead.
 IC_PRINT_TYPOGRAPHY_CSS = """
   @font-face {
     font-family: 'Aptos Display';
@@ -76,11 +75,13 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-display: swap;
   }
   :root {
-    --ic-navy: #111111;
+    --ic-navy: #065175;
+    --ic-navy-deep: #043A54;
     --ic-orange: #EC691F;
-    --ic-ink: #111111;
-    --ic-soft: #E8E8E8;
-    --ic-soft-mid: #D9D9D9;
+    --ic-ink: #1A2433;
+    --ic-muted: #5B6775;
+    --ic-soft: #EEF5F8;
+    --ic-line: #C9D7E0;
     --ic-white: #FFFFFF;
   }
   .ic-font-body, .ic-quote, .ic-inv, .tq, .cq, .ic, .ic-sheet {
@@ -93,130 +94,150 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-doc-title, .tq-title, .cq-title {
     font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 700 !important;
-    font-size: 16pt !important;
-    color: #111111 !important;
-    letter-spacing: 0.01em;
-    text-transform: none !important;
-    text-align: center;
-    margin: 8px 0 10px !important;
-    line-height: 1.2;
+    font-size: 18pt !important;
+    color: var(--ic-navy) !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase !important;
+    text-align: left;
+    margin: 4px 0 8px !important;
+    line-height: 1.15;
   }
   .ic-doc-subtitle, .cq-service {
     font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
-    font-size: 14pt !important;
-    color: #111111 !important;
+    font-size: 12pt !important;
+    color: var(--ic-navy-deep) !important;
     text-transform: none !important;
-    text-align: center;
-    margin: 0 0 12px !important;
+    text-align: left;
+    margin: 0 0 10px !important;
     line-height: 1.25;
   }
   .ic-section-heading, .tq-label, .cq-bar, .ic-box > h3, .tq-h, .cq-h {
     font-family: 'Aptos Display', 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
-    font-size: 11pt !important;
-    color: #111111 !important;
+    font-size: 10.5pt !important;
+    color: var(--ic-navy) !important;
     letter-spacing: 0.01em;
     text-transform: none !important;
   }
-  /* Grey-highlighted step / section bars — normal case, not ALL CAPS */
   .tq-label, .cq-bar {
-    font-size: 10.5pt !important;
-    background: #E8E8E8 !important;
-    color: #111111 !important;
+    font-size: 10pt !important;
+    background: var(--ic-soft) !important;
+    color: var(--ic-navy) !important;
     text-transform: none !important;
+    border-left: 3px solid var(--ic-navy) !important;
   }
   .ic-subheading {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 500 !important;
-    font-size: 12pt !important;
-    color: #111111 !important;
+    font-size: 11pt !important;
+    color: var(--ic-navy) !important;
   }
   .ic-quote-no, .tq-meta, .cq-meta {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 9.5pt !important;
-    color: #111111 !important;
+    color: var(--ic-ink) !important;
   }
-  .ic-lh-co .name, .tq-co .name, .cq-co .name {
+  .ic-mast-brand .name, .ic-lh-co .name, .tq-co .name, .cq-co .name {
     font-family: 'Aptos Display', 'Aptos', sans-serif !important;
     font-weight: 600 !important;
-    font-size: 12.5px !important;
-    color: #111111 !important;
+    font-size: 12px !important;
+    color: var(--ic-navy) !important;
     text-transform: none !important;
   }
-  .ic-lh, .tq-head, .cq-head {
-    border-bottom-color: var(--ic-orange) !important;
+  .ic-masthead, .ic-lh, .tq-head, .cq-head {
+    border-bottom: none !important;
     background: transparent;
   }
-  #header-html {
-    width: 100%;
-    box-sizing: border-box;
-  }
-  #header-html .ic-lh,
-  #header-html .tq-head,
-  #header-html .cq-head {
-    margin-bottom: 0 !important;
-  }
+  #header-html { width: 100%; box-sizing: border-box; }
   table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 9.5pt !important;
-    background: #D0D0D0 !important;
-    color: #111111 !important;
+    background: var(--ic-navy) !important;
+    color: #fff !important;
   }
   table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 400 !important;
-    color: #111111 !important;
+    color: var(--ic-ink) !important;
   }
-  /* Numbered / bulleted process steps — black on light grey wash */
   .cq-body ol li, .cq-body ul li, .tq-value ol li, .tq-value ul li,
   .ic-box ol li, .ic-box ul li {
-    color: #111111 !important;
+    color: var(--ic-ink) !important;
   }
   .cq-body ol > li, .tq-value ol > li, .ic-process-steps ol > li {
-    background: #F3F3F3;
-    border-left: 3px solid #C8C8C8;
+    background: var(--ic-soft);
+    border-left: 3px solid var(--ic-navy);
     padding: 4px 8px;
     margin-bottom: 6px !important;
     list-style-position: inside;
   }
-
   .ic-terms, .tq-note, .cq-body .ic-terms {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
     font-weight: 400 !important;
     font-size: 8.75pt !important;
-    color: #111111 !important;
+    color: var(--ic-muted) !important;
   }
   .ic-footer-bar, .tq-footer-bar, .cq-footer-bar {
     font-family: 'Aptos', 'Segoe UI', sans-serif !important;
-    font-weight: 400 !important;
+    font-weight: 500 !important;
     font-size: 8.5pt !important;
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%) !important;
+    background: var(--ic-navy) !important;
+    border-top: 3px solid var(--ic-orange) !important;
   }
   .ic-accent-text { color: var(--ic-orange) !important; }
   .ic-soft-block { background: var(--ic-soft) !important; }
   table.tq-comm td.amt, table.cq-comm td.amt, .ic-grand-total {
-    color: #111111 !important;
+    color: var(--ic-navy) !important;
+  }
+  .ic-party-strip {
+    display:flex; justify-content:space-between; gap:16px;
+    margin:0 0 12px; padding:10px 12px;
+    border:1px solid var(--ic-line);
+    border-top: 2px solid var(--ic-navy);
+    background: var(--ic-soft);
+    font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink);
+  }
+  /* Long sections may split — avoid empty page bottoms */
+  table.tq-grid, table.tq-grid > tbody > tr, .cq-box, .cq-sec, .tq-value, .cq-body {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  .tq-label, .cq-bar, .tq-title, .cq-title {
+    page-break-after: avoid;
+    break-after: avoid-page;
+  }
+  table.tq-comm tr, table.cq-comm tr, table.ic-table tr,
+  .tq-close, .cq-close, .ic-sign {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 """
 
-# Visible letterhead block for quotation / invoice print bodies.
-# Prefer body placement over `#header-html` alone — Chrome/wkhtmltopdf often
-# strip or fail to inject `#header-html`, which made the header look "missing".
+# Formal document masthead for quotes (logo + legal line — not classic letterhead stack).
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
 LETTERHEAD_BLOCK_HTML = """
-<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
-  <div class="ic-lh-logo"><img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:'Aptos','Segoe UI',sans-serif;">
-    <div class="name" style="color:#111;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{{ legal }}</div>
-    <div>{{ address }}</div>
-    <div>Phone: {{ phone }}</div>
-    <div>Email: {{ email }}</div>
-    {% if website %}<div>{{ website }}</div>{% endif %}
-    {% if cin %}<div><b>CIN:</b> {{ cin }}</div>{% endif %}
-    {% if gstin %}<div><b>GSTIN:</b> {{ gstin }}</div>{% endif %}
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 14px 0;padding:0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 0 8px;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:220px;"/>
+      <div class="ic-mast-brand" style="font-family:'Aptos','Segoe UI',sans-serif;min-width:0;">
+        <div class="name" style="color:#065175;font-family:'Aptos Display','Aptos',sans-serif;font-weight:600;font-size:12px;line-height:1.2;">{{ legal }}</div>
+        <div style="color:#5B6775;font-size:9px;margin-top:2px;">Testing · Certification · Compliance</div>
+      </div>
+    </div>
+    <div style="text-align:right;font-family:'Aptos','Segoe UI',sans-serif;font-size:9px;line-height:1.35;color:#5B6775;max-width:46%;">
+      <div>{{ phone }} · {{ email }}</div>
+      {% if website %}<div>{{ website }}</div>{% endif %}
+      {% if gstin %}<div><b style="color:#065175;">GSTIN</b> {{ gstin }}</div>{% endif %}
+    </div>
+  </div>
+  <div style="height:2px;background:#065175;width:100%;"></div>
+  <div style="height:2px;background:#EC691F;width:72px;margin-top:0;"></div>
+  <div style="margin-top:6px;font-family:'Aptos','Segoe UI',sans-serif;font-size:8.5px;color:#5B6775;line-height:1.35;">
+    {{ address }}{% if cin %} · <b style="color:#065175;">CIN</b> {{ cin }}{% endif %}
   </div>
 </div>
 """
@@ -251,17 +272,14 @@ QUOTATION_HTML = """
   @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
   .ic-quote { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color: var(--ic-ink); font-size: 10px; }
-  .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
-  .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .ic-lh-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; text-transform:none; margin-bottom:2px; }
+  .ic-masthead { margin-bottom:12px; }
   .ic-accent { color: var(--ic-orange); }
-  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-navy); margin-bottom: 12px; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
-  .ic-box { border: 1px solid #d9e6ee; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
-  .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; border-bottom: 1px solid #ecf3f7; padding-bottom: 4px; }
+  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-line); margin-bottom: 12px; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
+  .ic-box { border: 1px solid var(--ic-line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+  .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:13pt; border-bottom: 1px solid var(--ic-line); padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.ic-table th { background: #D0D0D0; color: #111; padding: 6px 8px; text-align: left; font-family:'Aptos',sans-serif; font-weight:600; font-size: 9.5pt; }
-  table.ic-table td { border-bottom: 1px solid #e5eef3; padding: 6px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  table.ic-table th { background: var(--ic-navy); color: #fff; padding: 6px 8px; text-align: left; font-family:'Aptos',sans-serif; font-weight:600; font-size: 9.5pt; }
+  table.ic-table td { border-bottom: 1px solid var(--ic-line); padding: 6px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
   .badge-pass { background: #fff3e8; color: var(--ic-orange); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
   .badge-rev { background: var(--ic-soft); color: var(--ic-navy); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Aptos',sans-serif; font-weight:600; }
   .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; font-family:'Aptos',sans-serif; font-size:8.5pt; }
@@ -270,7 +288,7 @@ QUOTATION_HTML = """
   .ic-qr .cap { font-size: 8px; color: #555; font-family:'Aptos',sans-serif; }
   .ic-sign { margin-top: 28px; page-break-inside: avoid; font-family:'Aptos',sans-serif; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
+    background: var(--ic-navy); border-top: 3px solid var(--ic-orange);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -502,7 +520,7 @@ INVOICE_HTML = """
   .qr { text-align:right; margin-top:20px; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
+    background: var(--ic-navy); border-top: 3px solid var(--ic-orange);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -555,7 +573,7 @@ SAMPLE_HTML = """
   .qr-block img { width:90px; height:90px; image-rendering: pixelated; }
   .qr-block .trk { font-family: 'DejaVu Sans Mono', Consolas, monospace; font-size:14px; font-weight:700; color:#065175; letter-spacing:0.02em; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
+    background: #065175; border-top: 3px solid #EC691F;
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -687,7 +705,7 @@ TESTING_HTML = """
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
   .ic-lh-co .name { color:#EC691F; font-weight:700; font-size:11px; text-transform:uppercase; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
+    background: #065175; border-top: 3px solid #EC691F;
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -721,7 +739,7 @@ JOINING_HTML = """
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, #EC691F 50%, #d85a16 100%);
+    background: #065175; border-top: 3px solid #EC691F;
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
     font-size:10px; font-weight:500; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
@@ -758,43 +776,39 @@ TESTING_QUOTATION_HTML = """
 {%- set curr = doc.currency or 'INR' -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
+  @page { size: A4; margin: 12mm; }
   .tq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
-  .tq-logo img { max-height:58px; max-width:320px; }
-  .tq-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .tq-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:none; }
-  .tq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
-  .tq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:16pt; font-weight:700; margin:8px 0 12px; color:var(--ic-navy); letter-spacing:0.01em; line-height:1.2; text-transform:none; }
-  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; }
-  table.tq-grid > tbody > tr { page-break-inside:avoid; }
-  table.tq-grid > tbody > tr > td { border:1px solid #333; vertical-align:top; padding:0; }
-  .tq-label { width:17%; background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:10px 8px; color:#111; font-size:11pt; }
-  .tq-value { width:83%; padding:10px 12px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
+  .tq-meta { display:flex; justify-content:space-between; margin:0 0 2px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
+  .tq-title { text-align:left; font-family:'Aptos Display',sans-serif; font-size:18pt; font-weight:700; margin:2px 0 10px; color:var(--ic-navy); letter-spacing:0.04em; line-height:1.15; text-transform:uppercase; }
+  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  table.tq-grid > tbody > tr { page-break-inside:auto; break-inside:auto; }
+  table.tq-grid > tbody > tr > td { border:1px solid var(--ic-line); vertical-align:top; padding:0; }
+  .tq-label { width:17%; background:var(--ic-soft); font-family:'Aptos Display',sans-serif; font-weight:600; padding:9px 8px; color:var(--ic-navy); font-size:10pt; border-left:3px solid var(--ic-navy); }
+  .tq-value { width:83%; padding:9px 12px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
   .tq-value ul { margin:6px 0 0 18px; padding:0; }
   .tq-value ol { margin:6px 0 0 18px; padding:0; }
   .tq-value li { margin-bottom:4px; }
-  .tq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
+  .tq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:13pt; color:var(--ic-navy); margin:0 0 6px; }
   table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.tq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
-  table.tq-comm td { border:1px solid #555; padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-ink); }
+  table.tq-comm th { background:var(--ic-navy); color:#fff; border:1px solid var(--ic-navy-deep); padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; text-align:center; font-weight:600; }
+  table.tq-comm td { border:1px solid var(--ic-line); padding:7px 5px; font-family:'Aptos',sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-ink); }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
   table.tq-comm td.amt { text-align:center; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); }
-  .tq-note { margin-top:8px; font-family:'Aptos',sans-serif; font-size:8.75pt; color:var(--ic-ink); }
+  .tq-note { margin-top:8px; font-family:'Aptos',sans-serif; font-size:8.75pt; color:var(--ic-muted); }
   table.tq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.tq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
-  table.tq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
-  .tq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
+  table.tq-bank td { border:1px solid var(--ic-line); padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  table.tq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; color:var(--ic-navy); }
+  .tq-close { margin-top:20px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
   .tq-close p { margin:6px 0; }
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
-  .tq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
+  .tq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; color:var(--ic-navy); }
   .tq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
-    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
-    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
-    border:none; line-height:1.2;
+    background: var(--ic-navy);
+    color:#fff; text-align:center; padding:6px 12px; margin-top:16px;
+    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:500; letter-spacing:0.12em; text-transform:lowercase;
+    border:none; border-top:3px solid var(--ic-orange); line-height:1.2;
   }
   .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
   .tq-qr img { width:72px; height:72px; }
@@ -807,14 +821,14 @@ TESTING_QUOTATION_HTML = """
 {%- set _party = doc.customer_name or doc.party_name or '' -%}
 {%- set _cur = doc.currency or 'INR' -%}
 {%- set _sym = '₹' if _cur == 'INR' else ('$' if _cur == 'USD' else ('€' if _cur == 'EUR' else ('£' if _cur == 'GBP' else _cur))) -%}
-<div class="tq-meta">
+  <div class="tq-title">Quotation</div>
+  <div class="tq-meta">
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
-  <div class="tq-title">Quotation</div>
-  <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
-    <div><b>Customer:</b> {{ _party }}</div>
-    <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(lines may use other currencies)</span></div>
+  <div class="ic-party-strip">
+    <div><b>Prepared for:</b> {{ _party }}</div>
+    <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
 
     <table class="tq-grid">
@@ -1179,39 +1193,35 @@ CONSULTING_QUOTATION_HTML = """
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
+  @page { size: A4; margin: 12mm; }
   .cq { font-family: 'Aptos', 'Segoe UI', Calibri, Arial, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
-  .cq-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
-  .cq-logo img { max-height:58px; max-width:320px; }
-  .cq-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Aptos',sans-serif; }
-  .cq-co .name { color:var(--ic-navy); font-family:'Aptos Display',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:0.2px; margin-bottom:2px; text-transform:none; }
-  .cq-meta { display:flex; justify-content:space-between; margin:12px 0 4px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
-  .cq-title { text-align:center; font-family:'Aptos Display',sans-serif; font-size:16pt; font-weight:700; margin:8px 0 10px; color:var(--ic-navy); letter-spacing:0.01em; line-height:1.2; text-transform:none; }
-  .cq-service { text-align:center; font-family:'Aptos Display',sans-serif; font-size:14pt; font-weight:600; margin:0 0 12px; color:var(--ic-navy); line-height:1.25; text-transform:none; }
-  .cq-box { border:1px solid #333; margin-bottom:0; }
-  .cq-sec { border-top:1px solid #333; }
+  .cq-meta { display:flex; justify-content:space-between; margin:0 0 2px; font-family:'Aptos',sans-serif; font-size:9.5pt; font-weight:600; color:var(--ic-ink); }
+  .cq-title { text-align:left; font-family:'Aptos Display',sans-serif; font-size:18pt; font-weight:700; margin:2px 0 4px; color:var(--ic-navy); letter-spacing:0.04em; line-height:1.15; text-transform:uppercase; }
+  .cq-service { text-align:left; font-family:'Aptos Display',sans-serif; font-size:12pt; font-weight:600; margin:0 0 10px; color:var(--ic-navy-deep); line-height:1.25; text-transform:none; }
+  .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:auto; break-inside:auto; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:#E8E8E8; font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid #333; font-size:10.5pt; text-transform:none; letter-spacing:0.01em; color:#111; }
-  .cq-body { padding:12px 14px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); }
+  .cq-bar { background:var(--ic-soft); font-family:'Aptos Display',sans-serif; font-weight:600; padding:8px 12px; border-bottom:1px solid var(--ic-line); border-left:3px solid var(--ic-navy); font-size:10pt; text-transform:none; letter-spacing:0.01em; color:var(--ic-navy); }
+  .cq-body { padding:10px 14px; font-family:'Aptos',sans-serif; font-size:10px; color:var(--ic-ink); page-break-inside:auto; break-inside:auto; }
   .cq-body ul, .cq-body ol { margin:6px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:4px; }
-  .cq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:15pt; color:var(--ic-navy); margin:0 0 6px; }
+  .cq-h { font-family:'Aptos Display',sans-serif; font-weight:600; font-size:13pt; color:var(--ic-navy); margin:0 0 6px; }
   table.cq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-comm th { background:#D0D0D0; color:#111; border:1px solid #555; padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
-  table.cq-comm td { border:1px solid #555; padding:8px; vertical-align:top; font-family:'Aptos',sans-serif; font-size:9.5pt; color:var(--ic-ink); }
+  table.cq-comm th { background:var(--ic-navy); color:#fff; border:1px solid var(--ic-navy-deep); padding:8px; text-align:left; font-family:'Aptos',sans-serif; font-weight:600; font-size:9.5pt; }
+  table.cq-comm td { border:1px solid var(--ic-line); padding:8px; vertical-align:top; font-family:'Aptos',sans-serif; font-size:9.5pt; color:var(--ic-ink); }
   table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Aptos',sans-serif; font-weight:600; font-size:10.5pt; color:var(--ic-navy); width:32%; }
   table.cq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-bank td { border:1px solid #555; padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
-  table.cq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; }
-  .cq-close { margin-top:28px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
+  table.cq-bank td { border:1px solid var(--ic-line); padding:7px 8px; font-family:'Aptos',sans-serif; font-size:9.5pt; }
+  table.cq-bank td.k { width:34%; background:var(--ic-soft); font-weight:600; color:var(--ic-navy); }
+  .cq-close { margin-top:20px; page-break-inside:avoid; font-family:'Aptos',sans-serif; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
-  .cq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; }
+  .cq-sign { margin-top:8px; font-family:'Aptos',sans-serif; font-weight:600; color:var(--ic-navy); }
   .cq-footer-bar {
-    background: linear-gradient(90deg, #d85a16 0%, var(--ic-orange) 50%, #d85a16 100%);
-    color:#fff; text-align:center; padding:5px 12px; margin-top:24px;
-    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
-    border:none; line-height:1.2;
+    background: var(--ic-navy);
+    color:#fff; text-align:center; padding:6px 12px; margin-top:16px;
+    font-family:'Aptos',sans-serif; font-size:8.5pt; font-weight:500; letter-spacing:0.12em; text-transform:lowercase;
+    border:none; border-top:3px solid var(--ic-orange); line-height:1.2;
   }
   .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
   .cq-qr img { width:72px; height:72px; }
@@ -1224,15 +1234,15 @@ CONSULTING_QUOTATION_HTML = """
 {%- set _party = doc.customer_name or doc.party_name or '' -%}
 {%- set _cur = doc.currency or 'INR' -%}
 {%- set _sym = '₹' if _cur == 'INR' else ('$' if _cur == 'USD' else ('€' if _cur == 'EUR' else ('£' if _cur == 'GBP' else _cur))) -%}
-<div class="cq-meta">
+  <div class="cq-title">Quotation</div>
+  <div class="cq-service">{{ title }}</div>
+  <div class="cq-meta">
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
   </div>
-  <div class="cq-title">Quotation</div>
-  <div class="cq-service">{{ title }}</div>
-  <div style="display:flex;justify-content:space-between;gap:16px;margin:0 0 12px;padding:8px 10px;border:1px solid #555;background:#F5F5F5;font-family:'Aptos',sans-serif;font-size:10px;">
-    <div><b>Customer:</b> {{ _party }}</div>
-    <div><b>Primary currency:</b> {{ _sym }} {{ _cur }} <span style="color:#555;">(lines may use other currencies)</span></div>
+  <div class="ic-party-strip">
+    <div><b>Prepared for:</b> {{ _party }}</div>
+    <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
 
   <div class="cq-box">
@@ -1546,7 +1556,7 @@ DOCUMENTS_COLLECTION_HTML = """
   table.ic-table th { background:#065175; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:#065175;border-top:3px solid #EC691F; color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -1651,7 +1661,7 @@ TRF_HTML = """
   .ic-meta { margin-bottom:10px; }
   .ic-qr-row { display:flex; gap:16px; align-items:center; }
   .ic-qr-row img { width:28mm; height:28mm; border:1px solid #cfd8dc; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:#065175;border-top:3px solid #EC691F; color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -1724,7 +1734,7 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; vertical-align:top; }
   table.ic-table td:first-child { width:32%; color:#065175; font-weight:600; }
   .ic-meta { margin-bottom:10px; }
-  .ic-footer-bar { background:linear-gradient(90deg,#d85a16 0%,#EC691F 50%,#d85a16 100%); color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
+  .ic-footer-bar { background:#065175;border-top:3px solid #EC691F; color:#fff; text-align:center; padding:5px 12px; margin-top:20px; font-size:10px; letter-spacing:0.14em; }
 </style>
 <div class="ic-sheet">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -1828,17 +1838,27 @@ def letterhead_html() -> str:
 	cin = frappe.utils.escape_html((getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291")
 	gstin = frappe.utils.escape_html((getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7")
 	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
+	# Formal brand strip (not classic letterhead address stack).
 	return f"""
-<div class="ic-lh" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:0 0 10px;border-bottom:1.5px solid #EC691F;width:100%;box-sizing:border-box;background:#fff;margin:0 0 14px 0;">
-  <div class="ic-lh-logo"><img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:320px;"/></div>
-  <div class="ic-lh-co" style="text-align:right;color:#111;font-size:10px;line-height:1.4;font-family:Aptos,Segoe UI,sans-serif;">
-    <div class="name" style="font-weight:600;font-size:12.5px;text-transform:none;margin-bottom:2px;">{legal}</div>
-    <div>{addr_html}</div>
-    <div>Phone: {phone}</div>
-    <div>Email: {email}</div>
-    <div>{website}</div>
-    <div><b>CIN:</b> {cin}</div>
-    <div><b>GSTIN:</b> {gstin}</div>
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 14px 0;padding:0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:0 0 8px;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:220px;"/>
+      <div style="font-family:Aptos,Segoe UI,sans-serif;min-width:0;">
+        <div style="color:#065175;font-weight:600;font-size:12px;line-height:1.2;">{legal}</div>
+        <div style="color:#5B6775;font-size:9px;margin-top:2px;">Testing · Certification · Compliance</div>
+      </div>
+    </div>
+    <div style="text-align:right;font-family:Aptos,Segoe UI,sans-serif;font-size:9px;line-height:1.35;color:#5B6775;max-width:46%;">
+      <div>{phone} · {email}</div>
+      <div>{website}</div>
+      <div><b style="color:#065175;">GSTIN</b> {gstin}</div>
+    </div>
+  </div>
+  <div style="height:2px;background:#065175;width:100%;"></div>
+  <div style="height:2px;background:#EC691F;width:72px;"></div>
+  <div style="margin-top:6px;font-family:Aptos,Segoe UI,sans-serif;font-size:8.5px;color:#5B6775;line-height:1.35;">
+    {addr_html} · <b style="color:#065175;">CIN</b> {cin}
   </div>
 </div>
 """
