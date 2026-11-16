@@ -130,10 +130,22 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     border-bottom: none !important;
     background: transparent;
   }
+  .ic-mast-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 24px !important;
+  }
+  .ic-mast-logo { flex: 0 0 auto; min-width: 0; }
   .ic-mast-details, .ic-mast-details * {
     color: #111111 !important;
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
-    text-align: left !important;
+    text-align: right !important;
+  }
+  .ic-mast-details {
+    flex: 1 1 auto;
+    max-width: 58%;
+    margin-left: auto;
   }
   .ic-mast-details .ic-mast-legal {
     color: #111111 !important;
@@ -245,9 +257,11 @@ IC_PRINT_TYPOGRAPHY_CSS = """
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
 LETTERHEAD_BLOCK_HTML = """
 <div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 18px 0;padding:0;">
-  <div style="text-align:left;padding:0 0 12px;">
-    <img src="{{ logo }}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;margin:0 0 10px 0;"/>
-    <div class="ic-mast-details" style="text-align:left;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 12px;">
+    <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
+      <img src="{{ logo }}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;"/>
+    </div>
+    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
       <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:4px;">{{ legal }}</div>
       <div>{{ address }}</div>
       {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
@@ -1856,12 +1870,14 @@ def letterhead_html() -> str:
 	cin = frappe.utils.escape_html((getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291")
 	gstin = frappe.utils.escape_html((getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7")
 	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
-	# Logo + company details all left-aligned.
+	# Logo left; company details right-aligned as one block.
 	return f"""
 <div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 18px 0;padding:0;">
-  <div style="text-align:left;padding:0 0 12px;">
-    <img src="{logo}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;margin:0 0 10px 0;"/>
-    <div class="ic-mast-details" style="text-align:left;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 12px;">
+    <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
+      <img src="{logo}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;"/>
+    </div>
+    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
       <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:4px;">{legal}</div>
       <div>{addr_html}</div>
       <div>CIN {cin}</div>

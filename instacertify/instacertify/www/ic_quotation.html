@@ -14,13 +14,13 @@
     }
     .ic-portal-wrap { width:min(900px, calc(100% - 32px)); margin:32px auto 56px; }
     .ic-portal-mast {
-      display:block; text-align:left;
+      display:flex; justify-content:space-between; align-items:flex-start; gap:24px;
       padding:18px 22px 14px; background:#fff; border:1px solid #b7bcc4; border-bottom:none;
     }
-    .ic-portal-mast img { max-height:46px; max-width:280px; display:block; margin:0 0 10px 0; }
+    .ic-portal-mast img { max-height:46px; max-width:280px; display:block; }
     .ic-portal-mast-meta {
-      text-align:left; font-size:12px; line-height:1.7; letter-spacing:0.02em; word-spacing:0.06em;
-      color:#111111; max-width:100%;
+      text-align:right; font-size:12px; line-height:1.7; letter-spacing:0.02em; word-spacing:0.06em;
+      color:#111111; max-width:58%; margin-left:auto;
     }
     .ic-portal-mast-meta .legal {
       color:#111111; font-weight:700; margin-bottom:4px;
@@ -74,6 +74,8 @@
     }
     @media (max-width: 700px) {
       .ic-portal-wrap { width:100%; box-sizing:border-box; margin:12px auto 28px; }
+      .ic-portal-mast { flex-direction:column; align-items:flex-start; }
+      .ic-portal-mast-meta { text-align:left; max-width:100%; margin-left:0; }
       .ic-portal-card { padding:16px 14px; }
       .ic-portal-card h2 { font-size:1.2rem; }
       .ic-portal-actions .ic-btn, .ic-portal-actions a.ic-btn { flex:1 1 100%; text-align:center; }
