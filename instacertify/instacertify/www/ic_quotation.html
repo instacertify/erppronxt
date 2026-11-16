@@ -9,28 +9,33 @@
   <link rel="stylesheet" href="/assets/instacertify/css/instacertify.css"/>
   <style>
     body.ic-portal-body {
-      margin:0; background:#eceef1; color:#14181f;
-      font-family:"Segoe UI",Aptos,Helvetica,Arial,sans-serif;
+      margin:0; background:#eceef1; color:#111111;
+      font-family:Arial,Helvetica,"Segoe UI",sans-serif;
     }
     .ic-portal-wrap { width:min(900px, calc(100% - 32px)); margin:32px auto 56px; }
     .ic-portal-mast {
-      display:flex; justify-content:space-between; align-items:flex-end; gap:20px;
+      display:flex; justify-content:space-between; align-items:flex-start; gap:24px;
       padding:18px 22px 14px; background:#fff; border:1px solid #b7bcc4; border-bottom:none;
     }
     .ic-portal-mast img { max-height:46px; max-width:280px; display:block; }
     .ic-portal-mast-meta {
-      text-align:right; font-size:11px; line-height:1.5; color:#6a727c;
-      letter-spacing:0.05em; text-transform:uppercase; max-width:46%;
+      text-align:right; font-size:11px; line-height:1.55; color:#6a727c; max-width:54%;
     }
-    .ic-portal-mast-meta .legal { color:#14181f; font-weight:700; letter-spacing:0.08em; margin-bottom:2px; }
+    .ic-portal-mast-meta .legal {
+      color:#111111; font-weight:700; margin-bottom:3px;
+    }
     .ic-portal-mast-rule { height:1px; background:#065175; }
     .ic-portal-mast-accent { height:1px; width:56px; background:#EC691F; }
     .ic-portal-card {
       background:#fff; border:1px solid #b7bcc4; border-top:none;
-      box-shadow:0 18px 40px rgba(20,24,31,.06); padding:24px 22px 22px;
+      box-shadow:0 18px 40px rgba(20,24,31,.06); padding:24px 22px 22px; color:#111111;
+    }
+    .ic-portal-card h2, .ic-portal-card h4, .ic-portal-card p, .ic-portal-card b,
+    .ic-portal-section h4 {
+      color:#111111;
     }
     .ic-portal-card h2 {
-      color:#14181f; margin:4px 0 12px; letter-spacing:0.16em; font-size:1.55rem;
+      margin:4px 0 12px; letter-spacing:0.12em; font-size:1.45rem;
       text-transform:uppercase; font-weight:700;
     }
     .ic-portal-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; align-items:center; }
@@ -39,29 +44,29 @@
     .ic-portal-table { width:100%; border-collapse:collapse; margin:8px 0 4px; font-size:0.95rem; min-width:560px; }
     .ic-portal-table th, .ic-portal-table td { border-bottom:1px solid #d7dbe0; padding:10px 8px; text-align:left; vertical-align:top; }
     .ic-portal-table th {
-      color:#14181f; background:#f1f2f4; font-weight:600; font-size:0.75rem;
-      letter-spacing:.08em; text-transform:uppercase; border-top:1px solid #065175;
+      color:#111111; background:#f1f2f4; font-weight:700; font-size:0.75rem;
+      letter-spacing:.05em; text-transform:uppercase; border-top:1px solid #065175;
     }
-    .ic-portal-table td { font-variant-numeric:tabular-nums; }
-    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:0; background:#f1f2f4; color:#065175; font-size:0.85rem; font-weight:600; letter-spacing:0.04em; }
+    .ic-portal-table td { font-variant-numeric:tabular-nums; color:#6a727c; }
+    .ic-status-pill { display:inline-block; padding:3px 10px; border-radius:0; background:#f1f2f4; color:#065175; font-size:0.85rem; font-weight:600; }
     .ic-status-pill.accepted { background:#e7f7ee; color:#1b7a45; }
     .ic-status-pill.rejected { background:#fdecea; color:#b42318; }
     .ic-status-pill.changes { background:#fff4e5; color:#b54708; }
-    .ic-portal-prose { white-space:pre-wrap; line-height:1.55; margin:0; }
+    .ic-portal-prose { white-space:pre-wrap; line-height:1.55; margin:0; color:#111111; }
     .ic-portal-total {
       margin-top:14px; padding:14px 0; border-top:1px solid #065175; border-bottom:1px solid #b7bcc4;
       background:transparent; display:flex; justify-content:space-between;
-      gap:12px; font-weight:700; color:#065175; font-size:1.05rem; letter-spacing:0.04em;
+      gap:12px; font-weight:700; color:#6a727c; font-size:1.05rem;
     }
     .ic-portal-section { margin-top:14px; }
     .ic-portal-section h4, .ic-portal-card h4 {
-      margin:14px 0 8px; color:#14181f; font-size:0.85rem; letter-spacing:0.08em; text-transform:uppercase;
+      margin:14px 0 8px; color:#111111; font-size:0.85rem; letter-spacing:0.05em; text-transform:uppercase;
       padding:8px 10px; background:#f1f2f4; border-left:1px solid #065175;
     }
     #msg { margin-top:12px; padding:10px 12px; display:none; border:1px solid #b7bcc4; }
     #msg.ok { display:block; background:#e7f7ee; color:#1b7a45; }
     #msg.err { display:block; background:#fdecea; color:#b42318; }
-    .ic-btn { border-radius:0; min-height:40px; padding:8px 14px; }
+    .ic-btn { border-radius:0; min-height:40px; padding:8px 14px; font-family:Arial,Helvetica,sans-serif; }
     @media (max-width: 1000px) {
       .ic-portal-wrap { width:100%; box-sizing:border-box; }
     }
@@ -81,8 +86,12 @@
       <img src="/assets/instacertify/images/instacertify_logo_tagline_print.png" alt="Instacertify"/>
       <div class="ic-portal-mast-meta">
         <div class="legal">Instacertify Labs Private Limited</div>
+        <div>PK 01 Sector 63A Noida, Gautam Buddha Nagar, UP-201301</div>
+        <div>CIN U74999UP2022PTC170291</div>
+        <div>+91 9999118039</div>
         <div>contact@instacertify.com</div>
         <div>www.instacertify.com</div>
+        <div>GSTIN 09AAGCI8396C1Z7</div>
       </div>
     </div>
     <div class="ic-portal-mast-rule"></div>

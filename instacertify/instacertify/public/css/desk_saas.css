@@ -1220,7 +1220,16 @@ body .page-head .container {
   cursor: pointer;
 }
 
-/* ——— Quotation form: fields in columns, long blocks folded, short editors ——— */
+/* ——— Quotation form: simple Arial, black labels ——— */
+#page-Quotation,
+#page-Quotation .form-layout,
+#page-Quotation .frappe-control,
+#page-Quotation .control-label,
+#page-Quotation .section-head,
+#page-Quotation .ql-editor,
+#page-Quotation .ic-quote-entry {
+  font-family: Arial, Helvetica, "Segoe UI", sans-serif !important;
+}
 #page-Quotation .form-section,
 #page-Quotation .form-dashboard-section {
   margin-bottom: 10px !important;
