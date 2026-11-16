@@ -63,37 +63,39 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif;
     color: var(--ic-ink);
     font-size: 10px;
-    line-height: 1.45;
+    line-height: 1.65;
+    letter-spacing: 0.02em;
     font-weight: 400;
+    word-spacing: 0.06em;
   }
   .ic-doc-title, .tq-title, .cq-title {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 700 !important;
     font-size: 18pt !important;
     color: #111111 !important;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase !important;
     text-align: left;
-    margin: 10px 0 6px !important;
-    line-height: 1.15;
+    margin: 14px 0 10px !important;
+    line-height: 1.3;
   }
   .ic-doc-subtitle, .cq-service {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 600 !important;
     font-size: 11pt !important;
     color: #111111 !important;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
     text-transform: none !important;
     text-align: left;
-    margin: 0 0 10px !important;
-    line-height: 1.3;
+    margin: 0 0 12px !important;
+    line-height: 1.45;
   }
   .ic-section-heading, .tq-label, .cq-bar, .ic-box > h3, .tq-h, .cq-h {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 700 !important;
     font-size: 9pt !important;
     color: #111111 !important;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     text-transform: uppercase !important;
   }
   .tq-label, .cq-bar {
@@ -101,8 +103,8 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     background: var(--ic-half) !important;
     color: #111111 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.06em !important;
-    border-left: 1px solid var(--ic-navy) !important;
+    letter-spacing: 0.05em !important;
+    border-left: 1px solid var(--ic-line) !important;
   }
   .ic-subheading {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
@@ -129,8 +131,9 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     background: transparent;
   }
   .ic-mast-details, .ic-mast-details * {
-    color: var(--ic-value) !important;
+    color: #111111 !important;
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    text-align: left !important;
   }
   .ic-mast-details .ic-mast-legal {
     color: #111111 !important;
@@ -143,38 +146,53 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-size: 8.5pt !important;
     background: var(--ic-half) !important;
     color: #111111 !important;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    border-top: 1px solid var(--ic-navy) !important;
+    border-top: 1px solid var(--ic-line) !important;
     border-bottom: 1px solid var(--ic-line) !important;
   }
-  /* Narrative / words in quote = black */
+  /* Narrative / words / amounts in quote = black */
   .tq-value, .cq-body, .ic-box, .tq-value p, .cq-body p, .tq-value b, .cq-body b,
   .tq-value strong, .cq-body strong, .ic-terms, .tq-note, .cq-body .ic-terms {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     color: #111111 !important;
+    line-height: 1.65 !important;
+    letter-spacing: 0.02em;
+    word-spacing: 0.06em;
   }
-  /* Table values / amounts = grey */
   table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 400 !important;
-    color: var(--ic-value) !important;
+    color: #111111 !important;
+    line-height: 1.6;
+    letter-spacing: 0.02em;
   }
   table.tq-comm td.amt, table.cq-comm td.amt, .ic-grand-total {
-    color: var(--ic-value) !important;
+    color: #111111 !important;
     font-variant-numeric: tabular-nums;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
   }
   .cq-body ol li, .cq-body ul li, .tq-value ol li, .tq-value ul li,
   .ic-box ol li, .ic-box ul li {
     color: #111111 !important;
+    margin-bottom: 6px !important;
+    line-height: 1.6;
   }
   .cq-body ol > li, .tq-value ol > li, .ic-process-steps ol > li {
     background: transparent;
-    border-left: 1px solid var(--ic-orange);
-    padding: 3px 8px;
-    margin-bottom: 4px !important;
+    border-left: 1px solid var(--ic-line);
+    padding: 5px 10px;
+    margin-bottom: 6px !important;
     list-style-position: inside;
+  }
+  /* Quote box / table outlines — uniform grey */
+  table.tq-grid > tbody > tr > td,
+  .cq-box, .cq-sec,
+  table.tq-comm th, table.tq-comm td,
+  table.cq-comm th, table.cq-comm td,
+  table.tq-bank td, table.cq-bank td,
+  table.ic-table th, table.ic-table td {
+    border-color: var(--ic-line) !important;
   }
   .ic-footer-bar, .tq-footer-bar, .cq-footer-bar {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
@@ -192,12 +210,13 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-soft-block { background: var(--ic-half) !important; }
   .ic-party-strip {
     display:flex; justify-content:space-between; gap:16px; align-items:center;
-    margin:0 0 14px; padding:9px 0;
-    border-top: 1px solid var(--ic-navy);
+    margin:0 0 16px; padding:12px 0;
+    border-top: 1px solid var(--ic-line);
     border-bottom: 1px solid var(--ic-line);
     background: transparent;
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif;
     font-size:9.5px; color:#111111;
+    line-height: 1.6; letter-spacing: 0.02em; word-spacing: 0.06em;
   }
   .ic-party-strip, .ic-party-strip * { color: #111111 !important; }
   .tq-sign, .cq-sign, .tq-close, .cq-close, .ic-sign {
@@ -222,19 +241,17 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   }
 """
 
-# Masthead: logo left; company name, address, CIN, phone, email, GSTIN aligned in one right column.
+# Masthead: logo + company name, address, CIN, phone, email, GSTIN — all left-aligned.
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
 LETTERHEAD_BLOCK_HTML = """
-<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 16px 0;padding:0;">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 10px;">
-    <div style="min-width:0;">
-      <img src="{{ logo }}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;"/>
-    </div>
-    <div class="ic-mast-details" style="text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;color:#6A727C;max-width:54%;">
-      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{{ legal }}</div>
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 18px 0;padding:0;">
+  <div style="text-align:left;padding:0 0 12px;">
+    <img src="{{ logo }}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;margin:0 0 10px 0;"/>
+    <div class="ic-mast-details" style="text-align:left;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:4px;">{{ legal }}</div>
       <div>{{ address }}</div>
       {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
-      <div style="margin-top:3px;">{{ phone }}</div>
+      <div style="margin-top:4px;">{{ phone }}</div>
       <div>{{ email }}</div>
       {% if website %}<div>{{ website }}</div>{% endif %}
       {% if gstin %}<div>GSTIN {{ gstin }}</div>{% endif %}
@@ -782,25 +799,25 @@ TESTING_QUOTATION_HTML = """
   @page { size: A4; margin: 12mm; }
   .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-meta { display:flex; justify-content:space-between; margin:0 0 8px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; }
-  .tq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:8px 0 6px; color:#111111; letter-spacing:0.12em; line-height:1.15; text-transform:uppercase; }
+  .tq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
+  .tq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 10px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
   table.tq-grid > tbody > tr { page-break-inside:auto; break-inside:auto; }
   table.tq-grid > tbody > tr > td { border:1px solid var(--ic-line); vertical-align:top; padding:0; }
-  .tq-label { width:18%; background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:10px 9px; color:#111111; font-size:8.5pt; letter-spacing:0.06em; text-transform:uppercase; border-left:1px solid var(--ic-navy); }
-  .tq-value { width:82%; padding:10px 12px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; }
-  .tq-value ul { margin:6px 0 0 18px; padding:0; }
-  .tq-value ol { margin:6px 0 0 18px; padding:0; }
-  .tq-value li { margin-bottom:4px; color:#111111; }
-  .tq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 6px; letter-spacing:0.06em; text-transform:uppercase; }
-  table.tq-comm { width:100%; border-collapse:collapse; margin-top:4px; }
-  table.tq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); border-top:1px solid var(--ic-navy); padding:7px 5px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; text-align:center; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; }
-  table.tq-comm td { border:1px solid var(--ic-line-soft); padding:7px 5px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; vertical-align:top; color:var(--ic-value); }
+  .tq-label { width:18%; background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 10px; color:#111111; font-size:8.5pt; letter-spacing:0.05em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.55; }
+  .tq-value { width:82%; padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .tq-value ul { margin:8px 0 0 18px; padding:0; }
+  .tq-value ol { margin:8px 0 0 18px; padding:0; }
+  .tq-value li { margin-bottom:6px; color:#111111; line-height:1.6; }
+  .tq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
+  table.tq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
+  table.tq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 6px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; text-align:center; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+  table.tq-comm td { border:1px solid var(--ic-line); padding:9px 6px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; vertical-align:top; color:#111111; line-height:1.55; letter-spacing:0.02em; }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
-  table.tq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:10pt; color:var(--ic-value); }
-  .tq-note { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; color:#111111; }
-  table.tq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.tq-bank td { border:1px solid var(--ic-line-soft); padding:7px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:var(--ic-value); }
+  table.tq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; }
+  .tq-note { margin-top:10px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; color:#111111; line-height:1.6; }
+  table.tq-bank { width:100%; border-collapse:collapse; margin-top:8px; }
+  table.tq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
   table.tq-bank td.k { width:34%; background:var(--ic-half); font-weight:700; color:#111111; letter-spacing:0.04em; text-transform:uppercase; font-size:8.5pt; }
   .tq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
   .tq-close p { margin:6px 0; color:#111111; }
@@ -1198,23 +1215,23 @@ CONSULTING_QUOTATION_HTML = """
   @page { size: A4; margin: 12mm; }
   .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
-  .cq-meta { display:flex; justify-content:space-between; margin:0 0 8px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; }
-  .cq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:8px 0 4px; color:#111111; letter-spacing:0.12em; line-height:1.15; text-transform:uppercase; }
-  .cq-service { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:11pt; font-weight:600; margin:0 0 10px; color:#111111; line-height:1.3; }
+  .cq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
+  .cq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 8px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
+  .cq-service { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
   .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
-  .cq-sec { border-top:1px solid var(--ic-line-soft); page-break-inside:auto; break-inside:auto; }
+  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:auto; break-inside:auto; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:9px 12px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-navy); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.06em; color:#111111; }
-  .cq-body { padding:10px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; }
-  .cq-body ul, .cq-body ol { margin:6px 0 0 18px; padding:0; }
-  .cq-body li { margin-bottom:4px; color:#111111; }
-  .cq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 6px; letter-spacing:0.06em; text-transform:uppercase; }
-  table.cq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); border-top:1px solid var(--ic-navy); padding:8px; text-align:left; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:8.5pt; letter-spacing:0.05em; text-transform:uppercase; }
-  table.cq-comm td { border:1px solid var(--ic-line-soft); padding:8px; vertical-align:top; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:var(--ic-value); }
-  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:10pt; color:var(--ic-value); width:32%; }
-  table.cq-bank { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.cq-bank td { border:1px solid var(--ic-line-soft); padding:7px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:var(--ic-value); }
+  .cq-bar { background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.05em; color:#111111; line-height:1.55; }
+  .cq-body { padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .cq-body ul, .cq-body ol { margin:8px 0 0 18px; padding:0; }
+  .cq-body li { margin-bottom:6px; color:#111111; line-height:1.6; }
+  .cq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
+  table.cq-comm { width:100%; border-collapse:collapse; margin-top:8px; }
+  table.cq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 8px; text-align:left; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:8.5pt; letter-spacing:0.04em; text-transform:uppercase; }
+  table.cq-comm td { border:1px solid var(--ic-line); padding:9px 8px; vertical-align:top; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; letter-spacing:0.02em; }
+  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; width:32%; }
+  table.cq-bank { width:100%; border-collapse:collapse; margin-top:8px; }
+  table.cq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
   table.cq-bank td.k { width:34%; background:var(--ic-half); font-weight:700; color:#111111; letter-spacing:0.04em; text-transform:uppercase; font-size:8.5pt; }
   .cq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
@@ -1839,18 +1856,16 @@ def letterhead_html() -> str:
 	cin = frappe.utils.escape_html((getattr(s, "cin", None) if s else None) or "U74999UP2022PTC170291")
 	gstin = frappe.utils.escape_html((getattr(s, "gstin", None) if s else None) or "09AAGCI8396C1Z7")
 	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
-	# Company name, address, CIN and contacts aligned in one right column.
+	# Logo + company details all left-aligned.
 	return f"""
-<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 16px 0;padding:0;">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 10px;">
-    <div style="min-width:0;">
-      <img src="{logo}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;"/>
-    </div>
-    <div class="ic-mast-details" style="text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;color:#6A727C;max-width:54%;">
-      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{legal}</div>
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 18px 0;padding:0;">
+  <div style="text-align:left;padding:0 0 12px;">
+    <img src="{logo}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;margin:0 0 10px 0;"/>
+    <div class="ic-mast-details" style="text-align:left;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:4px;">{legal}</div>
       <div>{addr_html}</div>
       <div>CIN {cin}</div>
-      <div style="margin-top:3px;">{phone}</div>
+      <div style="margin-top:4px;">{phone}</div>
       <div>{email}</div>
       <div>{website}</div>
       <div>GSTIN {gstin}</div>
