@@ -318,19 +318,33 @@ QUOTE_PAGE_CHROME_CSS = """
   }
   .ic-bleed-navy { height: 1px !important; background: #065175 !important; }
   .ic-bleed-orange { height: 1px !important; background: #EC691F !important; }
+  /* Footer accent rules: half page width, slightly thicker */
+  .ic-footer-rules {
+    width: 50%;
+    max-width: 50%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  .ic-footer-rules .ic-bleed-rule {
+    width: 100% !important;
+  }
+  .ic-footer-rules .ic-bleed-navy { height: 2.5px !important; }
+  .ic-footer-rules .ic-bleed-orange { height: 2.5px !important; }
   .ic-print-body {
-    padding: 38mm 12mm 28mm 12mm;
+    padding: 38mm 12mm 30mm 12mm;
     min-height: 200mm;
     box-sizing: border-box;
   }
   .ic-print-footer-inner {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     gap: 12px;
     width: 100%;
     box-sizing: border-box;
-    padding: 6px 12mm;
+    /* QR + tagline sit above the rules with a little space */
+    padding: 6px 12mm 10px 12mm;
   }
   .ic-print-footer-spacer { width: 56px; flex: 0 0 56px; }
   .ic-print-footer-tag {
@@ -371,7 +385,6 @@ QUOTE_RUNNING_HEADER_HTML = """
 
 QUOTE_RUNNING_FOOTER_HTML = """
 <div id="footer-html" class="ic-print-footer">
-  <div class="ic-bleed-rule ic-bleed-navy"></div>
   <div class="ic-print-footer-inner">
     <div class="ic-print-footer-spacer"></div>
     <div class="ic-print-footer-tag">Certification Made Simple</div>
@@ -384,7 +397,10 @@ QUOTE_RUNNING_FOOTER_HTML = """
       <div class="cap">Verify</div>
     </div>
   </div>
-  <div class="ic-bleed-rule ic-bleed-orange"></div>
+  <div class="ic-footer-rules">
+    <div class="ic-bleed-rule ic-bleed-navy"></div>
+    <div class="ic-bleed-rule ic-bleed-orange"></div>
+  </div>
 </div>
 """
 
@@ -1962,17 +1978,18 @@ def letterhead_html() -> str:
 
 
 def letter_footer_html() -> str:
-	"""Static Letter Head footer — full-bleed rules; tagline inset from edges."""
+	"""Static Letter Head footer — tagline above half-width thicker brand rules."""
 	return """
 <div style="width:100%;box-sizing:border-box;margin:0;padding:0;">
-  <div style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
-  <div style="padding:6px 12mm;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
+  <div style="padding:6px 12mm 10px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
     Certification Made Simple
   </div>
-  <div style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+  <div style="width:50%;max-width:50%;">
+    <div style="height:2.5px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+    <div style="height:2.5px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+  </div>
 </div>
 """
-
 
 def _ensure_instacertify_letter_head():
 	"""Create/update Letter Head so every print can use the quotation header/footer."""
