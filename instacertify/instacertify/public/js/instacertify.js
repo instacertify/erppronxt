@@ -8867,32 +8867,49 @@ instacertify.open_quick_lead = function (opts) {
 				frappe.msgprint(__("Add the person's name first."));
 				return;
 			}
-			frappe.call({
-				method: "instacertify.crm.events.create_quick_lead",
-				args: {
-					party_name: name,
-					company_name: values.company_name || "",
-					mobile_no: values.mobile_no || "",
-					email_id: values.email_id || "",
-					country: values.country || "India",
-					city: state.city || "",
-					source: state.source || "",
-					project_type: state.service || "",
-					remarks: (d.fields_dict.need_box.$wrapper.find("textarea").val() || "").trim(),
-					remark_color: state.color || "",
-				},
-				freeze: true,
-				freeze_message: __("Saving lead…"),
-				callback(r) {
-					if (!r.message || !r.message.name) return;
-					d.hide();
-					frappe.show_alert({
-						message: __("Lead {0} saved", [r.message.name]),
-						indicator: "green",
-					});
-					if (opts.on_done) opts.on_done(r.message);
-				},
-			});
+			const cityInput = d.$wrapper.find(".ic-city-pick input");
+			if (cityInput.length) state.city = (cityInput.val() || "").trim();
+			const flush = state._flush || {};
+			const steps = [flush.source, flush.service].filter(Boolean);
+			const run = (i) => {
+				if (i >= steps.length) {
+					save_lead();
+					return;
+				}
+				steps[i]((ok) => {
+					if (ok === false) return;
+					run(i + 1);
+				});
+			};
+			const save_lead = () => {
+				frappe.call({
+					method: "instacertify.crm.events.create_quick_lead",
+					args: {
+						party_name: name,
+						company_name: values.company_name || "",
+						mobile_no: values.mobile_no || "",
+						email_id: values.email_id || "",
+						country: values.country || "India",
+						city: state.city || "",
+						source: state.source || "",
+						project_type: state.service || "",
+						remarks: (d.fields_dict.need_box.$wrapper.find("textarea").val() || "").trim(),
+						remark_color: state.color || "",
+					},
+					freeze: true,
+					freeze_message: __("Saving lead…"),
+					callback(r) {
+						if (!r.message || !r.message.name) return;
+						d.hide();
+						frappe.show_alert({
+							message: __("Lead {0} saved", [r.message.name]),
+							indicator: "green",
+						});
+						if (opts.on_done) opts.on_done(r.message);
+					},
+				});
+			};
+			run(0);
 		},
 	});
 	d.$wrapper.addClass("ic-capture-dialog");
@@ -8940,12 +8957,16 @@ instacertify.open_quick_lead = function (opts) {
 		function show(rows, typed) {
 			menu.innerHTML = "";
 			const exact = rows.some((name) => name.toLowerCase() === typed.toLowerCase());
+			const pick = (name) => (ev) => {
+				ev.preventDefault();
+				choose(name);
+			};
 			rows.forEach((name) => {
 				const btn = document.createElement("button");
 				btn.type = "button";
 				btn.className = "ic-city-option";
 				btn.textContent = name;
-				btn.addEventListener("click", () => choose(name));
+				btn.addEventListener("mousedown", pick(name));
 				menu.appendChild(btn);
 			});
 			if (typed && !exact) {
@@ -8953,14 +8974,13 @@ instacertify.open_quick_lead = function (opts) {
 				add.type = "button";
 				add.className = "ic-city-option ic-city-add";
 				add.textContent = __("Add {0}", [typed]);
-				add.addEventListener("click", () => choose(typed));
+				add.addEventListener("mousedown", pick(typed));
 				menu.appendChild(add);
 			}
 			menu.hidden = !menu.childElementCount;
 		}
 		function search() {
 			const typed = input.value.trim();
-			state.city = typed;
 			frappe.call({
 				method: "instacertify.crm.events.search_india_cities",
 				args: { txt: typed },
@@ -8976,10 +8996,15 @@ instacertify.open_quick_lead = function (opts) {
 			clearTimeout(timer);
 			timer = setTimeout(search, 180);
 		});
+		// Keep the city only when the person leaves the box or picks a row.
+		// A half-typed search such as "Pun" must not be saved in place of Pune.
+		input.addEventListener("blur", () => {
+			state.city = input.value.trim();
+		});
 		input.addEventListener("keydown", (ev) => {
 			if (ev.key === "Escape") menu.hidden = true;
 		});
-		d.$wrapper.on("click.ic-city", (ev) => {
+		d.$wrapper.off("click.ic-city").on("click.ic-city", (ev) => {
 			if (!wrap.contains(ev.target)) menu.hidden = true;
 		});
 	}
@@ -9043,29 +9068,59 @@ instacertify.open_quick_lead = function (opts) {
 			}
 			select_name(select.value);
 		});
-		addBtn.addEventListener("click", () => {
+		function commit_new(done) {
 			const raw = search.value.trim();
 			if (!raw) {
-				frappe.show_alert({ message: __("Type the new name, then press Add"), indicator: "orange" });
-				search.focus();
+				if (select.value === ADD) state[key] = "";
+				if (done) done();
 				return;
 			}
 			const existing = all.find((name) => name.toLowerCase() === raw.toLowerCase());
 			if (existing) {
 				select_name(existing);
+				if (done) done();
 				return;
 			}
 			frappe.call({
 				method: "instacertify.crm.events.add_lead_capture_choice",
 				args: { kind, label: raw },
 				callback(r) {
-					if (r.message && r.message.name) {
-						select_name(r.message.name);
-						frappe.show_alert({ message: __("Added {0}", [r.message.name]), indicator: "green" });
+					if (!(r && r.message && r.message.name) || r.exc) {
+						if (done) done(false);
+						return;
 					}
+					select_name(r.message.name);
+					frappe.show_alert({ message: __("Added {0}", [r.message.name]), indicator: "green" });
+					if (done) done();
+				},
+				error() {
+					if (done) done(false);
 				},
 			});
+		}
+		addBtn.addEventListener("click", () => {
+			if (!search.value.trim()) {
+				frappe.show_alert({ message: __("Type the new name, then press Add"), indicator: "orange" });
+				search.focus();
+				return;
+			}
+			commit_new();
 		});
+		// Enter must add the name. Otherwise the dialog saves the lead first.
+		search.addEventListener("keydown", (ev) => {
+			if (ev.key !== "Enter") return;
+			ev.preventDefault();
+			ev.stopPropagation();
+			commit_new();
+		});
+		state._flush = state._flush || {};
+		state._flush[key] = (done) => {
+			if (adder.hidden) {
+				done();
+				return;
+			}
+			commit_new(done);
+		};
 		fill_select();
 	}
 

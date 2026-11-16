@@ -68,6 +68,13 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     font-weight: 400;
     word-spacing: 0.06em;
   }
+  .tq-letter {
+    margin: 0 0 8px;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    color: #111111;
+  }
+  .tq-letter + .tq-letter { margin-bottom: 14px; }
   .ic-doc-title, .tq-title, .cq-title {
     font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
     font-weight: 700 !important;
@@ -1000,8 +1007,8 @@ TESTING_QUOTATION_HTML = """
     <div><b>Prepared for:</b> {{ _party }}</div>
     <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
-  <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
-  <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
+  <p class="tq-letter">Dear {{ _party or 'Sir or Madam' }},</p>
+  <p class="tq-letter">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
 
     <table class="tq-grid">
     <tr>
@@ -1397,8 +1404,8 @@ CONSULTING_QUOTATION_HTML = """
     <div><b>Prepared for:</b> {{ _party }}</div>
     <div><b>Currency:</b> {{ _sym }} {{ _cur }}</div>
   </div>
-  <p style="margin:0 0 8px;font-family:'Aptos',sans-serif;font-size:10.5pt;">Dear {{ _party or 'Sir or Madam' }},</p>
-  <p style="margin:0 0 12px;font-family:'Aptos',sans-serif;font-size:10.5pt;line-height:1.45;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
+  <p class="tq-letter">Dear {{ _party or 'Sir or Madam' }},</p>
+  <p class="tq-letter">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
 
   <div class="cq-box">
     {% for _sk in quote_section_order(doc) %}
