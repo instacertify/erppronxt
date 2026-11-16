@@ -238,11 +238,17 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-rule-navy { height:1px; background:var(--ic-navy); width:100%; border:0; }
   .ic-rule-orange { height:1px; background:var(--ic-orange); width:56px; border:0; margin:0; }
   .ic-rule-double { border:0; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-line); height:3px; background:transparent; }
-  table.tq-grid, table.tq-grid > tbody > tr, .cq-box, .cq-sec, .tq-value, .cq-body {
+  /* Prefer keeping a section together; if it cannot fit, browsers break and
+     continue under the running header on the next page. */
+  table.tq-grid > tbody > tr, .cq-sec {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+  }
+  .tq-value, .cq-body, .cq-box {
     page-break-inside: auto !important;
     break-inside: auto !important;
   }
-  .tq-label, .cq-bar, .tq-title, .cq-title {
+  .tq-label, .cq-bar, .tq-title, .cq-title, .cq-service {
     page-break-after: avoid;
     break-after: avoid-page;
   }
@@ -251,21 +257,22 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     page-break-inside: avoid;
     break-inside: avoid;
   }
+  p, li { orphans: 3; widows: 3; }
 """
 
-# Masthead: logo + company name, address, CIN, phone, email, GSTIN — all left-aligned.
+# Masthead: logo left; company name/address/contacts right-aligned.
 # Expects Jinja vars: logo, legal, address, phone, email, website, cin, gstin.
 LETTERHEAD_BLOCK_HTML = """
-<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 18px 0;padding:0;">
-  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 12px;">
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0;padding:0;">
+  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 8px;">
     <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
-      <img src="{{ logo }}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;"/>
+      <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
     </div>
-    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
-      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:4px;">{{ legal }}</div>
+    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{{ legal }}</div>
       <div>{{ address }}</div>
       {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
-      <div style="margin-top:4px;">{{ phone }}</div>
+      <div style="margin-top:3px;">{{ phone }}</div>
       <div>{{ email }}</div>
       {% if website %}<div>{{ website }}</div>{% endif %}
       {% if gstin %}<div>GSTIN {{ gstin }}</div>{% endif %}
@@ -273,6 +280,91 @@ LETTERHEAD_BLOCK_HTML = """
   </div>
   <div style="height:1px;background:#065175;width:100%;"></div>
   <div style="height:1px;background:#EC691F;width:56px;margin:0;"></div>
+</div>
+"""
+
+# Running page chrome: letterhead top + grey QR / tagline bottom on every page.
+QUOTE_PAGE_CHROME_CSS = """
+  @page { size: A4; margin: 10mm 12mm 10mm 12mm; }
+  .print-format { padding: 0 !important; margin: 0 !important; position: relative; }
+  .ic-print-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 20;
+    background: #fff;
+    padding: 0 0 4px;
+  }
+  .ic-print-footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 20;
+    background: #fff;
+    padding: 4px 0 0;
+  }
+  .ic-print-body {
+    padding-top: 36mm;
+    padding-bottom: 26mm;
+    min-height: 200mm;
+  }
+  .ic-print-footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    width: 100%;
+  }
+  .ic-print-footer-spacer { width: 56px; flex: 0 0 56px; }
+  .ic-print-footer-tag {
+    flex: 1 1 auto;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 9pt !important;
+    color: #111111 !important;
+    letter-spacing: 0.08em !important;
+    padding: 6px 8px !important;
+    border-top: 1px solid #065175 !important;
+    border-bottom: 1px solid #EC691F !important;
+    background: transparent !important;
+    line-height: 1.3;
+  }
+  .ic-print-footer-qr {
+    width: 56px; flex: 0 0 56px;
+    text-align: right;
+  }
+  .ic-print-footer-qr img {
+    width: 52px; height: 52px;
+    display: block;
+    margin-left: auto;
+    opacity: 0.62;
+    filter: grayscale(1);
+  }
+  .ic-print-footer-qr .cap {
+    font-size: 7px; color: #6A727C; text-align: center; margin-top: 2px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+"""
+
+QUOTE_RUNNING_HEADER_HTML = """
+<div id="header-html" class="ic-print-header">
+""" + LETTERHEAD_BLOCK_HTML + """
+</div>
+"""
+
+QUOTE_RUNNING_FOOTER_HTML = """
+<div id="footer-html" class="ic-print-footer">
+  <div class="ic-print-footer-inner">
+    <div class="ic-print-footer-spacer"></div>
+    <div class="ic-print-footer-tag">Certification Made Simple</div>
+    <div class="ic-print-footer-qr">
+      {% if doc.ic_qr_code %}
+        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
+      {% else %}
+        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT'), 3, 1, '#6A727C') }}" alt="QR"/>
+      {% endif %}
+      <div class="cap">Verify</div>
+    </div>
+  </div>
 </div>
 """
 
@@ -296,17 +388,15 @@ LETTERHEAD_CONTEXT_JINJA = """
 {%- set bank = bank_for_document(doc) -%}
 """
 
-# Kept for callers that still compose with the old name — body letterhead (not header-only).
-QUOTE_LETTERHEAD_HTML = LETTERHEAD_BLOCK_HTML
+# Kept for callers that still compose with the old name — now running page header.
+QUOTE_LETTERHEAD_HTML = QUOTE_RUNNING_HEADER_HTML
 
 QUOTATION_HTML = """
 """ + LETTERHEAD_CONTEXT_JINJA + """
 <style>
-""" + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
-  .print-format { padding: 0 !important; margin: 0 !important; }
+""" + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
   .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: var(--ic-ink); font-size: 10px; }
-  .ic-masthead { margin-bottom:12px; }
+  .ic-masthead { margin-bottom:0; }
   .ic-accent { color: var(--ic-orange); }
   .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-line); margin-bottom: 12px; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:9.5pt; }
   .ic-box { border: 1px solid var(--ic-line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
@@ -329,7 +419,8 @@ QUOTATION_HTML = """
   }
   .ic-grand-total { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:18pt; color:var(--ic-ink); }
 </style>
-""" + LETTERHEAD_BLOCK_HTML + """
+""" + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
+<div class="ic-print-body">
 <div class="ic-quote">
   <div class="ic-doc-title">Quotation</div>
   <div class="ic-meta">
@@ -524,16 +615,8 @@ QUOTATION_HTML = """
 
   <div class="ic-footer">
     <div style="max-width:70%; color:#667;">Quotation {{ doc.name }} · Rev {{ doc.ic_revision_number or 0 }}</div>
-    <div class="ic-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
-      {% endif %}
-      <div style="font-size:8px;">Scan to verify</div>
-    </div>
   </div>
-  <div class="ic-footer-bar">Certification Made Simple</div>
+</div>
 </div>
 """
 
@@ -809,14 +892,13 @@ TESTING_QUOTATION_HTML = """
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
-""" + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 12mm; }
+""" + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
   .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
   .tq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
   .tq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 10px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
-  table.tq-grid > tbody > tr { page-break-inside:auto; break-inside:auto; }
+  table.tq-grid > tbody > tr { page-break-inside:avoid; break-inside:avoid-page; }
   table.tq-grid > tbody > tr > td { border:1px solid var(--ic-line); vertical-align:top; padding:0; }
   .tq-label { width:18%; background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 10px; color:#111111; font-size:8.5pt; letter-spacing:0.05em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.55; }
   .tq-value { width:82%; padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
@@ -838,17 +920,9 @@ TESTING_QUOTATION_HTML = """
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
   .tq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
-  .tq-footer-bar {
-    background: transparent; color:#111111; text-align:center; padding:8px 0; margin-top:18px;
-    font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; letter-spacing:0.06em; text-transform:none;
-    border:none; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-orange); line-height:1.2;
-  }
-  .tq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
-  .tq-qr img { width:72px; height:72px; }
-  .tq-qr .cap { font-size:8px; color:#555; font-family:Arial,Helvetica,sans-serif; }
-  .print-format { padding:0 !important; margin:0 !important; }
 </style>
-""" + QUOTE_LETTERHEAD_HTML + """
+""" + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
+<div class="ic-print-body">
 <div class="tq">
 
 {%- set _party = doc.customer_name or doc.party_name or '' -%}
@@ -1190,22 +1264,12 @@ TESTING_QUOTATION_HTML = """
   {% endfor %}
 
   <div class="tq-close">
-    <div class="tq-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Scan to verify</div>
-    </div>
     <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
     <p><b>Thanking You,</b></p>
     <div class="tq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="tq-sign">For Instacertify Labs Private Limited</div>
   </div>
-
-  <div style="clear:both;"></div>
-  <div class="tq-footer-bar">Certification Made Simple</div>
+</div>
 </div>
 """
 
@@ -1225,15 +1289,14 @@ CONSULTING_QUOTATION_HTML = """
 {%- set title = doc.ic_service_name or 'Consultancy' -%}
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
-""" + IC_PRINT_TYPOGRAPHY_CSS + """
-  @page { size: A4; margin: 12mm; }
+""" + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
   .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
   .cq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
   .cq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 8px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
   .cq-service { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
   .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
-  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:auto; break-inside:auto; }
+  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:avoid; break-inside:avoid-page; }
   .cq-sec:first-child { border-top:none; }
   .cq-bar { background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.05em; color:#111111; line-height:1.55; }
   .cq-body { padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
@@ -1250,17 +1313,9 @@ CONSULTING_QUOTATION_HTML = """
   .cq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
   .cq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
-  .cq-footer-bar {
-    background: transparent; color:#111111; text-align:center; padding:8px 0; margin-top:18px;
-    font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; letter-spacing:0.06em; text-transform:none;
-    border:none; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-orange); line-height:1.2;
-  }
-  .cq-qr { float:right; margin:8px 0 0 12px; text-align:center; }
-  .cq-qr img { width:72px; height:72px; }
-  .cq-qr .cap { font-size:8px; color:#555; font-family:Arial,Helvetica,sans-serif; }
-  .print-format { padding:0 !important; margin:0 !important; }
 </style>
-""" + QUOTE_LETTERHEAD_HTML + """
+""" + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
+<div class="ic-print-body">
 <div class="cq">
 
 {%- set _party = doc.customer_name or doc.party_name or '' -%}
@@ -1552,21 +1607,12 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 
   <div class="cq-close">
-    <div class="cq-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT')) }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Scan to verify</div>
-    </div>
     <p>For other Product Certification and Compliance, please visit us at {{ website }} for more details.</p>
     <p><b>Thanking You,</b></p>
     <div class="cq-stamp"><img src="{{ stamp }}" alt="Company Stamp"/></div>
     <div class="cq-sign">For Instacertify Labs Private Limited</div>
   </div>
-  <div style="clear:both;"></div>
-  <div class="cq-footer-bar">Certification Made Simple</div>
+</div>
 </div>
 """
 
@@ -1872,16 +1918,16 @@ def letterhead_html() -> str:
 	addr_html = frappe.utils.escape_html(address or "").replace("\n", "<br>")
 	# Logo left; company details right-aligned as one block.
 	return f"""
-<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0 0 18px 0;padding:0;">
-  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 12px;">
+<div class="ic-masthead ic-lh" style="width:100%;box-sizing:border-box;margin:0;padding:0;">
+  <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:0 0 8px;">
     <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
-      <img src="{logo}" alt="Instacertify" style="max-height:48px;max-width:280px;display:block;"/>
+      <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
     </div>
-    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:1.7;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
-      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:4px;">{legal}</div>
+    <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-legal" style="color:#111111;font-weight:700;margin-bottom:3px;">{legal}</div>
       <div>{addr_html}</div>
       <div>CIN {cin}</div>
-      <div style="margin-top:4px;">{phone}</div>
+      <div style="margin-top:3px;">{phone}</div>
       <div>{email}</div>
       <div>{website}</div>
       <div>GSTIN {gstin}</div>
@@ -1893,29 +1939,44 @@ def letterhead_html() -> str:
 """
 
 
+def letter_footer_html() -> str:
+	"""Static Letter Head footer — Certification Made Simple with brand rules."""
+	return """
+<div style="width:100%;box-sizing:border-box;padding-top:4px;">
+  <div style="text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;padding:6px 8px;border-top:1px solid #065175;border-bottom:1px solid #EC691F;line-height:1.3;">
+    Certification Made Simple
+  </div>
+</div>
+"""
+
+
 def _ensure_instacertify_letter_head():
-	"""Create/update Letter Head so every print can use the quotation header."""
+	"""Create/update Letter Head so every print can use the quotation header/footer."""
 	name = "Instacertify"
 	content = letterhead_html()
+	footer = letter_footer_html()
 	try:
 		if frappe.db.exists("Letter Head", name):
 			doc = frappe.get_doc("Letter Head", name)
 			doc.source = "HTML"
 			doc.content = content
+			if doc.meta.has_field("footer"):
+				doc.footer = footer
 			doc.disabled = 0
 			doc.is_default = 1
 			doc.save(ignore_permissions=True)
 		else:
-			frappe.get_doc(
-				{
-					"doctype": "Letter Head",
-					"letter_head_name": name,
-					"source": "HTML",
-					"content": content,
-					"disabled": 0,
-					"is_default": 1,
-				}
-			).insert(ignore_permissions=True)
+			payload = {
+				"doctype": "Letter Head",
+				"letter_head_name": name,
+				"source": "HTML",
+				"content": content,
+				"disabled": 0,
+				"is_default": 1,
+			}
+			# Footer field exists on standard Letter Head
+			payload["footer"] = footer
+			frappe.get_doc(payload).insert(ignore_permissions=True)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Instacertify Letter Head")
 
