@@ -311,8 +311,6 @@ QUOTE_PAGE_CHROME_CSS = """
     background: #fff;
     padding: 0;
     margin: 0;
-    /* Straight dual-tone rule sits 0.7in above the sheet edge */
-    padding-bottom: 0.7in;
   }
   .ic-bleed-rule {
     display: block;
@@ -347,31 +345,39 @@ QUOTE_PAGE_CHROME_CSS = """
   .ic-footer-half.navy { background: #065175; }
   .ic-footer-half.orange { background: #EC691F; }
   .ic-print-body {
-    /* Leave room for QR/tagline + rule + 0.7in below the rule */
+    /* Leave room for QR above + rule + tagline in the 0.7in band below */
     padding: 38mm 12mm 42mm 12mm;
     min-height: 200mm;
     box-sizing: border-box;
   }
   .ic-print-footer-inner {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: flex-end;
     gap: 12px;
     width: 100%;
     box-sizing: border-box;
-    /* QR + tagline sit above the straight rule with a little space */
+    /* QR sits above the straight rule with a little space */
     padding: 6px 12mm 8px 12mm;
   }
   .ic-print-footer-spacer { width: 56px; flex: 0 0 56px; }
+  /* Tagline below the dual-tone line, inside the 0.7in bottom band */
+  .ic-print-footer-below {
+    box-sizing: border-box;
+    min-height: 0.7in;
+    padding: 5px 12mm 6px 12mm;
+    text-align: center;
+  }
   .ic-print-footer-tag {
-    flex: 1 1 auto;
+    display: block;
+    width: 100%;
     text-align: center;
     font-family: Arial, Helvetica, sans-serif !important;
     font-weight: 600 !important;
     font-size: 9pt !important;
     color: #111111 !important;
     letter-spacing: 0.08em !important;
-    padding: 4px 8px !important;
+    padding: 0 !important;
     border: none !important;
     background: transparent !important;
     line-height: 1.3;
@@ -402,8 +408,6 @@ QUOTE_RUNNING_HEADER_HTML = """
 QUOTE_RUNNING_FOOTER_HTML = """
 <div id="footer-html" class="ic-print-footer">
   <div class="ic-print-footer-inner">
-    <div class="ic-print-footer-spacer"></div>
-    <div class="ic-print-footer-tag">Certification Made Simple</div>
     <div class="ic-print-footer-qr">
       {% if doc.ic_qr_code %}
         <img src="{{ doc.ic_qr_code }}" alt="QR"/>
@@ -416,6 +420,9 @@ QUOTE_RUNNING_FOOTER_HTML = """
   <div class="ic-footer-rules" aria-hidden="true">
     <div class="ic-footer-half navy"></div>
     <div class="ic-footer-half orange"></div>
+  </div>
+  <div class="ic-print-footer-below">
+    <div class="ic-print-footer-tag">Certification Made Simple</div>
   </div>
 </div>
 """
@@ -1994,18 +2001,20 @@ def letterhead_html() -> str:
 
 
 def letter_footer_html() -> str:
-	"""Static Letter Head footer — tagline/QR above one straight navy|orange rule at 0.7in."""
+	"""Static Letter Head footer — dual-tone rule, then Certification Made Simple below."""
 	return """
-<div style="width:100%;box-sizing:border-box;margin:0;padding:0 0 0.7in 0;">
-  <div style="padding:6px 12mm 8px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
-    Certification Made Simple
-  </div>
+<div style="width:100%;box-sizing:border-box;margin:0;padding:0;">
   <div style="display:flex;width:100%;height:2.5px;margin:0;padding:0;">
     <div style="width:50%;height:2.5px;background:#065175;margin:0;padding:0;border:0;"></div>
     <div style="width:50%;height:2.5px;background:#EC691F;margin:0;padding:0;border:0;"></div>
   </div>
+  <div style="box-sizing:border-box;min-height:0.7in;padding:5px 12mm 6px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
+    Certification Made Simple
+  </div>
 </div>
 """
+
+
 def _ensure_instacertify_letter_head():
 	"""Create/update Letter Head so every print can use the quotation header/footer."""
 	name = "Instacertify"
