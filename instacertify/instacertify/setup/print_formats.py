@@ -1254,11 +1254,15 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
             <td class="tq-value">
+              {% if doc.ic_timeline_details %}
+                {{ doc.ic_timeline_details }}
+              {% else %}
               <ul>
                 <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
                 <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
                 <li>The timeline may vary depending on laboratory scheduling, sample condition, test requirements, and any additional testing, if applicable.</li>
               </ul>
+              {% endif %}
             </td>
           </tr>
     </table>

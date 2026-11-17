@@ -1017,7 +1017,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "3. Consulting / Service Basics",
 		"insert_after": "ic_qr_code",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -1046,10 +1046,10 @@ QUOTATION_FIELDS = [
 	},
 	{
 		"fieldname": "ic_estimated_timeline",
-		"fieldtype": "Data",
+		"fieldtype": "Small Text",
 		"label": "Estimated Certification Timeline",
 		"insert_after": "ic_column_break_svc",
-		"description": "e.g. 4–6 weeks from document clearance",
+		"description": "Editable. On a testing quotation this is the timeline that prints. Example: 5–7 working days",
 	},
 	{
 		"fieldname": "ic_validity_days",

@@ -3960,6 +3960,19 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			isOn("ic_show_terms") || isOn("ic_show_force_majeure")
 		);
 	}
+
+	// Testing quotes keep only the printable timeline in this section.
+	if (frm.doc.ic_quotation_type === "Testing") {
+		["ic_service_name", "ic_certification_type", "ic_applicable_standard", "ic_column_break_svc"].forEach(
+			(f) => hideField(f, false)
+		);
+		hideField("ic_section_service", isOn("ic_show_timelines") || isOn("ic_show_validity"));
+		instacertify.label_testing_timeline_section(frm);
+		if (frm.fields_dict.ic_estimated_timeline) {
+			frm.set_df_property("ic_estimated_timeline", "read_only", 0);
+			frm.set_df_property("ic_estimated_timeline", "label", __("Estimated Testing Timeline"));
+		}
+	}
 };
 
 instacertify.hide_sales_order_button = function (frm) {
@@ -4155,6 +4168,20 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 	}
 };
 
+instacertify.label_testing_timeline_section = function (frm) {
+	const section = (frm.layout && frm.layout.sections || []).find(
+		(row) => row.df && row.df.fieldname === "ic_section_service"
+	);
+	if (!section) return;
+	section.df.label = __("Timeline");
+	if (section.set_label) section.set_label(__("Timeline"));
+	const columns = section.wrapper && section.wrapper.find(".form-column");
+	if (columns && columns.length > 1) {
+		columns.first().hide();
+		columns.last().css({ width: "100%", maxWidth: "100%" });
+	}
+};
+
 instacertify.toggle_quotation_sections = function (frm) {
 	const t = frm.doc.ic_quotation_type;
 	const consultingLike = ["Consulting", "Renewal", "Service", "Other", "Multiple Products / Multiple Services"];
@@ -4162,12 +4189,46 @@ instacertify.toggle_quotation_sections = function (frm) {
 	const isTesting = ["Testing", "Multiple Products / Multiple Services"].includes(t);
 	const showTestLines = isTesting || isConsulting;
 	const sectionOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
-	[
+	["ic_section_about", "ic_section_docs_timeline", "ic_section_scope"].forEach((f) =>
+		frm.toggle_display(f, isConsulting)
+	);
+	if (frm.fields_dict.ic_section_service) {
+		frm.set_df_property(
+			"ic_section_service",
+			"depends_on",
+			"eval:in_list(['Consulting','Renewal','Service','Other','Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)"
+		);
+	}
+	// Testing quotes print ic_estimated_timeline. That field lives in this section,
+	// which used to open only for consulting, so the timeline could not be edited.
+	const showTimeline = sectionOn("ic_show_timelines");
+	frm.toggle_display(
 		"ic_section_service",
-		"ic_section_about",
-		"ic_section_docs_timeline",
-		"ic_section_scope",
-	].forEach((f) => frm.toggle_display(f, isConsulting));
+		isConsulting || (isTesting && showTimeline)
+	);
+	["ic_service_name", "ic_certification_type", "ic_applicable_standard", "ic_column_break_svc"].forEach(
+		(f) => {
+			if (frm.fields_dict[f]) frm.toggle_display(f, isConsulting);
+		}
+	);
+	if (frm.fields_dict.ic_estimated_timeline) {
+		frm.set_df_property("ic_estimated_timeline", "read_only", 0);
+		frm.set_df_property(
+			"ic_estimated_timeline",
+			"label",
+			isTesting && !isConsulting
+				? __("Estimated Testing Timeline")
+				: __("Estimated Certification Timeline")
+		);
+		frm.set_df_property(
+			"ic_estimated_timeline",
+			"description",
+			isTesting
+				? __("This is the timeline printed on the testing quotation. Example: 5–7 working days")
+				: __("e.g. 4–6 weeks from document clearance")
+		);
+	}
+	if (isTesting && !isConsulting) instacertify.label_testing_timeline_section(frm);
 	// Testing narrative only for Testing; Test Lines (lab charges) for Testing + Consulting
 	frm.toggle_display("ic_section_testing", isTesting);
 	["ic_section_test_lines", "ic_test_items"].forEach((f) =>
