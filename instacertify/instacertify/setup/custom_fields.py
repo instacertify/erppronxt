@@ -1064,7 +1064,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "4. About, Standards & Process",
 		"insert_after": "ic_validity_days",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -1090,7 +1090,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "5. Validity, Samples & Documents",
 		"insert_after": "ic_process_steps",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{
@@ -1123,7 +1123,7 @@ QUOTATION_FIELDS = [
 		"fieldtype": "Section Break",
 		"label": "6. Scope, Deliverables & Commercial Notes",
 		"insert_after": "ic_documents_required",
-		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other'], doc.ic_quotation_type)",
+		"depends_on": "eval:in_list(['Consulting','Renewal','Service','Other','Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)",
 		"collapsible": 0,
 	},
 	{

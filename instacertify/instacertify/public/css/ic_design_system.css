@@ -1147,3 +1147,54 @@ textarea[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !
 .ic-capture-dialog .ic-need-text[data-tone="#c43e0c"] { color: #c43e0c !important; background: #ffeee8 !important; border-color: #c43e0c !important; }
 .ic-capture-dialog .ic-need-text[data-tone="#b3253d"] { color: #b3253d !important; background: #fde8ec !important; border-color: #b3253d !important; }
 .ic-capture-dialog .ic-need-text[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !important; border-color: #6b3fa0 !important; }
+
+/* Quotation: what to show / what to hide, Monday.com status chips */
+#page-Quotation .ic-monday-checks .frappe-control[data-fieldname^="ic_show_"],
+#page-Quotation .ic-monday-checks .form-column[data-fieldname="ic_column_print_sections"] {
+  display: none !important;
+}
+#page-Quotation .ic-monday-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 8px;
+}
+#page-Quotation .ic-monday-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 10px 7px 8px;
+  background: #e6e9ef;
+  color: #676879;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+#page-Quotation .ic-monday-chip.is-on {
+  background: var(--chip);
+  color: var(--ink);
+}
+#page-Quotation .ic-monday-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+#page-Quotation .ic-monday-chip.is-off .ic-monday-dot { background: #c5c7d0; }
+#page-Quotation .ic-monday-state {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.88);
+  color: #323338;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+#page-Quotation .ic-monday-chip.is-off .ic-monday-state {
+  background: #fff;
+  color: #676879;
+}
