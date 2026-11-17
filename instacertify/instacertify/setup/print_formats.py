@@ -314,13 +314,36 @@ LETTERHEAD_BLOCK_HTML = """
 </div>
 """
 
-# Running page chrome: full-bleed A4 header/footer; content inset; lines to sheet edge.
+# Running page chrome: letterhead and footer stay inside the quotation.
+# They are NOT marked header-html / footer-html. Chrome PDF lifts those ids
+# into a separate page and the letterhead comes out blank. A table header
+# and footer repeat on every page while staying in the document.
 QUOTE_PAGE_CHROME_CSS = """
   @page { size: A4; margin: 0; }
   .print-format { padding: 0 !important; margin: 0 !important; position: relative; }
-  /* Stay in normal flow so the PDF engine can measure the letterhead and
-     stamp it, with the footer, on every page. position:fixed collapses that height. */
-  #header-html, #footer-html, .ic-print-header, .ic-print-footer {
+  table.ic-page-frame {
+    width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  table.ic-page-frame > thead { display: table-header-group; }
+  table.ic-page-frame > tfoot { display: table-footer-group; }
+  table.ic-page-frame > tbody > tr,
+  table.ic-page-frame > tbody > tr > td {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  table.ic-page-frame > thead > tr > td,
+  table.ic-page-frame > tfoot > tr > td,
+  table.ic-page-frame > tbody > tr > td.ic-print-main {
+    border: 0 !important;
+    padding: 0 !important;
+    background: #fff;
+    vertical-align: top;
+  }
+  .ic-print-header, .ic-print-footer {
     display: block !important;
     position: static !important;
     width: 100%;
@@ -416,13 +439,15 @@ QUOTE_PAGE_CHROME_CSS = """
 """
 
 QUOTE_RUNNING_HEADER_HTML = """
-<div id="header-html" class="ic-print-header">
+<table class="ic-page-frame">
+<thead><tr><td class="ic-print-header">
 """ + LETTERHEAD_BLOCK_HTML + """
-</div>
+</td></tr></thead>
 """
 
 QUOTE_RUNNING_FOOTER_HTML = """
-<div id="footer-html" class="ic-print-footer">
+<tfoot><tr><td class="ic-print-footer">
+<div class="ic-print-footer">
   <div class="ic-print-footer-inner">
     <div class="ic-print-footer-qr">
       {% if doc.ic_qr_code %}
@@ -441,6 +466,8 @@ QUOTE_RUNNING_FOOTER_HTML = """
     <div class="ic-print-footer-tag">Certification Made Simple</div>
   </div>
 </div>
+</td></tr></tfoot>
+<tbody><tr><td class="ic-print-main">
 """
 
 # Shared Jinja to load IC Settings + absolute logo URL (PDF engines need full URLs).
@@ -582,11 +609,14 @@ QUOTATION_HTML = """
   </div>
   {% endif %}
 
-  {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') and doc.ic_estimated_timeline %}
+  {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') and (doc.ic_timeline_details or doc.ic_estimated_timeline) %}
   <div class="ic-box">
     <h3>Timeline</h3>
-    <div>{{ doc.ic_estimated_timeline or '' }}</div>
-    {% if doc.ic_timeline_details %}<div style="margin-top:6px;">{{ doc.ic_timeline_details }}</div>{% endif %}
+    {% if doc.ic_timeline_details %}
+      <div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_timeline_details, 'Timeline') }}</div>
+    {% elif doc.ic_estimated_timeline %}
+      <div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_estimated_timeline, 'Timeline') }}</div>
+    {% endif %}
   </div>
   {% endif %}
 
@@ -746,6 +776,8 @@ QUOTATION_HTML = """
   </div>
 </div>
 </div>
+</td></tr></tbody>
+</table>
 """
 
 INVOICE_HTML = """
@@ -1129,18 +1161,24 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_samples_requirements or 'Samples Requirements' }}</td>
             <td class="tq-value">
-              {% for row in doc.ic_test_items or [] %}
-                {%- set _n = row.number_of_samples or 1 -%}
-                <div style="margin-bottom:8px;">
-                  <b>{{ row.applicable_standard or row.test_name or 'Test' }}:</b>
-                  {{ row.sample_requirement or ((_n|string) + ' complete functional product sample' + ('s' if _n != 1 else '') + ', including all necessary accessories, cables, and power supply components.') }}
-                  <div class="tq-note" style="margin-top:2px;">No. of Samples: <b>{{ _n }}</b></div>
-                </div>
-              {% endfor %}
-              {% if doc.ic_sample_required %}
-                <div style="margin-bottom:8px;">{{ doc.ic_sample_required }}</div>
+              {%- set _manual = quote_section_text(doc.ic_sample_required, 'Sample Required') -%}
+              {% if _manual %}
+                <div style="white-space:pre-wrap;">{{ _manual }}</div>
+              {% else %}
+                {% for row in doc.ic_test_items or [] %}
+                  {%- set _line = (row.sample_requirement or '')|trim -%}
+                  {% if _line %}
+                    <div style="margin-bottom:8px;">
+                      {% if row.applicable_standard or row.test_name %}<b>{{ row.applicable_standard or row.test_name }}:</b> {% endif %}
+                      {{ _line }}
+                    </div>
+                  {% endif %}
+                {% endfor %}
               {% endif %}
-              <div class="tq-note"><b>Note:</b> {{ (doc.ic_samples_note or 'Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.')|replace('Note: ','') }}</div>
+              {% if doc.ic_samples_note %}
+                {%- set _note = quote_section_text(doc.ic_samples_note, 'Note') -%}
+                {% if _note %}<div class="tq-note"><b>Note:</b> {{ _note }}</div>{% endif %}
+              {% endif %}
             </td>
           </tr>
     </table>
@@ -1297,13 +1335,9 @@ TESTING_QUOTATION_HTML = """
             <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
             <td class="tq-value">
               {% if doc.ic_timeline_details %}
-                {{ doc.ic_timeline_details }}
-              {% else %}
-              <ul>
-                <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
-                <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
-                <li>The timeline may vary depending on laboratory scheduling, sample condition, test requirements, and any additional testing, if applicable.</li>
-              </ul>
+                <div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_timeline_details, 'Timeline') }}</div>
+              {% elif doc.ic_estimated_timeline %}
+                <div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_estimated_timeline, 'Timeline') }}</div>
               {% endif %}
             </td>
           </tr>
@@ -1427,6 +1461,8 @@ TESTING_QUOTATION_HTML = """
   </div>
 </div>
 </div>
+</td></tr></tbody>
+</table>
 """
 
 
@@ -1773,6 +1809,8 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 </div>
 </div>
+</td></tr></tbody>
+</table>
 """
 
 

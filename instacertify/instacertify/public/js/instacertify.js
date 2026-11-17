@@ -4063,8 +4063,25 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			}
 		});
 		hideField("ic_section_scope", isOn("ic_show_deliverables") || isOn("ic_show_about"));
+		if (frm.fields_dict.ic_sample_required) {
+			frm.set_df_property(
+				"ic_sample_required",
+				"description",
+				__(
+					"Edit this box. Suggested sample text is filled in from the test lines. The PDF prints only this box."
+				)
+			);
+		}
+		if (frm.fields_dict.ic_samples_note) {
+			frm.set_df_property(
+				"ic_samples_note",
+				"description",
+				__("Optional note under the sample text. Edit or clear it. The PDF prints it once.")
+			);
+		}
 	}
 	instacertify.paint_quote_section_headings(frm);
+	instacertify.paint_quote_sample_box(frm);
 };
 
 instacertify.quote_heading_visible = function (frm, fieldname) {
@@ -4115,15 +4132,19 @@ instacertify.paint_quote_section_headings = function (frm) {
 			const body = field.$wrapper.children(".section-body");
 			if (body.length) body.prepend(box);
 			else field.$wrapper.prepend(box);
-			box.find("input").on("input", function () {
+			box.find("input").on("input change", function (evt) {
 				const key = this.closest(".ic-quote-heading").getAttribute("data-label");
 				const value = this.value;
+				if (!key) return;
 				frm.doc[key] = value;
 				const hidden = frm.fields_dict[key];
 				if (hidden && hidden.$input && hidden.$input.get(0) !== document.activeElement) {
 					hidden.$input.val(value);
 				}
 				frm.dirty();
+				if (evt.type === "change") {
+					frappe.model.set_value(frm.doctype, frm.docname, key, value || "");
+				}
 			});
 		}
 		box.attr("data-label", labelField);
@@ -4134,6 +4155,56 @@ instacertify.paint_quote_section_headings = function (frm) {
 			input.value = frm.doc[labelField] || "";
 		}
 	});
+};
+
+/** Plain text of a Text Editor value, for comparing the sample box with the suggestion. */
+instacertify.quote_plain_text = function (value) {
+	const node = document.createElement("div");
+	node.innerHTML = String(value || "");
+	return (node.textContent || "").replace(/\s+/g, " ").trim();
+};
+
+/**
+ * Put the test-line sample sentence into the Sample Required box.
+ * The PDF prints that box only, so the suggestion and a hand-typed line
+ * are never both on the page. A sentence the user has edited is left as-is.
+ */
+instacertify.paint_quote_sample_box = function (frm) {
+	if (!frm || !frm.fields_dict || frm.doc.ic_quotation_type !== "Testing") return;
+	if (cint(frm.doc.docstatus) === 1) return;
+	if (frm._ic_sample_box_writing) return;
+	const field = frm.fields_dict.ic_sample_required;
+	if (!field || !field.$wrapper) return;
+	const active = document.activeElement;
+	if (active && field.$wrapper.get(0).contains(active)) return;
+	const lines = [];
+	(frm.doc.ic_test_items || []).forEach((row) => {
+		let text = (row.sample_requirement || "").trim();
+		if (!text) text = instacertify.quote_sample_requirement_text(row.number_of_samples);
+		const title = String(row.applicable_standard || row.test_name || "").trim();
+		lines.push(title ? title + ": " + text : text);
+	});
+	if (!lines.length) return;
+	const autoPlain = lines.join(" ");
+	const savedPlain = instacertify.quote_plain_text(frm.doc.ic_sample_required);
+	const last = field.$wrapper.attr("data-auto-sample") || "";
+	field.$wrapper.attr("data-auto-sample", autoPlain);
+	if (savedPlain && savedPlain !== last) return;
+	if (savedPlain === autoPlain) return;
+	const html = lines
+		.map((line) => "<p>" + frappe.utils.escape_html(line) + "</p>")
+		.join("");
+	if ((frm.doc.ic_sample_required || "") === html) return;
+	frm._ic_sample_writes = frm._ic_sample_writes || {};
+	frm._ic_sample_writes[autoPlain] = (frm._ic_sample_writes[autoPlain] || 0) + 1;
+	if (frm._ic_sample_writes[autoPlain] > 2) return;
+	frm._ic_sample_box_writing = true;
+	const release = () => {
+		frm._ic_sample_box_writing = false;
+	};
+	Promise.resolve(
+		frappe.model.set_value(frm.doctype, frm.docname, "ic_sample_required", html)
+	).then(release, release);
 };
 
 instacertify.hide_sales_order_button = function (frm) {
@@ -4386,8 +4457,8 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_estimated_timeline",
 			"description",
 			isTesting
-				? __("This is the timeline printed on the testing quotation. Example: 5–7 working days")
-				: __("e.g. 4–6 weeks from document clearance")
+				? __("Edit this box. The PDF prints only this text.")
+				: __("Edit this box. The PDF prints only this text.")
 		);
 	}
 	if (isTesting && !isConsulting) instacertify.label_testing_timeline_section(frm);
@@ -4610,9 +4681,10 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		if (row && !cint(row.number_of_samples)) {
 			frappe.model.set_value(cdt, cdn, "number_of_samples", 1);
 		}
-		if (row && !(row.sample_requirement || "").trim()) {
-			instacertify.sync_quote_sample_requirement(cdt, cdn, true);
-		}
+		const fill = row && !(row.sample_requirement || "").trim();
+		Promise.resolve(
+			fill ? instacertify.sync_quote_sample_requirement(cdt, cdn, true) : null
+		).then(() => instacertify.paint_quote_sample_box(frm));
 		if (row && !(row.currency || "").trim() && frm.doc.currency) {
 			frappe.model.set_value(cdt, cdn, "currency", frm.doc.currency);
 		}
@@ -4681,10 +4753,14 @@ frappe.ui.form.on("IC Quotation Test Item", {
 		instacertify.apply_lab_test_scope(frm, cdt, cdn);
 	},
 	number_of_samples(frm, cdt, cdn) {
-		instacertify.sync_quote_sample_requirement(cdt, cdn);
+		Promise.resolve(instacertify.sync_quote_sample_requirement(cdt, cdn)).then(() => {
+			instacertify.paint_quote_sample_box(frm);
+		});
 		instacertify.recalc_test_row(frm, cdt, cdn);
 	},
-	sample_requirement(frm, cdt, cdn) {},
+	sample_requirement(frm, cdt, cdn) {
+		setTimeout(() => instacertify.paint_quote_sample_box(frm), 0);
+	},
 	suggested_selling_price(frm, cdt, cdn) {
 		const row = locals[cdt][cdn];
 		frappe.model.set_value(cdt, cdn, "per_unit_charges", row.suggested_selling_price || 0).then(() => {
@@ -5013,8 +5089,9 @@ instacertify.sync_quote_sample_requirement = function (cdt, cdn, force) {
 	const cur = (row.sample_requirement || "").trim();
 	// Fill when blank, or refresh only while the text is still the untouched default.
 	if ((force || !cur || instacertify.is_auto_sample_requirement(cur)) && cur !== auto) {
-		frappe.model.set_value(cdt, cdn, "sample_requirement", auto);
+		return frappe.model.set_value(cdt, cdn, "sample_requirement", auto);
 	}
+	return Promise.resolve();
 };
 
 instacertify.is_auto_sample_requirement = function (text) {
