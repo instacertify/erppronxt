@@ -402,6 +402,7 @@ _LABEL_FIELDS = (
 	"label_cancellation",
 	"label_force_majeure",
 	"label_confidentiality",
+	"label_terms",
 	"label_subject",
 	"label_about_testing",
 	"label_applicable_standards",
@@ -453,7 +454,10 @@ def _template_field_map(tmpl) -> dict:
 		"ic_bank_account": tmpl.get("bank_account"),
 	}
 	for key in _LABEL_FIELDS:
-		fields[f"ic_{key}"] = tmpl.get(key)
+		if tmpl.meta.has_field(key):
+			fields[f"ic_{key}"] = tmpl.get(key)
+	if tmpl.meta.has_field("section_order") and (tmpl.get("section_order") or "").strip():
+		fields["ic_section_order"] = (tmpl.get("section_order") or "").strip()
 
 	from instacertify.quotation.print_sections import template_show_defaults
 

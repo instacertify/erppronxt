@@ -244,12 +244,25 @@ function _apply_template_section_visibility(frm) {
 		const on = isOn(showField);
 		(IC_TEMPLATE_SECTION_CONTENT[showField] || []).forEach((fname) => {
 			if (!frm.fields_dict[fname]) return;
+			// Heading wording stays on the form. Only the section body follows Show / Hide.
+			if (String(fname).indexOf("label_") === 0) {
+				frm.toggle_display(fname, true);
+				return;
+			}
 			frm.toggle_display(fname, !!on);
 			try {
 				frm.set_df_property(fname, "hidden", on ? 0 : 1);
 			} catch (e) {}
 		});
 	});
+	if (typeof instacertify !== "undefined" && instacertify.paint_print_section_board) {
+		instacertify.paint_print_section_board(frm, {
+			prefix: "",
+			section: "section_print_sections",
+			orderField: "section_order",
+			typeField: "quotation_type",
+		});
+	}
 }
 
 function _set_all_print_sections(frm, value) {
@@ -429,8 +442,7 @@ function _render_edit_guide(frm) {
 			<ul style="margin:0 0 0 18px;padding:0;">
 				<li><b>${__("Fully editable")}</b>: ${__("Every heading, narrative, Sample Required, Force Majeure, Terms, commercials, and print-section toggle — edit freely. Banking account number / IFSC / UPI stay on IC Bank Account (select account only).")}</li>
 				<li><b>${__("Display Name")}</b>: ${__("Rename anytime — does not change Template ID or linked quotes.")}</li>
-				<li><b>${__("Print Sections")}</b>: ${__("Uncheck Sample Required, Force Majeure, Terms, Banking, etc. to hide that row on Print/PDF. Use Print Sections → Show/Hide All.")}</li>
-				<li><b>${__("Section 2 — Rename headings")}</b>: ${__("Change printed names (ABOUT, Commercials, Payment Terms, column titles).")}</li>
+				<li><b>${__("Print Sections")}</b>: ${__("Drag a row to set the PDF order. Type About, Commercials, and every other heading. Show keeps a section; Hide takes it off.")}</li>
 				<li><b>${__("Narrative sections")}</b>: ${__("Edit all body text for {0} quotes.", [__(qtype)])}</li>
 				<li><b>${__("Test Lines")}</b>: ${__("Edit Lab, Test, Standard, prices, and No. of Samples — defaults copy to new Testing quotes and stay editable there.")}</li>
 				<li><b>${__("Section 5 — Commercials")}</b>: ${__("Add default amounts the sales team can change on each quote. Set Revenue = Do Not Count as Revenue for govt/lab/third-party lines (shown on the quote, not counted as Instacertify revenue).")}</li>
