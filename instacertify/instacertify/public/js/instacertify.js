@@ -4064,6 +4064,76 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 		});
 		hideField("ic_section_scope", isOn("ic_show_deliverables") || isOn("ic_show_about"));
 	}
+	instacertify.paint_quote_section_headings(frm);
+};
+
+instacertify.quote_heading_visible = function (frm, fieldname) {
+	const field = frm.fields_dict && frm.fields_dict[fieldname];
+	if (!field || !field.$wrapper || !field.$wrapper.length) return false;
+	const node = field.$wrapper.get(0);
+	if (node.classList.contains("hide")) return false;
+	return getComputedStyle(node).display !== "none";
+};
+
+instacertify.paint_quote_section_headings = function (frm) {
+	if (!frm || !frm.fields_dict) return;
+	const testing = frm.doc.ic_quotation_type === "Testing";
+	const rows = [
+		["ic_subject", "ic_label_subject", "Subject"],
+		["ic_about_testing", "ic_label_about_testing", "ABOUT"],
+		["ic_about_service", "ic_label_about", "ABOUT"],
+		["ic_applicable_standards_text", "ic_label_applicable_standards", "Applicable Standards"],
+		["ic_standard_narrative", "ic_label_standard", "Standard Applicable"],
+		["ic_process_steps", "ic_label_process", "Process"],
+		["ic_validity_text", "ic_label_validity", "Validity"],
+		["ic_sample_required", testing ? "ic_label_samples_requirements" : "ic_label_sample_required", "Sample Required"],
+		["ic_documents_required", "ic_label_documents_required", "Documents Required"],
+		["ic_estimated_timeline", testing ? "ic_label_timeline" : "ic_label_timelines", "Timeline"],
+		["ic_deliverables", "ic_label_deliverable", "Deliverables"],
+		["ic_payment_terms", testing ? "ic_label_payment_term" : "ic_label_payment_terms", "Payment Terms"],
+		["ic_sample_handling_policy", "ic_label_sample_handling", "Sample handling & disposal policy"],
+		["ic_bank_account", "ic_label_banking", "Our Banking Details"],
+		["ic_cancellation_policy", "ic_label_cancellation", "Cancellation & Refund Policy"],
+		["ic_confidentiality", "ic_label_confidentiality", "Confidentiality & Data Protection"],
+		["ic_force_majeure", "ic_label_force_majeure", "Force Majeure"],
+		["ic_terms_and_conditions", "ic_label_terms", "Terms and Conditions"],
+		["ic_section_test_lines", "ic_label_commercials", "Commercials"],
+	];
+	rows.forEach(([anchor, labelField, placeholder]) => {
+		const field = frm.fields_dict[anchor];
+		if (!field || !field.$wrapper) return;
+		const show = instacertify.quote_heading_visible(frm, anchor);
+		let box = field.$wrapper.find(".ic-quote-heading");
+		if (!show) {
+			box.remove();
+			return;
+		}
+		if (!box.length) {
+			box = $(
+				`<label class="ic-quote-heading"><span>${__("Printed heading")}</span><input type="text" autocomplete="off" /></label>`
+			);
+			const body = field.$wrapper.children(".section-body");
+			if (body.length) body.prepend(box);
+			else field.$wrapper.prepend(box);
+			box.find("input").on("input", function () {
+				const key = this.closest(".ic-quote-heading").getAttribute("data-label");
+				const value = this.value;
+				frm.doc[key] = value;
+				const hidden = frm.fields_dict[key];
+				if (hidden && hidden.$input && hidden.$input.get(0) !== document.activeElement) {
+					hidden.$input.val(value);
+				}
+				frm.dirty();
+			});
+		}
+		box.attr("data-label", labelField);
+		const input = box.find("input").get(0);
+		box.find("span").text(__("Printed heading"));
+		input.setAttribute("placeholder", __(placeholder));
+		if (document.activeElement !== input) {
+			input.value = frm.doc[labelField] || "";
+		}
+	});
 };
 
 instacertify.hide_sales_order_button = function (frm) {
@@ -4147,6 +4217,7 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 		"ic_label_timeline",
 		"ic_label_payment_term",
 		"ic_label_sample_handling",
+		"ic_label_terms",
 		"ic_about_service",
 		"ic_standard_narrative",
 		"ic_process_steps",
