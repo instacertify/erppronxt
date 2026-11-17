@@ -358,6 +358,7 @@ CUSTOMER_FIELDS = [
 		"label": "State",
 		"insert_after": "ic_column_break_1",
 		"depends_on": "eval:doc.ic_country=='India' || !doc.ic_country",
+		"description": "Choose the state from the list.",
 	},
 	{
 		"fieldname": "ic_date_onboarded",
