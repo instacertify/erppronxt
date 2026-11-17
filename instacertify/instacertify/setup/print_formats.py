@@ -43,9 +43,33 @@ GST_PAYMENT_TERMS_NOTE_HTML = """
 {%- endif -%}
 """
 
-# Simple Arial quote typography: black words, grey table values, hairline brand accents.
-IC_PRINT_FONT = "Arial, Helvetica, 'Segoe UI', sans-serif"
+# Monday.com's default typeface is Figtree. Arial remains the fallback.
+IC_PRINT_FONT = "'Figtree', Arial, Helvetica, sans-serif"
 IC_PRINT_TYPOGRAPHY_CSS = """
+  @font-face {
+    font-family: 'Figtree';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/assets/instacertify/fonts/Figtree-Regular.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Figtree';
+    font-style: normal;
+    font-weight: 500;
+    src: url('/assets/instacertify/fonts/Figtree-Medium.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Figtree';
+    font-style: normal;
+    font-weight: 600;
+    src: url('/assets/instacertify/fonts/Figtree-SemiBold.ttf') format('truetype');
+  }
+  @font-face {
+    font-family: 'Figtree';
+    font-style: normal;
+    font-weight: 700;
+    src: url('/assets/instacertify/fonts/Figtree-Bold.ttf') format('truetype');
+  }
   :root {
     --ic-navy: #065175;
     --ic-navy-deep: #043A54;
@@ -59,8 +83,8 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     --ic-line-soft: #D7DBE0;
     --ic-white: #FFFFFF;
   }
-  .ic-font-body, .ic-quote, .ic-inv, .tq, .cq, .ic, .ic-sheet {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif;
+  html, body, .print-format, .ic-font-body, .ic-quote, .ic-inv, .tq, .cq, .ic, .ic-sheet {
+    font-family: 'Figtree', Arial, Helvetica, sans-serif;
     color: var(--ic-ink);
     font-size: 10px;
     line-height: 1.65;
@@ -69,7 +93,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     word-spacing: 0.06em;
   }
   .ic-doc-title, .tq-title, .cq-title {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 700 !important;
     font-size: 18pt !important;
     color: #111111 !important;
@@ -80,7 +104,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     line-height: 1.3;
   }
   .ic-doc-subtitle, .cq-service {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 600 !important;
     font-size: 11pt !important;
     color: #111111 !important;
@@ -91,7 +115,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     line-height: 1.45;
   }
   .ic-section-heading, .tq-label, .cq-bar, .ic-box > h3, .tq-h, .cq-h {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 700 !important;
     font-size: 9pt !important;
     color: #111111 !important;
@@ -107,20 +131,20 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     border-left: 1px solid var(--ic-line) !important;
   }
   .ic-subheading {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 600 !important;
     font-size: 10pt !important;
     color: #111111 !important;
   }
   .ic-quote-no, .tq-meta, .cq-meta {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 600 !important;
     font-size: 9pt !important;
     color: #111111 !important;
     letter-spacing: 0.02em;
   }
   .ic-mast-brand .name, .ic-lh-co .name, .tq-co .name, .cq-co .name {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 700 !important;
     font-size: 11px !important;
     color: #111111 !important;
@@ -139,7 +163,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-mast-logo { flex: 0 0 auto; min-width: 0; }
   .ic-mast-details, .ic-mast-details * {
     color: #111111 !important;
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     text-align: right !important;
   }
   .ic-mast-details {
@@ -158,7 +182,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   }
   #header-html { width: 100%; box-sizing: border-box; }
   table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 700 !important;
     font-size: 8.5pt !important;
     background: var(--ic-half) !important;
@@ -171,14 +195,14 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   /* Narrative / words / amounts in quote = black */
   .tq-value, .cq-body, .ic-box, .tq-value p, .cq-body p, .tq-value b, .cq-body b,
   .tq-value strong, .cq-body strong, .ic-terms, .tq-note, .cq-body .ic-terms {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     color: #111111 !important;
     line-height: 1.65 !important;
     letter-spacing: 0.02em;
     word-spacing: 0.06em;
   }
   table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 400 !important;
     color: #111111 !important;
     line-height: 1.6;
@@ -212,7 +236,7 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     border-color: var(--ic-line) !important;
   }
   .ic-footer-bar, .tq-footer-bar, .cq-footer-bar {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 600 !important;
     font-size: 9pt !important;
     background: transparent !important;
@@ -231,14 +255,14 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     border-top: 1px solid var(--ic-line);
     border-bottom: 1px solid var(--ic-line);
     background: transparent;
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif;
     font-size:9.5px; color:#111111;
     line-height: 1.6; letter-spacing: 0.02em; word-spacing: 0.06em;
   }
   .ic-party-strip, .ic-party-strip * { color: #111111 !important; }
   .tq-sign, .cq-sign, .tq-close, .cq-close, .ic-sign {
     color: #111111 !important;
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
   }
   .ic-rule-navy { height:1px; background:var(--ic-navy); width:100%; border:0; }
   .ic-rule-orange { height:1px; background:var(--ic-orange); width:56px; border:0; margin:0; }
@@ -274,7 +298,7 @@ LETTERHEAD_BLOCK_HTML = """
       <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
         <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
       </div>
-      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
         <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{{ legal }}</div>
         <div>{{ address }}</div>
         {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
@@ -294,20 +318,12 @@ LETTERHEAD_BLOCK_HTML = """
 QUOTE_PAGE_CHROME_CSS = """
   @page { size: A4; margin: 0; }
   .print-format { padding: 0 !important; margin: 0 !important; position: relative; }
-  .ic-print-header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
+  /* Stay in normal flow so the PDF engine can measure the letterhead and
+     stamp it, with the footer, on every page. position:fixed collapses that height. */
+  #header-html, #footer-html, .ic-print-header, .ic-print-footer {
+    display: block !important;
+    position: static !important;
     width: 100%;
-    z-index: 20;
-    background: #fff;
-    padding: 0;
-    margin: 0;
-  }
-  .ic-print-footer {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    width: 100%;
-    z-index: 20;
     background: #fff;
     padding: 0;
     margin: 0;
@@ -345,8 +361,8 @@ QUOTE_PAGE_CHROME_CSS = """
   .ic-footer-half.navy { background: #065175; }
   .ic-footer-half.orange { background: #EC691F; }
   .ic-print-body {
-    /* Leave room for QR above + rule + tagline in the 0.7in band below */
-    padding: 38mm 12mm 42mm 12mm;
+    /* Side inset only. Top and bottom space comes from the repeating letterhead and footer. */
+    padding: 6mm 14mm 8mm 14mm;
     min-height: 200mm;
     box-sizing: border-box;
   }
@@ -372,7 +388,7 @@ QUOTE_PAGE_CHROME_CSS = """
     display: block;
     width: 100%;
     text-align: center;
-    font-family: Arial, Helvetica, sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 600 !important;
     font-size: 9pt !important;
     color: #111111 !important;
@@ -395,7 +411,7 @@ QUOTE_PAGE_CHROME_CSS = """
   }
   .ic-print-footer-qr .cap {
     font-size: 7px; color: #6A727C; text-align: center; margin-top: 2px;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif;
   }
 """
 
@@ -439,7 +455,7 @@ LETTERHEAD_CONTEXT_JINJA = """
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo_raw = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo_tagline_print.png' -%}
-{%- if logo_raw and (logo_raw.startswith('http://') or logo_raw.startswith('https://') or logo_raw.startswith('data:')) -%}
+{%- if logo_raw and (logo_raw.startswith('http://') or logo_raw.startswith('https://') or logo_raw.startswith('data:') or logo_raw.startswith('/')) -%}
 {%- set logo = logo_raw -%}
 {%- else -%}
 {%- set logo = frappe.utils.get_url(logo_raw) -%}
@@ -466,7 +482,7 @@ QUOTE_EVEN_TYPE_CSS = """
   table.tq-bank td, table.tq-bank td.k,
   table.cq-bank td, table.cq-bank td.k,
   table.ic-bank-tbl td, .ic-bank-tbl td {
-    font-family: Arial, Helvetica, 'Segoe UI', sans-serif !important;
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-size: 11pt !important;
     letter-spacing: 0.01em !important;
   }
@@ -476,14 +492,21 @@ QUOTE_EVEN_TYPE_CSS = """
     letter-spacing: 0.04em !important;
     line-height: 1.25 !important;
   }
-  .ic-print-header .ic-mast-details,
-  .ic-print-header .ic-mast-details div,
-  .ic-print-header .ic-mast-legal {
-    font-size: 10pt !important;
-    letter-spacing: 0.01em !important;
-    line-height: 1.4 !important;
+  .ic-print-header, .ic-print-header .ic-mast-details, .ic-print-footer, .ic-print-footer-tag {
+    font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
   }
-  .ic-print-header .ic-mast-legal { font-weight: 700 !important; }
+  .ic-print-header .ic-mast-details,
+  .ic-print-header .ic-mast-details div {
+    font-size: 9pt !important;
+    letter-spacing: 0 !important;
+    line-height: 1.35 !important;
+    font-weight: 500 !important;
+  }
+  .ic-print-header .ic-mast-legal {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
   .ic-print-footer-tag { font-size: 11pt !important; letter-spacing: 0.04em !important; }
   td.tq-label[colspan], td.tq-value[colspan] { width: auto !important; }
   .tq-value table, .cq-body table, .ic-box table {
@@ -496,29 +519,29 @@ QUOTATION_HTML = """
 """ + LETTERHEAD_CONTEXT_JINJA + """
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
-  .ic-quote { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color: var(--ic-ink); font-size: 10px; }
+  .ic-quote { font-family: 'Figtree', Arial, Helvetica, sans-serif; color: var(--ic-ink); font-size: 10px; }
   .ic-masthead { margin-bottom:0; }
   .ic-accent { color: var(--ic-orange); }
-  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-line); margin-bottom: 12px; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:9.5pt; }
+  .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-line); margin-bottom: 12px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size:9.5pt; }
   .ic-box { border: 1px solid var(--ic-line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
-  .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:13pt; border-bottom: 1px solid var(--ic-line); padding-bottom: 4px; }
+  .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size:13pt; border-bottom: 1px solid var(--ic-line); padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
-  table.ic-table th { background: var(--ic-half); color: var(--ic-ink); padding: 6px 8px; text-align: left; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size: 8.5pt; letter-spacing:0.06em; text-transform:uppercase; border-top:1px solid var(--ic-navy); }
-  table.ic-table td { border-bottom: 1px solid var(--ic-line); padding: 6px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; }
-  .badge-pass { background: #fff3e8; color: var(--ic-orange); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:Arial,Helvetica,sans-serif; font-weight:600; }
-  .badge-rev { background: var(--ic-soft); color: var(--ic-navy); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:Arial,Helvetica,sans-serif; font-weight:600; }
-  .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; }
+  table.ic-table th { background: var(--ic-half); color: var(--ic-ink); padding: 6px 8px; text-align: left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size: 8.5pt; letter-spacing:0.06em; text-transform:uppercase; border-top:1px solid var(--ic-navy); }
+  table.ic-table td { border-bottom: 1px solid var(--ic-line); padding: 6px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9.5pt; }
+  .badge-pass { background: #fff3e8; color: var(--ic-orange); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; }
+  .badge-rev { background: var(--ic-soft); color: var(--ic-navy); padding: 2px 6px; border-radius: 10px; font-size: 9px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; }
+  .ic-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #d9e6ee; overflow: auto; page-break-inside: avoid; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:8.5pt; }
   .ic-qr { float: right; margin: 0 0 8px 16px; text-align: center; }
   .ic-qr img { width: 72px; height: 72px; }
-  .ic-qr .cap { font-size: 8px; color: #555; font-family:Arial,Helvetica,sans-serif; }
-  .ic-sign { margin-top: 28px; page-break-inside: avoid; font-family:Arial,Helvetica,sans-serif; }
+  .ic-qr .cap { font-size: 8px; color: #555; font-family:'Figtree', Arial, Helvetica, sans-serif; }
+  .ic-sign { margin-top: 28px; page-break-inside: avoid; font-family:'Figtree', Arial, Helvetica, sans-serif; }
   .ic-footer-bar {
     background: transparent; color: var(--ic-muted); border-top: 1px solid var(--ic-navy); border-bottom: 1px solid var(--ic-orange);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
-    font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
-  .ic-grand-total { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:11pt; color:var(--ic-ink); }
+  .ic-grand-total { font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:11pt; color:var(--ic-ink); }
 """ + QUOTE_EVEN_TYPE_CSS + """
 </style>
 """ + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
@@ -731,20 +754,20 @@ INVOICE_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 14mm 12mm 14mm 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
-  .ic-inv { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size: 10px; color: var(--ic-ink); }
+  .ic-inv { font-family: 'Figtree', Arial, Helvetica, sans-serif; font-size: 10px; color: var(--ic-ink); }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid var(--ic-orange); margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
-  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:Arial,Helvetica,sans-serif; }
-  .ic-lh-co .name { color:var(--ic-navy); font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:12.5px; text-transform:none; margin-bottom:2px; }
+  .ic-lh-co { text-align:right; color:var(--ic-ink); font-size:10px; line-height:1.4; font-family:'Figtree', Arial, Helvetica, sans-serif; }
+  .ic-lh-co .name { color:var(--ic-navy); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size:12.5px; text-transform:none; margin-bottom:2px; }
   table { width:100%; border-collapse: collapse; margin-top:12px; }
-  th { background:var(--ic-navy); color:#fff; padding:6px; text-align:left; font-family:Arial,Helvetica,sans-serif; font-weight:600; font-size:9.5pt; }
-  td { border-bottom:1px solid #e5eef3; padding:6px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; }
+  th { background:var(--ic-navy); color:#fff; padding:6px; text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size:9.5pt; }
+  td { border-bottom:1px solid #e5eef3; padding:6px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9.5pt; }
   .qr { text-align:right; margin-top:20px; }
   .qr img { width:72px; height:72px; }
   .ic-footer-bar {
     background: transparent; color: var(--ic-muted); border-top: 1px solid var(--ic-navy); border-bottom: 1px solid var(--ic-orange);
     color:#fff; text-align:center; padding:5px 12px; margin-top:20px;
-    font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
+    font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:8.5pt; font-weight:400; letter-spacing:0.14em; text-transform:lowercase;
     border:none; line-height:1.2;
   }
 </style>
@@ -786,7 +809,7 @@ SAMPLE_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
-  .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
+  .ic { font-family: 'Figtree', Arial, Helvetica, sans-serif; font-size:11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
@@ -921,7 +944,7 @@ TESTING_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding:0 !important; margin:0 !important; }
-  .ic { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; font-size:11px; }
+  .ic { font-family: 'Figtree', Arial, Helvetica, sans-serif; font-size:11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:48px; max-width:280px; }
   .ic-lh-co { text-align:right; color:#222; font-size:9.5px; line-height:1.35; }
@@ -956,7 +979,7 @@ JOINING_HTML = """
   .ic { font-family: Georgia, 'Times New Roman', serif; font-size:12px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:3px solid #EC691F; margin-bottom:14px; }
   .ic-lh-logo img { max-height:52px; max-width:300px; }
-  .ic-lh-co { text-align:right; font-family: Arial, Helvetica, sans-serif; color:#222; font-size:10px; line-height:1.4; }
+  .ic-lh-co { text-align:right; font-family: 'Figtree', Arial, Helvetica, sans-serif; color:#222; font-size:10px; line-height:1.4; }
   .ic-lh-co .name { color:#EC691F; font-weight:700; font-size:12px; text-transform:uppercase; }
   .qr { text-align:right; }
   .qr img { width:72px; height:72px; }
@@ -991,40 +1014,40 @@ TESTING_QUOTATION_HTML = """
 {%- endmacro -%}
 """ + LETTERHEAD_CONTEXT_JINJA + """
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
-{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:')) -%}
+{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:') or stamp.startswith('/')) -%}
 {%- set stamp = frappe.utils.get_url(stamp) -%}
 {%- endif -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
-  .tq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
+  .tq { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
-  .tq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 10px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
+  .tq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
+  .tq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:18pt; font-weight:700; margin:10px 0 10px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
   table.tq-grid > tbody > tr { page-break-inside:avoid; break-inside:avoid-page; }
   table.tq-grid > tbody > tr > td { border:1px solid var(--ic-line); vertical-align:top; padding:0; }
-  .tq-label { width:18%; background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 10px; color:#111111; font-size:8.5pt; letter-spacing:0.05em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.55; }
-  .tq-value { width:82%; padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .tq-label { width:18%; background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:12px 10px; color:#111111; font-size:8.5pt; letter-spacing:0.05em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.55; }
+  .tq-value { width:82%; padding:12px 14px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
   .tq-value ul { margin:8px 0 0 18px; padding:0; }
   .tq-value ol { margin:8px 0 0 18px; padding:0; }
   .tq-value li { margin-bottom:6px; color:#111111; line-height:1.6; }
-  .tq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
+  .tq-h { font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
   table.tq-comm { width:100%; border-collapse:collapse; margin-top:6px; }
-  table.tq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 6px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; text-align:center; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
-  table.tq-comm td { border:1px solid var(--ic-line); padding:9px 6px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; vertical-align:top; color:#111111; line-height:1.55; letter-spacing:0.02em; }
+  table.tq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 6px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:8.5pt; text-align:center; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; }
+  table.tq-comm td { border:1px solid var(--ic-line); padding:9px 6px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9.5pt; vertical-align:top; color:#111111; line-height:1.55; letter-spacing:0.02em; }
   table.tq-comm td.num, table.tq-comm th.num { text-align:center; }
-  table.tq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; }
-  .tq-note { margin-top:10px; font-family:Arial,Helvetica,sans-serif; font-size:8.5pt; color:#111111; line-height:1.6; }
+  table.tq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:10pt; color:#111111; }
+  .tq-note { margin-top:10px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:8.5pt; color:#111111; line-height:1.6; }
   table.tq-bank { width:100%; border-collapse:collapse; margin-top:8px; }
-  table.tq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
+  table.tq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
   table.tq-bank td.k { width:34%; background:var(--ic-half); font-weight:700; color:#111111; letter-spacing:0.04em; text-transform:uppercase; font-size:8.5pt; }
-  .tq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
+  .tq-close { margin-top:22px; page-break-inside:avoid; font-family:'Figtree', Arial, Helvetica, sans-serif; color:#111111; }
   .tq-close p { margin:6px 0; color:#111111; }
   .tq-stamp { margin-top:18px; margin-bottom:6px; }
   .tq-stamp img { max-height:110px; max-width:140px; }
-  .tq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
+  .tq-sign { margin-top:8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; color:#111111; }
 """ + QUOTE_EVEN_TYPE_CSS + """
 </style>
 """ + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
@@ -1415,7 +1438,7 @@ CONSULTING_QUOTATION_HTML = """
 {%- endmacro -%}
 """ + LETTERHEAD_CONTEXT_JINJA + """
 {%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
-{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:')) -%}
+{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:') or stamp.startswith('/')) -%}
 {%- set stamp = frappe.utils.get_url(stamp) -%}
 {%- endif -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
@@ -1423,29 +1446,29 @@ CONSULTING_QUOTATION_HTML = """
 {%- set short = (doc.ic_certification_type or title) -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
-  .cq { font-family: Arial, Helvetica, 'Segoe UI', sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
+  .cq { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
-  .cq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:Arial,Helvetica,sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
-  .cq-title { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:18pt; font-weight:700; margin:10px 0 8px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
-  .cq-service { text-align:left; font-family:Arial,Helvetica,sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
+  .cq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
+  .cq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:18pt; font-weight:700; margin:10px 0 8px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
+  .cq-service { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
   .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
   .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:avoid; break-inside:avoid-page; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:var(--ic-half); font-family:Arial,Helvetica,sans-serif; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.05em; color:#111111; line-height:1.55; }
-  .cq-body { padding:12px 14px; font-family:Arial,Helvetica,sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .cq-bar { background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.05em; color:#111111; line-height:1.55; }
+  .cq-body { padding:12px 14px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
   .cq-body ul, .cq-body ol { margin:8px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:6px; color:#111111; line-height:1.6; }
-  .cq-h { font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
+  .cq-h { font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
   table.cq-comm { width:100%; border-collapse:collapse; margin-top:8px; }
-  table.cq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 8px; text-align:left; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:8.5pt; letter-spacing:0.04em; text-transform:uppercase; }
-  table.cq-comm td { border:1px solid var(--ic-line); padding:9px 8px; vertical-align:top; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; letter-spacing:0.02em; }
-  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:Arial,Helvetica,sans-serif; font-weight:700; font-size:10pt; color:#111111; width:32%; }
+  table.cq-comm th { background:var(--ic-half); color:#111111; border:1px solid var(--ic-line); padding:9px 8px; text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:8.5pt; letter-spacing:0.04em; text-transform:uppercase; }
+  table.cq-comm td { border:1px solid var(--ic-line); padding:9px 8px; vertical-align:top; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; letter-spacing:0.02em; }
+  table.cq-comm td.amt { text-align:right; white-space:nowrap; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:10pt; color:#111111; width:32%; }
   table.cq-bank { width:100%; border-collapse:collapse; margin-top:8px; }
-  table.cq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:Arial,Helvetica,sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
+  table.cq-bank td { border:1px solid var(--ic-line); padding:9px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9.5pt; color:#111111; line-height:1.55; }
   table.cq-bank td.k { width:34%; background:var(--ic-half); font-weight:700; color:#111111; letter-spacing:0.04em; text-transform:uppercase; font-size:8.5pt; }
-  .cq-close { margin-top:22px; page-break-inside:avoid; font-family:Arial,Helvetica,sans-serif; color:#111111; }
+  .cq-close { margin-top:22px; page-break-inside:avoid; font-family:'Figtree', Arial, Helvetica, sans-serif; color:#111111; }
   .cq-stamp img { max-height:110px; max-width:140px; margin-top:16px; }
-  .cq-sign { margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-weight:700; color:#111111; }
+  .cq-sign { margin-top:8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; color:#111111; }
 """ + QUOTE_EVEN_TYPE_CSS + """
 </style>
 """ + QUOTE_RUNNING_HEADER_HTML + QUOTE_RUNNING_FOOTER_HTML + """
@@ -1759,7 +1782,7 @@ DOCUMENTS_COLLECTION_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
-  .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
+  .ic-sheet { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
@@ -1862,7 +1885,7 @@ TRF_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
-  .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
+  .ic-sheet { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
@@ -1937,7 +1960,7 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + """
   @page { size: A4; margin: 12mm; }
   .print-format { padding: 0 !important; margin: 0 !important; }
-  .ic-sheet { font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
+  .ic-sheet { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:#1a1a1a; font-size:11px; }
   .ic-lh { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding-bottom:8px; border-bottom:1.5px solid #EC691F; margin-bottom:12px; }
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
@@ -2038,7 +2061,7 @@ def letterhead_html() -> str:
 		or (getattr(s, "logo", None) if s else None)
 		or "/assets/instacertify/images/instacertify_logo_tagline_print.png"
 	)
-	if logo and not str(logo).startswith(("http://", "https://", "data:")):
+	if logo and not str(logo).startswith(("http://", "https://", "data:", "/")):
 		logo = frappe.utils.get_url(logo)
 	legal = frappe.utils.escape_html(
 		(getattr(s, "legal_name", None) if s else None) or "Instacertify Labs Private Limited"
@@ -2060,7 +2083,7 @@ def letterhead_html() -> str:
       <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
         <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
       </div>
-      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
         <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{legal}</div>
         <div>{addr_html}</div>
         <div>CIN {cin}</div>
@@ -2085,7 +2108,7 @@ def letter_footer_html() -> str:
     <div style="width:50%;height:2.5px;background:#065175;margin:0;padding:0;border:0;"></div>
     <div style="width:50%;height:2.5px;background:#EC691F;margin:0;padding:0;border:0;"></div>
   </div>
-  <div style="box-sizing:border-box;min-height:0.7in;padding:5px 12mm 6px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
+  <div style="box-sizing:border-box;min-height:0.7in;padding:5px 12mm 6px;text-align:center;font-family:'Figtree', Arial, Helvetica, sans-serif;font-weight:600;font-size:9pt;color:#111111;letter-spacing:0.08em;line-height:1.3;">
     Certification Made Simple
   </div>
 </div>
