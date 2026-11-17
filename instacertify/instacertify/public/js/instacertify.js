@@ -8192,6 +8192,164 @@ instacertify.apply_manual_currency = function (frm, currency, opts) {
 		});
 };
 
+instacertify.INDIAN_STATES = [
+	"Andaman and Nicobar Islands",
+	"Andhra Pradesh",
+	"Arunachal Pradesh",
+	"Assam",
+	"Bihar",
+	"Chandigarh",
+	"Chhattisgarh",
+	"Dadra and Nagar Haveli and Daman and Diu",
+	"Delhi",
+	"Goa",
+	"Gujarat",
+	"Haryana",
+	"Himachal Pradesh",
+	"Jammu and Kashmir",
+	"Jharkhand",
+	"Karnataka",
+	"Kerala",
+	"Ladakh",
+	"Lakshadweep Islands",
+	"Madhya Pradesh",
+	"Maharashtra",
+	"Manipur",
+	"Meghalaya",
+	"Mizoram",
+	"Nagaland",
+	"Odisha",
+	"Other Territory",
+	"Puducherry",
+	"Punjab",
+	"Rajasthan",
+	"Sikkim",
+	"Tamil Nadu",
+	"Telangana",
+	"Tripura",
+	"Uttar Pradesh",
+	"Uttarakhand",
+	"West Bengal",
+];
+
+instacertify.state_picker_options = function (current) {
+	const names = instacertify.INDIAN_STATES.slice();
+	const value = (current || "").trim();
+	if (value && names.indexOf(value) < 0) names.unshift(value);
+	return "\n" + names.join("\n");
+};
+
+instacertify.apply_state_picker = function (frm, fieldname, countryField) {
+	const field = frm.fields_dict && frm.fields_dict[fieldname];
+	if (!field || !field.$wrapper) return;
+	const country = ((frm.doc[countryField] || "") + "").trim();
+	const india = !country || country === "India";
+	const wrapper = field.$wrapper.get(0);
+	let select = wrapper.querySelector("select.ic-state-select");
+	const input = field.$input && field.$input.get(0);
+	if (!india) {
+		if (select) select.hidden = true;
+		if (input) input.hidden = false;
+		return;
+	}
+	if (!select) {
+		select = document.createElement("select");
+		select.className = "form-control ic-state-select";
+		select.addEventListener("change", () => {
+			frm.set_value(fieldname, select.value || "");
+		});
+		if (input && input.parentNode) input.parentNode.appendChild(select);
+		else wrapper.querySelector(".control-input")?.appendChild(select);
+	}
+	select.hidden = false;
+	if (input) input.hidden = true;
+	const current = (frm.doc[fieldname] || "").trim();
+	const names = instacertify.INDIAN_STATES.slice();
+	if (current && names.indexOf(current) < 0) names.unshift(current);
+	const signature = names.join("\n") + "|" + current;
+	if (select.dataset.signature !== signature) {
+		select.innerHTML = "";
+		const blank = document.createElement("option");
+		blank.value = "";
+		blank.textContent = __("Select state");
+		select.appendChild(blank);
+		names.forEach((name) => {
+			const opt = document.createElement("option");
+			opt.value = name;
+			opt.textContent = name;
+			select.appendChild(opt);
+		});
+		select.value = current;
+		select.dataset.signature = signature;
+	}
+};
+
+instacertify.install_customer_state_dropdown = function () {
+	const Base = frappe.ui.form.CustomerQuickEntryForm;
+	if (!Base || Base.prototype.__ic_state_dropdown) return;
+	if (window.india_compliance && !india_compliance.__ic_state_wrapped) {
+		const original = india_compliance.set_state_options;
+		india_compliance.set_state_options = function (frm) {
+			const state_field = frm.get_field && frm.get_field("state");
+			const country_field = frm.get_field && frm.get_field("country");
+			const country = (country_field && country_field.value) || "";
+			if (state_field && state_field.df && state_field.df.fieldtype === "Select") {
+				return;
+			}
+			if ((!country || country === "India") && state_field && state_field.set_data) {
+				state_field.set_data(frappe.boot.india_state_options || instacertify.INDIAN_STATES);
+				return;
+			}
+			if (original) return original.call(india_compliance, frm);
+		};
+		india_compliance.__ic_state_wrapped = true;
+	}
+	class ICCustomerQuickEntry extends Base {
+		get_address_fields() {
+			const fields = super.get_address_fields ? super.get_address_fields() : [];
+			const stateIndex = fields.findIndex((field) => field.fieldname === "state");
+			if (stateIndex >= 0) {
+				fields[stateIndex].label = __("State");
+				fields[stateIndex].fieldtype = "Select";
+				fields[stateIndex].options = instacertify.state_picker_options("");
+				fields[stateIndex].ignore_validation = true;
+				fields[stateIndex].depends_on = "eval:!doc.country || doc.country=='India'";
+				fields[stateIndex].mandatory_depends_on =
+					"eval:(!doc.country || doc.country=='India') && (doc.city || doc.address_line1)";
+				fields.splice(stateIndex + 1, 0, {
+					label: __("State / Province"),
+					fieldname: "state_other",
+					fieldtype: "Data",
+					depends_on: "eval:doc.country && doc.country!='India'",
+				});
+			}
+			const country = fields.find((field) => field.fieldname === "country");
+			if (country && !country.default) country.default = "India";
+			return fields;
+		}
+		update_doc() {
+			const doc = this.dialog && this.dialog.doc;
+			if (doc) {
+				if (doc.country && doc.country !== "India") doc.state = doc.state_other || "";
+				delete doc.state_other;
+				if ((!doc.country || doc.country === "India") && doc.state) doc.ic_state = doc.state;
+			}
+			return super.update_doc ? super.update_doc() : doc;
+		}
+	}
+	ICCustomerQuickEntry.prototype.__ic_state_dropdown = true;
+	frappe.ui.form.CustomerQuickEntryForm = ICCustomerQuickEntry;
+};
+
+frappe.ui.form.on("Address", {
+	refresh(frm) {
+		instacertify.apply_state_picker(frm, "state", "country");
+	},
+	country(frm) {
+		instacertify.apply_state_picker(frm, "state", "country");
+	},
+});
+
 frappe.ui.form.on("Customer", {
 	setup(frm) {
 		frm.set_query("ic_country", () => ({
@@ -8225,6 +8383,11 @@ frappe.ui.form.on("Customer", {
 		if (frm.is_new() && !frm.doc.ic_country) {
 			frm.set_value("ic_country", "India");
 		}
+		instacertify.apply_state_picker(frm, "ic_state", "ic_country");
+		if (frm.fields_dict.ic_state) {
+			frm.set_df_property("ic_state", "label", __("State"));
+			frm.set_df_property("ic_state", "description", __("Choose the state from the list."));
+		}
 		if (!frm.__ic_country_btn && frm.fields_dict.ic_country) {
 			frm.__ic_country_btn = 1;
 			frm.add_custom_button(__("Country & Currency"), () => {
@@ -8233,6 +8396,7 @@ frappe.ui.form.on("Customer", {
 		}
 	},
 	ic_country(frm) {
+		instacertify.apply_state_picker(frm, "ic_state", "ic_country");
 		if (!frm.doc.ic_country) return;
 		const isIndia = frm.doc.ic_country === "India";
 		const currency = isIndia ? "INR" : "USD";
@@ -8765,6 +8929,7 @@ instacertify.hide_pos_on_sales_invoice = function (frm) {
 
 // Also inject when workspace page is shown via frappe.pages
 $(document).ready(function () {
+	instacertify.install_customer_state_dropdown();
 	// Prefer full-width desk so square tiles spread across the viewing screen
 	instacertify.enable_full_width_desk();
 
