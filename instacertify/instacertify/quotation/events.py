@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 import secrets
 
 import frappe
@@ -122,14 +123,11 @@ def _calculate_test_line_totals(doc):
 		# Default blank line currency from parent; keep multi-currency overrides
 		if not (row.get("currency") or "").strip():
 			row.currency = parent_currency
-		# Keep Sample Required print text in sync when blank / auto-generated
+		# Fill Sample Required only when blank or still the untouched default.
+		# A sentence the user edited is kept, even if it mentions samples.
 		cur = (row.get("sample_requirement") or "").strip()
-		auto = (
-			f"{int(units)} complete functional product "
-			f"{'sample' if int(units) == 1 else 'samples'}, "
-			"including all necessary accessories, cables, and power supply components."
-		)
-		if not cur or "complete functional product sample" in cur.lower():
+		auto = _auto_sample_requirement(int(units))
+		if not cur or _is_auto_sample_requirement(cur):
 			row.sample_requirement = auto
 		rate = row.get("suggested_selling_price")
 		if rate in (None, ""):
@@ -176,6 +174,27 @@ def _calculate_cost_line_totals(doc):
 	# Optional / Do Not Sum lines → hide Final Costing on form + print + portal
 	if any_do_not_sum and doc.meta.has_field("ic_show_total"):
 		doc.ic_show_total = 0
+
+
+_AUTO_SAMPLE_REQUIREMENT = re.compile(
+	r"^\d+ complete functional product samples?, including all necessary accessories, cables, and power supply components\.$",
+	re.IGNORECASE,
+)
+
+
+def _auto_sample_requirement(units: int) -> str:
+	n = int(units or 1)
+	if n < 1:
+		n = 1
+	word = "sample" if n == 1 else "samples"
+	return (
+		f"{n} complete functional product {word}, "
+		"including all necessary accessories, cables, and power supply components."
+	)
+
+
+def _is_auto_sample_requirement(text: str) -> bool:
+	return bool(_AUTO_SAMPLE_REQUIREMENT.match((text or "").strip()))
 
 
 def _line_total(row) -> float:

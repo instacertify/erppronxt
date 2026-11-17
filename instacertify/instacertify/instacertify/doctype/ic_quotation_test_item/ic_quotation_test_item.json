@@ -153,10 +153,11 @@
    "doctype": "DocField",
    "fieldname": "sample_requirement",
    "fieldtype": "Small Text",
-   "label": "Sample Required (print text)",
+   "label": "Sample Required",
    "read_only": 0,
-   "in_list_view": 0,
-   "description": "Shown under Samples Requirements on the Testing quote. Auto-fills from No. of Samples; edit freely on Template and Quotation."
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Prints under Samples Requirements. Edit this text. A change is kept on save."
   },
   {
    "doctype": "DocField",

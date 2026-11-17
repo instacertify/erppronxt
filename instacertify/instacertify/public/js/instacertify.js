@@ -1003,7 +1003,7 @@ instacertify.patch_list_view = function () {
 };
 
 /** Long quotation blocks that start folded. Click the heading to open; the choice is remembered. */
-instacertify.QUOTE_FOLDED_SECTIONS = ["ic_section_print_sections", "ic_section_policies", "ic_section_terms"];
+instacertify.QUOTE_FOLDED_SECTIONS = ["ic_section_policies", "ic_section_terms"];
 
 instacertify.fold_quotation_sections = function (frm) {
 	if (!frm || !frm.fields_dict) return;
@@ -3582,6 +3582,62 @@ instacertify.setup_quotation_template_filter = function (frm) {
 	});
 };
 
+instacertify.QUOTE_SHOW_COLORS = {
+	ic_show_about: ["#0073ea", "#ffffff"],
+	ic_show_applicable_standards: ["#00c875", "#ffffff"],
+	ic_show_process: ["#a25ddc", "#ffffff"],
+	ic_show_validity: ["#fdab3d", "#323338"],
+	ic_show_sample_required: ["#ff642e", "#ffffff"],
+	ic_show_documents_required: ["#579bfc", "#ffffff"],
+	ic_show_timelines: ["#037f4c", "#ffffff"],
+	ic_show_deliverables: ["#9cd326", "#323338"],
+	ic_show_commercials: ["#00c875", "#ffffff"],
+	ic_show_total: ["#2259a8", "#ffffff"],
+	ic_show_payment_terms: ["#ffcb00", "#323338"],
+	ic_show_banking: ["#66ccff", "#323338"],
+	ic_show_cancellation: ["#e2445c", "#ffffff"],
+	ic_show_force_majeure: ["#7f5347", "#ffffff"],
+	ic_show_confidentiality: ["#784bd1", "#ffffff"],
+	ic_show_terms: ["#323338", "#ffffff"],
+	ic_show_sample_handling: ["#ff158a", "#ffffff"],
+};
+
+instacertify.paint_quote_show_board = function (frm) {
+	const section = frm.fields_dict && frm.fields_dict.ic_section_print_sections;
+	if (!section || !section.wrapper) return;
+	section.wrapper.addClass("ic-monday-checks");
+	let board = section.wrapper.find(".ic-monday-board");
+	if (!board.length) {
+		board = $('<div class="ic-monday-board"></div>');
+		const body = section.wrapper.find(".section-body").first();
+		if (body.length) body.prepend(board);
+		else section.wrapper.append(board);
+	}
+	const html = (instacertify.QUOTE_PRINT_SECTION_FIELDS || [])
+		.map((fieldname) => {
+			const df = frm.fields_dict[fieldname] && frm.fields_dict[fieldname].df;
+			if (!df) return "";
+			const on = frm.doc[fieldname] == null || cint(frm.doc[fieldname]) === 1;
+			const tone = (instacertify.QUOTE_SHOW_COLORS || {})[fieldname] || ["#579bfc", "#ffffff"];
+			const label = String(df.label || fieldname).replace(/^Show\s+/i, "");
+			return `<button type="button" class="ic-monday-chip ${on ? "is-on" : "is-off"}" data-field="${fieldname}" style="--chip:${tone[0]};--ink:${tone[1]}">
+				<span class="ic-monday-dot"></span>
+				<span class="ic-monday-name">${frappe.utils.escape_html(label)}</span>
+				<span class="ic-monday-state">${on ? __("Show") : __("Hide")}</span>
+			</button>`;
+		})
+		.join("");
+	board.html(html);
+	board.find("button").on("click", function () {
+		const fieldname = this.getAttribute("data-field");
+		const on = frm.doc[fieldname] == null || cint(frm.doc[fieldname]) === 1;
+		Promise.resolve(frm.set_value(fieldname, on ? 0 : 1)).then(() => {
+			instacertify.apply_quotation_section_visibility(frm);
+			instacertify.paint_quote_show_board(frm);
+		});
+	});
+};
+
 instacertify.QUOTE_PRINT_SECTION_FIELDS = [
 	"ic_show_about",
 	"ic_show_applicable_standards",
@@ -3960,6 +4016,54 @@ instacertify.apply_quotation_section_visibility = function (frm) {
 			isOn("ic_show_terms") || isOn("ic_show_force_majeure")
 		);
 	}
+
+	// Testing quotes keep only the printable timeline in this section.
+	if (frm.doc.ic_quotation_type === "Testing") {
+		["ic_service_name", "ic_certification_type", "ic_applicable_standard", "ic_column_break_svc"].forEach(
+			(f) => hideField(f, false)
+		);
+		hideField("ic_section_service", isOn("ic_show_timelines") || isOn("ic_show_validity"));
+		instacertify.label_testing_timeline_section(frm);
+		if (frm.fields_dict.ic_estimated_timeline) {
+			frm.set_df_property("ic_estimated_timeline", "read_only", 0);
+			frm.set_df_property("ic_estimated_timeline", "label", __("Estimated Testing Timeline"));
+		}
+		const open =
+			"eval:in_list(['Consulting','Renewal','Service','Other','Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)";
+		["ic_section_about", "ic_section_docs_timeline", "ic_section_scope"].forEach((name) => {
+			if (frm.fields_dict[name]) frm.set_df_property(name, "depends_on", open);
+		});
+		["ic_about_service", "ic_standard_narrative", "ic_commercials_notes"].forEach((name) =>
+			hideField(name, false)
+		);
+		hideField("ic_section_about", isOn("ic_show_process"));
+		if (frm.fields_dict.ic_process_steps) {
+			frm.set_df_property("ic_process_steps", "read_only", 0);
+			frm.set_df_property("ic_section_about", "label", __("Process"));
+		}
+		hideField(
+			"ic_section_docs_timeline",
+			isOn("ic_show_validity") ||
+				isOn("ic_show_documents_required") ||
+				isOn("ic_show_sample_required") ||
+				isOn("ic_show_timelines")
+		);
+		[
+			["ic_validity_text", "ic_show_validity", __("Validity")],
+			["ic_documents_required", "ic_show_documents_required", __("Documents Required")],
+			["ic_sample_required", "ic_show_sample_required", __("Sample Required")],
+			["ic_timeline_details", "ic_show_timelines", __("Timeline text")],
+			["ic_deliverables", "ic_show_deliverables", __("Deliverables")],
+			["ic_scope_of_work", "ic_show_about", __("About / scope")],
+		].forEach(([name, flag, label]) => {
+			hideField(name, isOn(flag));
+			if (frm.fields_dict[name]) {
+				frm.set_df_property(name, "read_only", 0);
+				frm.set_df_property(name, "label", label);
+			}
+		});
+		hideField("ic_section_scope", isOn("ic_show_deliverables") || isOn("ic_show_about"));
+	}
 };
 
 instacertify.hide_sales_order_button = function (frm) {
@@ -4155,6 +4259,20 @@ instacertify.unlock_quotation_content_fields = function (frm) {
 	}
 };
 
+instacertify.label_testing_timeline_section = function (frm) {
+	const section = (frm.layout && frm.layout.sections || []).find(
+		(row) => row.df && row.df.fieldname === "ic_section_service"
+	);
+	if (!section) return;
+	section.df.label = __("Timeline");
+	if (section.set_label) section.set_label(__("Timeline"));
+	const columns = section.wrapper && section.wrapper.find(".form-column");
+	if (columns && columns.length > 1) {
+		columns.first().hide();
+		columns.last().css({ width: "100%", maxWidth: "100%" });
+	}
+};
+
 instacertify.toggle_quotation_sections = function (frm) {
 	const t = frm.doc.ic_quotation_type;
 	const consultingLike = ["Consulting", "Renewal", "Service", "Other", "Multiple Products / Multiple Services"];
@@ -4162,12 +4280,46 @@ instacertify.toggle_quotation_sections = function (frm) {
 	const isTesting = ["Testing", "Multiple Products / Multiple Services"].includes(t);
 	const showTestLines = isTesting || isConsulting;
 	const sectionOn = (f) => frm.doc[f] == null || cint(frm.doc[f]) === 1;
-	[
+	["ic_section_about", "ic_section_docs_timeline", "ic_section_scope"].forEach((f) =>
+		frm.toggle_display(f, isConsulting)
+	);
+	if (frm.fields_dict.ic_section_service) {
+		frm.set_df_property(
+			"ic_section_service",
+			"depends_on",
+			"eval:in_list(['Consulting','Renewal','Service','Other','Testing','Multiple Products / Multiple Services'], doc.ic_quotation_type)"
+		);
+	}
+	// Testing quotes print ic_estimated_timeline. That field lives in this section,
+	// which used to open only for consulting, so the timeline could not be edited.
+	const showTimeline = sectionOn("ic_show_timelines");
+	frm.toggle_display(
 		"ic_section_service",
-		"ic_section_about",
-		"ic_section_docs_timeline",
-		"ic_section_scope",
-	].forEach((f) => frm.toggle_display(f, isConsulting));
+		isConsulting || (isTesting && showTimeline)
+	);
+	["ic_service_name", "ic_certification_type", "ic_applicable_standard", "ic_column_break_svc"].forEach(
+		(f) => {
+			if (frm.fields_dict[f]) frm.toggle_display(f, isConsulting);
+		}
+	);
+	if (frm.fields_dict.ic_estimated_timeline) {
+		frm.set_df_property("ic_estimated_timeline", "read_only", 0);
+		frm.set_df_property(
+			"ic_estimated_timeline",
+			"label",
+			isTesting && !isConsulting
+				? __("Estimated Testing Timeline")
+				: __("Estimated Certification Timeline")
+		);
+		frm.set_df_property(
+			"ic_estimated_timeline",
+			"description",
+			isTesting
+				? __("This is the timeline printed on the testing quotation. Example: 5–7 working days")
+				: __("e.g. 4–6 weeks from document clearance")
+		);
+	}
+	if (isTesting && !isConsulting) instacertify.label_testing_timeline_section(frm);
 	// Testing narrative only for Testing; Test Lines (lab charges) for Testing + Consulting
 	frm.toggle_display("ic_section_testing", isTesting);
 	["ic_section_test_lines", "ic_test_items"].forEach((f) =>
@@ -4366,6 +4518,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 		}
 	});
 	instacertify.apply_quotation_section_visibility(frm);
+	instacertify.paint_quote_show_board(frm);
 	if (t === "Testing") {
 		frm.meta.default_print_format = "Instacertify Testing Quotation";
 	} else if (["Consulting", "Renewal", "Service", "Other"].includes(t)) {
@@ -4501,6 +4654,15 @@ instacertify.unlock_test_item_sample_fields = function (frm) {
 			);
 			grid.update_docfield_property("sample_requirement", "read_only", 0);
 			grid.update_docfield_property("sample_requirement", "hidden", 0);
+			grid.update_docfield_property("sample_requirement", "in_list_view", 1);
+			grid.update_docfield_property("sample_requirement", "label", __("Sample Required"));
+			grid.update_docfield_property(
+				"sample_requirement",
+				"description",
+				__(
+					"Prints under Samples Requirements. Change this text and it stays — it is not put back on save."
+				)
+			);
 		} catch (e) {
 			/* ignore */
 		}
@@ -4778,10 +4940,16 @@ instacertify.sync_quote_sample_requirement = function (cdt, cdn, force) {
 	}
 	const auto = instacertify.quote_sample_requirement_text(n);
 	const cur = (row.sample_requirement || "").trim();
-	// Fill when blank, or refresh when still the auto-generated pattern
-	if (force || !cur || /complete functional product sample/i.test(cur)) {
+	// Fill when blank, or refresh only while the text is still the untouched default.
+	if ((force || !cur || instacertify.is_auto_sample_requirement(cur)) && cur !== auto) {
 		frappe.model.set_value(cdt, cdn, "sample_requirement", auto);
 	}
+};
+
+instacertify.is_auto_sample_requirement = function (text) {
+	return /^\d+ complete functional product samples?, including all necessary accessories, cables, and power supply components\.$/i.test(
+		(text || "").trim()
+	);
 };
 
 instacertify.set_grid_autocomplete = function (frm, cdt, cdn, fieldname, values) {

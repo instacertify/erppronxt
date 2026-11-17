@@ -1114,8 +1114,27 @@ TESTING_QUOTATION_HTML = """
                   <div class="tq-note" style="margin-top:2px;">No. of Samples: <b>{{ _n }}</b></div>
                 </div>
               {% endfor %}
+              {% if doc.ic_sample_required %}
+                <div style="margin-bottom:8px;">{{ doc.ic_sample_required }}</div>
+              {% endif %}
               <div class="tq-note"><b>Note:</b> {{ (doc.ic_samples_note or 'Additional samples may be requested by the laboratory depending on the product configuration and applicable test requirements.')|replace('Note: ','') }}</div>
             </td>
+          </tr>
+    </table>
+    {% endif %}
+    {% if _sk == 'documents_required' and quote_section_on(doc, 'ic_show_documents_required') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_documents_required or 'Documents Required' }}</td>
+            <td class="tq-value">{{ doc.ic_documents_required or '' }}</td>
+          </tr>
+    </table>
+    {% endif %}
+    {% if _sk == 'process' and quote_section_on(doc, 'ic_show_process') %}
+    <table class="tq-grid" style="margin-top:-1px;">
+      <tr>
+            <td class="tq-label">{{ doc.ic_label_process or 'Process' }}</td>
+            <td class="tq-value">{{ doc.ic_process_steps or '' }}</td>
           </tr>
     </table>
     {% endif %}
@@ -1254,11 +1273,15 @@ TESTING_QUOTATION_HTML = """
       <tr>
             <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
             <td class="tq-value">
+              {% if doc.ic_timeline_details %}
+                {{ doc.ic_timeline_details }}
+              {% else %}
               <ul>
                 <li><b>Estimated Testing Timeline:</b> {{ doc.ic_estimated_timeline or '5–7 working days' }}.</li>
                 <li>The timeline shall commence upon receipt of the required sample and confirmation of payment.</li>
                 <li>The timeline may vary depending on laboratory scheduling, sample condition, test requirements, and any additional testing, if applicable.</li>
               </ul>
+              {% endif %}
             </td>
           </tr>
     </table>
