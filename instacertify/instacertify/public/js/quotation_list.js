@@ -6,6 +6,7 @@
 	settings.onload = function (listview) {
 		if (typeof prev === "function") prev(listview);
 		if (window.instacertify && instacertify.patch_list_view) instacertify.patch_list_view();
+		if (window.instacertify && instacertify.add_list_excel_button) instacertify.add_list_excel_button(listview);
 		// Company repeats on every row; it stays available under "More filters".
 		if (!listview._ic_quote_columns) {
 			listview._ic_quote_columns = 1;

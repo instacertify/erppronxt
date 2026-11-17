@@ -790,13 +790,47 @@ instacertify.sync_sidebar_icons = function () {
 
 /** Open the printed quote, or download its PDF. */
 instacertify.open_doc_preview = function (doctype, name) {
+	frappe.show_alert({ message: __("Opening the print view…"), indicator: "blue" });
 	const url = frappe.urllib.get_full_url(
 		`/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(name)}&trigger_print=0`
 	);
 	window.open(url, "_blank", "noopener");
 };
 
+instacertify.user_can_export = function () {
+	const roles = frappe.user_roles || [];
+	return ["Administrator", "System Manager", "IC Admin"].some((role) => roles.includes(role));
+};
+
+/** Admin download of the open list. Quotations include every print section. */
+instacertify.download_list_excel = function (doctype) {
+	if (!instacertify.user_can_export()) {
+		frappe.msgprint(__("Excel download is limited to Admin."));
+		return;
+	}
+	frappe.show_alert({ message: __("Preparing the Excel sheet…"), indicator: "blue" });
+	window.open(
+		frappe.urllib.get_full_url(
+			"/api/method/instacertify.quotation.excel_export.download_list_excel?" +
+				$.param({ doctype: doctype })
+		),
+		"_blank",
+		"noopener"
+	);
+};
+
+instacertify.add_list_excel_button = function (listview) {
+	if (!listview || !listview.page || listview._ic_excel) return;
+	const allowed = ["Quotation", "Lead", "Customer", "Sales Invoice", "IC Quotation Template"];
+	if (!allowed.includes(listview.doctype) || !instacertify.user_can_export()) return;
+	listview._ic_excel = 1;
+	listview.page.add_button(__("Download Excel"), () => {
+		instacertify.download_list_excel(listview.doctype);
+	});
+};
+
 instacertify.download_doc_pdf = function (doctype, name) {
+	frappe.show_alert({ message: __("Preparing the PDF…"), indicator: "blue" });
 	const method =
 		doctype === "Quotation"
 			? "instacertify.utils.pdf.download_quotation_pdf"
@@ -994,6 +1028,7 @@ instacertify.patch_list_view = function () {
 			const result = render_list.apply(this, arguments);
 			try {
 				instacertify.decorate_doc_list(this);
+				instacertify.add_list_excel_button(this);
 			} catch (e) {
 				/* never block a list from drawing */
 			}
@@ -2877,7 +2912,7 @@ frappe.ui.form.on("Quotation", {
 			}, __("Actions"));
 
 			frm.add_custom_button(__("Print / PDF Options"), () => {
-				// Opens Frappe print view: format picker, letter head, page options, PDF
+				frappe.show_alert({ message: __("Opening the print view…"), indicator: "blue" });
 				frm.print_doc();
 			}, __("Actions"));
 
@@ -2893,6 +2928,7 @@ frappe.ui.form.on("Quotation", {
 					frappe.msgprint(__("Save the quotation before downloading the PDF."));
 					return;
 				}
+				frappe.show_alert({ message: __("Preparing the PDF…"), indicator: "blue" });
 				const url = frappe.urllib.get_full_url(
 					"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
 						$.param({ name: frm.doc.name, print_format: fmt })
@@ -6058,6 +6094,16 @@ frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] ||
 		listview.page.add_inner_button(__("New (type & format)"), () => {
 			instacertify.start_new_quotation();
 		});
+		instacertify.add_list_excel_button(listview);
+	};
+})();
+
+frappe.listview_settings["Customer"] = frappe.listview_settings["Customer"] || {};
+(function () {
+	const prev_customer_onload = frappe.listview_settings["Customer"].onload;
+	frappe.listview_settings["Customer"].onload = function (listview) {
+		if (typeof prev_customer_onload === "function") prev_customer_onload(listview);
+		instacertify.add_list_excel_button(listview);
 	};
 })();
 
@@ -10196,6 +10242,7 @@ frappe.listview_settings["IC Quotation Template"] = {
 	},
 	onload(listview) {
 		listview.page.set_title(__("Quotation Templates — Edit formats & pricing"));
+		instacertify.add_list_excel_button(listview);
 		listview.page.add_inner_button(__("Category Catalog"), () => {
 			frappe.set_route("quote-format-library");
 		});
