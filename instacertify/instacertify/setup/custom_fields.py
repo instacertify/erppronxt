@@ -678,10 +678,17 @@ QUOTATION_FIELDS = [
 		"placeholder": "CONFIDENTIALITY & DATA PROTECTION",
 	},
 	{
+		"fieldname": "ic_label_terms",
+		"fieldtype": "Data",
+		"label": "Heading: Terms and Conditions",
+		"insert_after": "ic_label_confidentiality",
+		"placeholder": "Terms and Conditions",
+	},
+	{
 		"fieldname": "ic_label_subject",
 		"fieldtype": "Data",
 		"label": "Heading: Subject (Testing)",
-		"insert_after": "ic_label_confidentiality",
+		"insert_after": "ic_label_terms",
 		"placeholder": "Subject",
 		"depends_on": "eval:doc.ic_quotation_type=='Testing'",
 	},

@@ -683,7 +683,7 @@ QUOTATION_HTML = """
 
   {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
   <div class="ic-box ic-terms">
-    <h3>Terms and Conditions</h3>
+    <h3>{{ doc.ic_label_terms or 'Terms and Conditions' }}</h3>
     {{ doc.ic_terms_and_conditions or doc.terms or '' }}
   </div>
   {% endif %}
@@ -1406,7 +1406,7 @@ TESTING_QUOTATION_HTML = """
     {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
     <table class="tq-grid" style="margin-top:-1px;">
       <tr>
-            <td class="tq-label">Terms and Conditions</td>
+            <td class="tq-label">{{ doc.ic_label_terms or 'Terms and Conditions' }}</td>
             <td class="tq-value">
               {% if doc.ic_terms_and_conditions %}
                 {{ doc.ic_terms_and_conditions | replace('\t', ' ') }}
@@ -1754,7 +1754,7 @@ CONSULTING_QUOTATION_HTML = """
     {% endif %}
     {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
     <div class="cq-sec">
-      <div class="cq-bar">Terms and Conditions</div>
+      <div class="cq-bar">{{ doc.ic_label_terms or 'Terms and Conditions' }}</div>
       <div class="cq-body">
         {% if doc.ic_terms_and_conditions %}{{ doc.ic_terms_and_conditions | replace('	', ' ') }}
         {% elif doc.terms %}{{ doc.terms | replace('	', ' ') }}
