@@ -4562,6 +4562,15 @@ instacertify.unlock_test_item_sample_fields = function (frm) {
 			);
 			grid.update_docfield_property("sample_requirement", "read_only", 0);
 			grid.update_docfield_property("sample_requirement", "hidden", 0);
+			grid.update_docfield_property("sample_requirement", "in_list_view", 1);
+			grid.update_docfield_property("sample_requirement", "label", __("Sample Required"));
+			grid.update_docfield_property(
+				"sample_requirement",
+				"description",
+				__(
+					"Prints under Samples Requirements. Change this text and it stays — it is not put back on save."
+				)
+			);
 		} catch (e) {
 			/* ignore */
 		}
@@ -4839,10 +4848,16 @@ instacertify.sync_quote_sample_requirement = function (cdt, cdn, force) {
 	}
 	const auto = instacertify.quote_sample_requirement_text(n);
 	const cur = (row.sample_requirement || "").trim();
-	// Fill when blank, or refresh when still the auto-generated pattern
-	if (force || !cur || /complete functional product sample/i.test(cur)) {
+	// Fill when blank, or refresh only while the text is still the untouched default.
+	if ((force || !cur || instacertify.is_auto_sample_requirement(cur)) && cur !== auto) {
 		frappe.model.set_value(cdt, cdn, "sample_requirement", auto);
 	}
+};
+
+instacertify.is_auto_sample_requirement = function (text) {
+	return /^\d+ complete functional product samples?, including all necessary accessories, cables, and power supply components\.$/i.test(
+		(text || "").trim()
+	);
 };
 
 instacertify.set_grid_autocomplete = function (frm, cdt, cdn, fieldname, values) {
