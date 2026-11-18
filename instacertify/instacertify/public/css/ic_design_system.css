@@ -1385,6 +1385,12 @@ textarea[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !
   border-left: 4px solid #00c875 !important;
   background: #e6f9ef !important;
 }
+.ic-lead-team-row [data-fieldname="ic_assigned_salesperson"] .form-control {
+  border-left: 4px solid #0073ea !important;
+}
+.ic-lead-team-row [data-fieldname="ic_assigned_operations_manager"] .form-control {
+  border-left: 4px solid #fdab3d !important;
+}
 body[data-route="List/Lead/List"] .list-row-col .ellipsis,
 body[data-route="List/Quotation/List"] .list-row-col .ellipsis,
 body[data-route="List/Lead"] .list-row-col .ellipsis,

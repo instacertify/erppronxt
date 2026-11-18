@@ -2782,6 +2782,11 @@ frappe.ui.form.on("Quotation", {
 		instacertify.apply_service_quote_mandatory(frm);
 		instacertify.apply_quotation_naming_series(frm);
 		instacertify.add_change_currency_button(frm, { fieldname: "currency" });
+		if (frm.fields_dict.ic_section_assignees) {
+			frm.set_df_property("ic_section_assignees", "label", __("Team"));
+			const team = frm.get_field("ic_section_assignees");
+			if (team && team.collapse) team.collapse(false);
+		}
 		if (frm.fields_dict.ic_assignees) {
 			frm.add_custom_button(__("Assign Me"), () => {
 				instacertify.add_me_as_assignee(frm, "ic_assignees");
@@ -10008,6 +10013,17 @@ instacertify.align_lead_name_fields = function (frm) {
 		else $(sectionWrap).prepend(row);
 	}
 	row.append(person.$wrapper, company.$wrapper);
+	const sales = frm.fields_dict.ic_assigned_salesperson;
+	const ops = frm.fields_dict.ic_assigned_operations_manager;
+	if (!sales || !ops) return;
+	frm.set_df_property("ic_assigned_salesperson", "label", __("Salesperson"));
+	frm.set_df_property("ic_assigned_operations_manager", "label", __("Operations"));
+	let team = $(sectionWrap).find(".ic-lead-team-row");
+	if (!team.length) {
+		team = $('<div class="ic-lead-name-row ic-lead-team-row"></div>');
+		row.after(team);
+	}
+	team.append(sales.$wrapper, ops.$wrapper);
 };
 
 instacertify.render_lead_source_inquiry_boxes = function (frm) {

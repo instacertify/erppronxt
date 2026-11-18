@@ -1843,16 +1843,17 @@ def _ensure_crm_lead_tracker_block():
 	name = "CRM Lead Tracker"
 	html = """
 <div id="ic-crm-tracker" class="ic-crm-tracker">
-  <div class="ic-crm-tracker-title">CRM Lead Tracker</div>
+  <div class="ic-crm-tracker-head">
+    <div class="ic-crm-tracker-title">Where leads come from</div>
+    <button type="button" id="ic-crm-excel" class="btn btn-sm btn-default">Download Excel</button>
+  </div>
   <div class="ic-summary-grid" id="ic-crm-kpi"></div>
   <div class="ic-crm-charts">
-    <div class="ic-crm-chart-card" id="ic-crm-source-7-card"><div class="ic-crm-chart-label">Last 7 days by source</div><div id="ic-crm-source-7"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by source</div><div id="ic-crm-source-30"></div></div>
-    <div class="ic-crm-chart-card" id="ic-crm-ptype-7-card"><div class="ic-crm-chart-label">Last 7 days by inquiry</div><div id="ic-crm-ptype-7"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by inquiry</div><div id="ic-crm-ptype-30"></div></div>
-    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Last 30 days by status</div><div id="ic-crm-status-30"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Lead source · last 30 days</div><div id="ic-crm-source-30"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Product or service · last 30 days</div><div id="ic-crm-ptype-30"></div></div>
+    <div class="ic-crm-chart-card"><div class="ic-crm-chart-label">Status · last 30 days</div><div id="ic-crm-status-30"></div></div>
   </div>
-  <div class="ic-crm-chart-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC renewals due (31 days)</div><div id="ic-crm-amc-due"></div></div>
+  <div class="ic-crm-chart-card" id="ic-crm-amc-card" style="margin-top:12px"><div class="ic-crm-chart-label">AMC renewals due (31 days)</div><div id="ic-crm-amc-due"></div></div>
 </div>
 """
 	script = """
@@ -1922,21 +1923,45 @@ def _ensure_crm_lead_tracker_block():
       }
       const ranges = d.ranges || {};
       const since = (label) => (ranges[label] ? [["Lead", "creation", ">=", ranges[label][0]]] : []);
-      const s7 = d.by_source_7d || [];
       const s30 = d.by_source_30d || [];
-      const p7 = d.by_project_type_7d || [];
       const p30 = d.by_project_type_30d || [];
-      const sameSeries = (a, b) => a.length === b.length && a.every((row, i) => row.label === b[i].label && Number(row.count) === Number(b[i].count));
-      const source7 = root_element.getElementById("ic-crm-source-7-card");
-      if (source7 && (!s7.length || sameSeries(s7, s30))) source7.style.display = "none";
-      else makeChart(root_element.getElementById("ic-crm-source-7"), "pie", s7.map(x=>x.label), s7.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 7 Days")});
-      const inquiry7 = root_element.getElementById("ic-crm-ptype-7-card");
-      if (inquiry7 && (!p7.length || sameSeries(p7, p30))) inquiry7.style.display = "none";
-      else makeChart(root_element.getElementById("ic-crm-ptype-7"), "pie", p7.map(x=>x.label), p7.map(x=>x.count), null, {doctype: "Lead", field: "ic_project_type", base: since("Last 7 Days")});
-      makeChart(root_element.getElementById("ic-crm-ptype-30"), "pie", p30.map(x=>x.label), p30.map(x=>x.count), null, {doctype: "Lead", field: "ic_project_type", base: since("Last 30 Days")});
-      makeChart(root_element.getElementById("ic-crm-source-30"), "donut", s30.map(x=>x.label), s30.map(x=>x.count), null, {doctype: "Lead", field: "ic_lead_source_detail", base: since("Last 30 Days")});
+      function rankList(el, rows, color, opens) {
+        if (!el) return;
+        const clean = (rows || []).filter((row) => row && row.label && row.label !== "Not Set" && Number(row.count));
+        if (!clean.length) {
+          el.innerHTML = "<div class='text-muted'>No leads in the last 30 days</div>";
+          return;
+        }
+        const max = Math.max.apply(null, clean.map((row) => Number(row.count) || 0));
+        el.innerHTML = clean.map((row) => {
+          const width = Math.max(8, Math.round(((Number(row.count) || 0) / max) * 100));
+          return `<button type="button" class="ic-rank-row" data-label="${frappe.utils.escape_html(row.label)}"><span class="ic-rank-name">${frappe.utils.escape_html(row.label)}</span><span class="ic-rank-track"><span class="ic-rank-fill" style="width:${width}%;background:${color}"></span></span><b>${row.count}</b></button>`;
+        }).join("");
+        if (opens) {
+          el.querySelectorAll(".ic-rank-row").forEach((btn) => {
+            btn.onclick = () => {
+              const opts = {};
+              opts[opens.field] = btn.getAttribute("data-label");
+              frappe.route_options = opts;
+              frappe.set_route("List", "Lead");
+            };
+          });
+        }
+      }
+      rankList(root_element.getElementById("ic-crm-source-30"), s30, "#0073ea", {field: "ic_lead_source_detail", base: since("Last 30 Days")});
+      rankList(root_element.getElementById("ic-crm-ptype-30"), p30, "#00c875", {field: "ic_project_type", base: since("Last 30 Days")});
       const st30 = d.by_status_30d || [];
-      makeChart(root_element.getElementById("ic-crm-status-30"), "bar", st30.map(x=>x.label), st30.map(x=>x.count), ["#0073ea"], {doctype: "Lead", field: "status", base: since("Last 30 Days")});
+      rankList(root_element.getElementById("ic-crm-status-30"), st30, "#fdab3d", {field: "status", base: since("Last 30 Days")});
+      const excel = root_element.getElementById("ic-crm-excel");
+      if (excel) {
+        const roles = frappe.user_roles || [];
+        const can = ["Administrator", "System Manager", "IC Admin"].some((role) => roles.includes(role));
+        if (!can) excel.style.display = "none";
+        excel.onclick = () => {
+          frappe.show_alert({message: __("Preparing the Excel sheet…"), indicator: "blue"});
+          window.open("/api/method/instacertify.quotation.excel_export.download_lead_source_excel", "_blank", "noopener");
+        };
+      }
       (function renderFollowups(){
         const el = root_element.getElementById("ic-crm-leads-contact");
         const rows = d.leads_to_contact || [];
@@ -1960,9 +1985,13 @@ def _ensure_crm_lead_tracker_block():
         const amc = root_element.getElementById("ic-crm-amc-due");
         const arows = d.amc_due || [];
         if (amc) {
-          if (!arows.length) amc.innerHTML = "<div class='text-muted'>No AMC renewals due</div>";
-          else amc.innerHTML = "<table class='ic-related-table'><thead><tr><th>Project</th><th>Customer</th><th>Contact Date</th><th>Status</th></tr></thead><tbody>" +
-            arows.map(a => "<tr><td><a href='/app/project/"+encodeURIComponent(a.name)+"'>"+frappe.utils.escape_html(a.project_name||a.name)+"</a></td><td>"+frappe.utils.escape_html(a.customer||"—")+"</td><td>"+frappe.utils.escape_html(a.ic_amc_contact_date||"—")+"</td><td>"+frappe.utils.escape_html(a.ic_amc_status||"—")+"</td></tr>").join("") + "</tbody></table>";
+          if (!arows.length) {
+            const card = root_element.getElementById("ic-crm-amc-card");
+            if (card) card.style.display = "none";
+          } else {
+            amc.innerHTML = "<table class='ic-related-table'><thead><tr><th>Project</th><th>Customer</th><th>Contact Date</th><th>Status</th></tr></thead><tbody>" +
+              arows.map(a => "<tr><td><a href='/app/project/"+encodeURIComponent(a.name)+"'>"+frappe.utils.escape_html(a.project_name||a.name)+"</a></td><td>"+frappe.utils.escape_html(a.customer||"—")+"</td><td>"+frappe.utils.escape_html(a.ic_amc_contact_date||"—")+"</td><td>"+frappe.utils.escape_html(a.ic_amc_status||"—")+"</td></tr>").join("") + "</tbody></table>";
+          }
         }
       })();
     }
