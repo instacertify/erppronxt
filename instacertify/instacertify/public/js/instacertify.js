@@ -9986,6 +9986,30 @@ instacertify.render_lead_choice_add_box = function (frm, opts) {
 	});
 };
 
+/** Person and company sit side by side at the top of Lead Capture. */
+instacertify.align_lead_name_fields = function (frm) {
+	const person = frm.fields_dict && frm.fields_dict.ic_party_name;
+	const company = frm.fields_dict && frm.fields_dict.company_name;
+	const section = frm.fields_dict && frm.fields_dict.ic_section_capture;
+	const sectionWrap = section && (section.$wrapper || section.wrapper);
+	if (!person || !company || !sectionWrap) return;
+	frm.set_df_property("company_name", "label", __("Name of Company"));
+	frm.set_df_property("company_name", "reqd", 0);
+	frm.set_df_property(
+		"company_name",
+		"description",
+		__("Second field. Fill this when you know the company. Leave it blank for a person-only enquiry.")
+	);
+	let row = $(sectionWrap).find(".ic-lead-name-row");
+	if (!row.length) {
+		row = $('<div class="ic-lead-name-row"></div>');
+		const body = $(sectionWrap).find(".section-body").first();
+		if (body.length) body.prepend(row);
+		else $(sectionWrap).prepend(row);
+	}
+	row.append(person.$wrapper, company.$wrapper);
+};
+
 instacertify.render_lead_source_inquiry_boxes = function (frm) {
 	[
 		"ic_section_source",
@@ -10048,16 +10072,7 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
 		frm.set_df_property("ic_party_name", "label", __("Name of the person"));
-		if (frm.fields_dict.company_name && frm.fields_dict.ic_party_name) {
-			frm.set_df_property("company_name", "label", __("Name of Company"));
-			frm.set_df_property("company_name", "reqd", 0);
-			frm.set_df_property(
-				"company_name",
-				"description",
-				__("Second field. Fill this when you know the company. Leave it blank for a person-only enquiry.")
-			);
-			frm.fields_dict.company_name.$wrapper.insertAfter(frm.fields_dict.ic_party_name.$wrapper);
-		}
+		instacertify.align_lead_name_fields(frm);
 		frm.set_df_property("ic_call_remarks", "label", __("Description"));
 		instacertify.paint_saved_remark(frm);
 		instacertify.render_lead_source_inquiry_boxes(frm);
