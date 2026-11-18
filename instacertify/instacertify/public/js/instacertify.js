@@ -790,13 +790,47 @@ instacertify.sync_sidebar_icons = function () {
 
 /** Open the printed quote, or download its PDF. */
 instacertify.open_doc_preview = function (doctype, name) {
+	frappe.show_alert({ message: __("Opening the print view…"), indicator: "blue" });
 	const url = frappe.urllib.get_full_url(
 		`/printview?doctype=${encodeURIComponent(doctype)}&name=${encodeURIComponent(name)}&trigger_print=0`
 	);
 	window.open(url, "_blank", "noopener");
 };
 
+instacertify.user_can_export = function () {
+	const roles = frappe.user_roles || [];
+	return ["Administrator", "System Manager", "IC Admin"].some((role) => roles.includes(role));
+};
+
+/** Admin download of the open list. Quotations include every print section. */
+instacertify.download_list_excel = function (doctype) {
+	if (!instacertify.user_can_export()) {
+		frappe.msgprint(__("Excel download is limited to Admin."));
+		return;
+	}
+	frappe.show_alert({ message: __("Preparing the Excel sheet…"), indicator: "blue" });
+	window.open(
+		frappe.urllib.get_full_url(
+			"/api/method/instacertify.quotation.excel_export.download_list_excel?" +
+				$.param({ doctype: doctype })
+		),
+		"_blank",
+		"noopener"
+	);
+};
+
+instacertify.add_list_excel_button = function (listview) {
+	if (!listview || !listview.page || listview._ic_excel) return;
+	const allowed = ["Quotation", "Lead", "Customer", "Sales Invoice", "IC Quotation Template"];
+	if (!allowed.includes(listview.doctype) || !instacertify.user_can_export()) return;
+	listview._ic_excel = 1;
+	listview.page.add_button(__("Download Excel"), () => {
+		instacertify.download_list_excel(listview.doctype);
+	});
+};
+
 instacertify.download_doc_pdf = function (doctype, name) {
+	frappe.show_alert({ message: __("Preparing the PDF…"), indicator: "blue" });
 	const method =
 		doctype === "Quotation"
 			? "instacertify.utils.pdf.download_quotation_pdf"
@@ -994,6 +1028,7 @@ instacertify.patch_list_view = function () {
 			const result = render_list.apply(this, arguments);
 			try {
 				instacertify.decorate_doc_list(this);
+				instacertify.add_list_excel_button(this);
 			} catch (e) {
 				/* never block a list from drawing */
 			}
@@ -1042,7 +1077,8 @@ instacertify.fold_quotation_sections = function (frm) {
 		} catch (e) {
 			saved = "";
 		}
-		section.collapse(saved !== "open");
+		// Start open. A section stays open unless this browser has closed it.
+		section.collapse(saved === "closed");
 	});
 	frm.__ic_fold_doc = frm.doc.name;
 };
@@ -2876,7 +2912,7 @@ frappe.ui.form.on("Quotation", {
 			}, __("Actions"));
 
 			frm.add_custom_button(__("Print / PDF Options"), () => {
-				// Opens Frappe print view: format picker, letter head, page options, PDF
+				frappe.show_alert({ message: __("Opening the print view…"), indicator: "blue" });
 				frm.print_doc();
 			}, __("Actions"));
 
@@ -2892,6 +2928,7 @@ frappe.ui.form.on("Quotation", {
 					frappe.msgprint(__("Save the quotation before downloading the PDF."));
 					return;
 				}
+				frappe.show_alert({ message: __("Preparing the PDF…"), indicator: "blue" });
 				const url = frappe.urllib.get_full_url(
 					"/api/method/instacertify.utils.pdf.download_quotation_pdf?" +
 						$.param({ name: frm.doc.name, print_format: fmt })
@@ -3602,40 +3639,279 @@ instacertify.QUOTE_SHOW_COLORS = {
 	ic_show_sample_handling: ["#ff158a", "#ffffff"],
 };
 
-instacertify.paint_quote_show_board = function (frm) {
-	const section = frm.fields_dict && frm.fields_dict.ic_section_print_sections;
+instacertify.quote_section_rows = function (testing) {
+	return [
+		{ key: "about", show: "show_about", label: "label_about", labelTesting: "label_about_testing", placeholder: "ABOUT", name: __("About") },
+		{ key: "applicable_standards", show: "show_applicable_standards", label: "label_standard", labelTesting: "label_applicable_standards", placeholder: "Applicable Standards", name: __("Applicable Standards") },
+		{ key: "process", show: "show_process", label: "label_process", placeholder: "Process", name: __("Process") },
+		{ key: "validity", show: "show_validity", label: "label_validity", placeholder: "Validity", name: __("Validity") },
+		{ key: "sample_required", show: "show_sample_required", label: "label_sample_required", labelTesting: "label_samples_requirements", placeholder: "Sample Required", name: __("Sample Required") },
+		{ key: "documents_required", show: "show_documents_required", label: "label_documents_required", placeholder: "Documents Required", name: __("Documents Required") },
+		{ key: "timelines", show: "show_timelines", label: "label_timelines", labelTesting: "label_timeline", placeholder: "Timeline", name: __("Timeline") },
+		{ key: "deliverables", show: "show_deliverables", label: "label_deliverable", placeholder: "Deliverables", name: __("Deliverables") },
+		{
+			key: "commercials",
+			show: "show_commercials",
+			label: "label_commercials",
+			placeholder: "Commercials",
+			name: __("Commercials"),
+			columns: [
+				{ field: "label_particulars_col", placeholder: "Particulars" },
+				{ field: "label_charges_col", placeholder: "Charges" },
+			],
+		},
+		{ key: "payment_terms", show: "show_payment_terms", label: "label_payment_terms", labelTesting: "label_payment_term", placeholder: "Payment Terms", name: __("Payment Terms") },
+		{ key: "banking", show: "show_banking", label: "label_banking", placeholder: "Our Banking Details", name: __("Banking Details") },
+		{ key: "cancellation", show: "show_cancellation", label: "label_cancellation", placeholder: "Cancellation & Refund Policy", name: __("Cancellation & Refund") },
+		{ key: "force_majeure", show: "show_force_majeure", label: "label_force_majeure", placeholder: "Force Majeure", name: __("Force Majeure") },
+		{ key: "confidentiality", show: "show_confidentiality", label: "label_confidentiality", placeholder: "Confidentiality & Data Protection", name: __("Confidentiality") },
+		{ key: "terms", show: "show_terms", label: "label_terms", placeholder: "Terms and Conditions", name: __("Terms and Conditions") },
+		{ key: "sample_handling", show: "show_sample_handling", label: "label_sample_handling", placeholder: "Sample handling & disposal policy", name: __("Sample Handling") },
+	].map((row) => {
+		const label = testing && row.labelTesting ? row.labelTesting : row.label;
+		return Object.assign({}, row, { labelField: label });
+	});
+};
+
+instacertify.quote_default_section_keys = function (quotationType) {
+	const testing = ["Testing", "Multiple Products / Multiple Services"].includes(quotationType);
+	if (testing) {
+		return [
+			"about",
+			"applicable_standards",
+			"sample_required",
+			"commercials",
+			"deliverables",
+			"timelines",
+			"payment_terms",
+			"sample_handling",
+			"banking",
+			"cancellation",
+			"force_majeure",
+			"confidentiality",
+			"terms",
+			"process",
+			"validity",
+			"documents_required",
+		];
+	}
+	return [
+		"about",
+		"applicable_standards",
+		"process",
+		"validity",
+		"commercials",
+		"payment_terms",
+		"timelines",
+		"sample_required",
+		"documents_required",
+		"banking",
+		"cancellation",
+		"force_majeure",
+		"confidentiality",
+		"terms",
+		"sample_handling",
+		"deliverables",
+	];
+};
+
+instacertify.ordered_quote_sections = function (frm, rows, orderField, quotationType) {
+	const known = {};
+	rows.forEach((row) => {
+		known[row.key] = row;
+	});
+	let order = String((frm.doc && frm.doc[orderField]) || "")
+		.split(",")
+		.map((part) => part.trim())
+		.filter((key) => known[key]);
+	if (!order.length) order = instacertify.quote_default_section_keys(quotationType);
+	instacertify.quote_default_section_keys(quotationType).forEach((key) => {
+		if (!order.includes(key)) order.push(key);
+	});
+	return order.map((key) => known[key]).filter(Boolean);
+};
+
+instacertify.write_quote_text_field = function (frm, fieldname, value, commit) {
+	if (!frm || !fieldname) return;
+	frm.doc[fieldname] = value;
+	const ctrl = frm.fields_dict && frm.fields_dict[fieldname];
+	if (ctrl && ctrl.$input && ctrl.$input.get(0) !== document.activeElement) {
+		ctrl.$input.val(value);
+	}
+	frm.dirty();
+	if (!commit || !ctrl) return;
+	Promise.resolve(frappe.model.set_value(frm.doctype, frm.docname, fieldname, value)).catch(() => {
+		frm.doc[fieldname] = value;
+	});
+};
+
+/**
+ * Print Sections list: drag to set PDF order, type each printed heading, Show or Hide.
+ * Used on Quotation (ic_ fields) and on the Quote Format Library template.
+ */
+instacertify.paint_print_section_board = function (frm, opts) {
+	opts = opts || {};
+	if (!frm || !frm.fields_dict) return;
+	const prefix = opts.prefix == null ? "ic_" : opts.prefix;
+	const sectionName = opts.section || prefix + "section_print_sections";
+	const orderField = opts.orderField || prefix + "section_order";
+	const typeField = opts.typeField || prefix + "quotation_type";
+	const section = frm.fields_dict[sectionName];
 	if (!section || !section.wrapper) return;
 	section.wrapper.addClass("ic-monday-checks");
-	let board = section.wrapper.find(".ic-monday-board");
+	const testing = ["Testing", "Multiple Products / Multiple Services"].includes(frm.doc[typeField]);
+	const rows = instacertify.quote_section_rows(testing);
+	const ordered = instacertify.ordered_quote_sections(frm, rows, orderField, frm.doc[typeField]);
+	let board = section.wrapper.find(".ic-section-board");
 	if (!board.length) {
-		board = $('<div class="ic-monday-board"></div>');
+		board = $('<div class="ic-section-board"></div>');
 		const body = section.wrapper.find(".section-body").first();
 		if (body.length) body.prepend(board);
 		else section.wrapper.append(board);
 	}
-	const html = (instacertify.QUOTE_PRINT_SECTION_FIELDS || [])
-		.map((fieldname) => {
-			const df = frm.fields_dict[fieldname] && frm.fields_dict[fieldname].df;
-			if (!df) return "";
-			const on = frm.doc[fieldname] == null || cint(frm.doc[fieldname]) === 1;
-			const tone = (instacertify.QUOTE_SHOW_COLORS || {})[fieldname] || ["#579bfc", "#ffffff"];
-			const label = String(df.label || fieldname).replace(/^Show\s+/i, "");
-			return `<button type="button" class="ic-monday-chip ${on ? "is-on" : "is-off"}" data-field="${fieldname}" style="--chip:${tone[0]};--ink:${tone[1]}">
-				<span class="ic-monday-dot"></span>
-				<span class="ic-monday-name">${frappe.utils.escape_html(label)}</span>
+	const active = document.activeElement;
+	if (active && board.get(0).contains(active) && active.tagName === "INPUT" && !opts.force) return;
+
+	const field = (name) => prefix + name;
+	const esc = (value) => frappe.utils.escape_html(value || "");
+	const shown = (name) => {
+		const key = field(name);
+		return frm.doc[key] == null || cint(frm.doc[key]) === 1;
+	};
+	const headingValue = (labelName) => {
+		const key = field(labelName);
+		return frm.doc[key] || "";
+	};
+
+	const rowHtml = (row, idx) => {
+		const on = shown(row.show);
+		const colors = instacertify.QUOTE_SHOW_COLORS || {};
+		const tone = colors[field(row.show)] || colors["ic_" + row.show] || ["#579bfc", "#ffffff"];
+		const columns = (row.columns || [])
+			.map(
+				(col) => `<label class="ic-sec-col">
+					<span>${esc(col.placeholder)}</span>
+					<input type="text" data-label="${esc(field(col.field))}" value="${esc(headingValue(col.field))}" placeholder="${esc(__(col.placeholder))}" autocomplete="off" />
+				</label>`
+			)
+			.join("");
+		return `<div class="ic-sec-row ${on ? "is-on" : "is-off"}" draggable="false" data-key="${esc(row.key)}" style="--chip:${tone[0]};--ink:${tone[1]}">
+			<button type="button" class="ic-sec-handle" draggable="true" title="${__("Drag to change the PDF order")}">⋮⋮</button>
+			<span class="ic-sec-num">${idx + 1}</span>
+			<label class="ic-sec-heading">
+				<span>${esc(row.name)}</span>
+				<input type="text" data-label="${esc(field(row.labelField))}" value="${esc(headingValue(row.labelField))}" placeholder="${esc(__(row.placeholder))}" autocomplete="off" />
+			</label>
+			${columns}
+			<button type="button" class="ic-monday-chip ic-sec-toggle ${on ? "is-on" : "is-off"}" data-field="${esc(field(row.show))}">
 				<span class="ic-monday-state">${on ? __("Show") : __("Hide")}</span>
-			</button>`;
-		})
-		.join("");
+			</button>
+		</div>`;
+	};
+
+	let html = `<p class="ic-sec-help">${__(
+		"Drag a row to set the order on the PDF. Type the heading that prints. Show keeps the section on the quote; Hide takes it off."
+	)}</p>`;
+	if (testing) {
+		html += `<div class="ic-sec-row is-fixed">
+			<span class="ic-sec-handle ic-sec-handle-fixed" title="${__("Subject stays at the top of a testing quote")}">•</span>
+			<span class="ic-sec-num"> </span>
+			<label class="ic-sec-heading">
+				<span>${__("Subject")}</span>
+				<input type="text" data-label="${esc(field("label_subject"))}" value="${esc(headingValue("label_subject"))}" placeholder="${esc(__("Subject"))}" autocomplete="off" />
+			</label>
+		</div>`;
+	}
+	html += ordered.map(rowHtml).join("");
+	const totalOn = frm.doc[field("show_total")] == null || cint(frm.doc[field("show_total")]) === 1;
+	html += `<div class="ic-sec-row is-fixed ${totalOn ? "is-on" : "is-off"}">
+		<span class="ic-sec-handle ic-sec-handle-fixed">•</span>
+		<span class="ic-sec-num"> </span>
+		<div class="ic-sec-heading"><span>${__("Total / Final Costing")}</span><div class="ic-sec-note">${__(
+			"Stays with Commercials. Hide this when a line is optional and the quote should not show a grand total."
+		)}</div></div>
+		<button type="button" class="ic-monday-chip ic-sec-toggle ${totalOn ? "is-on" : "is-off"}" data-field="${esc(field("show_total"))}">
+			<span class="ic-monday-state">${totalOn ? __("Show") : __("Hide")}</span>
+		</button>
+	</div>`;
 	board.html(html);
-	board.find("button").on("click", function () {
-		const fieldname = this.getAttribute("data-field");
-		const on = frm.doc[fieldname] == null || cint(frm.doc[fieldname]) === 1;
-		Promise.resolve(frm.set_value(fieldname, on ? 0 : 1)).then(() => {
-			instacertify.apply_quotation_section_visibility(frm);
-			instacertify.paint_quote_show_board(frm);
-		});
+
+	const writeInput = (input, commit) => {
+		const key = input.getAttribute("data-label");
+		if (!key) return;
+		instacertify.write_quote_text_field(frm, key, input.value, commit);
+	};
+	board.find("input[data-label]").on("input", function () {
+		writeInput(this, false);
 	});
+	board.find("input[data-label]").on("change", function () {
+		writeInput(this, true);
+	});
+	board.find(".ic-sec-toggle").on("click", function () {
+		const key = this.getAttribute("data-field");
+		const on = frm.doc[key] == null || cint(frm.doc[key]) === 1;
+		const next = on ? 0 : 1;
+		frm.doc[key] = next;
+		const done = () => {
+			if (prefix === "ic_" && typeof instacertify.apply_quotation_section_visibility === "function") {
+				instacertify.toggle_quotation_sections(frm);
+				instacertify.apply_quotation_section_visibility(frm);
+			}
+			instacertify.paint_print_section_board(frm, Object.assign({}, opts, { force: true }));
+		};
+		if (frm.fields_dict[key]) {
+			Promise.resolve(frm.set_value(key, next)).then(done, done);
+		} else {
+			frm.dirty();
+			done();
+		}
+	});
+
+	let dragKey = "";
+	board.find(".ic-sec-handle[draggable='true']").on("dragstart", function (evt) {
+		dragKey = $(this).closest(".ic-sec-row").attr("data-key") || "";
+		evt.originalEvent.dataTransfer.effectAllowed = "move";
+		evt.originalEvent.dataTransfer.setData("text/plain", dragKey);
+		$(this).closest(".ic-sec-row").addClass("is-dragging");
+	});
+	board.on("dragend", ".ic-sec-row", function () {
+		$(this).removeClass("is-dragging");
+	});
+	board.on("dragover", ".ic-sec-row[data-key]", function (evt) {
+		evt.preventDefault();
+		evt.originalEvent.dataTransfer.dropEffect = "move";
+		board.find(".ic-sec-row").removeClass("is-drop");
+		$(this).addClass("is-drop");
+	});
+	board.on("drop", ".ic-sec-row[data-key]", function (evt) {
+		evt.preventDefault();
+		const target = $(this).attr("data-key");
+		const source = dragKey || evt.originalEvent.dataTransfer.getData("text/plain");
+		board.find(".ic-sec-row").removeClass("is-drop is-dragging");
+		if (!source || !target || source === target) return;
+		const keys = ordered.map((row) => row.key);
+		const from = keys.indexOf(source);
+		const to = keys.indexOf(target);
+		if (from < 0 || to < 0) return;
+		keys.splice(from, 1);
+		keys.splice(to, 0, source);
+		const value = keys.join(",");
+		frm.doc[orderField] = value;
+		const refresh = () => instacertify.paint_print_section_board(frm, Object.assign({}, opts, { force: true }));
+		const keep = () => {
+			frm.dirty();
+			refresh();
+		};
+		if (frm.fields_dict[orderField]) {
+			Promise.resolve(frappe.model.set_value(frm.doctype, frm.docname, orderField, value)).then(keep, keep);
+		} else {
+			keep();
+		}
+	});
+};
+
+instacertify.paint_quote_show_board = function (frm) {
+	instacertify.paint_print_section_board(frm, { prefix: "ic_" });
 };
 
 instacertify.QUOTE_PRINT_SECTION_FIELDS = [
@@ -4622,7 +4898,7 @@ instacertify.toggle_quotation_sections = function (frm) {
 			"ic_section_print_sections",
 			"description",
 			__(
-				"Uncheck any box to hide that block on form + Print/PDF (Validity, Payment Terms, Estimated Timelines, …). Or Print Sections → Arrange Sections… to untick Include and reorder."
+				"Drag a row to set the PDF order. Type each heading, including About and Commercials. Show keeps the section; Hide takes it off."
 			)
 		);
 	}
@@ -5818,6 +6094,16 @@ frappe.listview_settings["Quotation"] = frappe.listview_settings["Quotation"] ||
 		listview.page.add_inner_button(__("New (type & format)"), () => {
 			instacertify.start_new_quotation();
 		});
+		instacertify.add_list_excel_button(listview);
+	};
+})();
+
+frappe.listview_settings["Customer"] = frappe.listview_settings["Customer"] || {};
+(function () {
+	const prev_customer_onload = frappe.listview_settings["Customer"].onload;
+	frappe.listview_settings["Customer"].onload = function (listview) {
+		if (typeof prev_customer_onload === "function") prev_customer_onload(listview);
+		instacertify.add_list_excel_button(listview);
 	};
 })();
 
@@ -9956,6 +10242,7 @@ frappe.listview_settings["IC Quotation Template"] = {
 	},
 	onload(listview) {
 		listview.page.set_title(__("Quotation Templates — Edit formats & pricing"));
+		instacertify.add_list_excel_button(listview);
 		listview.page.add_inner_button(__("Category Catalog"), () => {
 			frappe.set_route("quote-format-library");
 		});

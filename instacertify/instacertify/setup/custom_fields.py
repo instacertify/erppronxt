@@ -755,7 +755,7 @@ QUOTATION_FIELDS = [
 		"label": "Print Sections — Uncheck to Hide on PDF",
 		"insert_after": "ic_label_sample_handling",
 		"collapsible": 0,
-		"description": "Uncheck any box to hide that block on form + Print/PDF (e.g. Validity, Payment Terms, Estimated Timelines). Uncheck Show Total when some lines are optional choices. Or use Print Sections → Arrange Sections…",
+		"description": "Drag a row to set the PDF order. Type each heading, including About and Commercials. Show keeps the section; Hide takes it off.",
 	},
 	{
 		"fieldname": "ic_show_about",

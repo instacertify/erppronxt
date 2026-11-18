@@ -79,6 +79,9 @@
 		},
 		onload(listview) {
 			if (typeof prev_onload === "function") prev_onload(listview);
+			if (window.instacertify && instacertify.add_list_excel_button) {
+				instacertify.add_list_excel_button(listview);
+			}
 			if (listview.page && listview.page.wrapper) {
 				listview.page.wrapper.addClass("ic-lead-list-page");
 			}

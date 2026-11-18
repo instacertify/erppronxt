@@ -219,6 +219,14 @@
   },
   {
    "doctype": "DocField",
+   "fieldname": "section_order",
+   "fieldtype": "Small Text",
+   "label": "Section Order",
+   "hidden": 1,
+   "description": "Comma-separated print section keys. Set by dragging rows in Print Sections."
+  },
+  {
+   "doctype": "DocField",
    "fieldname": "section_print_labels",
    "fieldtype": "Section Break",
    "label": "2. Rename Print Field Headings",
@@ -355,6 +363,13 @@
    "fieldtype": "Data",
    "label": "Heading: Confidentiality",
    "placeholder": "CONFIDENTIALITY & DATA PROTECTION"
+  },
+  {
+   "doctype": "DocField",
+   "fieldname": "label_terms",
+   "fieldtype": "Data",
+   "label": "Heading: Terms and Conditions",
+   "placeholder": "Terms and Conditions"
   },
   {
    "doctype": "DocField",

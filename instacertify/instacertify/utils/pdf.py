@@ -163,6 +163,16 @@ def get_quotation_pdf_bytes(name: str, print_format: str | None = None, no_lette
 	name = _resolve_quotation_name(name)
 	doc = frappe.get_doc("Quotation", name)
 	fmt = print_format or quotation_print_format(doc)
+	# The quotation format already draws the letterhead. A second letterhead
+	# from the Letter Head record only adds a blank wait and a duplicate header.
+	no_letterhead = 1
+	cache_key = f"ic-quote-pdf::{name}::{doc.modified}::{fmt}"
+	try:
+		cached = frappe.cache.get_value(cache_key)
+	except Exception:
+		cached = None
+	if isinstance(cached, (bytes, bytearray)) and cached[:4] == b"%PDF":
+		return bytes(cached)
 	original_user = frappe.session.user
 	elevated = False
 	if original_user == "Guest":
@@ -175,6 +185,10 @@ def get_quotation_pdf_bytes(name: str, print_format: str | None = None, no_lette
 			html = frappe.get_print("Quotation", name, print_format=fmt, no_letterhead=no_letterhead)
 			pdf = make_pdf(html, for_quote=True)
 			if pdf:
+				try:
+					frappe.cache.set_value(cache_key, pdf, expires_in_sec=180)
+				except Exception:
+					pass
 				return pdf
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Quotation make_pdf")
@@ -287,28 +301,11 @@ def download_pdf(
 	validate_print_permission(doc)
 
 	fmt = format or quotation_print_format(doc)
-	generator = pdf_generator or "chrome"
 
 	try:
 		with print_language(language):
-			try:
-				pdf_file = frappe.get_print(
-					doctype,
-					name,
-					fmt,
-					doc=doc,
-					as_pdf=True,
-					letterhead=letterhead,
-					no_letterhead=no_letterhead if no_letterhead is not None else 1,
-					pdf_generator=generator,
-				)
-			except Exception:
-				# Hard fallback: resilient helper (chrome → inlined wkhtml)
-				pdf_file = get_quotation_pdf_bytes(
-					name,
-					print_format=fmt,
-					no_letterhead=1 if no_letterhead is None else int(no_letterhead),
-				)
+			# One render. A second Chrome pass made Get PDF wait twice.
+			pdf_file = get_quotation_pdf_bytes(name, print_format=fmt, no_letterhead=1)
 	except Exception:
 		frappe.log_error(frappe.get_traceback(), "Quotation desk PDF")
 		frappe.throw(
