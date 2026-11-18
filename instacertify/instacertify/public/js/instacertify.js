@@ -9601,7 +9601,12 @@ instacertify.open_quick_lead = function (opts) {
 				reqd: 1,
 			},
 			{ fieldtype: "Column Break" },
-			{ fieldname: "company_name", fieldtype: "Data", label: __("Company name") },
+			{
+				fieldname: "company_name",
+				fieldtype: "Data",
+				label: __("Name of Company"),
+				description: __("Leave blank when the enquiry only has the person's name."),
+			},
 			{ fieldtype: "Section Break" },
 			{
 				fieldname: "country",
@@ -10043,6 +10048,16 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
 		frm.set_df_property("ic_party_name", "label", __("Name of the person"));
+		if (frm.fields_dict.company_name && frm.fields_dict.ic_party_name) {
+			frm.set_df_property("company_name", "label", __("Name of Company"));
+			frm.set_df_property("company_name", "reqd", 0);
+			frm.set_df_property(
+				"company_name",
+				"description",
+				__("Second field. Fill this when you know the company. Leave it blank for a person-only enquiry.")
+			);
+			frm.fields_dict.company_name.$wrapper.insertAfter(frm.fields_dict.ic_party_name.$wrapper);
+		}
 		frm.set_df_property("ic_call_remarks", "label", __("Description"));
 		instacertify.paint_saved_remark(frm);
 		instacertify.render_lead_source_inquiry_boxes(frm);
@@ -10131,9 +10146,7 @@ frappe.ui.form.on("Lead", {
 	ic_party_name(frm) {
 		const party = (frm.doc.ic_party_name || "").trim();
 		if (!party) return;
-		if (!frm.doc.company_name) {
-			frm.set_value("company_name", party);
-		}
+		frm.doc.lead_name = party;
 		if (!frm.doc.first_name) {
 			frm.set_value("first_name", party.split(/\s+/)[0]);
 		}

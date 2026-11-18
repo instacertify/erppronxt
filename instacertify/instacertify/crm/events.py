@@ -141,7 +141,7 @@ def create_quick_lead(
 	party = " ".join((party_name or "").split())
 	if not party:
 		frappe.throw(_("Name of the person is required"))
-	company = " ".join((company_name or "").split()) or party
+	company = " ".join((company_name or "").split())
 	source = (source or "").strip()
 	project_type = (project_type or "").strip()
 	if source and not frappe.db.exists("IC Lead Source", source):
@@ -161,7 +161,7 @@ def create_quick_lead(
 			"doctype": "Lead",
 			"ic_party_name": party[:140],
 			"lead_name": party[:140],
-			"company_name": company[:140],
+			"company_name": company[:140] or None,
 			"first_name": parts[0][:140],
 			"last_name": " ".join(parts[1:])[:140] or None,
 			"mobile_no": (mobile_no or "").strip()[:20] or None,
@@ -205,10 +205,11 @@ def _sync_party_name(doc):
 	if not party:
 		return
 
-	if not doc.company_name:
-		doc.company_name = party
+	# Company stays blank when the enquiry only has a person's name.
 	if not (doc.first_name or doc.last_name or doc.middle_name):
 		doc.first_name = party.split()[0][:140]
+	doc.lead_name = party[:140]
+	doc.title = party[:140]
 
 
 def _ensure_mandatory_name(doc):

@@ -197,16 +197,16 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .tq-value strong, .cq-body strong, .ic-terms, .tq-note, .cq-body .ic-terms {
     font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     color: #111111 !important;
-    line-height: 1.65 !important;
-    letter-spacing: 0.02em;
-    word-spacing: 0.06em;
+    line-height: 1.45 !important;
+    letter-spacing: 0;
+    word-spacing: 0;
   }
   table.ic-table td, table.tq-comm td, table.cq-comm td, .ic-inv td {
     font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
     font-weight: 400 !important;
     color: #111111 !important;
-    line-height: 1.6;
-    letter-spacing: 0.02em;
+    line-height: 1.4;
+    letter-spacing: 0;
   }
   table.tq-comm td.amt, table.cq-comm td.amt, .ic-grand-total {
     color: #111111 !important;
@@ -384,10 +384,15 @@ QUOTE_PAGE_CHROME_CSS = """
   .ic-footer-half.navy { background: #065175; }
   .ic-footer-half.orange { background: #EC691F; }
   .ic-print-body {
-    /* Side inset only. Top and bottom space comes from the repeating letterhead and footer. */
-    padding: 6mm 14mm 8mm 14mm;
-    min-height: 200mm;
+    /* A4 content band. No forced blank height — short quotes stay on one page. */
+    padding: 4mm 12mm 4mm 12mm;
+    min-height: 0;
     box-sizing: border-box;
+  }
+  table.tq-grid, table.tq-comm, table.cq-comm, table.ic-table, table.tq-bank, table.cq-bank, table.ic-bank-tbl {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed;
   }
   .ic-print-footer-inner {
     display: flex;
@@ -1055,13 +1060,13 @@ TESTING_QUOTATION_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
   .tq { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.45; }
   .tq * { box-sizing: border-box; }
-  .tq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
-  .tq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:18pt; font-weight:700; margin:10px 0 10px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
+  .tq-meta { display:flex; justify-content:space-between; margin:0 0 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.4; letter-spacing:0; word-spacing:0; }
+  .tq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:16pt; font-weight:700; margin:6px 0 8px; color:#111111; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase; }
   table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
   table.tq-grid > tbody > tr { page-break-inside:avoid; break-inside:avoid-page; }
   table.tq-grid > tbody > tr > td { border:1px solid var(--ic-line); vertical-align:top; padding:0; }
-  .tq-label { width:18%; background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:12px 10px; color:#111111; font-size:8.5pt; letter-spacing:0.05em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.55; }
-  .tq-value { width:82%; padding:12px 14px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .tq-label { width:22%; background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:6px 8px; color:#111111; font-size:8.5pt; letter-spacing:0.02em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.35; }
+  .tq-value { width:78%; padding:6px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .tq-value ul { margin:8px 0 0 18px; padding:0; }
   .tq-value ol { margin:8px 0 0 18px; padding:0; }
   .tq-value li { margin-bottom:6px; color:#111111; line-height:1.6; }
@@ -1484,14 +1489,14 @@ CONSULTING_QUOTATION_HTML = """
 """ + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
   .cq { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
   .cq * { box-sizing: border-box; }
-  .cq-meta { display:flex; justify-content:space-between; margin:0 0 12px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.6; letter-spacing:0.02em; word-spacing:0.06em; }
-  .cq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:18pt; font-weight:700; margin:10px 0 8px; color:#111111; letter-spacing:0.14em; line-height:1.3; text-transform:uppercase; }
+  .cq-meta { display:flex; justify-content:space-between; margin:0 0 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.4; letter-spacing:0; word-spacing:0; }
+  .cq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:16pt; font-weight:700; margin:6px 0 8px; color:#111111; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase; }
   .cq-service { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
   .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
   .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:avoid; break-inside:avoid-page; }
   .cq-sec:first-child { border-top:none; }
   .cq-bar { background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.05em; color:#111111; line-height:1.55; }
-  .cq-body { padding:12px 14px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.65; letter-spacing:0.02em; word-spacing:0.06em; }
+  .cq-body { padding:6px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .cq-body ul, .cq-body ol { margin:8px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:6px; color:#111111; line-height:1.6; }
   .cq-h { font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
