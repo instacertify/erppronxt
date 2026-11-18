@@ -17,3 +17,8 @@ class ICLead(Lead):
 		_sync_party_name(self)
 		_ensure_mandatory_name(self)
 		super().validate()
+		person = (self.get("ic_party_name") or "").strip()
+		if person:
+			# The list and the form title follow the person, even when a company is also filled.
+			self.lead_name = person[:140]
+			self.title = person[:140]

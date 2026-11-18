@@ -6,6 +6,8 @@
 	const prev_formatters = base.formatters || {};
 
 	const COLUMNS = [
+		["ic_party_name", __("Name of the person")],
+		["company_name", __("Name of Company")],
 		["ic_lead_source_detail", __("Source")],
 		["ic_project_type", __("Inquiry for")],
 		["mobile_no", __("Phone")],
@@ -48,6 +50,8 @@
 	frappe.listview_settings["Lead"] = Object.assign({}, base, {
 		hide_name_column: true,
 		add_fields: [
+			"ic_party_name",
+			"company_name",
 			"ic_lead_source_detail",
 			"ic_project_type",
 			"ic_request_category",

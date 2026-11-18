@@ -1324,6 +1324,24 @@ textarea[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !
   background: #fff;
   color: #676879;
 }
+/* Quotation form: drop a blank half-column, and keep words and grids from stretching. */
+#page-Quotation .form-layout .form-column:not(:has(.frappe-control:not(.hide))) {
+  display: none !important;
+}
+#page-Quotation .form-layout .form-column:has(.frappe-control:not(.hide)) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+#page-Quotation .ql-container .ql-editor,
+#page-Quotation textarea.form-control {
+  min-height: 64px;
+}
+#page-Quotation .form-grid {
+  width: 100%;
+}
+#page-Quotation .form-grid .grid-body .data-row {
+  height: auto;
+}
 #page-Quotation .ic-quote-heading {
   display: block;
   margin: 0 0 8px;

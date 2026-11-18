@@ -127,25 +127,43 @@ def _fetch_page(key: str, page: int, updated_after: str | None) -> dict:
 	return payload
 
 
-def _party_name(row: dict) -> str:
+def _person_name(row: dict) -> str:
 	name = (row.get("name") or "").strip()
 	company = (row.get("company") or "").strip() if isinstance(row.get("company"), str) else ""
-	return company or name or (row.get("email") or "Website enquiry")
+	return name or company or (row.get("email") or "Website enquiry")
+
+
+def _company_name(row: dict) -> str:
+	company = row.get("company")
+	if not isinstance(company, str):
+		return ""
+	return company.strip()
 
 
 def _apply_row(doc, row: dict, *, creating: bool) -> bool:
 	"""Fill a Lead from a website row. Returns True when something changed."""
 	changed = creating
-	party = _party_name(row)[:140]
+	person = _person_name(row)[:140]
+	company = _company_name(row)[:140]
 	if creating or not (doc.get("ic_party_name") or "").strip():
-		doc.ic_party_name = party
+		doc.ic_party_name = person
 		changed = True
-	if creating or not doc.company_name:
-		doc.company_name = ((row.get("company") or party) if isinstance(row.get("company"), str) else party)[:140]
+	if creating or not (doc.get("lead_name") or "").strip():
+		doc.lead_name = person
+		changed = True
+	# A website enquiry usually has the person and no company. Do not copy the person into Company.
+	if company and (creating or not (doc.company_name or "").strip() or (doc.company_name or "").strip() == person):
+		if (doc.company_name or "") != company:
+			doc.company_name = company
+			changed = True
+	elif not company and (doc.company_name or "").strip() == person:
+		doc.company_name = ""
 		changed = True
 	if creating or not (doc.first_name or doc.last_name):
-		person = (row.get("name") or party).strip()
-		doc.first_name = (person.split()[0] if person else party)[:140]
+		parts = person.split()
+		doc.first_name = (parts[0] if parts else person)[:140]
+		if len(parts) > 1:
+			doc.last_name = " ".join(parts[1:])[:140]
 		changed = True
 	if row.get("email") and (creating or not doc.email_id):
 		doc.email_id = str(row.get("email")).strip()[:140]
