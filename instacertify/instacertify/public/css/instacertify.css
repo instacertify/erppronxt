@@ -1791,18 +1791,58 @@ body.for-login,
   margin: 0 0 12px;
   line-height: 1.4;
 }
+.ic-crm-tracker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+}
+.ic-crm-tracker-head .ic-crm-tracker-title { margin: 0; }
 .ic-crm-charts {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   margin: 8px 0 12px;
 }
 .ic-crm-chart-card {
   background: #fff;
   border: 1px solid #d7e6ef;
   border-radius: var(--ic-radius);
-  padding: 16px 18px 14px;
-  min-height: 260px;
+  padding: 12px 14px 10px;
+  min-height: 0;
+}
+.ic-rank-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.ic-rank-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: #323338;
+}
+.ic-rank-track {
+  height: 8px;
+  border-radius: 99px;
+  background: #f1f2f4;
+  overflow: hidden;
+}
+.ic-rank-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
 }
 .ic-crm-chart-label {
   font-size: 0.78rem;

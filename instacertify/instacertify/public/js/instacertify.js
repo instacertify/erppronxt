@@ -2782,6 +2782,11 @@ frappe.ui.form.on("Quotation", {
 		instacertify.apply_service_quote_mandatory(frm);
 		instacertify.apply_quotation_naming_series(frm);
 		instacertify.add_change_currency_button(frm, { fieldname: "currency" });
+		if (frm.fields_dict.ic_section_assignees) {
+			frm.set_df_property("ic_section_assignees", "label", __("Team"));
+			const team = frm.get_field("ic_section_assignees");
+			if (team && team.collapse) team.collapse(false);
+		}
 		if (frm.fields_dict.ic_assignees) {
 			frm.add_custom_button(__("Assign Me"), () => {
 				instacertify.add_me_as_assignee(frm, "ic_assignees");
@@ -9986,6 +9991,41 @@ instacertify.render_lead_choice_add_box = function (frm, opts) {
 	});
 };
 
+/** Person and company sit side by side at the top of Lead Capture. */
+instacertify.align_lead_name_fields = function (frm) {
+	const person = frm.fields_dict && frm.fields_dict.ic_party_name;
+	const company = frm.fields_dict && frm.fields_dict.company_name;
+	const section = frm.fields_dict && frm.fields_dict.ic_section_capture;
+	const sectionWrap = section && (section.$wrapper || section.wrapper);
+	if (!person || !company || !sectionWrap) return;
+	frm.set_df_property("company_name", "label", __("Name of Company"));
+	frm.set_df_property("company_name", "reqd", 0);
+	frm.set_df_property(
+		"company_name",
+		"description",
+		__("Second field. Fill this when you know the company. Leave it blank for a person-only enquiry.")
+	);
+	let row = $(sectionWrap).find(".ic-lead-name-row");
+	if (!row.length) {
+		row = $('<div class="ic-lead-name-row"></div>');
+		const body = $(sectionWrap).find(".section-body").first();
+		if (body.length) body.prepend(row);
+		else $(sectionWrap).prepend(row);
+	}
+	row.append(person.$wrapper, company.$wrapper);
+	const sales = frm.fields_dict.ic_assigned_salesperson;
+	const ops = frm.fields_dict.ic_assigned_operations_manager;
+	if (!sales || !ops) return;
+	frm.set_df_property("ic_assigned_salesperson", "label", __("Salesperson"));
+	frm.set_df_property("ic_assigned_operations_manager", "label", __("Operations"));
+	let team = $(sectionWrap).find(".ic-lead-team-row");
+	if (!team.length) {
+		team = $('<div class="ic-lead-name-row ic-lead-team-row"></div>');
+		row.after(team);
+	}
+	team.append(sales.$wrapper, ops.$wrapper);
+};
+
 instacertify.render_lead_source_inquiry_boxes = function (frm) {
 	[
 		"ic_section_source",
@@ -10048,16 +10088,7 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
 		frm.set_df_property("ic_party_name", "label", __("Name of the person"));
-		if (frm.fields_dict.company_name && frm.fields_dict.ic_party_name) {
-			frm.set_df_property("company_name", "label", __("Name of Company"));
-			frm.set_df_property("company_name", "reqd", 0);
-			frm.set_df_property(
-				"company_name",
-				"description",
-				__("Second field. Fill this when you know the company. Leave it blank for a person-only enquiry.")
-			);
-			frm.fields_dict.company_name.$wrapper.insertAfter(frm.fields_dict.ic_party_name.$wrapper);
-		}
+		instacertify.align_lead_name_fields(frm);
 		frm.set_df_property("ic_call_remarks", "label", __("Description"));
 		instacertify.paint_saved_remark(frm);
 		instacertify.render_lead_source_inquiry_boxes(frm);

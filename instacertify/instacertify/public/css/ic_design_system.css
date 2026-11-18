@@ -1324,13 +1324,28 @@ textarea[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !
   background: #fff;
   color: #676879;
 }
-/* Quotation form: drop a blank half-column, and keep words and grids from stretching. */
-#page-Quotation .form-layout .form-column:not(:has(.frappe-control:not(.hide))) {
-  display: none !important;
+/* Quotation and lead pages: aligned fields, Monday.com colors. */
+#page-Quotation [data-fieldname="ic_section_type"] .section-head,
+.ic-lead-form-page [data-fieldname="ic_section_capture"] .section-head {
+  font-weight: 800;
+  color: #323338;
 }
-#page-Quotation .form-layout .form-column:has(.frappe-control:not(.hide)) {
-  width: 100% !important;
-  max-width: 100% !important;
+#page-Quotation [data-fieldname="ic_section_type"],
+.ic-lead-form-page [data-fieldname="ic_section_capture"] {
+  border: 1px solid #e6e9ef !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  box-shadow: inset 0 3px 0 #0073ea;
+  margin-bottom: 12px !important;
+}
+#page-Quotation [data-fieldname="ic_section_type"] .section-body {
+  align-items: flex-start;
+}
+#page-Quotation .ic-quote-type-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
 }
 #page-Quotation .ql-container .ql-editor,
 #page-Quotation textarea.form-control {
@@ -1339,9 +1354,70 @@ textarea[data-tone="#6b3fa0"] { color: #6b3fa0 !important; background: #f4eafb !
 #page-Quotation .form-grid {
   width: 100%;
 }
-#page-Quotation .form-grid .grid-body .data-row {
-  height: auto;
+.ic-lead-form-page [data-fieldname="ic_section_capture"] .section-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
 }
+.ic-lead-form-page [data-fieldname="ic_section_capture"] .section-body > .form-column {
+  flex: 1 1 220px;
+}
+.ic-lead-name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+  flex: 1 0 100%;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 4px 2px 8px;
+  box-sizing: border-box;
+}
+.ic-lead-name-row [data-fieldname="ic_party_name"] .control-label,
+.ic-lead-name-row [data-fieldname="company_name"] .control-label {
+  font-weight: 800;
+}
+.ic-lead-name-row [data-fieldname="ic_party_name"] .form-control {
+  border-left: 4px solid #0073ea !important;
+  background: #e8f3ff !important;
+}
+.ic-lead-name-row [data-fieldname="company_name"] .form-control {
+  border-left: 4px solid #00c875 !important;
+  background: #e6f9ef !important;
+}
+.ic-lead-team-row [data-fieldname="ic_assigned_salesperson"] .form-control {
+  border-left: 4px solid #0073ea !important;
+}
+.ic-lead-team-row [data-fieldname="ic_assigned_operations_manager"] .form-control {
+  border-left: 4px solid #fdab3d !important;
+}
+body[data-route="List/Lead/List"] .list-row-col .ellipsis,
+body[data-route="List/Quotation/List"] .list-row-col .ellipsis,
+body[data-route="List/Lead"] .list-row-col .ellipsis,
+body[data-route="List/Quotation"] .list-row-col .ellipsis {
+  overflow: visible;
+  text-overflow: unset;
+}
+.ic-person-pill,
+.ic-company-pill,
+.ic-type-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.ic-person-pill { background: #e8f3ff; color: #0073ea; }
+.ic-company-pill { background: #e6f9ef; color: #037f4c; }
+.ic-company-pill.is-empty { background: #f1f2f4; color: #676879; font-weight: 600; }
+.ic-type-pill.cat-consulting { background: #e7f1f6; color: #065175; }
+.ic-type-pill.cat-testing { background: #fff0e8; color: #c2410c; }
+.ic-type-pill.cat-renewal { background: #e6f9ef; color: #037f4c; }
+.ic-type-pill.cat-other { background: #f1f2f4; color: #323338; }
 #page-Quotation .ic-quote-heading {
   display: block;
   margin: 0 0 8px;

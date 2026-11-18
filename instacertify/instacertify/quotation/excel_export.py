@@ -380,6 +380,92 @@ def build_workbook(doctype: str) -> tuple[str, bytes]:
 
 
 @frappe.whitelist()
+def download_lead_source_excel():
+	"""Admin sheet of where leads come from and which product or service they ask for."""
+	assert_can_export()
+	if not frappe.has_permission("Lead", "read"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	from frappe.utils import add_days, getdate, nowdate
+
+	from instacertify.crm.dashboard import _group_leads
+
+	start = add_days(getdate(nowdate()), -29)
+	sources = _group_leads("ic_lead_source_detail", start)
+	services = _group_leads("ic_project_type", start)
+	statuses = _group_leads("status", start)
+
+	def sheet(title, rows):
+		total = sum(int(r.get("count") or 0) for r in rows) or 0
+		out = [[title, "Leads", "Share"]]
+		for row in rows:
+			count = int(row.get("count") or 0)
+			if not count or (row.get("label") or "") == "Not Set":
+				continue
+			share = f"{round((count / total) * 100)}%" if total else "0%"
+			out.append([row.get("label") or "", count, share])
+		if len(out) == 1:
+			out.append(["No leads in the last 30 days", 0, "0%"])
+		return out
+
+	leads = [["Person", "Company", "Source", "Product or service", "Status", "Salesperson", "Created"]]
+	meta = frappe.get_meta("Lead")
+	fields = ["name", "ic_party_name", "lead_name", "company_name", "status", "creation"]
+	for field in ("ic_lead_source_detail", "ic_project_type", "ic_assigned_salesperson"):
+		if meta.has_field(field):
+			fields.append(field)
+	for row in frappe.get_all(
+		"Lead",
+		filters={"creation": [">=", str(start)]},
+		fields=fields,
+		order_by="creation desc",
+		limit=5000,
+	):
+		leads.append([
+			row.get("ic_party_name") or row.get("lead_name") or row.get("name"),
+			row.get("company_name") or "",
+			row.get("ic_lead_source_detail") or "",
+			row.get("ic_project_type") or "",
+			row.get("status") or "",
+			row.get("ic_assigned_salesperson") or "",
+			str(row.get("creation") or "")[:19],
+		])
+
+	filename, content = _write_sheets(
+		"Instacertify_Lead_Sources.xlsx",
+		[
+			("Lead source", sheet("Source", sources)),
+			("Product or service", sheet("Product or service", services)),
+			("Status", sheet("Status", statuses)),
+			("Leads", leads),
+		],
+	)
+	frappe.local.response.filename = filename
+	frappe.local.response.filecontent = content
+	frappe.local.response.type = "binary"
+
+
+def _write_sheets(filename: str, sheets: list[tuple[str, list[list[Any]]]]) -> tuple[str, bytes]:
+	import xlsxwriter
+
+	buf = io.BytesIO()
+	wb = xlsxwriter.Workbook(buf, {"in_memory": True})
+	head = wb.add_format({"bold": True, "bg_color": "#065175", "font_color": "#FFFFFF", "text_wrap": True})
+	cell = wb.add_format({"text_wrap": True, "valign": "top"})
+	for name, rows in sheets:
+		ws = wb.add_worksheet(name[:31])
+		for r, row in enumerate(rows):
+			for c, value in enumerate(row):
+				ws.write(r, c, "" if value is None else value, head if r == 0 else cell)
+		if rows and rows[0]:
+			ws.freeze_panes(1, 0)
+			ws.autofilter(0, 0, max(len(rows) - 1, 0), len(rows[0]) - 1)
+			ws.set_column(0, len(rows[0]) - 1, 24)
+	wb.close()
+	buf.seek(0)
+	return filename, buf.getvalue()
+
+
+@frappe.whitelist()
 def download_list_excel(doctype: str):
 	"""Download the list, and for quotations every print section, as an Excel file."""
 	assert_can_export()

@@ -6,8 +6,8 @@
 	const prev_formatters = base.formatters || {};
 
 	const COLUMNS = [
-		["ic_party_name", __("Name of the person")],
-		["company_name", __("Name of Company")],
+		["ic_party_name", __("Person")],
+		["company_name", __("Company")],
 		["ic_lead_source_detail", __("Source")],
 		["ic_project_type", __("Inquiry for")],
 		["mobile_no", __("Phone")],
@@ -62,6 +62,16 @@
 			"status",
 		],
 		formatters: Object.assign({}, prev_formatters, {
+			ic_party_name(value) {
+				const text = (value || "").trim();
+				if (!text) return `<span class="ic-company-pill is-empty">${__("No person")}</span>`;
+				return `<span class="ic-person-pill">${frappe.utils.escape_html(text)}</span>`;
+			},
+			company_name(value) {
+				const text = (value || "").trim();
+				if (!text) return `<span class="ic-company-pill is-empty">${__("No company")}</span>`;
+				return `<span class="ic-company-pill">${frappe.utils.escape_html(text)}</span>`;
+			},
 			ic_lead_source_detail(value) {
 				return pill("ic_lead_source_detail", value, "source", __("No source"));
 			},
@@ -69,6 +79,21 @@
 				return pill("ic_project_type", value, "service", __("No inquiry"));
 			},
 		}),
+		get_indicator(doc) {
+			const status = doc.status || "Lead";
+			const colors = {
+				Lead: "blue",
+				Open: "blue",
+				Replied: "orange",
+				Interested: "yellow",
+				Opportunity: "purple",
+				Quotation: "orange",
+				Converted: "green",
+				"Do Not Contact": "red",
+				Lost: "red",
+			};
+			return [__(status), colors[status] || "gray", "status,=," + status];
+		},
 		/* "Add Lead" opens the short capture box. The full form stays one click away. */
 		primary_action() {
 			if (window.instacertify && instacertify.open_quick_lead) {
