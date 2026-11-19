@@ -9991,6 +9991,66 @@ instacertify.render_lead_choice_add_box = function (frm, opts) {
 	});
 };
 
+/** Calls, email, quote, and the lead's current state, in one place. */
+instacertify.LEAD_STATES = [
+	["Lead", "#579bfc"],
+	["Requirement Analysis", "#0073ea"],
+	["Technical Review", "#a25ddc"],
+	["Quote", "#fdab3d"],
+	["Negotiation", "#ff642e"],
+	["Order", "#00c875"],
+	["Project / Case", "#037f4c"],
+	["Certification", "#2259a8"],
+	["Renewal", "#9cd326"],
+];
+
+instacertify.paint_lead_activity = function (frm) {
+	const section = frm.fields_dict && frm.fields_dict.ic_section_capture;
+	const wrap = section && (section.$wrapper || section.wrapper);
+	if (!wrap || !frm.fields_dict.ic_pipeline_stage) return;
+	let board = $(wrap).find(".ic-lead-activity");
+	if (!board.length) {
+		board = $('<div class="ic-lead-activity"></div>');
+		const team = $(wrap).find(".ic-lead-team-row");
+		if (team.length) team.after(board);
+		else $(wrap).find(".section-body").first().prepend(board);
+	}
+	const state = frm.doc.ic_pipeline_stage || "Lead";
+	const calls = cint(frm.doc.ic_call_count);
+	const email = cint(frm.doc.ic_email_sent) === 1;
+	const quote = cint(frm.doc.ic_quote_sent) === 1;
+	const states = instacertify.LEAD_STATES.map(([name, color]) => {
+		const on = name === state;
+		return `<button type="button" class="ic-state-chip ${on ? "is-on" : ""}" data-state="${frappe.utils.escape_html(name)}" style="--chip:${color}">${frappe.utils.escape_html(__(name))}</button>`;
+	}).join("");
+	board.html(
+		`<div class="ic-activity-label">${__("Lead state")}</div><div class="ic-state-row">${states}</div>` +
+			`<div class="ic-activity-actions">` +
+			`<div class="ic-activity-count"><span>${__("Calls")}</span><button type="button" class="ic-call-minus">−</button><b>${calls}</b><button type="button" class="ic-call-plus">+</button></div>` +
+			`<button type="button" class="ic-yesno-chip ${email ? "is-yes" : "is-no"}" data-flag="ic_email_sent">${email ? __("Email sent") : __("Email not sent")}</button>` +
+			`<button type="button" class="ic-yesno-chip ${quote ? "is-yes" : "is-no"}" data-flag="ic_quote_sent">${quote ? __("Quote sent") : __("Quote not sent")}</button>` +
+			`</div>`
+	);
+	const setFlag = (field, value) => {
+		if (!frm.fields_dict[field]) return;
+		Promise.resolve(frm.set_value(field, value)).then(() => instacertify.paint_lead_activity(frm));
+	};
+	board.find(".ic-state-chip").on("click", function () {
+		setFlag("ic_pipeline_stage", this.getAttribute("data-state"));
+	});
+	board.find(".ic-call-plus").on("click", () => {
+		setFlag("ic_call_count", calls + 1);
+		if (frm.fields_dict.ic_last_contacted && !frm.doc.ic_last_contacted) {
+			frm.set_value("ic_last_contacted", frappe.datetime.get_today());
+		}
+	});
+	board.find(".ic-call-minus").on("click", () => setFlag("ic_call_count", Math.max(calls - 1, 0)));
+	board.find(".ic-yesno-chip").on("click", function () {
+		const field = this.getAttribute("data-flag");
+		setFlag(field, cint(frm.doc[field]) === 1 ? 0 : 1);
+	});
+};
+
 /** Person and company sit side by side at the top of Lead Capture. */
 instacertify.align_lead_name_fields = function (frm) {
 	const person = frm.fields_dict && frm.fields_dict.ic_party_name;
@@ -10089,6 +10149,7 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("ic_party_name", "reqd", 1);
 		frm.set_df_property("ic_party_name", "label", __("Name of the person"));
 		instacertify.align_lead_name_fields(frm);
+		instacertify.paint_lead_activity(frm);
 		frm.set_df_property("ic_call_remarks", "label", __("Description"));
 		instacertify.paint_saved_remark(frm);
 		instacertify.render_lead_source_inquiry_boxes(frm);

@@ -8,6 +8,10 @@
 	const COLUMNS = [
 		["ic_party_name", __("Person")],
 		["company_name", __("Company")],
+		["ic_pipeline_stage", __("State")],
+		["ic_call_count", __("Calls")],
+		["ic_email_sent", __("Email")],
+		["ic_quote_sent", __("Quote")],
 		["ic_lead_source_detail", __("Source")],
 		["ic_project_type", __("Inquiry for")],
 		["mobile_no", __("Phone")],
@@ -52,6 +56,10 @@
 		add_fields: [
 			"ic_party_name",
 			"company_name",
+			"ic_pipeline_stage",
+			"ic_call_count",
+			"ic_email_sent",
+			"ic_quote_sent",
 			"ic_lead_source_detail",
 			"ic_project_type",
 			"ic_request_category",
@@ -62,6 +70,22 @@
 			"status",
 		],
 		formatters: Object.assign({}, prev_formatters, {
+			ic_pipeline_stage(value) {
+				const text = (value || "Lead").trim();
+				return `<span class="ic-state-pill">${frappe.utils.escape_html(text)}</span>`;
+			},
+			ic_call_count(value) {
+				const n = cint(value);
+				return `<span class="ic-count-pill">${n} ${n === 1 ? __("call") : __("calls")}</span>`;
+			},
+			ic_email_sent(value) {
+				const on = cint(value) === 1;
+				return `<span class="ic-yesno-pill ${on ? "is-yes" : "is-no"}">${on ? __("Email sent") : __("No email")}</span>`;
+			},
+			ic_quote_sent(value) {
+				const on = cint(value) === 1;
+				return `<span class="ic-yesno-pill ${on ? "is-yes" : "is-no"}">${on ? __("Quote sent") : __("No quote")}</span>`;
+			},
 			ic_party_name(value) {
 				const text = (value || "").trim();
 				if (!text) return `<span class="ic-company-pill is-empty">${__("No person")}</span>`;
