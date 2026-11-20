@@ -267,11 +267,11 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-rule-navy { height:1px; background:var(--ic-navy); width:100%; border:0; }
   .ic-rule-orange { height:1px; background:var(--ic-orange); width:56px; border:0; margin:0; }
   .ic-rule-double { border:0; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-line); height:3px; background:transparent; }
-  /* Prefer keeping a section together; if it cannot fit, browsers break and
-     continue under the running header on the next page. */
+  /* A heading stays with the text under it. A long section continues on the
+     next page instead of leaving a blank gap or being sliced through a line. */
   table.tq-grid > tbody > tr, .cq-sec {
-    page-break-inside: avoid;
-    break-inside: avoid-page;
+    page-break-inside: auto;
+    break-inside: auto;
   }
   .tq-value, .cq-body, .cq-box {
     page-break-inside: auto !important;
@@ -1483,8 +1483,6 @@ CONSULTING_QUOTATION_HTML = """
 {%- set stamp = frappe.utils.get_url(stamp) -%}
 {%- endif -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
-{%- set title = doc.ic_service_name or 'Consultancy' -%}
-{%- set short = (doc.ic_certification_type or title) -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
   .cq { font-family: 'Figtree', Arial, Helvetica, sans-serif; color:var(--ic-ink); font-size:10px; line-height:1.5; }
@@ -1493,9 +1491,9 @@ CONSULTING_QUOTATION_HTML = """
   .cq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:16pt; font-weight:700; margin:6px 0 8px; color:#111111; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase; }
   .cq-service { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
   .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
-  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:avoid; break-inside:avoid-page; }
+  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:auto; break-inside:auto; }
   .cq-sec:first-child { border-top:none; }
-  .cq-bar { background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:12px 14px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.05em; color:#111111; line-height:1.55; }
+  .cq-bar { background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:6px 8px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.02em; color:#111111; line-height:1.35; }
   .cq-body { padding:6px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .cq-body ul, .cq-body ol { margin:8px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:6px; color:#111111; line-height:1.6; }
@@ -1520,7 +1518,7 @@ CONSULTING_QUOTATION_HTML = """
 {%- set _cur = doc.currency or 'INR' -%}
 {%- set _sym = '₹' if _cur == 'INR' else ('$' if _cur == 'USD' else ('€' if _cur == 'EUR' else ('£' if _cur == 'GBP' else _cur))) -%}
   <div class="cq-title">Quotation</div>
-  <div class="cq-service">{{ title }}</div>
+  {% if doc.ic_service_name %}<div class="cq-service">{{ doc.ic_service_name }}</div>{% endif %}
   <div class="cq-meta">
     <div>No: {{ quote_no }}</div>
     <div>Date: {{ frappe.utils.formatdate(doc.transaction_date, 'dd-MM-yyyy') }}</div>
@@ -1534,23 +1532,22 @@ CONSULTING_QUOTATION_HTML = """
 
   <div class="cq-box">
     {% for _sk in quote_section_order(doc) %}
-    {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') %}
+    {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') and (doc.ic_about_service or doc.ic_scope_of_work) %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_about or ('ABOUT ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_about or 'About' }}</div>
       <div class="cq-body">
         {% if doc.ic_about_service %}{{ doc.ic_about_service }}{% endif %}
         {% if doc.ic_scope_of_work %}
           {% if doc.ic_about_service %}<div style="margin-top:10px;"></div>{% endif %}
           {{ doc.ic_scope_of_work }}
         {% endif %}
-        {% if not doc.ic_about_service and not doc.ic_scope_of_work %}<p></p>{% endif %}
       </div>
     </div>
     {% endif %}
 
-    {% if _sk == 'applicable_standards' and quote_section_on(doc, 'ic_show_applicable_standards') %}
+    {% if _sk == 'applicable_standards' and quote_section_on(doc, 'ic_show_applicable_standards') and (doc.ic_standard_narrative or doc.ic_applicable_standard) %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_standard or ('STANDARD APPLICABLE FOR ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_standard or 'Standard Applicable' }}</div>
       <div class="cq-body">
         {% if doc.ic_standard_narrative %}
           {{ doc.ic_standard_narrative }}
@@ -1561,29 +1558,23 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if _sk == 'process' and quote_section_on(doc, 'ic_show_process') %}
+    {% if _sk == 'process' and quote_section_on(doc, 'ic_show_process') and doc.ic_process_steps %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_process or ('Process for ' ~ short) }}</div>
-      <div class="cq-body">
-        {% if doc.ic_process_steps %}{{ doc.ic_process_steps }}
-        {% else %}<p></p>{% endif %}
-      </div>
+      <div class="cq-bar">{{ doc.ic_label_process or 'Process' }}</div>
+      <div class="cq-body">{{ doc.ic_process_steps }}</div>
     </div>
     {% endif %}
 
-    {% if _sk == 'validity' and quote_section_on(doc, 'ic_show_validity') %}
+    {% if _sk == 'validity' and quote_section_on(doc, 'ic_show_validity') and doc.ic_validity_text %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_validity or ('Validity of ' ~ short) }}</div>
-      <div class="cq-body">
-        {% if doc.ic_validity_text %}{{ doc.ic_validity_text }}
-        {% else %}<p></p>{% endif %}
-      </div>
+      <div class="cq-bar">{{ doc.ic_label_validity or 'Validity' }}</div>
+      <div class="cq-body">{{ doc.ic_validity_text }}</div>
     </div>
     {% endif %}
 
-    {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') %}
+    {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') and (doc.ic_test_items or doc.ic_cost_items or doc.ic_commercials_notes) %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_commercials or ('Commercials for ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_commercials or 'Commercials' }}</div>
       <div class="cq-body">
         {% if doc.ic_applicable_standard %}
           <div style="margin-bottom:8px;"><b>Applicable Standard:</b> {{ doc.ic_applicable_standard }}</div>
@@ -1688,7 +1679,7 @@ CONSULTING_QUOTATION_HTML = """
 
     {% if _sk == 'payment_terms' and quote_section_on(doc, 'ic_show_payment_terms') %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_payment_terms or ('PAYMENT TERMS FOR ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_payment_terms or 'Payment Terms' }}</div>
       <div class="cq-body">
         {% if doc.ic_payment_terms %}<div style="white-space:pre-wrap;">{{ quote_section_text(doc.ic_payment_terms, 'Payment Terms') }}</div>
         {% else %}
@@ -1705,9 +1696,9 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') %}
+    {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') and (doc.ic_timeline_details or doc.ic_estimated_timeline) %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_timelines or ('Timelines for ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_timelines or 'Timeline' }}</div>
       <div class="cq-body">
         {% if doc.ic_timeline_details %}{{ doc.ic_timeline_details }}
         {% elif doc.ic_estimated_timeline %}
@@ -1719,7 +1710,7 @@ CONSULTING_QUOTATION_HTML = """
 
     {% if _sk == 'sample_required' and quote_section_on(doc, 'ic_show_sample_required') %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_sample_required or ('SAMPLE REQUIRED FOR ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_sample_required or 'Sample Required' }}</div>
       <div class="cq-body">
         {% if doc.ic_sample_required %}{{ doc.ic_sample_required }}
         {% else %}
@@ -1729,29 +1720,23 @@ CONSULTING_QUOTATION_HTML = """
     </div>
     {% endif %}
 
-    {% if _sk == 'documents_required' and quote_section_on(doc, 'ic_show_documents_required') %}
+    {% if _sk == 'documents_required' and quote_section_on(doc, 'ic_show_documents_required') and doc.ic_documents_required %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_documents_required or ('DOCUMENTS REQUIRED FOR ' ~ short) }}</div>
-      <div class="cq-body">
-        {% if doc.ic_documents_required %}{{ doc.ic_documents_required }}
-        {% else %}<p></p>{% endif %}
-      </div>
+      <div class="cq-bar">{{ doc.ic_label_documents_required or 'Documents Required' }}</div>
+      <div class="cq-body">{{ doc.ic_documents_required }}</div>
     </div>
     {% endif %}
 
-    {% if _sk == 'deliverables' and quote_section_on(doc, 'ic_show_deliverables') %}
+    {% if _sk == 'deliverables' and quote_section_on(doc, 'ic_show_deliverables') and doc.ic_deliverables %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_deliverable or ('Deliverables for ' ~ short) }}</div>
-      <div class="cq-body">
-        {% if doc.ic_deliverables %}{{ doc.ic_deliverables | replace('\t', ' ') }}
-        {% else %}<p></p>{% endif %}
-      </div>
+      <div class="cq-bar">{{ doc.ic_label_deliverable or 'Deliverables' }}</div>
+      <div class="cq-body">{{ doc.ic_deliverables | replace('\t', ' ') }}</div>
     </div>
     {% endif %}
 
     {% if _sk == 'banking' and quote_section_on(doc, 'ic_show_banking') %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_banking or ('OUR BANKING DETAILS FOR ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_banking or 'Our Banking Details' }}</div>
       <div class="cq-body">
 """ + BANK_UPI_PAYMENT_HTML + """
       </div>
@@ -1760,7 +1745,7 @@ CONSULTING_QUOTATION_HTML = """
 
     {% if _sk == 'cancellation' and quote_section_on(doc, 'ic_show_cancellation') %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_cancellation or ('CANCELLATION & REFUND POLICY FOR ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_cancellation or 'Cancellation & Refund Policy' }}</div>
       <div class="cq-body">
         {% if doc.ic_cancellation_policy %}{{ doc.ic_cancellation_policy | replace('\t', ' ') }}
         {% else %}
@@ -1772,7 +1757,7 @@ CONSULTING_QUOTATION_HTML = """
 
     {% if _sk == 'force_majeure' and quote_section_on(doc, 'ic_show_force_majeure') %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_force_majeure or ('FORCE MAJEURE FOR ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_force_majeure or 'Force Majeure' }}</div>
       <div class="cq-body">
         {% if doc.ic_force_majeure %}{{ doc.ic_force_majeure | replace('\t', ' ') }}
         {% else %}
@@ -1784,7 +1769,7 @@ CONSULTING_QUOTATION_HTML = """
 
     {% if _sk == 'confidentiality' and quote_section_on(doc, 'ic_show_confidentiality') %}
     <div class="cq-sec">
-      <div class="cq-bar">{{ doc.ic_label_confidentiality or ('CONFIDENTIALITY & DATA PROTECTION FOR ' ~ short) }}</div>
+      <div class="cq-bar">{{ doc.ic_label_confidentiality or 'Confidentiality & Data Protection' }}</div>
       <div class="cq-body">
         {% if doc.ic_confidentiality %}{{ doc.ic_confidentiality | replace('\t', ' ') }}
         {% else %}
