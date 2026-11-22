@@ -385,7 +385,7 @@ QUOTE_PAGE_CHROME_CSS = """
   .ic-footer-half.orange { background: #EC691F; }
   .ic-print-body {
     /* A4 content band. No forced blank height — short quotes stay on one page. */
-    padding: 4mm 12mm 4mm 12mm;
+    padding: 3mm 12mm 2mm 12mm;
     min-height: 0;
     box-sizing: border-box;
   }
@@ -408,10 +408,11 @@ QUOTE_PAGE_CHROME_CSS = """
   /* Tagline below the dual-tone line, inside the 0.7in bottom band */
   .ic-print-footer-below {
     box-sizing: border-box;
-    min-height: 0.7in;
-    padding: 5px 12mm 6px 12mm;
+    min-height: 0;
+    padding: 4px 12mm 8px 12mm;
     text-align: center;
   }
+  .ic-doc-foot { margin-top: 8px; }
   .ic-print-footer-tag {
     display: block;
     width: 100%;
@@ -451,8 +452,13 @@ QUOTE_RUNNING_HEADER_HTML = """
 """
 
 QUOTE_RUNNING_FOOTER_HTML = """
-<tfoot><tr><td class="ic-print-footer">
-<div class="ic-print-footer">
+<tbody><tr><td class="ic-print-main">
+"""
+
+# Footer sits under the last line of the quote. It is not a repeating
+# table footer, which pinned it to the bottom of the page and left a blank band.
+QUOTE_DOCUMENT_END_HTML = """
+<div class="ic-print-footer ic-doc-foot">
   <div class="ic-print-footer-inner">
     <div class="ic-print-footer-qr">
       {% if doc.ic_qr_code %}
@@ -471,8 +477,8 @@ QUOTE_RUNNING_FOOTER_HTML = """
     <div class="ic-print-footer-tag">Certification Made Simple</div>
   </div>
 </div>
-</td></tr></tfoot>
-<tbody><tr><td class="ic-print-main">
+</td></tr></tbody>
+</table>
 """
 
 # Shared Jinja to load IC Settings + absolute logo URL (PDF engines need full URLs).
@@ -523,7 +529,23 @@ QUOTE_EVEN_TYPE_CSS = """
     font-weight: 700 !important;
     letter-spacing: 0.04em !important;
     line-height: 1.25 !important;
+    margin: 2px 0 4px !important;
   }
+  .cq-bar, .tq-label {
+    padding: 5px 8px !important;
+    line-height: 1.3 !important;
+    border-left: 0 !important;
+  }
+  .cq-body, .tq-value {
+    padding: 5px 8px !important;
+    line-height: 1.35 !important;
+  }
+  .cq-body > :first-child, .tq-value > :first-child { margin-top: 0 !important; }
+  .cq-body > :last-child, .tq-value > :last-child { margin-bottom: 0 !important; }
+  .cq-body p, .tq-value p { margin: 0 0 4px; }
+  .cq-close, .tq-close, .ic-sign { margin-top: 10px !important; }
+  table.tq-grid > tbody > tr { page-break-inside: auto; break-inside: auto; }
+  .tq-label { width: 28%; }
   .ic-print-header, .ic-print-header .ic-mast-details, .ic-print-footer, .ic-print-footer-tag {
     font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
   }
@@ -781,8 +803,7 @@ QUOTATION_HTML = """
   </div>
 </div>
 </div>
-</td></tr></tbody>
-</table>
+""" + QUOTE_DOCUMENT_END_HTML + """
 """
 
 INVOICE_HTML = """
@@ -1442,7 +1463,7 @@ TESTING_QUOTATION_HTML = """
           </tr>
     </table>
     {% endif %}
-    {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
+    {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') and (doc.ic_terms_and_conditions or doc.terms) %}
     <table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_terms or 'Terms and Conditions' }}</td>
@@ -1466,8 +1487,7 @@ TESTING_QUOTATION_HTML = """
   </div>
 </div>
 </div>
-</td></tr></tbody>
-</table>
+""" + QUOTE_DOCUMENT_END_HTML + """
 """
 
 
@@ -1490,9 +1510,9 @@ CONSULTING_QUOTATION_HTML = """
   .cq-meta { display:flex; justify-content:space-between; margin:0 0 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .cq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:16pt; font-weight:700; margin:6px 0 8px; color:#111111; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase; }
   .cq-service { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
-  .cq-box { border:1px solid var(--ic-line); margin-bottom:0; page-break-inside:auto; break-inside:auto; }
-  .cq-sec { border-top:1px solid var(--ic-line); page-break-inside:auto; break-inside:auto; }
-  .cq-sec:first-child { border-top:none; }
+  .cq-box { border:0; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  .cq-sec { border:1px solid var(--ic-line); border-top:0; page-break-inside:auto; break-inside:auto; }
+  .cq-sec:first-child { border-top:1px solid var(--ic-line); }
   .cq-bar { background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:6px 8px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.02em; color:#111111; line-height:1.35; }
   .cq-body { padding:6px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .cq-body ul, .cq-body ol { margin:8px 0 0 18px; padding:0; }
@@ -1778,7 +1798,7 @@ CONSULTING_QUOTATION_HTML = """
       </div>
     </div>
     {% endif %}
-    {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') %}
+    {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') and (doc.ic_terms_and_conditions or doc.terms) %}
     <div class="cq-sec">
       <div class="cq-bar">{{ doc.ic_label_terms or 'Terms and Conditions' }}</div>
       <div class="cq-body">
@@ -1799,8 +1819,7 @@ CONSULTING_QUOTATION_HTML = """
   </div>
 </div>
 </div>
-</td></tr></tbody>
-</table>
+""" + QUOTE_DOCUMENT_END_HTML + """
 """
 
 

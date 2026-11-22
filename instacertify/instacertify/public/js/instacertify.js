@@ -10051,6 +10051,155 @@ instacertify.paint_lead_activity = function (frm) {
 	});
 };
 
+/** Turn the website enquiry text into the lines a person actually wrote. */
+instacertify.website_query_parts = function (raw) {
+	const html = String(raw || "")
+		.replace(/<br\s*\/?>/gi, "\n")
+		.replace(/<\/p>/gi, "\n")
+		.replace(/<\/div>/gi, "\n");
+	const node = document.createElement("div");
+	node.innerHTML = html;
+	const text = (node.textContent || "").replace(/\u00a0/g, " ").trim();
+	const parts = {
+		message: "",
+		requirement: "",
+		service: "",
+		product: "",
+		timeline: "",
+		fromWebsite: false,
+	};
+	if (!text) return parts;
+	parts.fromWebsite = /website enquiry/i.test(text);
+	const extra = [];
+	text.split(/\n+/).forEach((line) => {
+		const clean = line.replace(/\s+/g, " ").trim();
+		if (!clean) return;
+		const labeled = clean.match(/^(Message|Requirement|Service|Product|Timeline)\s*:\s*(.*)$/i);
+		if (labeled) {
+			parts[labeled[1].toLowerCase()] = labeled[2].trim();
+			return;
+		}
+		if (/^website enquiry/i.test(clean)) return;
+		if (/^(service path|page|referrer|utm)\s*:/i.test(clean)) return;
+		extra.push(clean);
+	});
+	if (!parts.message && extra.length) parts.message = extra.join("\n");
+	return parts;
+};
+
+/** Readable website query at the top of the lead, with the fields in even rows. */
+instacertify.layout_lead_page = function (frm) {
+	instacertify.align_lead_name_fields(frm);
+	const section = frm.fields_dict && frm.fields_dict.ic_section_capture;
+	const sectionWrap = section && (section.$wrapper || section.wrapper);
+	if (!sectionWrap) return;
+	const body = $(sectionWrap).find(".section-body").first();
+	const name = $(sectionWrap).find(".ic-lead-name-row").first();
+
+	const take = (fieldname) => {
+		const field = frm.fields_dict[fieldname];
+		return field && field.$wrapper ? field.$wrapper : null;
+	};
+	let contact = $(sectionWrap).find(".ic-lead-contact-row");
+	if (!contact.length) {
+		contact = $('<div class="ic-lead-name-row ic-lead-contact-row"></div>');
+		if (name.length) name.after(contact);
+		else body.prepend(contact);
+	}
+	["mobile_no", "email_id"].forEach((name) => {
+		const wrap = take(name);
+		if (wrap) contact.append(wrap);
+	});
+	frm.set_df_property("mobile_no", "label", __("Phone"));
+	frm.set_df_property("email_id", "label", __("Email"));
+
+	const notes = (frm.doc.notes || [])
+		.map((row) => row.note || "")
+		.filter((line) => String(line).trim())
+		.join("\n");
+	const parts = instacertify.website_query_parts(frm.doc.ic_remarks || notes);
+	const fromWebsite = parts.fromWebsite || !!(frm.doc.ic_website_lead_id);
+	const lines = [
+		["Service", parts.service],
+		["Product", parts.product],
+		["Requirement", parts.requirement],
+		["Timeline", parts.timeline],
+	].filter((row) => row[1]);
+	let card = $(sectionWrap).find(".ic-website-query");
+	if (!card.length) {
+		card = $('<div class="ic-website-query"></div>');
+		contact.after(card);
+	}
+	const message = parts.message || "";
+	if (message || lines.length) {
+		const meta = lines
+			.map(
+				([label, value]) =>
+					`<div><span>${frappe.utils.escape_html(__(label))}</span><b>${frappe.utils.escape_html(value)}</b></div>`
+			)
+			.join("");
+		card.html(
+			`<div class="ic-activity-label">${fromWebsite ? __("Message from the website") : __("Query")}</div>` +
+				(message ? `<div class="ic-website-query-text">${frappe.utils.escape_html(message)}</div>` : "") +
+				(meta ? `<div class="ic-website-query-meta">${meta}</div>` : "") +
+				`<button type="button" class="btn btn-xs btn-default ic-edit-query">${__("Edit message")}</button>`
+		);
+		card.show();
+	} else {
+		card.hide();
+	}
+
+	const remarks = frm.fields_dict.ic_remarks;
+	if (remarks && remarks.$wrapper) {
+		frm.set_df_property(
+			"ic_remarks",
+			"label",
+			fromWebsite ? __("Message from the website") : __("Query")
+		);
+		card.after(remarks.$wrapper);
+		if (message || lines.length) remarks.$wrapper.hide();
+		else remarks.$wrapper.show();
+		card.find(".ic-edit-query").off("click.icQuery").on("click.icQuery", () => {
+			remarks.$wrapper.show();
+			const input = remarks.$wrapper.find(".ql-editor, textarea").get(0);
+			if (input) input.focus();
+		});
+	}
+
+	const activity = $(sectionWrap).find(".ic-lead-activity");
+	const team = $(sectionWrap).find(".ic-lead-team-row");
+	const afterQuery = remarks && remarks.$wrapper ? remarks.$wrapper : card;
+	if (activity.length) afterQuery.after(activity);
+	const afterActivity = activity.length ? activity : afterQuery;
+	if (team.length) afterActivity.after(team);
+
+	let extra = $(sectionWrap).find(".ic-lead-extra-row");
+	if (!extra.length) {
+		extra = $('<div class="ic-lead-name-row ic-lead-extra-row"></div>');
+	}
+	const tail = team.length ? team : afterActivity;
+	tail.after(extra);
+	["ic_company_size", "lead_owner"].forEach((name) => {
+		const wrap = take(name);
+		if (wrap) extra.append(wrap);
+	});
+	if (!extra.children().length) extra.hide();
+
+	const source = frm.fields_dict.ic_section_source && frm.fields_dict.ic_section_source.wrapper;
+	const inquiry = frm.fields_dict.ic_section_inquiry && frm.fields_dict.ic_section_inquiry.wrapper;
+	if (source && inquiry) {
+		let pair = $(sectionWrap).parent().find(".ic-lead-choice-row");
+		if (!pair.length) {
+			pair = $('<div class="ic-lead-choice-row"></div>');
+			$(sectionWrap).after(pair);
+		}
+		pair.append(source, inquiry);
+	}
+
+	const standard = frm.fields_dict.salutation && frm.fields_dict.salutation.section;
+	if (standard && standard.wrapper) standard.wrapper.addClass("ic-lead-standard-name").hide();
+};
+
 /** Person and company sit side by side at the top of Lead Capture. */
 instacertify.align_lead_name_fields = function (frm) {
 	const person = frm.fields_dict && frm.fields_dict.ic_party_name;
@@ -10148,8 +10297,8 @@ frappe.ui.form.on("Lead", {
 		frm.set_df_property("phone", "reqd", 0);
 		frm.set_df_property("ic_party_name", "reqd", 1);
 		frm.set_df_property("ic_party_name", "label", __("Name of the person"));
-		instacertify.align_lead_name_fields(frm);
 		instacertify.paint_lead_activity(frm);
+		instacertify.layout_lead_page(frm);
 		frm.set_df_property("ic_call_remarks", "label", __("Description"));
 		instacertify.paint_saved_remark(frm);
 		instacertify.render_lead_source_inquiry_boxes(frm);
