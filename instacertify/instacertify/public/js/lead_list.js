@@ -8,6 +8,7 @@
 	const COLUMNS = [
 		["ic_party_name", __("Person")],
 		["company_name", __("Company")],
+		["ic_remarks", __("Query")],
 		["ic_pipeline_stage", __("State")],
 		["ic_call_count", __("Calls")],
 		["ic_email_sent", __("Email")],
@@ -56,6 +57,8 @@
 		add_fields: [
 			"ic_party_name",
 			"company_name",
+			"ic_remarks",
+			"ic_website_lead_id",
 			"ic_pipeline_stage",
 			"ic_call_count",
 			"ic_email_sent",
@@ -95,6 +98,16 @@
 				const text = (value || "").trim();
 				if (!text) return `<span class="ic-company-pill is-empty">${__("No company")}</span>`;
 				return `<span class="ic-company-pill">${frappe.utils.escape_html(text)}</span>`;
+			},
+			ic_remarks(value) {
+				const parts =
+					window.instacertify && instacertify.website_query_parts
+						? instacertify.website_query_parts(value)
+						: { message: String(value || "").replace(/<[^>]+>/g, " ").trim() };
+				const text = (parts.message || parts.requirement || "").trim();
+				if (!text) return `<span class="ic-company-pill is-empty">${__("No message")}</span>`;
+				const shown = text.length > 180 ? text.slice(0, 177) + "…" : text;
+				return `<span class="ic-query-cell" title="${frappe.utils.escape_html(text)}">${frappe.utils.escape_html(shown)}</span>`;
 			},
 			ic_lead_source_detail(value) {
 				return pill("ic_lead_source_detail", value, "source", __("No source"));
