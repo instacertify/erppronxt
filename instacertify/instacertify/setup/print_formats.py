@@ -450,21 +450,23 @@ QUOTE_PAGE_CHROME_CSS = """
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 12mm;
-    height: 2.5px;
-    background: linear-gradient(to right, #065175 50%, #EC691F 50%);
+    bottom: 13mm;
+    height: 3px;
+    display: flex;
     z-index: 3;
+    margin: 0;
+    padding: 0;
   }
-  .ic-footer-logo {
-    position: fixed;
-    left: 10mm;
-    bottom: 3mm;
-    height: 28px;
-    width: auto;
-    max-width: 78mm;
-    z-index: 4;
-    background: #fff;
+  .ic-page-rule .navy,
+  .ic-page-rule .orange {
+    display: block;
+    width: 50%;
+    height: 3px;
+    margin: 0;
+    padding: 0;
   }
+  .ic-page-rule .navy { background: #065175; }
+  .ic-page-rule .orange { background: #EC691F; }
   .ic-print-header { background: #fff; }
   .ic-print-footer-tag {
     display: block;
@@ -498,8 +500,7 @@ QUOTE_PAGE_CHROME_CSS = """
 """
 
 QUOTE_RUNNING_HEADER_HTML = """
-<div class="ic-page-rule" aria-hidden="true"></div>
-<img class="ic-footer-logo" src="{{ logo }}" alt="Instacertify"/>
+<div class="ic-page-rule" aria-hidden="true"><span class="navy"></span><span class="orange"></span></div>
 <table class="ic-page-frame">
 <thead><tr><td class="ic-print-header">
 """ + LETTERHEAD_BLOCK_HTML + """
