@@ -302,9 +302,9 @@ LETTERHEAD_BLOCK_HTML = """
   <div class="ic-mast-pad" style="padding:8mm 12mm 6px;">
     <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
       <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
-        <img src="{{ logo }}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
+        <img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:280px;display:block;"/>
       </div>
-      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:64%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:10px;line-height:1.45;letter-spacing:0;color:#111111;overflow:visible;white-space:normal;">
         <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{{ legal }}</div>
         <div>{{ address }}</div>
         {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
@@ -325,7 +325,26 @@ LETTERHEAD_BLOCK_HTML = """
 # into a separate page and the letterhead comes out blank. A table header
 # and footer repeat on every page while staying in the document.
 QUOTE_PAGE_CHROME_CSS = """
-  @page { size: A4; margin: 0; }
+  @page {
+    size: A4;
+    margin: 0 0 16mm 0;
+    @bottom-center {
+      content: "Certification Made Simple";
+      font-family: Figtree, Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #111111;
+    }
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font-family: Figtree, Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      font-weight: 700;
+      color: #111111;
+      margin-right: 10mm;
+    }
+  }
   .print-format { padding: 0 !important; margin: 0 !important; position: relative; }
   table.ic-page-frame {
     width: 100%;
@@ -335,6 +354,14 @@ QUOTE_PAGE_CHROME_CSS = """
     break-inside: auto !important;
   }
   table.ic-page-frame > thead { display: table-header-group; }
+  table.ic-page-frame > thead > tr,
+  .ic-print-header, .ic-masthead, .ic-mast-details, .ic-mast-logo {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  .ic-mast-logo img { max-height: 58px !important; max-width: 280px !important; }
+  .ic-print-header { position: relative; z-index: 2; background: #fff; }
   table.ic-page-frame > tfoot { display: table-footer-group; }
   table.ic-page-frame > tbody > tr,
   table.ic-page-frame > tbody > tr > td {
@@ -418,7 +445,16 @@ QUOTE_PAGE_CHROME_CSS = """
     padding: 4px 12mm 8px 12mm;
     text-align: center;
   }
-  .ic-doc-foot { margin-top: 8px; }
+  .ic-doc-foot { margin-top: 10px; break-inside: avoid; page-break-inside: avoid; }
+  .ic-page-rule {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 12mm;
+    height: 2.5px;
+    background: linear-gradient(to right, #065175 50%, #EC691F 50%);
+    z-index: 3;
+  }
   .ic-print-footer-tag {
     display: block;
     width: 100%;
@@ -451,6 +487,7 @@ QUOTE_PAGE_CHROME_CSS = """
 """
 
 QUOTE_RUNNING_HEADER_HTML = """
+<div class="ic-page-rule" aria-hidden="true"></div>
 <table class="ic-page-frame">
 <thead><tr><td class="ic-print-header">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -474,13 +511,6 @@ QUOTE_DOCUMENT_END_HTML = """
       {% endif %}
       <div class="cap">Verify</div>
     </div>
-  </div>
-  <div class="ic-footer-rules" aria-hidden="true">
-    <div class="ic-footer-half navy"></div>
-    <div class="ic-footer-half orange"></div>
-  </div>
-  <div class="ic-print-footer-below">
-    <div class="ic-print-footer-tag">Certification Made Simple</div>
   </div>
 </div>
 </td></tr></tbody>
@@ -579,10 +609,12 @@ QUOTE_EVEN_TYPE_CSS = """
   }
   .ic-print-header .ic-mast-details,
   .ic-print-header .ic-mast-details div {
-    font-size: 9pt !important;
+    font-size: 9.5pt !important;
     letter-spacing: 0 !important;
-    line-height: 1.35 !important;
+    line-height: 1.45 !important;
     font-weight: 500 !important;
+    white-space: normal !important;
+    overflow: visible !important;
   }
   .ic-print-header .ic-mast-legal {
     font-size: 11pt !important;
@@ -2156,9 +2188,9 @@ def letterhead_html() -> str:
   <div class="ic-mast-pad" style="padding:8mm 12mm 6px;">
     <div class="ic-mast-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;">
       <div class="ic-mast-logo" style="flex:0 0 auto;min-width:0;">
-        <img src="{logo}" alt="Instacertify" style="max-height:42px;max-width:260px;display:block;"/>
+        <img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:280px;display:block;"/>
       </div>
-      <div class="ic-mast-details" style="flex:1 1 auto;max-width:58%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:8.5px;line-height:1.55;letter-spacing:0.02em;word-spacing:0.06em;color:#111111;">
+      <div class="ic-mast-details" style="flex:1 1 auto;max-width:64%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:10px;line-height:1.45;letter-spacing:0;color:#111111;overflow:visible;white-space:normal;">
         <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{legal}</div>
         <div>{addr_html}</div>
         <div>CIN {cin}</div>
