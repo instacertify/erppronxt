@@ -267,12 +267,21 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-rule-navy { height:1px; background:var(--ic-navy); width:100%; border:0; }
   .ic-rule-orange { height:1px; background:var(--ic-orange); width:56px; border:0; margin:0; }
   .ic-rule-double { border:0; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-line); height:3px; background:transparent; }
-  /* A section stays on one A4 page. If it does not fit the space left on this
-     page, the whole section moves to the next page. A section taller than one
-     page continues at the next row, not through the middle of a line. */
+  /* A section stays on one A4 page. The invisible 2in block is pulled back with
+     a negative margin, so it adds no blank band, but Chrome will not start the
+     section unless two inches are free. If they are not, the whole section
+     moves to the next page. A list longer than one page continues at the next
+     full row, and every line that was written still prints. */
   .cq-sec, table.tq-grid, .ic-box, .ic-keep, .cq-close, .tq-close, .ic-sign, .ic-footer {
     page-break-inside: avoid;
     break-inside: avoid-page;
+  }
+  .cq-sec::before, .ic-box::before, .ic-keep::before,
+  .cq-close::before, .tq-close::before, .ic-sign::before {
+    content: "";
+    display: block;
+    height: 2in;
+    margin-bottom: -2in;
   }
   .tq-label, .cq-bar, .tq-title, .cq-title, .cq-service, .ic-box > h3, .ic-doc-title {
     page-break-after: avoid;
@@ -545,6 +554,19 @@ QUOTE_EVEN_TYPE_CSS = """
   .cq-close, .tq-close, .ic-sign {
     page-break-inside: avoid !important;
     break-inside: avoid-page !important;
+  }
+  .cq-sec::before, .ic-box::before, .ic-keep::before,
+  .cq-close::before, .tq-close::before, .ic-sign::before {
+    content: "" !important;
+    display: block !important;
+    height: 2in !important;
+    margin: 0 0 -2in 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  .cq-sec, .ic-box, table.tq-grid, .ic-keep {
+    width: 100%;
+    box-sizing: border-box;
   }
   table.tq-comm tr, table.cq-comm tr, table.ic-table tr, table.ic-bank-tbl tr,
   table.cq-bank tr, table.tq-bank tr {
@@ -1133,16 +1155,16 @@ TESTING_QUOTATION_HTML = """
   <p style="margin:0 0 8px;">Dear {{ _party or 'Sir or Madam' }},</p>
   <p style="margin:0 0 12px;">Thank you for your enquiry. We are pleased to submit this quotation for your consideration. The scope, charges and terms are set out below.</p>
 
-    <table class="tq-grid">
+    <div class="ic-keep"><table class="tq-grid">
     <tr>
       <td class="tq-label">{{ doc.ic_label_subject or 'Subject' }}</td>
       <td class="tq-value"><b>{{ doc.ic_subject or 'Testing' }}</b></td>
     </tr>
-  </table>
+  </table></div>
 
   {% for _sk in quote_section_order(doc) %}
     {% if _sk == 'about' and quote_section_on(doc, 'ic_show_about') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_about_testing or 'ABOUT' }}</td>
             <td class="tq-value">
@@ -1153,10 +1175,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'applicable_standards' and quote_section_on(doc, 'ic_show_applicable_standards') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_applicable_standards or 'Applicable Standards' }}</td>
             <td class="tq-value">
@@ -1172,10 +1194,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'validity' and quote_section_on(doc, 'ic_show_validity') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_validity or 'Validity' }}</td>
             <td class="tq-value">
@@ -1186,10 +1208,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'sample_required' and quote_section_on(doc, 'ic_show_sample_required') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_samples_requirements or 'Samples Requirements' }}</td>
             <td class="tq-value">
@@ -1213,26 +1235,26 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'documents_required' and quote_section_on(doc, 'ic_show_documents_required') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_documents_required or 'Documents Required' }}</td>
             <td class="tq-value">{{ doc.ic_documents_required or '' }}</td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'process' and quote_section_on(doc, 'ic_show_process') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_process or 'Process' }}</td>
             <td class="tq-value">{{ doc.ic_process_steps or '' }}</td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'commercials' and quote_section_on(doc, 'ic_show_commercials') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label" colspan="2">{{ doc.ic_label_commercials or 'Commercials' }}</td>
       </tr>
@@ -1341,10 +1363,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'deliverables' and quote_section_on(doc, 'ic_show_deliverables') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_deliverable or 'Deliverable' }}</td>
             <td class="tq-value">
@@ -1359,10 +1381,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'timelines' and quote_section_on(doc, 'ic_show_timelines') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_timeline or 'Timeline' }}</td>
             <td class="tq-value">
@@ -1373,10 +1395,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'payment_terms' and quote_section_on(doc, 'ic_show_payment_terms') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_payment_term or 'Payment Term' }}</td>
             <td class="tq-value">
@@ -1392,10 +1414,10 @@ TESTING_QUOTATION_HTML = """
       """ + GST_PAYMENT_TERMS_NOTE_HTML + """
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'sample_handling' and quote_section_on(doc, 'ic_show_sample_handling') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_sample_handling or 'Sample handling & disposal policy' }}</td>
             <td class="tq-value">
@@ -1415,20 +1437,20 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'banking' and quote_section_on(doc, 'ic_show_banking') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_banking or 'Our Banking Details' }}</td>
             <td class="tq-value">
       """ + BANK_UPI_PAYMENT_HTML + """
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'cancellation' and quote_section_on(doc, 'ic_show_cancellation') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_cancellation or 'CANCELLATION AND REFUND POLICY' }}</td>
             <td class="tq-value">
@@ -1439,10 +1461,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'force_majeure' and quote_section_on(doc, 'ic_show_force_majeure') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_force_majeure or 'FORCE MAJEURE' }}</td>
             <td class="tq-value">
@@ -1453,10 +1475,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'confidentiality' and quote_section_on(doc, 'ic_show_confidentiality') %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_confidentiality or 'CONFIDENTIALITY & DATA PROTECTION' }}</td>
             <td class="tq-value">
@@ -1467,10 +1489,10 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
     {% if _sk == 'terms' and quote_section_on(doc, 'ic_show_terms') and (doc.ic_terms_and_conditions or doc.terms) %}
-    <table class="tq-grid" style="margin-top:-1px;">
+    <div class="ic-keep"><table class="tq-grid" style="margin-top:-1px;">
       <tr>
             <td class="tq-label">{{ doc.ic_label_terms or 'Terms and Conditions' }}</td>
             <td class="tq-value">
@@ -1481,7 +1503,7 @@ TESTING_QUOTATION_HTML = """
               {% endif %}
             </td>
           </tr>
-    </table>
+    </table></div>
     {% endif %}
   {% endfor %}
 
