@@ -455,6 +455,17 @@ QUOTE_PAGE_CHROME_CSS = """
     background: linear-gradient(to right, #065175 50%, #EC691F 50%);
     z-index: 3;
   }
+  .ic-footer-logo {
+    position: fixed;
+    left: 10mm;
+    bottom: 3mm;
+    height: 28px;
+    width: auto;
+    max-width: 78mm;
+    z-index: 4;
+    background: #fff;
+  }
+  .ic-print-header { background: #fff; }
   .ic-print-footer-tag {
     display: block;
     width: 100%;
@@ -488,6 +499,7 @@ QUOTE_PAGE_CHROME_CSS = """
 
 QUOTE_RUNNING_HEADER_HTML = """
 <div class="ic-page-rule" aria-hidden="true"></div>
+<img class="ic-footer-logo" src="{{ logo }}" alt="Instacertify"/>
 <table class="ic-page-frame">
 <thead><tr><td class="ic-print-header">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -529,11 +541,7 @@ LETTERHEAD_CONTEXT_JINJA = """
 {%- set gstin = s.gstin or '09AAGCI8396C1Z7' -%}
 {%- set address = (s.address_line or 'PK 01 SECTOR 63A NOIDA, GAUTAM BUDDHA NAGAR, UTTAR PRADESH-201301, INDIA').replace('\\n', '<br>') -%}
 {%- set logo_raw = s.header_image or s.logo or '/assets/instacertify/images/instacertify_logo_tagline_print.png' -%}
-{%- if logo_raw and (logo_raw.startswith('http://') or logo_raw.startswith('https://') or logo_raw.startswith('data:') or logo_raw.startswith('/')) -%}
-{%- set logo = logo_raw -%}
-{%- else -%}
-{%- set logo = frappe.utils.get_url(logo_raw) -%}
-{%- endif -%}
+{%- set logo = quote_image_data_uri(logo_raw) -%}
 {%- set bank = bank_for_document(doc) -%}
 """
 
@@ -1131,10 +1139,7 @@ TESTING_QUOTATION_HTML = """
 {{ quote_money(amount, cur or doc.currency or 'INR') }}
 {%- endmacro -%}
 """ + LETTERHEAD_CONTEXT_JINJA + """
-{%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
-{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:') or stamp.startswith('/')) -%}
-{%- set stamp = frappe.utils.get_url(stamp) -%}
-{%- endif -%}
+{%- set stamp = quote_image_data_uri(s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png') -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 {%- set curr = doc.currency or 'INR' -%}
 <style>
@@ -1558,10 +1563,7 @@ CONSULTING_QUOTATION_HTML = """
 {{ quote_money(amount, cur or doc.currency or 'INR') }}
 {%- endmacro -%}
 """ + LETTERHEAD_CONTEXT_JINJA + """
-{%- set stamp = s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png' -%}
-{%- if stamp and not (stamp.startswith('http://') or stamp.startswith('https://') or stamp.startswith('data:') or stamp.startswith('/')) -%}
-{%- set stamp = frappe.utils.get_url(stamp) -%}
-{%- endif -%}
+{%- set stamp = quote_image_data_uri(s.stamp_image or '/assets/instacertify/images/instacertify_stamp.png') -%}
 {%- set quote_no = doc.ic_quote_number or doc.name -%}
 <style>
 """ + IC_PRINT_TYPOGRAPHY_CSS + QUOTE_PAGE_CHROME_CSS + """
@@ -2168,8 +2170,9 @@ def letterhead_html() -> str:
 		or (getattr(s, "logo", None) if s else None)
 		or "/assets/instacertify/images/instacertify_logo_tagline_print.png"
 	)
-	if logo and not str(logo).startswith(("http://", "https://", "data:", "/")):
-		logo = frappe.utils.get_url(logo)
+	from instacertify.utils.print_images import quote_image_data_uri
+
+	logo = quote_image_data_uri(logo)
 	legal = frappe.utils.escape_html(
 		(getattr(s, "legal_name", None) if s else None) or "Instacertify Labs Private Limited"
 	)
