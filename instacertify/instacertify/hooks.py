@@ -241,6 +241,7 @@ fixtures = [
 jinja = {
 	"methods": [
 		"instacertify.utils.qr.get_qr_code_data_uri",
+		"instacertify.utils.print_images.quote_image_data_uri",
 		"instacertify.accounting.banking.bank_for_document",
 		"instacertify.quotation.print_sections.quote_section_on",
 		"instacertify.quotation.print_sections.quote_section_text",
