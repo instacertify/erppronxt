@@ -267,24 +267,21 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-rule-navy { height:1px; background:var(--ic-navy); width:100%; border:0; }
   .ic-rule-orange { height:1px; background:var(--ic-orange); width:56px; border:0; margin:0; }
   .ic-rule-double { border:0; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-line); height:3px; background:transparent; }
-  /* A heading stays with the text under it. A long section continues on the
-     next page instead of leaving a blank gap or being sliced through a line. */
-  table.tq-grid > tbody > tr, .cq-sec {
-    page-break-inside: auto;
-    break-inside: auto;
+  /* A section stays on one A4 page. If it does not fit the space left on this
+     page, the whole section moves to the next page. A section taller than one
+     page continues at the next row, not through the middle of a line. */
+  .cq-sec, table.tq-grid, .ic-box, .ic-keep, .cq-close, .tq-close, .ic-sign, .ic-footer {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
   }
-  .tq-value, .cq-body, .cq-box {
-    page-break-inside: auto !important;
-    break-inside: auto !important;
-  }
-  .tq-label, .cq-bar, .tq-title, .cq-title, .cq-service {
+  .tq-label, .cq-bar, .tq-title, .cq-title, .cq-service, .ic-box > h3, .ic-doc-title {
     page-break-after: avoid;
     break-after: avoid-page;
   }
-  table.tq-comm tr, table.cq-comm tr, table.ic-table tr,
-  .tq-close, .cq-close, .ic-sign {
+  table.tq-comm tr, table.cq-comm tr, table.ic-table tr, table.ic-bank-tbl tr,
+  table.cq-bank tr, table.tq-bank tr, .ic-inv tr, .ic-sheet tr {
     page-break-inside: avoid;
-    break-inside: avoid;
+    break-inside: avoid-page;
   }
   p, li { orphans: 3; widows: 3; }
 """
@@ -544,7 +541,16 @@ QUOTE_EVEN_TYPE_CSS = """
   .cq-body > :last-child, .tq-value > :last-child { margin-bottom: 0 !important; }
   .cq-body p, .tq-value p { margin: 0 0 4px; }
   .cq-close, .tq-close, .ic-sign { margin-top: 10px !important; }
-  table.tq-grid > tbody > tr { page-break-inside: auto; break-inside: auto; }
+  .cq-sec, table.tq-grid, table.tq-grid > tbody > tr, .ic-box, .ic-keep,
+  .cq-close, .tq-close, .ic-sign {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+  table.tq-comm tr, table.cq-comm tr, table.ic-table tr, table.ic-bank-tbl tr,
+  table.cq-bank tr, table.tq-bank tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
   .tq-label { width: 28%; }
   .ic-print-header, .ic-print-header .ic-mast-details, .ic-print-footer, .ic-print-footer-tag {
     font-family: 'Figtree', Arial, Helvetica, sans-serif !important;
@@ -577,7 +583,7 @@ QUOTATION_HTML = """
   .ic-masthead { margin-bottom:0; }
   .ic-accent { color: var(--ic-orange); }
   .ic-meta { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ic-line); margin-bottom: 12px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size:9.5pt; }
-  .ic-box { border: 1px solid var(--ic-line); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+  .ic-box { border: 1px solid var(--ic-line); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; page-break-inside: avoid; break-inside: avoid-page; }
   .ic-box h3 { margin: 0 0 8px 0; color: var(--ic-navy); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size:13pt; border-bottom: 1px solid var(--ic-line); padding-bottom: 4px; }
   table.ic-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
   table.ic-table th { background: var(--ic-half); color: var(--ic-ink); padding: 6px 8px; text-align: left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:600; font-size: 8.5pt; letter-spacing:0.06em; text-transform:uppercase; border-top:1px solid var(--ic-navy); }
@@ -848,7 +854,7 @@ INVOICE_HTML = """
     </tbody>
   </table>
   <p class="ic-grand-total" style="text-align:right; margin-top:12px;">Grand Total: {{ frappe.utils.fmt_money(doc.grand_total, currency=doc.currency) }}</p>
-  <div style="margin-top:16px;padding:10px 12px;border:1px solid #d9e6ee;border-radius:6px;">
+  <div class="ic-keep" style="margin-top:16px;padding:10px 12px;border:1px solid #d9e6ee;border-radius:6px;">
     <div style="font-weight:700;color:#065175;margin-bottom:8px;font-size:12px;">Bank Details &amp; UPI Payment</div>
 """ + BANK_UPI_PAYMENT_HTML + """
   </div>
@@ -1083,7 +1089,7 @@ TESTING_QUOTATION_HTML = """
   .tq * { box-sizing: border-box; }
   .tq-meta { display:flex; justify-content:space-between; margin:0 0 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .tq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:16pt; font-weight:700; margin:6px 0 8px; color:#111111; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase; }
-  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
+  table.tq-grid { width:100%; border-collapse:collapse; table-layout:fixed; margin-bottom:0; page-break-inside:avoid; break-inside:avoid-page; }
   table.tq-grid > tbody > tr { page-break-inside:avoid; break-inside:avoid-page; }
   table.tq-grid > tbody > tr > td { border:1px solid var(--ic-line); vertical-align:top; padding:0; }
   .tq-label { width:22%; background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:6px 8px; color:#111111; font-size:8.5pt; letter-spacing:0.02em; text-transform:uppercase; border-left:1px solid var(--ic-line); line-height:1.35; }
@@ -1510,11 +1516,11 @@ CONSULTING_QUOTATION_HTML = """
   .cq-meta { display:flex; justify-content:space-between; margin:0 0 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:9pt; font-weight:600; color:#111111; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .cq-title { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:16pt; font-weight:700; margin:6px 0 8px; color:#111111; letter-spacing:0.04em; line-height:1.2; text-transform:uppercase; }
   .cq-service { text-align:left; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:11pt; font-weight:600; margin:0 0 12px; color:#111111; line-height:1.45; letter-spacing:0.03em; }
-  .cq-box { border:0; margin-bottom:0; page-break-inside:auto; break-inside:auto; }
-  .cq-sec { border:1px solid var(--ic-line); border-top:0; page-break-inside:auto; break-inside:auto; }
+  .cq-box { border:0; margin-bottom:0; }
+  .cq-sec { border:1px solid var(--ic-line); border-top:0; page-break-inside:avoid; break-inside:avoid-page; }
   .cq-sec:first-child { border-top:1px solid var(--ic-line); }
   .cq-bar { background:var(--ic-half); font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; padding:6px 8px; border-bottom:1px solid var(--ic-line); border-left:1px solid var(--ic-line); font-size:8.5pt; text-transform:uppercase; letter-spacing:0.02em; color:#111111; line-height:1.35; }
-  .cq-body { padding:6px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; page-break-inside:auto; break-inside:auto; line-height:1.4; letter-spacing:0; word-spacing:0; }
+  .cq-body { padding:6px 8px; font-family:'Figtree', Arial, Helvetica, sans-serif; font-size:10px; color:#111111; line-height:1.4; letter-spacing:0; word-spacing:0; }
   .cq-body ul, .cq-body ol { margin:8px 0 0 18px; padding:0; }
   .cq-body li { margin-bottom:6px; color:#111111; line-height:1.6; }
   .cq-h { font-family:'Figtree', Arial, Helvetica, sans-serif; font-weight:700; font-size:10pt; color:#111111; margin:0 0 8px; letter-spacing:0.05em; text-transform:uppercase; }
@@ -1834,7 +1840,7 @@ DOCUMENTS_COLLECTION_HTML = """
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
-  .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:8px; page-break-inside:avoid; break-inside:avoid-page; }
   .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
   table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
   table.ic-table th { background:#065175; color:#fff; padding:6px 8px; text-align:left; font-size:10px; }
@@ -1937,7 +1943,7 @@ TRF_HTML = """
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
-  .ic-box { border:1.5px solid #8eafc0; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .ic-box { border:1.5px solid #8eafc0; border-radius:8px; padding:10px 12px; margin-bottom:8px; page-break-inside:avoid; break-inside:avoid-page; }
   .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
   table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
   table.ic-table td, table.ic-table th { border:1px solid #8eafc0; padding:7px 8px; vertical-align:top; }
@@ -2012,7 +2018,7 @@ SAMPLE_DISPATCH_COLLECTION_HTML = """
   .ic-lh-logo img { max-height:58px; max-width:320px; }
   .ic-title { color:#065175; font-size:16px; font-weight:700; margin:8px 0 4px; }
   .ic-sub { color:#555; margin-bottom:12px; }
-  .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:12px; }
+  .ic-box { border:1px solid #d9e6ee; border-radius:8px; padding:10px 12px; margin-bottom:8px; page-break-inside:avoid; break-inside:avoid-page; }
   .ic-box h3 { margin:0 0 8px; color:#065175; font-size:13px; border-bottom:1px solid #ecf3f7; padding-bottom:4px; }
   table.ic-table { width:100%; border-collapse:collapse; margin-top:6px; }
   table.ic-table td { border-bottom:1px solid #e5eef3; padding:6px 8px; vertical-align:top; }

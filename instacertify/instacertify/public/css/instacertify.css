@@ -2811,6 +2811,9 @@ select.input-with-feedback {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 88px;
+  height: 100%;
+  box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .ic-new-quote-type-chip:hover {
