@@ -315,8 +315,8 @@ LETTERHEAD_BLOCK_HTML = """
       </div>
     </div>
   </div>
-  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
-  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:3px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:3px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
 </div>
 """
 
@@ -327,7 +327,7 @@ LETTERHEAD_BLOCK_HTML = """
 QUOTE_PAGE_CHROME_CSS = """
   @page {
     size: A4;
-    margin: 0 0 16mm 0;
+    margin: 0 0 22mm 0;
     @bottom-center {
       content: "Certification Made Simple";
       font-family: Figtree, Arial, Helvetica, sans-serif;
@@ -393,8 +393,8 @@ QUOTE_PAGE_CHROME_CSS = """
     border: 0 !important;
     box-sizing: border-box;
   }
-  .ic-bleed-navy { height: 1px !important; background: #065175 !important; }
-  .ic-bleed-orange { height: 1px !important; background: #EC691F !important; }
+  .ic-bleed-navy { height: 3px !important; background: #065175 !important; }
+  .ic-bleed-orange { height: 3px !important; background: #EC691F !important; }
   /* One straight footer line: left half navy, right half orange */
   .ic-footer-rules {
     display: flex;
@@ -450,12 +450,33 @@ QUOTE_PAGE_CHROME_CSS = """
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 13mm;
+    bottom: 16mm;
     height: 3px;
     display: flex;
     z-index: 3;
     margin: 0;
     padding: 0;
+  }
+  .ic-footer-qr {
+    position: fixed;
+    left: 8mm;
+    bottom: 3mm;
+    z-index: 4;
+    width: 46px;
+    text-align: center;
+    background: #fff;
+  }
+  .ic-footer-qr img {
+    width: 40px;
+    height: 40px;
+    display: block;
+    margin: 0 auto;
+  }
+  .ic-footer-qr .cap {
+    font-size: 7px;
+    color: #6A727C;
+    line-height: 1.1;
+    font-family: Figtree, Arial, Helvetica, sans-serif;
   }
   .ic-page-rule .navy,
   .ic-page-rule .orange {
@@ -501,6 +522,14 @@ QUOTE_PAGE_CHROME_CSS = """
 
 QUOTE_RUNNING_HEADER_HTML = """
 <div class="ic-page-rule" aria-hidden="true"><span class="navy"></span><span class="orange"></span></div>
+<div class="ic-footer-qr">
+  {% if doc.ic_qr_code %}
+    <img src="{{ quote_image_data_uri(doc.ic_qr_code) }}" alt="QR"/>
+  {% else %}
+    <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT'), 3, 1, '#6A727C') }}" alt="QR"/>
+  {% endif %}
+  <div class="cap">Verify</div>
+</div>
 <table class="ic-page-frame">
 <thead><tr><td class="ic-print-header">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -514,18 +543,6 @@ QUOTE_RUNNING_FOOTER_HTML = """
 # Footer sits under the last line of the quote. It is not a repeating
 # table footer, which pinned it to the bottom of the page and left a blank band.
 QUOTE_DOCUMENT_END_HTML = """
-<div class="ic-print-footer ic-doc-foot">
-  <div class="ic-print-footer-inner">
-    <div class="ic-print-footer-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT'), 3, 1, '#6A727C') }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Verify</div>
-    </div>
-  </div>
-</div>
 </td></tr></tbody>
 </table>
 """
@@ -2205,8 +2222,8 @@ def letterhead_html() -> str:
       </div>
     </div>
   </div>
-  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
-  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:3px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:3px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
 </div>
 """
 
