@@ -318,7 +318,7 @@ LETTERHEAD_BLOCK_HTML = """
 QUOTE_PAGE_CHROME_CSS = """
   @page {
     size: A4;
-    margin: 0 0 14mm 0;
+    margin: 0 0 26mm 0;
     @bottom-center {
       content: "Certification Made Simple";
       font-family: Figtree, Arial, Helvetica, sans-serif;
@@ -450,12 +450,12 @@ QUOTE_PAGE_CHROME_CSS = """
   }
   .ic-footer-qr {
     position: fixed;
-    left: 8mm;
-    right: auto;
-    bottom: 2mm;
+    left: auto;
+    right: 10mm;
+    bottom: 14.5mm;
     z-index: 4;
     width: 36px;
-    text-align: left;
+    text-align: right;
     background: #fff;
   }
   .ic-footer-qr img {
