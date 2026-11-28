@@ -171,14 +171,18 @@ IC_PRINT_TYPOGRAPHY_CSS = """
     max-width: 58%;
     margin-left: auto;
   }
-  .ic-mast-details .ic-mast-legal {
+  .ic-mast-details .ic-mast-legal,
+  .ic-mast-details .ic-mast-legal b {
     color: #111111 !important;
     font-size: 11.5px !important;
-    font-weight: 800 !important;
+    font-weight: 700 !important;
     line-height: 1.35 !important;
     letter-spacing: 0.01em !important;
     padding: 1px 0 2px !important;
     margin-bottom: 6px !important;
+  }
+  .ic-mast-details .ic-mast-plain {
+    font-weight: 400 !important;
   }
   #header-html { width: 100%; box-sizing: border-box; }
   table.ic-table th, table.tq-comm th, table.cq-comm th, .ic-inv th {
@@ -296,13 +300,13 @@ LETTERHEAD_BLOCK_HTML = """
         <img src="{{ logo }}" alt="Instacertify" style="max-height:58px;max-width:280px;display:block;"/>
       </div>
       <div class="ic-mast-details" style="flex:1 1 auto;max-width:64%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:10px;line-height:1.45;letter-spacing:0;color:#111111;overflow:visible;white-space:normal;">
-        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{{ legal }}</div>
-        <div>{{ address }}</div>
-        {% if cin %}<div>CIN {{ cin }}</div>{% endif %}
-        <div style="margin-top:3px;">{{ phone }}</div>
-        <div>{{ email }}</div>
-        {% if website %}<div>{{ website }}</div>{% endif %}
-        {% if gstin %}<div>GSTIN {{ gstin }}</div>{% endif %}
+        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:700;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;"><b>{{ legal }}</b></div>
+        <div class="ic-mast-plain" style="font-weight:400;">{{ address }}</div>
+        {% if cin %}<div class="ic-mast-plain" style="font-weight:400;">CIN {{ cin }}</div>{% endif %}
+        <div class="ic-mast-plain" style="font-weight:400;margin-top:3px;">{{ phone }}</div>
+        <div class="ic-mast-plain" style="font-weight:400;">{{ email }}</div>
+        {% if website %}<div class="ic-mast-plain" style="font-weight:400;">{{ website }}</div>{% endif %}
+        {% if gstin %}<div class="ic-mast-plain" style="font-weight:400;">GSTIN {{ gstin }}</div>{% endif %}
       </div>
     </div>
   </div>
@@ -633,11 +637,12 @@ QUOTE_EVEN_TYPE_CSS = """
     font-size: 9.5pt !important;
     letter-spacing: 0 !important;
     line-height: 1.45 !important;
-    font-weight: 500 !important;
+    font-weight: 400 !important;
     white-space: normal !important;
     overflow: visible !important;
   }
-  .ic-print-header .ic-mast-legal {
+  .ic-print-header .ic-mast-details .ic-mast-legal,
+  .ic-print-header .ic-mast-details .ic-mast-legal b {
     font-size: 11pt !important;
     font-weight: 700 !important;
     letter-spacing: 0 !important;
@@ -2207,13 +2212,13 @@ def letterhead_html() -> str:
         <img src="{logo}" alt="Instacertify" style="max-height:58px;max-width:280px;display:block;"/>
       </div>
       <div class="ic-mast-details" style="flex:1 1 auto;max-width:64%;text-align:right;font-family:'Figtree', Arial, Helvetica, sans-serif;font-size:10px;line-height:1.45;letter-spacing:0;color:#111111;overflow:visible;white-space:normal;">
-        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:800;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;">{legal}</div>
-        <div>{addr_html}</div>
-        <div>CIN {cin}</div>
-        <div style="margin-top:3px;">{phone}</div>
-        <div>{email}</div>
-        <div>{website}</div>
-        <div>GSTIN {gstin}</div>
+        <div class="ic-mast-legal" style="color:#111111;font-size:11.5px;font-weight:700;line-height:1.35;letter-spacing:0.01em;padding:1px 0 2px;margin-bottom:6px;"><b>{legal}</b></div>
+        <div class="ic-mast-plain" style="font-weight:400;">{addr_html}</div>
+        <div class="ic-mast-plain" style="font-weight:400;">CIN {cin}</div>
+        <div class="ic-mast-plain" style="font-weight:400;margin-top:3px;">{phone}</div>
+        <div class="ic-mast-plain" style="font-weight:400;">{email}</div>
+        <div class="ic-mast-plain" style="font-weight:400;">{website}</div>
+        <div class="ic-mast-plain" style="font-weight:400;">GSTIN {gstin}</div>
       </div>
     </div>
   </div>
