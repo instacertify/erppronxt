@@ -87,7 +87,7 @@
         </div>
         <div class="ic-actions">
           <button class="ic-btn ic-btn-primary" id="btn-save">Submit TRF</button>
-          <button class="ic-btn" id="btn-pdf" style="display:none;">Generate / Download PDF</button>
+          <a class="ic-btn ic-btn-accent" id="btn-pdf" href="#" target="_blank" rel="noopener" style="display:none;">Download PDF of filled data</a>
         </div>
       </div>
     </div>
@@ -135,9 +135,12 @@
       }
       document.getElementById("form").style.display = "block";
       const pdfBtn = document.getElementById("btn-pdf");
-      if (d.can_generate_pdf || d.pdf_file) {
+      if (d.can_generate_pdf || d.pdf_file || d.pdf_url) {
         pdfBtn.style.display = "inline-block";
-        if (d.pdf_file) pdfBtn.textContent = "Download TRF PDF";
+        pdfBtn.href = d.pdf_url || ("/api/method/instacertify.trf.api.download_trf_pdf?token=" + encodeURIComponent(token));
+        pdfBtn.textContent = "Download PDF of filled data";
+      } else {
+        pdfBtn.style.display = "none";
       }
       const saveBtn = document.getElementById("btn-save");
       const fieldIds = ["sample_name","sample_quantity","product_name","rated_input","model_no","brand_name","testing_requested","applicable_standard","description","other_remarks","brand_logo_file"];
@@ -219,26 +222,11 @@
         });
         showMsg("TRF submitted. Form is now locked. You can download the PDF. Contact Instacertify if a correction is needed.", true);
         document.getElementById("btn-pdf").style.display = "inline-block";
+        document.getElementById("btn-pdf").href = (m && m.pdf_url) || ("/api/method/instacertify.trf.api.download_trf_pdf?token=" + encodeURIComponent(token));
         if (m && m.status) {
           const d = await api("instacertify.trf.api.get_trf_by_token", { token });
           fill(d);
         }
-      } catch (e) {
-        showMsg(e.message || String(e), false);
-      }
-    };
-
-    document.getElementById("btn-pdf").onclick = async () => {
-      try {
-        if (data && data.pdf_file) {
-          window.open(data.pdf_file, "_blank");
-          return;
-        }
-        const m = await api("instacertify.trf.api.generate_trf_pdf", { token });
-        showMsg("TRF PDF generated.", true);
-        if (m && m.file_url) window.open(m.file_url, "_blank");
-        const d = await api("instacertify.trf.api.get_trf_by_token", { token });
-        fill(d);
       } catch (e) {
         showMsg(e.message || String(e), false);
       }
