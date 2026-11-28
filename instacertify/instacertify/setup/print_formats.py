@@ -267,21 +267,12 @@ IC_PRINT_TYPOGRAPHY_CSS = """
   .ic-rule-navy { height:1px; background:var(--ic-navy); width:100%; border:0; }
   .ic-rule-orange { height:1px; background:var(--ic-orange); width:56px; border:0; margin:0; }
   .ic-rule-double { border:0; border-top:1px solid var(--ic-navy); border-bottom:1px solid var(--ic-line); height:3px; background:transparent; }
-  /* A section stays on one A4 page. The invisible 2in block is pulled back with
-     a negative margin, so it adds no blank band, but Chrome will not start the
-     section unless two inches are free. If they are not, the whole section
-     moves to the next page. A list longer than one page continues at the next
-     full row, and every line that was written still prints. */
-  .cq-sec, table.tq-grid, .ic-box, .ic-keep, .cq-close, .tq-close, .ic-sign, .ic-footer {
+  /* A section stays on one A4 page. If it does not fit what is left, the whole
+     section moves to the next page. Nothing is pulled upward over the line above. */
+  .cq-sec, table.tq-grid, .ic-box, .ic-keep, .cq-close, .tq-close, .ic-sign, .ic-footer,
+  .ic-inv .ic-keep, .ic-sheet .ic-box {
     page-break-inside: avoid;
     break-inside: avoid-page;
-  }
-  .cq-sec::before, .ic-box::before, .ic-keep::before,
-  .cq-close::before, .tq-close::before, .ic-sign::before {
-    content: "";
-    display: block;
-    height: 2in;
-    margin-bottom: -2in;
   }
   .tq-label, .cq-bar, .tq-title, .cq-title, .cq-service, .ic-box > h3, .ic-doc-title {
     page-break-after: avoid;
@@ -315,8 +306,8 @@ LETTERHEAD_BLOCK_HTML = """
       </div>
     </div>
   </div>
-  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
-  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:3px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:3px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
 </div>
 """
 
@@ -327,7 +318,7 @@ LETTERHEAD_BLOCK_HTML = """
 QUOTE_PAGE_CHROME_CSS = """
   @page {
     size: A4;
-    margin: 0 0 16mm 0;
+    margin: 0 0 26mm 0;
     @bottom-center {
       content: "Certification Made Simple";
       font-family: Figtree, Arial, Helvetica, sans-serif;
@@ -393,8 +384,8 @@ QUOTE_PAGE_CHROME_CSS = """
     border: 0 !important;
     box-sizing: border-box;
   }
-  .ic-bleed-navy { height: 1px !important; background: #065175 !important; }
-  .ic-bleed-orange { height: 1px !important; background: #EC691F !important; }
+  .ic-bleed-navy { height: 3px !important; background: #065175 !important; }
+  .ic-bleed-orange { height: 3px !important; background: #EC691F !important; }
   /* One straight footer line: left half navy, right half orange */
   .ic-footer-rules {
     display: flex;
@@ -450,12 +441,38 @@ QUOTE_PAGE_CHROME_CSS = """
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 13mm;
+    bottom: 11mm;
     height: 3px;
     display: flex;
     z-index: 3;
     margin: 0;
     padding: 0;
+  }
+  .ic-footer-qr {
+    position: fixed;
+    left: auto;
+    right: 10mm;
+    bottom: 14.5mm;
+    z-index: 4;
+    width: 36px;
+    text-align: right;
+    background: #fff;
+  }
+  .ic-footer-qr img {
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px !important;
+    max-height: 32px !important;
+    display: block;
+    margin: 0 auto;
+    opacity: 1;
+    filter: none;
+  }
+  .ic-footer-qr .cap {
+    font-size: 7px;
+    color: #6A727C;
+    line-height: 1.1;
+    font-family: Figtree, Arial, Helvetica, sans-serif;
   }
   .ic-page-rule .navy,
   .ic-page-rule .orange {
@@ -501,6 +518,14 @@ QUOTE_PAGE_CHROME_CSS = """
 
 QUOTE_RUNNING_HEADER_HTML = """
 <div class="ic-page-rule" aria-hidden="true"><span class="navy"></span><span class="orange"></span></div>
+<div class="ic-footer-qr">
+  {% if doc.ic_qr_code %}
+    <img src="{{ quote_image_data_uri(doc.ic_qr_code) }}" alt="QR"/>
+  {% else %}
+    <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT'), 3, 1, '#6A727C') }}" alt="QR"/>
+  {% endif %}
+  <div class="cap">Verify</div>
+</div>
 <table class="ic-page-frame">
 <thead><tr><td class="ic-print-header">
 """ + LETTERHEAD_BLOCK_HTML + """
@@ -514,18 +539,6 @@ QUOTE_RUNNING_FOOTER_HTML = """
 # Footer sits under the last line of the quote. It is not a repeating
 # table footer, which pinned it to the bottom of the page and left a blank band.
 QUOTE_DOCUMENT_END_HTML = """
-<div class="ic-print-footer ic-doc-foot">
-  <div class="ic-print-footer-inner">
-    <div class="ic-print-footer-qr">
-      {% if doc.ic_qr_code %}
-        <img src="{{ doc.ic_qr_code }}" alt="QR"/>
-      {% else %}
-        <img src="{{ get_qr_code_data_uri(frappe.utils.get_url() + '/ic-verify/Quotation/' + (doc.name or 'DRAFT'), 3, 1, '#6A727C') }}" alt="QR"/>
-      {% endif %}
-      <div class="cap">Verify</div>
-    </div>
-  </div>
-</div>
 </td></tr></tbody>
 </table>
 """
@@ -596,17 +609,16 @@ QUOTE_EVEN_TYPE_CSS = """
   }
   .cq-sec::before, .ic-box::before, .ic-keep::before,
   .cq-close::before, .tq-close::before, .ic-sign::before {
-    content: "" !important;
-    display: block !important;
-    height: 2in !important;
-    margin: 0 0 -2in 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
+    content: none !important;
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
   }
-  .cq-sec, .ic-box, table.tq-grid, .ic-keep {
+  .cq-sec, .ic-box, table.tq-grid, .ic-keep, .ic-print-body {
     width: 100%;
     box-sizing: border-box;
   }
+  .ic-print-body { padding-left: 12mm !important; padding-right: 12mm !important; }
   table.tq-comm tr, table.cq-comm tr, table.ic-table tr, table.ic-bank-tbl tr,
   table.cq-bank tr, table.tq-bank tr {
     page-break-inside: avoid !important;
@@ -2205,8 +2217,8 @@ def letterhead_html() -> str:
       </div>
     </div>
   </div>
-  <div class="ic-bleed-rule ic-bleed-navy" style="height:1px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
-  <div class="ic-bleed-rule ic-bleed-orange" style="height:1px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-navy" style="height:3px;background:#065175;width:100%;margin:0;padding:0;border:0;"></div>
+  <div class="ic-bleed-rule ic-bleed-orange" style="height:3px;background:#EC691F;width:100%;margin:0;padding:0;border:0;"></div>
 </div>
 """
 
